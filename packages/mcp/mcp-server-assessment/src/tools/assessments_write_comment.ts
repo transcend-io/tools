@@ -38,17 +38,22 @@ export const WriteAssessmentCommentSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Comment to reply to. Not with commentId. With resolved true, closes that parent after reply.',
+      'Root comment to reply to. Not with commentId. With resolved true, closes that ' +
+        'parent thread after the reply (replies are not resolved on their own).',
     ),
   commentId: z
     .string()
     .optional()
-    .describe('Existing comment to edit and/or resolve (id from assessments_list_comments).'),
+    .describe(
+      'Existing comment to edit and/or resolve (id from assessments_list_comments). To ' +
+        'resolve a thread, pass the root id (the row with no parentCommentId), not a reply.',
+    ),
   resolved: z
     .boolean()
     .optional()
     .describe(
-      'true to resolve, false to reopen. Needs commentId, or parentCommentId when replying.',
+      'true to resolve the thread, false to reopen. Needs the root commentId, or ' +
+        'parentCommentId when replying (closes that parent). Replies are not resolved alone.',
     ),
 });
 export type WriteAssessmentCommentInput = z.infer<typeof WriteAssessmentCommentSchema>;
@@ -60,9 +65,11 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
     name: 'assessments_write_comment',
     description:
       'Leave, reply to, edit, or resolve reviewer feedback on an assessment — form, section, ' +
-      'or question, matching assessments_list_comments rows. Pass parentCommentId to reply, ' +
-      'commentId to edit, resolved to close or reopen, or reply with resolved true to close ' +
-      'the parent thread. Call assessments_list_comments first for id, level, and targetId.',
+      'or question, matching assessments_list_comments rows. Resolution is per thread on the ' +
+      'root comment (no parentCommentId); replies close when that root is resolved. Pass ' +
+      'parentCommentId to reply, commentId to edit or resolve a root, or reply with resolved ' +
+      'true to close the parent thread. Call assessments_list_comments first for id, level, ' +
+      'and targetId.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

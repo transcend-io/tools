@@ -570,6 +570,57 @@ describe('Assessment Tools', () => {
       expect(all.data.totalCount).toBe(2);
     });
 
+    it('treats replies as open or resolved with their root, not their own stamp', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [
+          comment('c-root', 'FORM', 'form-1', { resolvedAt: '2026-02-01T00:00:00.000Z' }),
+          // Replies keep resolvedAt unset; only the root closes the thread.
+          comment('c-reply', 'FORM', 'form-1', {
+            parentCommentId: 'c-root',
+            createdAt: '2026-02-02T00:00:00.000Z',
+          }),
+          comment('c-open-root', 'FORM', 'form-1', { createdAt: '2026-02-03T00:00:00.000Z' }),
+          comment('c-open-reply', 'FORM', 'form-1', {
+            parentCommentId: 'c-open-root',
+            createdAt: '2026-02-04T00:00:00.000Z',
+          }),
+        ],
+        totalCount: 4,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
+        sectionTitles: {},
+        sectionIds: [],
+      });
+
+      const open = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+      const resolved = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'RESOLVED',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      expect(open.data.comments.map((c: any) => c.id)).toEqual(['c-open-root', 'c-open-reply']);
+      expect(resolved.data.comments.map((c: any) => c.id)).toEqual(['c-root', 'c-reply']);
+    });
+
+    it('documents that resolution follows the root of the thread', () => {
+      expect(commentsTool().description).toMatch(/root comment/);
+      const { shape } = commentsTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+      expect(shape.resolution.description).toMatch(/root/);
+    });
+
     it('filters by author upstream, and applies the same filter to question comments', async () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [
@@ -697,6 +748,15 @@ describe('Assessment Tools', () => {
       content: 'Hello',
       createdAt: '2026-03-01T00:00:00.000Z',
       ...overrides,
+    });
+
+    it('documents that only the root of a thread is resolved', () => {
+      expect(writeTool().description).toMatch(/root comment/);
+      const { shape } = writeTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+      expect(shape.commentId.description).toMatch(/root id/);
+      expect(shape.resolved.description).toMatch(/Replies are not resolved alone/);
     });
 
     it('creates a top-level FORM comment', async () => {
