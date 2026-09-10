@@ -16,7 +16,9 @@
     "oxlint.json",
     ".oxfmtrc.jsonc",
     "codegen.ts",
-    "schema.graphql"
+    "schema.graphql",
+    "skills/transcend-custom-functions/**",
+    "skills/transcend-policy-engine/**"
   ],
   "tasks": {
     "build": {
@@ -25,6 +27,11 @@
     },
     "test": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["transit", "//#codegen"],
+      "cache": false,
       "outputs": []
     },
     "quality": {
@@ -81,6 +88,10 @@
       "outputs": []
     },
     "check:publint": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "check:skill-bundle": {
       "dependsOn": ["build"],
       "outputs": []
     },
@@ -164,6 +175,19 @@
         "tsdown.config.ts"
       ],
       "outputs": ["dist/**", "src/__generated__/**"]
+    },
+    "@transcend-io/cli#quality:checks": {
+      "dependsOn": [
+        "typecheck",
+        "typecheck:ui",
+        "//#typecheck:root",
+        "//#check:packages",
+        "check:deps",
+        "//#check:deps:root",
+        "check:exports",
+        "check:publint",
+        "check:skill-bundle"
+      ]
     }
   }
 }

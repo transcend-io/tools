@@ -214,13 +214,15 @@ declare namespace CustomFunction {
     /**
      * Payload supplied when locally testing a datapoint export.
      *
-     * Transcend adds `coreIdentifier` when it is omitted.
+     * Transcend adds `coreIdentifier` and the resolved `dataSilo` when omitted.
      */
     type DataPointTestPayload = Omit<DataPointResolverProperties, 'coreIdentifier' | 'extras'> & {
         /** Optional override for the identifier Transcend would add. */
         coreIdentifier?: CoreIdentifier;
         /** Test metadata accepted before Transcend prepares the handler payload. */
-        extras: Omit<DataPointResolverProperties['extras'], 'profile' | 'pollId'> & {
+        extras: Omit<DataPointResolverProperties['extras'], 'dataSilo' | 'profile' | 'pollId'> & {
+            /** Optional integration override for a test invocation. */
+            dataSilo?: DataSilo;
             /** Profile supplied by the test fixture. */
             profile: Omit<Profile, 'type'> & {
                 /** Optional identifier descriptor accepted by the test endpoint. */
@@ -269,7 +271,7 @@ declare namespace CustomFunction {
         /**
          * Store a value.
          *
-         * Keys are limited to 128 bytes, values to 2,048 bytes, and each Custom
+         * Keys are limited to 128 characters, values to 2,048 characters, and each Custom
          * Function may store at most 128 keys.
          *
          * @param key - Stored value name

@@ -162,7 +162,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.BusinessEntities]: 'business-entities',
   [TranscendPullResource.ProcessingActivities]: 'processing-activities',
   [TranscendPullResource.Identifiers]: 'identifiers',
-  [TranscendPullResource.Enrichers]: 'enrichers',
+  [TranscendPullResource.Enrichers]: 'preflights',
   [TranscendPullResource.DataSilos]: 'data-silos',
   [TranscendPullResource.Templates]: 'templates',
   [TranscendPullResource.Vendors]: 'vendors',

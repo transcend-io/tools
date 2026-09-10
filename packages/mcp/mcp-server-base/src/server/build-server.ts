@@ -20,9 +20,14 @@ import {
   type ClientCapabilityReport,
 } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { ErrorCode } from '../errors.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
-import { skipConfirmation } from '../oauth/env.js';
+import {
+  experimentalToolsEnabled,
+  skipConfirmation,
+  TRANSCEND_MCP_EXPERIMENTAL_ENV,
+} from '../oauth/env.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
@@ -39,7 +44,7 @@ import {
 } from '../tools/define-tool-with-capabilities.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import { toolInputSchema } from '../tools/input-schema.js';
-import { isVisibleToModel, type ToolDefinition } from '../tools/types.js';
+import { isVisibleToModel, shouldRegisterTool, type ToolDefinition } from '../tools/types.js';
 import {
   buildUiResourceMeta,
   MCP_APP_MIME_TYPE,
@@ -213,7 +218,12 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   const registered: ToolDefinition[] = [];
   const seenNames = new Set<string>();
 
+  const skippedExperimental: string[] = [];
   for (const tool of options.tools) {
+    if (!shouldRegisterTool(tool)) {
+      skippedExperimental.push(tool.name);
+      continue;
+    }
     if (seenNames.has(tool.name)) {
       logger.warn(`Duplicate tool name "${tool.name}" — skipping`);
       continue;
@@ -244,6 +254,18 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     logger.warn(
       'MCP_SKIP_CONFIRMATION=1: server confirmation gates are disabled; consequential tools ' +
         'will run without human approval',
+    );
+  }
+
+  if (experimentalToolsEnabled()) {
+    logger.info(
+      `${TRANSCEND_MCP_EXPERIMENTAL_ENV}=1: experimental tools are eligible for registration`,
+    );
+  } else if (skippedExperimental.length > 0) {
+    logger.info(
+      `Skipped ${skippedExperimental.length} experimental tools (set ` +
+        `${TRANSCEND_MCP_EXPERIMENTAL_ENV}=1 to load)`,
+      { tools: skippedExperimental },
     );
   }
 
@@ -466,7 +488,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
           )
           .join('; ');
         const errorResult = createToolResult(false, undefined, `Invalid input: ${issues}`, {
-          code: 'VALIDATION_ERROR',
+          code: ErrorCode.VALIDATION_ERROR,
           retryable: false,
         });
         return {

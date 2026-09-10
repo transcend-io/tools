@@ -101,7 +101,6 @@ export async function push(
   // Parse authentication as API key or path to list of API keys
   const apiKeyOrList = await validateTranscendAuth(auth, this);
 
-  // Parse out the variables
   const vars = parseVariablesFromString(variables);
 
   // check if we are being passed a list of API keys and a list of files

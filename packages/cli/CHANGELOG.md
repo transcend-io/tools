@@ -1,5 +1,72 @@
 # @transcend-io/cli
 
+## 10.29.0
+
+### Minor Changes
+
+- f74e10f: Add local Policy Engine scaffolding and validation.
+
+  `policy init` creates a safe, publishable Rego v1 starter and can merge repository-level VS Code tooling, install a portable policy authoring skill, and generate credential-free GitHub Actions validation. The transactional setup preserves existing policy, editor, workflow, and customized skill content.
+
+  `policy lint` now requires a manifest, OPA 1.x, and Regal, and verifies formatting, production compilation, and tests. Existing lint invocations may newly fail until these requirements are met.
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+### Patch Changes
+
+- 27e7c7a: Say which Custom Function type each `custom-functions new` template produces.
+
+  The command described its templates by the code they emit ("General or DSR starter", "Generated
+  handler and fixture shape"), which does not map onto the two product concepts a caller is choosing
+  between: a General function triggered by Rules Automation, and a DSR function triggered by a
+  Workflow step. The interactive flow now asks for that type first, using
+  `CustomFunctionType` from `@transcend-io/privacy-types` rather than a parallel local union.
+  General continues immediately because it has only one template; DSR opens a second prompt for a
+  data point resolver, preflight check, or both. The flag brief, command description, and README
+  use the same language.
+
+  The scaffolded DSR enricher comments and the skill's CI recipe follow the same wording, and that
+  recipe now pins Deno 2.4.5 to match the version this repository validates against.
+
+- Updated dependencies [e03b2bd]
+  - @transcend-io/sdk@2.1.6
+
+## 10.28.0
+
+### Minor Changes
+
+- 7384caa: Add a guided local workflow for developing Custom Functions without Transcend credentials.
+
+  `custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions run` exercises those payloads in a credential-free local Deno simulator and shows function logs. `custom-functions check` validates the project locally with Deno before it is pushed.
+
+  The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
+
+  The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
+
+### Patch Changes
+
+- cfc269d: Fix Custom Function export checks for Deno configurations that contain non-import-map settings.
+- 7630f48: Widen undici range for security patches
+- Updated dependencies [7384caa]
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.27.5
+
+### Patch Changes
+
+- 46488a6: Route CLI runtime I/O through Stricli's isolated command context and centralize pooling UI
+  wiring so embedded and test invocations can provide their own process streams, filesystem, and
+  logger.
+- 118c5b6: Move CSV and YAML filesystem access to Stricli command boundaries while preserving reusable,
+  pure parsing, serialization, and file-selection helpers.
+- c5fb568: Move consent CSV parsing and row mapping into pure functions while routing command filesystem,
+  logging, network, and exit behavior through the isolated CLI context.
+- Updated dependencies [7e7d797]
+  - @transcend-io/sdk@2.1.5
+
 ## 10.27.4
 
 ### Patch Changes

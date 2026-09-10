@@ -74,6 +74,7 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+          HUSKY: '0'
 
   # After a successful npm release (changeset-release/main merge or manual dispatch),
   # push MCP tool counts to docs.transcend.io and publish the drafts.

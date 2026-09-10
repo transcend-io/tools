@@ -1234,6 +1234,24 @@ export type AssessmentFormStatus =
 /** @deprecated Use AssessmentFormStatus */
 export type AssessmentStatus = AssessmentFormStatus;
 
+/** A Transcend user attached to an assessment as an assignee or reviewer. */
+export interface AssessmentParticipant {
+  /** Transcend user ID, usable as `assigneeIds`/`reviewerIds` in `assessments_list` */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Email address */
+  email: string;
+}
+
+/** Someone outside the organization a form was shared with. */
+export interface AssessmentExternalParticipant {
+  /** External assignee ID */
+  id: string;
+  /** Email address, usable as `externalAssigneeEmails` in `assessments_list` */
+  email: string;
+}
+
 export interface Assessment {
   /** Unique identifier */
   id: string;
@@ -1249,14 +1267,31 @@ export interface Assessment {
    * `listAssessments` so callers can build deep links to the group view.
    */
   assessmentGroupId?: string;
+  /** Title of the assessment group, so callers can name it without a second lookup */
+  assessmentGroupTitle?: string;
   /** Source template, when expanded */
   template?: AssessmentTemplate;
-  /** Primary assignee */
-  assignee?: User;
-  /** Reviewer */
-  reviewer?: User;
-  /** Optional due date (ISO 8601) */
-  dueDate?: string;
+  /**
+   * Internal Transcend users the form is assigned to. A form can carry several,
+   * which is why this is a list rather than a single assignee.
+   */
+  assignees?: AssessmentParticipant[];
+  /** Internal Transcend users reviewing the form */
+  reviewers?: AssessmentParticipant[];
+  /** Non-Transcend recipients the form was shared with, identified by email only */
+  externalAssignees?: AssessmentExternalParticipant[];
+  /** Whether the form has been archived out of the working set */
+  isArchived?: boolean;
+  /** Whether the form is locked against further edits */
+  isLocked?: boolean;
+  /**
+   * Due date (ISO 8601), or `null` where none is set.
+   *
+   * Explicitly null rather than absent: a dropped key is indistinguishable from
+   * a field the query never asked for, which reads as broken plumbing behind
+   * the `dueBefore` filter rather than as a form nobody gave a deadline.
+   */
+  dueDate?: string | null;
   /** When the form was submitted for review (ISO 8601) */
   submittedAt?: string;
   /** When the form was fully completed (ISO 8601) */
@@ -1270,13 +1305,27 @@ export interface Assessment {
 }
 
 export interface AssessmentTemplate {
+  /** Unique identifier, usable as `templateId` in `assessments_export_template` */
   id: string;
+  /** Display title */
   title: string;
+  /** Optional description */
   description?: string;
-  version: string;
+  /** Publication status, `DRAFT` or `PUBLISHED` */
+  status?: string;
+  /**
+   * How the template came to exist: `MANUAL` if someone built it,
+   * `DATA_INVENTORY` if it was generated from the data inventory, `IMPORT` if
+   * it came in with a OneTrust import
+   */
+  source?: string;
+  /** Sections in the template, when expanded */
   sections?: AssessmentTemplateSection[];
-  isActive: boolean;
-  createdAt: string;
+  /** Whether the template has been archived out of the working set */
+  isArchived?: boolean;
+  /** When the template was created (ISO 8601) */
+  createdAt?: string;
+  /** When the template was last updated (ISO 8601) */
   updatedAt?: string;
 }
 
@@ -1289,33 +1338,121 @@ export interface AssessmentTemplateSection {
 }
 
 export interface AssessmentSection {
+  /** Unique identifier */
   id: string;
+  /** Heading the section is shown under */
   title?: string;
+  /** Position of the section within the form, zero-based */
   index?: number;
+  /** Review state of this section, distinct from the form's own status */
   status?: string;
+  /** The template section this one was built from */
   templateSection?: AssessmentTemplateSection;
+  /** Submitted answers, when the caller asked for section contents */
   responses?: AssessmentResponse[];
+  /** Whether every required question in the section has been answered */
   isComplete?: boolean;
+  /** Questions in the section, present only for sections the caller expanded */
   questions?: AssessmentFormQuestion[];
+  /**
+   * How many questions the section holds. Returned in place of `questions`
+   * when a caller asks for the section index rather than section contents, so
+   * they can size a drill-down before paying for it.
+   */
+  questionCount?: number;
+}
+
+/** Which part of an assessment form a comment hangs off. */
+export type AssessmentCommentLevel = 'FORM' | 'SECTION' | 'QUESTION';
+
+/**
+ * Who wrote a comment. Reviewers outside the organization comment via a share
+ * link and have an email but no user record, so every field is optional.
+ */
+export interface AssessmentCommentAuthor {
+  /** ID of the internal user who wrote the comment, when there is one */
+  id?: string;
+  /** Email address of the author, including external reviewers */
+  email?: string;
+  /** Display name of the author */
+  name?: string;
+}
+
+/**
+ * A comment left on an assessment form, one of its sections, or one of its
+ * questions. The three levels are separate entities in the API but share this
+ * shape; `level` and `targetId` say which record a comment hangs off.
+ */
+export interface AssessmentComment {
+  /** Unique identifier */
+  id: string;
+  /** Whether the comment is attached to the form, a section, or a question */
+  level: AssessmentCommentLevel;
+  /** ID of the form, section, or question the comment is attached to */
+  targetId: string;
+  /** Body of the comment */
+  content: string;
+  /** Who wrote the comment */
+  author?: AssessmentCommentAuthor;
+  /** ID of the comment this one replies to, when it is a threaded reply */
+  parentCommentId?: string;
+  /** When the comment was resolved (ISO 8601); absent while it is still open */
+  resolvedAt?: string;
+  /** Number of files attached to the comment */
+  fileCount?: number;
+  /** When the comment was created (ISO 8601) */
+  createdAt: string;
+  /** When the comment was last edited (ISO 8601) */
+  updatedAt?: string;
 }
 
 export interface AssessmentFormQuestion {
+  /** Unique identifier */
   id: string;
+  /** The question as it is put to the respondent */
   title?: string;
+  /** Position of the question within its section, zero-based */
   index?: number;
+  /** Answer shape, e.g. LONG_ANSWER_TEXT, SINGLE_SELECT, FILE */
   type: string;
+  /** Narrows `type` for select questions, e.g. USER, TEAM, ATTRIBUTE_KEY */
   subType?: string;
+  /** Guidance shown alongside the question */
   description?: string;
+  /** Whether the form cannot be submitted while this is unanswered */
   isRequired?: boolean;
+  /** Hint text shown in an empty answer field */
   placeholder?: string;
+  /** Stable key for matching this question across forms built from one template */
   referenceId?: string;
+  /** Choices offered for select questions; absent on free-text questions */
   answerOptions?: AssessmentAnswerOption[];
+  /** Choices the respondent actually picked, or their typed answer */
   selectedAnswers?: AssessmentAnswerOption[];
+  /** Comments left on this question, when the caller asked for them */
+  comments?: AssessmentComment[];
 }
 
+/**
+ * A question found by searching a form's text, carrying the section it sits in.
+ *
+ * Questions are reached through sections everywhere else, so a match pulled out
+ * of that nesting has to say where it came from or the caller cannot place it.
+ */
+export interface AssessmentQuestionMatch extends AssessmentFormQuestion {
+  /** ID of the section holding this question */
+  sectionId: string;
+  /** Title of that section, when it has one */
+  sectionTitle?: string;
+}
+
+/** One selectable choice on a question, and the shape a submitted answer takes. */
 export interface AssessmentAnswerOption {
+  /** Unique identifier */
   id: string;
+  /** Position among the choices offered, zero-based */
   index?: number;
+  /** Text of the choice, or the respondent's answer when it is a submitted one */
   value: string;
 }
 
@@ -1342,6 +1479,8 @@ export interface AssessmentResponse {
 export interface AssessmentGroup {
   id: string;
   title: string;
+  /** Free-text summary of the group. Searched by the `text` filter. */
+  description: string;
   assessmentFormTemplate?: {
     id: string;
     title: string;

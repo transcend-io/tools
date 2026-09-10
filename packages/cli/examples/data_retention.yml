@@ -15,14 +15,14 @@ api-keys:
 
 # Manage at: https://app.transcend.io/privacy-requests/identifiers
 # See https://docs.transcend.io/docs/identity-enrichment
-# Define enricher or pre-flight check webhooks that will be executed
+# Define preflight check webhooks that will be executed
 # prior to privacy request workflows. Some examples may include:
 #   - identity enrichment: look up additional identifiers for that request.
 #                          i.e. map an email address to a user ID, s3 keys
 #                          or other identifiers required to make the request
 #   - fraud check: auto-cancel requests if account or user flagged for fraudulent behavior
 #   - customer check: auto-cancel request for some custom business criteria
-enrichers:
+preflights:
   - title: Fetch Identifiers for Video Deletion
     description: Fetch the collection of identifiers that should be used for the deletion job.
     url: https://enterprise.acme.com/transcend-enrichment-webhook

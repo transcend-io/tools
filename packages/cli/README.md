@@ -40,6 +40,10 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent upload-data-flows-from-csv`](#transcend-consent-upload-data-flows-from-csv)
   - [`transcend consent upload-preferences`](#transcend-consent-upload-preferences)
   - [`transcend consent delete-preference-records`](#transcend-consent-delete-preference-records)
+  - [`transcend custom-functions init`](#transcend-custom-functions-init)
+  - [`transcend custom-functions new`](#transcend-custom-functions-new)
+  - [`transcend custom-functions check`](#transcend-custom-functions-check)
+  - [`transcend custom-functions run`](#transcend-custom-functions-run)
   - [`transcend custom-functions push`](#transcend-custom-functions-push)
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
@@ -61,6 +65,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
+  - [`transcend policy init`](#transcend-policy-init)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
@@ -127,13 +132,13 @@ api-keys:
 
 # Manage at: https://app.transcend.io/privacy-requests/identifiers
 # See https://docs.transcend.io/docs/identity-enrichment
-# Define enricher or pre-flight check webhooks that will be executed
+# Define preflight check webhooks that will be executed
 # prior to privacy request workflows. Some examples may include:
 #   - identity enrichment: look up additional identifiers for that user.
 #                          i.e. map an email address to a user ID
 #   - fraud check: auto-cancel requests if the user is flagged for fraudulent behavior
 #   - customer check: auto-cancel request for some custom business criteria
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     url: https://example.acme.com/transcend-enrichment-webhook
@@ -2479,6 +2484,167 @@ transcend consent delete-preference-records \
   --timestamp=2025-08-26T00:00:00.000Z
 ```
 
+### `transcend custom-functions init`
+
+```txt
+USAGE
+  transcend custom-functions init [--manifest value] [--deno] [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions init --help
+
+Discovers the surrounding repository, previews one safe transactional plan, and creates only the selected local authoring setup. No Transcend credentials are needed.
+
+FLAGS
+     [--manifest]           Path to transcend-functions.yml; defaults inside the target directory
+     [--deno/--noDeno]      Create or merge target-scoped Deno configuration and check task
+     [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]          Generate credential-free GitHub Actions checks
+     [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
+     [--dryRun]             Preview all changes without writing files                             [default = false]
+     [--yes]                Skip only the final plan confirmation                                 [default = false]
+     [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Start with the isolated default layout
+
+```sh
+transcend custom-functions init
+```
+
+This creates the manifest under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Selected setup options can add Deno configuration and repository integrations; use `transcend custom-functions new` to create functions and fixtures. Pass a directory explicitly to use another layout.
+
+To give an agent the same Custom Function guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-custom-functions
+```
+
+The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. When Deno setup is selected, `init` warns if local Deno is missing or is not 2.x; it never installs runtimes automatically. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
+
+#### Add support to an existing repository
+
+```sh
+transcend custom-functions init ./packages/transcend-functions \
+  --deno \
+  --editor \
+  --skill \
+  --ci \
+  --noInteractive \
+  --yes
+```
+
+Non-interactive setup enables only the individual flags passed; use the example above for the full setup selected by default in the interactive checklist. Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Existing generated GitHub Actions workflows with repository-specific edits are left unchanged. Use `--dryRun` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
+
+### `transcend custom-functions new`
+
+```txt
+USAGE
+  transcend custom-functions new [--manifest value] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions new --help
+
+Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions triggered by a Workflow step and supporting data point resolvers, preflight checks, or both.
+
+FLAGS
+     [--manifest]       Path to an existing transcend-functions.yml
+     [--name]           Customer-visible Custom Function display name
+     [--template]       Function type and generated handler shape                  [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--noInteractive]  Disable prompts and require every missing answer as a flag [default = false]
+     [--dryRun]         Preview all changes without writing files                  [default = false]
+     [--yes]            Skip only the final plan confirmation                      [default = false]
+     [--json]           Emit a stable JSON result and imply non-interactive output [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Scaffold without prompts
+
+```sh
+transcend custom-functions new ./transcend/custom-functions \
+  --name="Customer CRM access" \
+  --template=dsr-both \
+  --noInteractive \
+  --yes
+```
+
+Run `transcend custom-functions init` once before adding functions. The interactive flow first asks for the Custom Function type: General functions are triggered by Rules Automation, while DSR functions are triggered by a step in a Workflow. General currently has one template, so selecting it continues immediately. Selecting DSR opens a second prompt: choose `dsr-datapoint` for a data point resolver, `dsr-enricher` for a preflight check, or `dsr-both` to support both. The `dsr-enricher` flag retains the API's technical export name, but the user-facing workflow is called preflight. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
+
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source and validation command.
+
+### `transcend custom-functions check`
+
+```txt
+USAGE
+  transcend custom-functions check [--manifest value] [--variables value] [--fix] [--noInteractive] [--json] [<directory>]
+  transcend custom-functions check --help
+
+Checks manifest semantics and published payload schemas, then uses Deno 2 without executing user modules to inspect exports, type-check, lint, and verify formatting.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--variables]      Comma-separated variables to template into the manifest               [default = ""]
+     [--fix]            Apply Deno formatting to manifest-referenced files                    [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation                          [default = false]
+     [--json]           Emit a stable JSON result and imply non-interactive behavior          [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Validate before pushing
+
+```sh
+transcend custom-functions check \
+  --variables=TRANSCEND_API_KEY:placeholder
+```
+
+`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. Every `<<parameters.name>>` placeholder must be provided through `--variables=name:value`; non-secret placeholder values are sufficient for validation. It validates every test fixture against the published authoring schemas, rejects local runtime imports that cannot be deployed, then asks Deno 2 to inspect exports, type-check, lint, and check formatting without executing the modules. A different Deno 2 version produces a non-blocking production-parity warning; other major versions fail with installation or version-switch guidance.
+
+In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
+
+### `transcend custom-functions run`
+
+```txt
+USAGE
+  transcend custom-functions run [--manifest value] [--function value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
+  transcend custom-functions run --help
+
+Executes one self-contained manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required. Native fetch is disabled unless --allowNetwork is passed; module imports follow allow-third-party-imports.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--function]       Exact Custom Function name or ID; prompts when omitted
+     [--variables]      Comma-separated manifest variables such as API_KEY:value              [default = ""]
+     [--noInteractive]  Disable function selection prompts                                    [default = false]
+     [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts              [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Run locally
+
+```sh
+transcend custom-functions run ./transcend/custom-functions \
+  --function="Customer CRM access" \
+  --variables=TRANSCEND_API_KEY:placeholder
+```
+
+The command runs every test payload configured for the selected function and prints its stdout and stderr, including `console.log` output. When `--function` is omitted, a single manifest entry is selected automatically; an interactive terminal prompts when the manifest contains several functions.
+
+This is a credential-free development simulator, not an exact Sombra runtime. Custom Functions must be self-contained because only the entry source file is deployed; local runtime imports are rejected. The simulator mirrors production export selection, payload defaults, environment isolation, network permissions, timeout behavior, and KV limits. Each payload receives a fresh in-memory KV store. Calls to `sdk.fetch` are logged and return a simulated HTTP 200 without sending a request.
+
+Native `fetch` is denied by default. Pass `--allowNetwork` to permit real requests only to the manifest's `allowed-hosts`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
+
+Every `<<parameters.name>>` placeholder used by the selected function must be provided through `--variables=name:value`. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
+
 ### `transcend custom-functions push`
 
 ```txt
@@ -2510,7 +2676,7 @@ FLAGS
      [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                [default = https://api.transcend.io]
      [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                                   [default = ./transcend-functions.yml]
-     [--variables]            The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                               [default = ""]
+     [--variables]            Variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                                   [default = ""]
      [--dryRun]               When true, report what would change without pushing anything                                                                                                                                                      [default = false]
      [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                                            [default = true]
      [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                                              [default = false]
@@ -2535,7 +2701,7 @@ functions:
       - api.example.com
     timeout-ms: 30000
     env:
-      CRM_API_KEY: <<parameters.crmApiKey>>
+      CRM_API_KEY: <<parameters.CRM_API_KEY>>
   - name: DSR Lookup
     code: ./functions/dsr-lookup.ts
     type: DSR
@@ -2548,22 +2714,26 @@ functions:
         payload-type: REQUEST_ENRICHER
 ```
 
-| Field                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                      | Yes      | Display name of the function. Used as the sync key when no `id` is set — renaming an id-less entry creates a new function.                                                                                                                                                                                                                                                                                    |
-| `code`                      | Yes      | Path to the TypeScript source file, relative to the manifest.                                                                                                                                                                                                                                                                                                                                                 |
-| `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push.                                                                                                                                                                                            |
-| `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                                                                                                                                                                                                                 |
-| `type`                      | No       | `GENERAL` (default) or `DSR`.                                                                                                                                                                                                                                                                                                                                                                                 |
-| `data-silo-id`              | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and `--updateManifest` writes the assigned ID back.                                                                                                                                                                                            |
-| `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway.                                                                                                                                         |
-| `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.                                                                                                                                               |
-| `test-payloads`             | No       | List of test payloads to run the function with before pushing. Each item has a `payload` (path to a JSON file, relative to the manifest) and an optional `payload-type`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: `DATA_POINT` (default) invokes the default export, `REQUEST_ENRICHER` invokes the `enricher` export. |
-| `test-payload`              | No       | Shorthand for a single-item `test-payloads` list: path to one JSON payload file. Pair with `test-payload-type` for DSR functions. Mutually exclusive with `test-payloads`.                                                                                                                                                                                                                                    |
-| `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                                                                                                                                                              |
-| `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                            |
-| `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                          |
-| `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--variables` flag to avoid committing secrets.                                                                                                                                                                                                                                                                |
+| Field                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`                      | Yes      | Display name of the function. Used as the sync key when no `id` is set — renaming an id-less entry creates a new function.                                                                                                                                                                                                                                                                                                                 |
+| `code`                      | Yes      | Path to the TypeScript source file. The path is resolved relative to the manifest and must remain within its directory.                                                                                                                                                                                                                                                                                                                    |
+| `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push.                                                                                                                                                                                                                         |
+| `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `type`                      | No       | `GENERAL` (default) or `DSR`.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `data-silo-id`              | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and `--updateManifest` writes the assigned ID back.                                                                                                                                                                                                                         |
+| `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway.                                                                                                                                                                      |
+| `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.                                                                                                                                                                            |
+| `test-payloads`             | No       | List of test payloads to run the function with before pushing. Each item has a `payload` path, resolved relative to the manifest and contained within its directory, plus an optional `payload-type`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: `DATA_POINT` (default) invokes the default export, `REQUEST_ENRICHER` invokes the `enricher` export. |
+| `test-payload`              | No       | Shorthand for a single-item `test-payloads` list. The JSON path is resolved relative to the manifest and must remain within its directory. Pair with `test-payload-type` for DSR functions. Mutually exclusive with `test-payloads`.                                                                                                                                                                                                       |
+| `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                                                       |
+| `env`                       | No       | Environment variables exposed to the function. Use manifest variables to avoid committing secrets.                                                                                                                                                                                                                                                                                                                                         |
+
+#### Manifest variables
+
+Use `<<parameters.ENV_NAME>>` placeholders and supply their values with `--variables=ENV_NAME:value`. Match each placeholder name to its environment key to keep the mapping clear. Values may contain colons. Escape a literal comma as `\,` inside a quoted `--variables` value.
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
 
@@ -2636,7 +2806,7 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
 transcend custom-functions push \
   --auth="$TRANSCEND_API_KEY" \
   --file=./transcend/functions.yml \
-  --variables=crmApiKey:example-secret-value
+  --variables=CRM_API_KEY:example-secret-value
 ```
 
 **Push new revisions as drafts for review instead of promoting them**
@@ -2732,7 +2902,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | View Global Attributes                                           | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | View Email Templates                                             | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | View Data Map, View Data Subject Request Settings, View API Keys | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`                 | `enrichers`                   | The Privacy Request enricher configurations.                                                                                                                                             | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | View Data Flows                                                  | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
 | `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | View Data Inventory                                              | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
 | `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | View Data Inventory                                              | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
@@ -2836,7 +3006,7 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=businessEntitie
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 ```
 
-**Pull enrichers and identifiers (see [this example](./examples/enrichers.yml))**
+**Pull preflight checks and identifiers (see [this example](./examples/preflights.yml))**
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=enrichers,identifiers
@@ -2924,7 +3094,7 @@ FLAGS
      [--file]                        Path to the YAML file to push from                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]                URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--pageSize]                    The page size to use when paginating over the API                                                                                                                                                                                                           [default = 50]
-     [--variables]                   The variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                           [default = ""]
+     [--variables]                   Variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                               [default = ""]
      [--publishToPrivacyCenter]      When true, publish the configuration to the Privacy Center                                                                                                                                                                                                  [default = false]
      [--classifyService]             When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                                                                           [default = false]
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
@@ -2941,7 +3111,7 @@ The API key permissions for this command vary based on the resources declared as
 | `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | Manage Global Attributes                                                                                                    | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | Manage Email Templates                                                                                                      | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | Manage Data Map, Connect Data Silos, View API Keys                                                                          | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`                 | `enrichers`                   | The Privacy Request enricher configurations.                                                                                                                                             | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | Manage Data Flows                                                                                                           | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
 | `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | Manage Data Inventory                                                                                                       | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
 | `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | Manage Data Map                                                                                                             | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
@@ -2994,7 +3164,7 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --classifyService
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
-**Use dynamic variables to fill out parameters in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
+**Use dynamic variables in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --variables=domain:acme.com,stage:staging
@@ -3127,18 +3297,18 @@ jobs:
         run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
 ```
 
-#### Dynamic Variables
+#### Dynamic variables
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The `transcend inventory push` command takes in a parameter `variables`. This is a CSV of `key:value` pairs.
+The `transcend inventory push` command accepts `--variables` as a comma-separated list of `key:value` pairs. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value.
 
-This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
+This command can fill out multiple variables in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 
 ```yml
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,
@@ -4130,26 +4300,91 @@ FLAGS
 transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
 ```
 
+### `transcend policy init`
+
+```txt
+USAGE
+  transcend policy init [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend policy init --help
+
+Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
+
+FLAGS
+     [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and lint task
+     [--skill/--noSkill]    Install the canonical Policy Engine coding-agent skill
+     [--ci/--noCi]          Generate credential-free validation-only GitHub Actions
+     [--noInteractive]      Disable prompts and enable optional setup only through explicit flags  [default = false]
+     [--dryRun]             Preview all changes without writing files                              [default = false]
+     [--yes]                Skip only the final plan confirmation                                  [default = false]
+     [--json]               Emit one stable JSON result and imply non-interactive output           [default = false]
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
+```
+
+#### Create the safe default policy project
+
+```sh
+transcend policy init
+```
+
+This creates a publishable, fail-closed Rego v1 starter under `transcend/policy`. The example policy is disposable teaching material, not an application contract. Initialization checks local OPA and Regal versions and prints official installation guidance when they are missing or incompatible; it never installs tools or creates runtime-manager configuration.
+
+The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, scopes bundle authoring and a default `policy: lint` task to the selected project, and configures strict Rego v1 formatting with Regal.
+
+To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-policy-engine
+```
+
+#### Preview or choose another directory
+
+```sh
+transcend policy init ./policies --dryRun --json
+transcend policy init ./policies --editor --skill --ci --noInteractive --yes
+```
+
+Non-interactive setup enables only the individual `--editor`, `--skill`, and `--ci` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings, including customized Rego, manifests, Regal configuration, README files, workflows, editor values and tasks, and managed skill content.
+
+Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. It runs only `transcend policy lint --noInteractive --json`; it never publishes or adds Transcend API credentials. After successful initialization, copyable one-line next steps and an AI handoff prompt identify the disposable example, repository-specific CI adaptation, and the final lint gate.
+
 ### `transcend policy lint`
 
 ```txt
 USAGE
-  transcend policy lint (--dir value)
+  transcend policy lint [--dir value] [--fix] [--noInteractive] [--json]
   transcend policy lint --help
 
-Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
 
 FLAGS
-     --dir   Directory containing Rego policy files
-  -h --help  Print help information and exit
+     [--dir]            Directory containing the local policy project                  [default = transcend/policy]
+     [--fix]            Apply OPA formatting without running broad Regal fixes         [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation                   [default = false]
+     [--json]           Emit one stable JSON result and imply non-interactive behavior [default = false]
+  -h  --help            Print help information and exit
 ```
 
 #### Examples
 
-**Lint a local policy directory and optionally format Rego files**
+**Verify the default local policy project**
 
 ```sh
-transcend policy lint --dir=./policies
+transcend policy lint
+```
+
+**Verify and format a custom policy project**
+
+```sh
+transcend policy lint --dir=./policies --fix
+```
+
+**Run the verification gate in CI or an editor**
+
+```sh
+transcend policy lint --noInteractive --json
 ```
 
 ### `transcend policy bundles`

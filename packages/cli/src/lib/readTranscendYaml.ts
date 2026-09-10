@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
 
-import { TranscendInput } from '../codecs.js';
+import { normalizeTranscendInput, TranscendInput } from '../codecs.js';
 
 export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
@@ -22,18 +22,18 @@ export function replaceVariablesInYaml(
   variables: ObjByString,
   extraErrorMessage = '',
 ): string {
-  let contents = input;
-  // Replace variables
-  Object.entries(variables).forEach(([name, value]) => {
-    contents = contents.split(`<<${VARIABLE_PARAMETERS_NAME}.${name}>>`).join(value);
-  });
+  const contents = Object.entries(variables).reduce(
+    (replaced, [name, value]) =>
+      replaced.split(`<<${VARIABLE_PARAMETERS_NAME}.${name}>>`).join(value),
+    input,
+  );
 
-  // Throw error if unfilled variables
+  // Throw error if unfilled parameters
   if (VARIABLE_PARAMETERS_REGEXP.test(contents)) {
     const [, name] = VARIABLE_PARAMETERS_REGEXP.exec(contents) || [];
     throw new Error(
       `Found variable that was not set: ${name}.
-Make sure you are passing all parameters through the --${VARIABLE_PARAMETERS_NAME}=${name}:value-for-param flag.
+Make sure you are passing all variables through the --variables=${name}:value-for-variable flag.
 ${extraErrorMessage}`,
     );
   }
@@ -46,7 +46,7 @@ ${extraErrorMessage}`,
  *
  * @param contents - YAML contents.
  * @param variables - Variables to fill in
- * @param sourcePath - Optional source path included in variable errors.
+ * @param sourcePath - Optional source path included in parameter errors.
  * @returns The parsed contents, type-checked.
  */
 export function parseTranscendYaml(
@@ -62,7 +62,7 @@ export function parseTranscendYaml(
       : '',
   );
 
-  return decodeCodec(TranscendInput, yaml.load(replacedVariables));
+  return normalizeTranscendInput(decodeCodec(TranscendInput, yaml.load(replacedVariables)));
 }
 
 /**
@@ -72,7 +72,7 @@ export function parseTranscendYaml(
  * @returns YAML contents.
  */
 export function serializeTranscendYaml(input: TranscendInput): string {
-  return yaml.dump(decodeCodec(TranscendInput, input));
+  return yaml.dump(decodeCodec(TranscendInput, normalizeTranscendInput(input)));
 }
 
 /**
