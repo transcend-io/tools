@@ -13,10 +13,8 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_analyze',
     description:
-      'Analyze your data inventory: data systems by type, ownership coverage (how many systems ' +
-      'have no owner, no team, or neither), vendor distribution, and data point coverage. ' +
-      'Reports counts across the whole org; to list the systems with no owner, call ' +
-      '`inventory_list_data_silos` with `unassignedOnly`.',
+      'Analyze your data inventory including data silos by type, vendor distribution, ' +
+      'ownership coverage and data point coverage',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
