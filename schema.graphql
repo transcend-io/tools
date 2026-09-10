@@ -3842,6 +3842,7 @@ enum ApiKeyStatus {
   fresh
   warning
   stale
+  expired
 }
 
 enum ComplianceReportMetaField {
@@ -4856,6 +4857,7 @@ enum BaseCacheKey {
   AIRGAP_AGGREGATE_ANALYTICS
   DATA_SILO_ACTIVITY
   AIRGAP_VERSION
+  UI_V2_VERSION
   REQUEST_DATA_SILO_SUMMARY
   DROP_RUN_DSR_PROGRESS
 }
@@ -5239,6 +5241,7 @@ type Query {
   teams(first: Int, offset: Int = 0, last: Int, filterBy: TeamFiltersInput, orderBy: [TeamOrder!]): TeamsPayload!
   templates(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, orderBy: [TemplateOrder!], filterBy: TemplateFiltersInput): TemplatesPayload!
   translatedMessages(input: TranslatedMessagesFilterInput): [Message!]!
+  uiV2Versions(input: UiV2VersionsInput!): UiV2VersionsPayload!
   unstructuredDataDiscoveryFiles(first: Int, offset: Int = 0, last: Int, filterBy: UnstructuredDataDiscoveryFilesFilterInput!): UnstructuredDataDiscoveryFilesPayload!
   unstructuredSubDataPointRecommendations(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: UnstructuredSubDataPointRecommendationsFilterInput, orderBy: [UnstructuredSubDataPointRecommendationOrder!]): UnstructuredSubDataPointRecommendationsPayload!
   usageDataMart(input: UsageDataMartInput!): UsageDataMartResult!
@@ -5273,6 +5276,7 @@ type Mutation {
   archiveCustomFunction(input: ArchiveCustomFunctionInput!): ArchiveCustomFunctionPayload!
   assignMaestroRuleCustomFunction(input: AssignMaestroRuleCustomFunctionInput!): AssignMaestroRuleCustomFunctionPayload!
   assumeRole(id: ID!, publicKey: String!): AssumeRolePayload!
+  batchApproveSqlStatements(input: BatchApproveSqlStatementsInput!, dhEncrypted: String!): BatchApproveSqlStatementsPayload!
   bulkApplyDropOutstandingStatus(input: BulkApplyDropOutstandingStatusInput!): BulkApplyDropOutstandingStatusPayload!
   bulkRetryProfileDataPoints(input: BulkRetryProfileDataPointsInput!): BulkRetryProfileDataPointsPayload!
   bulkUnwrapProfileIdentifiers(input: BulkUnwrapProfileIdentifiersInput!, dhEncrypted: String!): BulkUnwrapProfileIdentifiersPayload!
@@ -6445,6 +6449,7 @@ type ApiKey implements ApiKeyInterface {
   preview: String!
   createdAt: Date!
   lastUsedAt: Date
+  expiresAt: Date
   age: Int!
   status: ApiKeyStatus!
   user: UserPreview
@@ -6459,6 +6464,7 @@ input ApiKeyFiltersInput {
   ids: [ID!]
   titles: [String!]
   status: [ApiKeyStatus!]
+  includeExpired: Boolean
   userIds: [ID!]
   dataSiloIds: [ID!]
   scopeNames: [ScopeName!]
@@ -6478,6 +6484,7 @@ interface ApiKeyInterface {
   preview: String!
   createdAt: Date!
   lastUsedAt: Date
+  expiresAt: Date
   age: Int!
   status: ApiKeyStatus!
   user: UserPreview
@@ -7977,6 +7984,15 @@ type BaseHosts {
   PROD: [String!]
 }
 
+type BatchApproveSqlStatementsPayload {
+  clientMutationId: String
+  count: Int!
+}
+
+input BatchApproveSqlStatementsInput {
+  workflowConfigId: ID!
+}
+
 type Border {
   borderRadius: String!
   borderColor: String!
@@ -9024,9 +9040,11 @@ input ComponentStylesInput {
 type ConfiguredSombra implements SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String!
+  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  transcendIngressUrl: String!
   title: String
-  publicUrl: String!
+  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
   ipAddresses: [String!]!
@@ -9414,6 +9432,7 @@ type ConsentUiTheme {
   name: String!
   slug: String!
   configuration: ConsentUiThemeConfig!
+  customCssUrl: String
   updatedBy: UserPreview
   updatedAt: String!
   consentUiVariants: [ConsentUiVariantPreview!]!
@@ -10125,6 +10144,7 @@ input CreateConsentUiThemeInput {
   name: String!
   slug: String!
   configuration: ConsentUiThemeConfigInput!
+  customCssUrl: String
 }
 
 type CreateConsentUiVariantPayload {
@@ -10183,6 +10203,7 @@ type CreatedApiKey implements ApiKeyInterface {
   preview: String!
   createdAt: Date!
   lastUsedAt: Date
+  expiresAt: Date
   age: Int!
   status: ApiKeyStatus!
   user: UserPreview
@@ -10893,6 +10914,7 @@ input CreateWorkflowInput {
   internalName: String!
   workflowConfigType: WorkflowConfigType
   purposeId: ID
+  subjectId: ID
 }
 
 type CurrentDnsRecordsPayload {
@@ -19141,9 +19163,11 @@ type SoftwareDevelopmentKitsPayload {
 type Sombra implements SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String!
+  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  transcendIngressUrl: String!
   title: String
-  publicUrl: String!
+  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
   ipAddresses: [String!]!
@@ -19214,9 +19238,11 @@ input getSombraInput {
 interface SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String!
+  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  transcendIngressUrl: String!
   title: String
-  publicUrl: String!
+  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
   ipAddresses: [String!]!
@@ -19234,8 +19260,10 @@ interface SombraInterface {
 
 type SombraInternalUseOnly {
   id: ID!
-  url: String!
-  publicUrl: String!
+  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  transcendIngressUrl: String!
+  customerIngressUrl: String!
   version: String
   audience: String!
   hostedMethod: SombraHostedMethod!
@@ -19285,7 +19313,8 @@ input SombraOrder {
 
 type SombraPreview {
   id: ID!
-  url: String!
+  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  transcendIngressUrl: String!
   title: String
   hostedMethod: SombraHostedMethod!
   publicKeyECDH: String
@@ -20096,6 +20125,23 @@ input TranslatedMessagesInput {
   locale: String!
 }
 
+type UiV2Version {
+  version: String!
+  descriptions: [String!]!
+  releasedOn: String!
+}
+
+type UiV2VersionsPayload {
+  clientMutationId: String
+  versions: [UiV2Version!]!
+}
+
+input UiV2VersionsInput {
+  airgapVersion: String!
+  limit: Int
+  forceRefetch: Boolean
+}
+
 type UnauthenticatedPreferenceUpdatePayload {
   clientMutationId: String
   success: Boolean!
@@ -20770,6 +20816,7 @@ input UpdateConsentUiThemeInput {
   id: ID!
   name: String
   configuration: ConsentUiThemeConfigInput
+  customCssUrl: String
   consentSiteIds: [ID!]
 }
 
