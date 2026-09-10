@@ -1,5 +1,14 @@
 # @transcend-io/sdk
 
+## 2.1.6
+
+### Patch Changes
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
 ## 2.1.5
 
 ### Patch Changes
