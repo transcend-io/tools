@@ -1388,6 +1388,27 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: false,
         error: expect.stringContaining('templateId or assessmentGroupId'),
+        code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
+        retryable: false,
+      });
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+    });
+
+    it('returns an actionable error before creating when no assignee is provided', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'assessments_prefill')!;
+
+      const result = await tool.handler({
+        title: 'Prefill Test',
+        assessmentGroupId: 'grp-1',
+        answers: { Q1: 'A1' },
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
+        retryable: false,
+        error: expect.stringContaining('DRAFT to SHARED'),
       });
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
@@ -1414,6 +1435,7 @@ describe('Assessment Tools', () => {
                 referenceId: 'ref-1',
                 type: 'SHORT_ANSWER_TEXT',
                 answerOptions: [],
+                selectedAnswers: [{ id: 'answer-1', value: 'Alice' }],
               },
               {
                 id: 'q2',
@@ -1424,6 +1446,7 @@ describe('Assessment Tools', () => {
                   { id: 'opt-a', value: 'Option A' },
                   { id: 'opt-b', value: 'Option B' },
                 ],
+                selectedAnswers: [{ id: 'opt-a', value: 'Option A' }],
               },
             ],
           },
@@ -1431,6 +1454,11 @@ describe('Assessment Tools', () => {
       };
       mockGraphql.getAssessment.mockResolvedValue(mockFullForm);
       mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue([]);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-prefill-1',
+        title: 'Prefilled Assessment',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
@@ -1438,6 +1466,8 @@ describe('Assessment Tools', () => {
       const result = await tool.handler({
         title: 'Prefilled Assessment',
         assessmentGroupId: 'grp-prefill',
+        assigneeIds: ['user-1'],
+        includeDetails: true,
         answers: {
           'What is your name?': 'Alice',
           'Select one': 'Option A',
@@ -1458,9 +1488,262 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
         title: 'Prefilled Assessment',
         assessmentGroupId: 'grp-prefill',
+        assigneeIds: ['user-1'],
       });
-      expect(mockGraphql.getAssessment).toHaveBeenCalledWith('assess-prefill-1');
+      expect(mockGraphql.updateAssessmentFormAssignees).toHaveBeenCalledWith({
+        id: 'assess-prefill-1',
+        assigneeIds: ['user-1'],
+        externalAssigneeEmails: undefined,
+      });
+      expect(mockGraphql.updateAssessmentFormAssignees.mock.invocationCallOrder[0]).toBeLessThan(
+        mockGraphql.selectAssessmentQuestionAnswers.mock.invocationCallOrder[0]!,
+      );
+      expect(mockGraphql.getAssessment).toHaveBeenCalledTimes(2);
       expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports incomplete prefills as failures and does not submit', async () => {
+      const form = {
+        id: 'assess-incomplete',
+        title: 'Incomplete Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockRejectedValue(
+        new Error('Cannot update question'),
+      );
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Incomplete Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one': 'answer' },
+        submitForReview: true,
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        retryable: true,
+        details: {
+          assessmentId: 'assess-incomplete',
+          answersApplied: 0,
+          totalQuestions: 1,
+          unansweredQuestions: ['Question one'],
+          errors: [
+            {
+              question: 'Question one',
+              status: expect.stringContaining('Cannot update question'),
+            },
+          ],
+        },
+      });
+      expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
+    });
+
+    it('keeps both halves of a multi-select where only some values match an option', async () => {
+      // Writing just the matched ids dropped the rest and still reported the
+      // question answered, so a value the option list did not cover vanished.
+      const form = {
+        id: 'assess-mixed',
+        title: 'Mixed Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Which categories?',
+                referenceId: 'ref-1',
+                type: 'MULTI_SELECT',
+                answerOptions: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+                selectedAnswers: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      await tool.handler({
+        title: 'Mixed Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': ['Usage data', 'Location data'] },
+      } as never);
+
+      expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
+        assessmentQuestionId: 'q1',
+        assessmentAnswerIds: ['opt-1'],
+        assessmentAnswerValues: [{ value: 'Location data', isUserCreated: true }],
+      });
+    });
+
+    it('matches answers keyed by the referenceId taken from the template export', async () => {
+      // referenceId is the stable key across template edits and the one the
+      // export leads with, but the form read dropped the field, so every
+      // referenceId-keyed answer fell through to "matched no question".
+      const form = {
+        id: 'assess-refid',
+        title: 'RefId Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [{ id: 'a1', index: 0, value: 'answer' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'RefId Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': 'answer' },
+      } as never);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { answersApplied: 1, answersSkipped: 0, totalQuestions: 1 },
+      });
+    });
+
+    it('names answer keys that matched no question instead of dropping them', async () => {
+      // Keys are matched against the form, so a key with a typo is never
+      // visited and its answer vanishes with nothing to say it did.
+      const form = {
+        id: 'assess-typo',
+        title: 'Typo Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Typo Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one?': 'answer' },
+        submitForReview: true,
+      } as never);
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        error: expect.stringContaining('matched no question'),
+        details: { unmatchedAnswerKeys: ['Question one?'] },
+      });
+      expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
+    });
+
+    it('treats questions nobody answered as a partial fill, not a failure', async () => {
+      // Leaving a question blank for a human is often the right call on a
+      // compliance record, and calling it a failure pushes the caller to
+      // invent an answer.
+      const form = {
+        id: 'assess-partial',
+        title: 'Partial Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [{ id: 'a1', index: 0, value: 'answer' }],
+              },
+              {
+                id: 'q2',
+                title: 'Question two',
+                referenceId: 'ref-2',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Partial Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one': 'answer' },
+      } as never);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          answersApplied: 1,
+          totalQuestions: 2,
+          unansweredQuestions: ['Question two'],
+        },
+      });
     });
 
     it('returns early success when form has no sections', async () => {
@@ -1475,6 +1758,11 @@ describe('Assessment Tools', () => {
         title: 'Empty Form',
         sections: [],
       });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-empty',
+        title: 'Empty Form',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
@@ -1482,6 +1770,7 @@ describe('Assessment Tools', () => {
       const result = await tool.handler({
         title: 'Empty Form',
         assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
         answers: { Q1: 'A1' },
       });
 
@@ -1506,9 +1795,120 @@ describe('Assessment Tools', () => {
         tool.handler({
           title: 'Failing Prefill',
           assessmentGroupId: 'grp-1',
+          assigneeIds: ['user-1'],
           answers: { Q1: 'A1' },
         }),
       ).rejects.toThrow('Create failed');
+    });
+
+    it('rejects submitForReview with only external assignees before creating anything', async () => {
+      // External assignees can answer but cannot submit, so this combination
+      // would otherwise create a form, fill it in, and fail at the last step.
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+
+      const result = await tool.handler({
+        title: 'External only',
+        assessmentGroupId: 'grp-1',
+        assigneeEmails: ['counsel@example.com'],
+        answers: { Q1: 'A1' },
+        submitForReview: true,
+      } as never);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('submitForReview needs assigneeIds'),
+        // Distinct from ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED: this caller did
+        // supply assignees, and still has to add an internal one.
+        code: 'ASSESSMENT_PREFILL_INTERNAL_ASSIGNEE_REQUIRED',
+        retryable: false,
+      });
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['updateAssessmentFormAssignees', 'assigning it'],
+      ['submitAssessmentForReview', 'submitting it for review'],
+    ] as const)('names the created form when %s fails', async (method, step) => {
+      // Everything after createAssessment fails with a form already on the
+      // dashboard. A bare error names none of it, so the caller's only recovery
+      // is to create a second one.
+      mockGraphql.createAssessment.mockResolvedValue({ id: 'form-1', title: 'Half-built' });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({ status: 'SHARED' });
+      mockGraphql.getAssessment.mockResolvedValue({
+        id: 'form-1',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q-1',
+                title: 'Q1',
+                type: 'LONG_ANSWER_TEXT',
+                selectedAnswers: [{ id: 'a-1' }],
+              },
+            ],
+          },
+        ],
+      });
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+      mockGraphql[method].mockRejectedValue(new Error('Client error: nope'));
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+
+      await expect(
+        tool.handler({
+          title: 'Half-built',
+          assessmentGroupId: 'grp-1',
+          assigneeIds: ['user-1'],
+          answers: { Q1: 'A1' },
+          submitForReview: true,
+        } as never),
+      ).rejects.toMatchObject({
+        code: 'API_ERROR',
+        message: expect.stringContaining(step),
+        details: { assessmentId: 'form-1' },
+      });
+    });
+
+    it('reports how many answers landed when the submit step fails', async () => {
+      // "Created but submitting failed" does not say whether the form holds
+      // every answer or none, which is the difference between finishing it and
+      // starting over.
+      mockGraphql.createAssessment.mockResolvedValue({ id: 'form-1', title: 'Partly filled' });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({ status: 'SHARED' });
+      mockGraphql.getAssessment.mockResolvedValue({
+        id: 'form-1',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q-1',
+                title: 'Q1',
+                type: 'LONG_ANSWER_TEXT',
+                selectedAnswers: [{ id: 'a-1' }],
+              },
+            ],
+          },
+        ],
+      });
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+      mockGraphql.submitAssessmentForReview.mockRejectedValue(new Error('not assigned'));
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+
+      await expect(
+        tool.handler({
+          title: 'Partly filled',
+          assessmentGroupId: 'grp-1',
+          assigneeIds: ['user-1'],
+          answers: { Q1: 'A1' },
+          submitForReview: true,
+        } as never),
+      ).rejects.toMatchObject({
+        message: expect.stringContaining('holds 1/1 answers'),
+        details: { answersApplied: 1, totalQuestions: 1 },
+      });
     });
   });
 
