@@ -69,6 +69,9 @@ export type { ValidationResult } from './validation/index.js';
 export {
   CursorPaginationSchema,
   EmptySchema,
+  isoDate,
+  nonEmptyList,
+  nonEmptyListMessage,
   OffsetPaginationSchema,
 } from './validation/schemas.js';
 export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
@@ -146,6 +149,7 @@ export {
   createErrorResult,
   createListResult,
   describeNoMatches,
+  describeOutcome,
   groupBy,
 } from './tools/helpers.js';
 export { toolInputSchema } from './tools/input-schema.js';
