@@ -329,6 +329,14 @@ export interface PreferenceUpsertRecord {
     /** ISO 8601 timestamp for this purpose */
     timestamp?: string;
   }[];
+  /** Optional flags for upsert conflict handling */
+  options?: {
+    /**
+     * When identifiers match two different existing records: true merges them
+     * (API default if omitted); false fails the record with a conflict error.
+     */
+    mergeRecordsOnConflict?: boolean;
+  };
 }
 
 export interface PreferenceUpsertInput {
