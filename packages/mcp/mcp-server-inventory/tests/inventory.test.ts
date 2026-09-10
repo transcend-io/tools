@@ -917,9 +917,25 @@ describe('Inventory Tools', () => {
       // Simulate an org with >100 of several entity types.
       mockGraphql.listDataSilos.mockResolvedValue(
         allPages([
-          { id: '1', title: 'A', type: 'database', isLive: true },
-          { id: '2', title: 'B', type: 'database', isLive: false, outerType: 'sombra' },
-          { id: '3', title: 'C', type: 'api', isLive: true },
+          {
+            id: '1',
+            title: 'A',
+            type: 'database',
+            isLive: true,
+            owners: [{ id: 'u1', email: 'dan@example.com', name: 'Dan' }],
+            teams: [],
+          },
+          // Team but no owner: accountable, so not unassigned.
+          {
+            id: '2',
+            title: 'B',
+            type: 'database',
+            isLive: false,
+            outerType: 'sombra',
+            owners: [],
+            teams: [{ id: 't1', name: 'Privacy' }],
+          },
+          { id: '3', title: 'C', type: 'api', isLive: true, owners: [], teams: [] },
         ]),
       );
       mockGraphql.listVendors.mockResolvedValue(
@@ -941,15 +957,23 @@ describe('Inventory Tools', () => {
           summary: {
             totalDataSilos: number;
             liveDataSilos: number;
+            dataSilosWithoutOwner: number;
             totalVendors: number;
             totalIdentifiers: number;
             totalCategories: number;
+          };
+          ownership: {
+            withoutOwner: number;
+            withoutTeam: number;
+            withoutOwnerOrTeam: number;
+            withoutOwnerByType: Record<string, number>;
           };
           breakdown: {
             dataSilosByType: Record<string, number>;
             dataSilosByOuterType: Record<string, number>;
           };
           topIdentifiers: { name: string; type: string; isRequired?: boolean }[];
+          recommendations: string[];
         };
       };
 
@@ -957,6 +981,7 @@ describe('Inventory Tools', () => {
       expect(result.data.summary).toMatchObject({
         totalDataSilos: 3,
         liveDataSilos: 2,
+        dataSilosWithoutOwner: 2,
         totalVendors: 150,
         totalIdentifiers: 1,
         totalCategories: 250,
@@ -968,6 +993,70 @@ describe('Inventory Tools', () => {
         type: 'EMAIL',
         isRequired: true,
       });
+    });
+
+    it('quotes the count unassignedOnly would return, not the stricter one', async () => {
+      const allPages = <T>(nodes: T[]) => ({
+        nodes,
+        totalCount: nodes.length,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+      mockGraphql.listDataSilos.mockResolvedValue(
+        allPages([
+          {
+            id: '1',
+            title: 'Owned',
+            type: 'database',
+            isLive: true,
+            owners: [{ id: 'u1', email: 'dan@example.com', name: 'Dan' }],
+            teams: [],
+          },
+          {
+            id: '2',
+            title: 'Team only',
+            type: 'api',
+            isLive: true,
+            owners: [],
+            teams: [{ id: 't1', name: 'Privacy' }],
+          },
+          { id: '3', title: 'Nobody', type: 'api', isLive: true, owners: [], teams: [] },
+          { id: '4', title: 'Nobody either', type: 'api', isLive: true, owners: [], teams: [] },
+        ]),
+      );
+      mockGraphql.listVendors.mockResolvedValue(allPages([{ id: 'v', title: 'V' }]));
+      mockGraphql.listIdentifiers.mockResolvedValue(allPages([]));
+      mockGraphql.listDataCategories.mockResolvedValue(allPages([]));
+
+      const tool = getTools().find((t) => t.name === 'inventory_analyze')!;
+      const result = (await tool.handler({})) as {
+        data: {
+          ownership: {
+            withoutOwner: number;
+            withoutTeam: number;
+            withoutOwnerOrTeam: number;
+            withoutOwnerByType: Record<string, number>;
+            listWith: string;
+          };
+          recommendations: string[];
+        };
+      };
+
+      expect(result.data.ownership).toMatchObject({
+        withoutOwner: 3,
+        withoutTeam: 3,
+        withoutOwnerOrTeam: 2,
+        // Grouped over withoutOwner, so it matches the unassignedOnly population.
+        withoutOwnerByType: { api: 3 },
+      });
+      // The number in the recommendation has to be the one the suggested
+      // follow-up call actually returns, or the two disagree by the team-only
+      // silo and the agent reports a total it cannot reproduce.
+      expect(result.data.recommendations).toContainEqual(
+        expect.stringContaining('3 data silos have no owner'),
+      );
+      expect(result.data.recommendations).toContainEqual(
+        expect.stringContaining('2 of them have no team either'),
+      );
     });
   });
 });
