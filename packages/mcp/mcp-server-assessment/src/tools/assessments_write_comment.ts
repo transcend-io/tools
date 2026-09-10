@@ -65,11 +65,10 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
     name: 'assessments_write_comment',
     description:
       'Leave, reply to, edit, or resolve reviewer feedback on an assessment — form, section, ' +
-      'or question, matching assessments_list_comments rows. Resolution is per thread on the ' +
-      'root comment (no parentCommentId); replies close when that root is resolved. Pass ' +
-      'parentCommentId to reply, commentId to edit or resolve a root, or reply with resolved ' +
-      'true to close the parent thread. Call assessments_list_comments first for id, level, ' +
-      'and targetId.',
+      'or question. Resolution is per thread on the root comment (no parentCommentId); replies ' +
+      'close when that root is resolved. Pass parentCommentId to reply, commentId to edit or ' +
+      'resolve a root, or reply with resolved true to close the parent thread. Needs the ' +
+      'comment id, level, and target id from existing reviewer feedback on the assessment.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
