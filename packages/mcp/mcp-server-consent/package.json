@@ -44,6 +44,7 @@
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/sdk": "workspace:*",
+    "@transcend-io/type-utils": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

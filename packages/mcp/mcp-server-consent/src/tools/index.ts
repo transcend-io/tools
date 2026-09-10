@@ -1,6 +1,8 @@
 import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createConsentBulkTriageTool } from './consent_bulk_triage.js';
+import { createConsentDeleteCookiesTool } from './consent_delete_cookies.js';
+import { createConsentDeleteDataFlowsTool } from './consent_delete_data_flows.js';
 import { createConsentGetAggregateAnalyticsTool } from './consent_get_aggregate_analytics.js';
 import { createConsentGetAnalyticsDataTool } from './consent_get_analytics_data.js';
 import { createConsentGetInventoryStatsTool } from './consent_get_inventory_stats.js';
@@ -13,6 +15,7 @@ import { createConsentListPurposesTool } from './consent_list_purposes.js';
 import { createConsentListRegimesTool } from './consent_list_regimes.js';
 import { createConsentUpdateCookiesTool } from './consent_update_cookies.js';
 import { createConsentUpdateDataFlowsTool } from './consent_update_data_flows.js';
+import { createConsentCookieTriageAppTool } from './cookie_triage_app.js';
 
 export function getConsentTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -23,11 +26,14 @@ export function getConsentTools(clients: ToolClients): ToolDefinition[] {
     createConsentListAirgapBundlesTool(clients),
     createConsentListRegimesTool(clients),
     createConsentGetInventoryStatsTool(clients),
+    createConsentCookieTriageAppTool(clients),
     createConsentGetAggregateAnalyticsTool(clients),
     createConsentGetTimeseriesAnalyticsTool(clients),
     createConsentGetAnalyticsDataTool(clients),
     createConsentUpdateCookiesTool(clients),
+    createConsentDeleteCookiesTool(clients),
     createConsentUpdateDataFlowsTool(clients),
+    createConsentDeleteDataFlowsTool(clients),
     createConsentBulkTriageTool(clients),
   ];
 }

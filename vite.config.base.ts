@@ -288,6 +288,26 @@ export function synthesizeMcpAppViews(views: readonly McpAppView[]): Plugin {
 }
 
 /**
+ * Loads `.svg` imports as UTF-8 strings, matching tsdown and Vitest.
+ *
+ * Vite's default treats SVG as a URL (or inlined data URL). MCP App icons import
+ * markup and pass it to `SvgIcon`, so the module must be the file text.
+ *
+ * @returns A Vite plugin
+ */
+export function mcpAppSvgAsText(): Plugin {
+  return {
+    name: 'transcend:mcp-app-svg-as-text',
+    enforce: 'pre',
+    load(id) {
+      const [filePath] = splitQuery(id);
+      if (!filePath.endsWith('.svg')) return undefined;
+      return `export default ${JSON.stringify(readFileSync(filePath, 'utf8'))}`;
+    },
+  };
+}
+
+/**
  * Module resolution for the view build.
  *
  * Separate from {@link defineMcpAppView} because resolution is the half a second
@@ -516,6 +536,7 @@ export function defineMcpAppView({
     },
     plugins: [
       synthesizeMcpAppViews([view]),
+      mcpAppSvgAsText(),
       tailwindcss(),
       inlineIntoSingleHtml({ fileName: view.fileName, title }),
     ],
