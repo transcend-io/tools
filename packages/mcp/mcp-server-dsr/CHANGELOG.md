@@ -1,5 +1,22 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.0.0
+
+### Major Changes
+
+- e50ca9e: Remove `dsr_respond_access`, `dsr_respond_erasure`, and `dsr_download_keys`.
+
+  These fulfillment/download tools expanded the MCP surface for privacy-sensitive operations
+  without a clear long-term product fit. Enrichment and request lifecycle tools remain.
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+  - @transcend-io/mcp-server-base@2.2.0
+
 ## 1.0.2
 
 ### Patch Changes

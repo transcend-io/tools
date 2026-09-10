@@ -374,6 +374,7 @@ const GetAssessmentDoc = graphql(/* GraphQL */ `
             description
             isRequired
             placeholder
+            referenceId
             answerOptions {
               id
               index
@@ -1353,6 +1354,9 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         questions: section.questions?.map((q) => ({
           id: q.id,
           title: q.title ?? undefined,
+          // Carried so a caller can key answers by the referenceId it read off
+          // the template export, which is the stable identifier across edits.
+          referenceId: q.referenceId ?? undefined,
           index: q.index ?? undefined,
           type: q.type,
           subType: q.subType ?? undefined,

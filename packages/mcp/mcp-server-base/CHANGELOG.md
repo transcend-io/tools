@@ -1,5 +1,80 @@
 # @transcend-io/mcp-server-base
 
+## 2.2.0
+
+### Minor Changes
+
+- aefe248: Bound what `assessments_get` returns.
+
+  It returned every section, question, answer option and answer at once — a six-section,
+  twenty-question DPIA already ran to roughly 30,000 characters, and real forms have hundreds of
+  questions. Neither `sections` nor `questions` takes pagination arguments, so the only way to
+  bound the response is not to ask for the parts you do not want.
+
+  `assessmentId` alone now returns the section list with a question count each. `sectionIds`
+  expands the sections you name, and fails naming any ID the form does not have rather than
+  returning the rest in a response shaped like a complete one.
+
+  Free-text answers no longer come back twice. The API models a typed response as an answer
+  option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
+  Options are now dropped only when every one was selected, so select questions are unaffected.
+
+  Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+  a status, so confirming an assignment took previously meant querying the list index for a single
+  form whose ID the caller was already holding.
+
+  Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
+  of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
+
+  Breaking: pass `sectionIds` to get full section contents.
+
+- aefe248: Add `questionText` to `assessments_get`, so finding what a form asks does not mean guessing
+  which section holds it.
+
+  Reading a form meant naming sections and trusting their titles. One staging form has a section
+  titled "Data Storage and Security" whose questions are all legal basis and compliance, so the
+  guess-expand-repeat loop is the over-fetching the section list exists to prevent.
+
+  `questionText` returns only the questions whose text matches, with their answers and the
+  section each sits in. Pass `sectionIds` alongside it to search within those sections rather
+  than expanding them. Matches are drained rather than paged, since they cannot outnumber the
+  form's questions.
+
+  Answers cannot be searched — the API matches question and form titles only — and an empty
+  result says so, phrased as an answer rather than a failed lookup.
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+### Patch Changes
+
+- 74f2734: Emit the `VALIDATION_ERROR` code from `ErrorCode` rather than a string literal.
+
+  Both sites already produced that exact string, so the wire format is unchanged. Naming it keeps the
+  two in step if the code is ever renamed.
+
 ## 2.1.0
 
 ### Minor Changes
