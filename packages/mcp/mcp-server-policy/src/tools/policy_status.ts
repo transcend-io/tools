@@ -22,7 +22,7 @@ export const PolicyStatusSchema = OffsetPaginationSchema.extend({
     .uuid()
     .optional()
     .describe('When set with a bundle, returns that version metadata and downloadUrl'),
-  after: z
+  cursor: z
     .string()
     .optional()
     .describe('Cursor for version history pagination (from a prior policy_status response)'),
@@ -39,7 +39,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: PolicyStatusSchema,
-    handler: async ({ limit, offset, bundleId, bundleName, versionId, after }) => {
+    handler: async ({ limit, offset, bundleId, bundleName, versionId, cursor }) => {
       const client = createPolicyEngineClient(clients);
 
       if (bundleId || bundleName) {
@@ -64,7 +64,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
 
         const versions = await listPolicyBundleVersions(client, bundle.id, {
           limit,
-          after,
+          after: cursor,
         });
 
         const nodes = versions.nodes.map((version) => ({
