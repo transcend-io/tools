@@ -14,7 +14,8 @@
     "transcend-mcp-workflows": "./dist/cli.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
