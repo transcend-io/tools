@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-discovery
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
 ## 1.0.4
 
 ### Patch Changes

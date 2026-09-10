@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-base
 
+## 2.2.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
 ## 2.2.1
 
 ### Patch Changes
