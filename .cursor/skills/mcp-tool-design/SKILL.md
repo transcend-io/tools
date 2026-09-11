@@ -274,7 +274,7 @@ having them fail a build.
 
 ```ts
 const MAX_TOOL_DESCRIPTION_CHARS = 700;
-const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
+const MAX_TOOLS_LIST_JSON_CHARS = 87_000;
 ```
 
 Assert the full list size against the serialized descriptors — name,
