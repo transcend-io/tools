@@ -1,5 +1,12 @@
 # @transcend-io/sdk
 
+## 2.1.8
+
+### Patch Changes
+
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+
 ## 2.1.7
 
 ### Patch Changes

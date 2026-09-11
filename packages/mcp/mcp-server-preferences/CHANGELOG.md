@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.7.11
+
+### Patch Changes
+
+- @transcend-io/sdk@2.1.8
+
 ## 0.7.10
 
 ### Patch Changes
