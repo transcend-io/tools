@@ -1379,21 +1379,17 @@ describe('Assessment Tools', () => {
       expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
-    it('returns error when neither templateId nor assessmentGroupId provided', async () => {
+    it('rejects a prefill with no group', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         title: 'Prefill Test',
         answers: { Q1: 'A1' },
       });
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('templateId or assessmentGroupId'),
-        code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
-        retryable: false,
-      });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['assessmentGroupId']);
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
 

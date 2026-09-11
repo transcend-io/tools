@@ -13,12 +13,6 @@
  * accepted and needs to be told what to change.
  */
 
-/** No group or template given, so there is nowhere to create the form. */
-export const PREFILL_GROUP_REQUIRED = {
-  code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
-  retryable: false,
-} as const;
-
 /** No assignee of any kind given, so the form could not accept answers. */
 export const PREFILL_ASSIGNEE_REQUIRED = {
   code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
