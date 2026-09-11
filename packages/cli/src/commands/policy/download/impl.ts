@@ -4,6 +4,7 @@ import colors from 'colors';
 import got from 'got';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
@@ -96,6 +97,7 @@ export async function download(
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
+  const commandLogger = selectCommandLogger(this.logger, json);
 
   const bundle = await resolveBundleByName(client, bundleName);
   if (!bundle) {
@@ -113,7 +115,7 @@ export async function download(
     versionId = bundle.activeVersionId;
   }
 
-  this.logger.info(
+  commandLogger.info(
     colors.green(
       version
         ? `Fetching download URL for bundle "${bundleName}" version "${version}"...`
@@ -139,7 +141,7 @@ export async function download(
     output ?? defaultPolicyDownloadOutputPath(bundleName, body.version),
   );
 
-  this.logger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
+  commandLogger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
 
   let bundleBytes: Uint8Array;
   try {
@@ -163,5 +165,5 @@ export async function download(
     renderTable: () => formatDownloadSummary(body, outputPath),
   });
 
-  this.logger.info(colors.green('Policy bundle downloaded successfully.'));
+  commandLogger.info(colors.green('Policy bundle downloaded successfully.'));
 }

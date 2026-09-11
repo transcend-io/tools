@@ -106,7 +106,7 @@ The policy under \`policy_engine/example\` is disposable teaching material. Repl
 Validate formatting, strict Rego v1 compatibility, Regal lint, tests, and the publish contract:
 
 \`\`\`sh
-transcend policy lint --dir .
+transcend policy lint .
 \`\`\`
 `;
 

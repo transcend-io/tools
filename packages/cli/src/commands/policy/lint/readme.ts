@@ -9,9 +9,8 @@ const examples = buildExamples<LintCommandFlags>(
       flags: {},
     },
     {
-      description: 'Verify and format a custom policy project',
+      description: 'Verify and format the default policy project',
       flags: {
-        dir: './policies',
         fix: true,
       },
     },
@@ -28,4 +27,10 @@ const examples = buildExamples<LintCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+To verify another project, pass its directory positionally:
+
+\`\`\`sh
+transcend policy lint ./policies --fix
+\`\`\`
 `;

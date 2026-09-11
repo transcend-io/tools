@@ -1,6 +1,7 @@
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
@@ -53,13 +54,14 @@ export async function versions(
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
+  const commandLogger = selectCommandLogger(this.logger, json);
   const bundleId = await resolveBundleIdByName(client, bundleName);
 
   if (!bundleId) {
     throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
   }
 
-  this.logger.info(colors.green(`Listing versions for bundle "${bundleName}"...`));
+  commandLogger.info(colors.green(`Listing versions for bundle "${bundleName}"...`));
 
   const searchParams: Record<string, string | number> = { limit };
   if (after) {

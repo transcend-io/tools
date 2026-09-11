@@ -15,7 +15,7 @@ Use the CLI for deterministic scaffolding and validation. Treat the generated ex
 3. For package layout, document-tree design, decisions, and inputs, read [references/authoring.md](references/authoring.md).
 4. For tests, local inputs, linting, and evaluation, read [references/testing-debugging.md](references/testing-debugging.md).
 5. For bundle validation and publishing, read [references/publishing.md](references/publishing.md).
-6. Preserve repository conventions and run `transcend policy lint --dir <policy-directory> --noInteractive` before finishing.
+6. Preserve repository conventions and run `transcend policy lint <policy-directory> --noInteractive` before finishing.
 
 ## Documentation
 

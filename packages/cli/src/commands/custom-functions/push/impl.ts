@@ -3,7 +3,6 @@ import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllCustomFunctions,
-  NOOP_LOGGER,
   resolveEffectiveSombraId,
   resolveExistingCustomFunction,
   syncCustomFunction,
@@ -14,6 +13,7 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildCustomFunctionPushJsonResult } from '../../../lib/custom-functions/command-output.js';
 import {
@@ -102,7 +102,7 @@ export async function push(
     this.process.exit(1);
   }
   const apiKey = apiKeyOrList as string;
-  const commandLogger = json ? NOOP_LOGGER : this.logger;
+  const commandLogger = selectCommandLogger(this.logger, json);
 
   const vars = parseVariablesFromString(variables);
   commandLogger.info(colors.magenta(`Reading manifest "${manifestPath}"...`));

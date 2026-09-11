@@ -1,5 +1,11 @@
 import { buildCommand } from '@stricli/core';
 
+import {
+  projectJsonParameter,
+  projectNoInteractiveParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
 export const lintCommand = buildCommand({
   loader: async () => {
     const { lint } = await import('./impl.js');
@@ -7,27 +13,20 @@ export const lintCommand = buildCommand({
   },
   parameters: {
     flags: {
-      dir: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Directory containing the local policy project',
-        default: 'transcend/policy',
-      },
       fix: {
         kind: 'boolean',
         brief: 'Apply OPA formatting without running broad Regal fixes',
         default: false,
       },
       noInteractive: {
-        kind: 'boolean',
+        ...projectNoInteractiveParameter,
         brief: 'Disable the optional formatting confirmation',
-        default: false,
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Emit one stable JSON result and imply non-interactive behavior',
-        default: false,
-      },
+      json: projectJsonParameter,
+    },
+    positional: {
+      kind: 'tuple',
+      parameters: [policyDirectoryParameter],
     },
   },
   docs: {

@@ -1,6 +1,7 @@
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   buildPolicyEngineClient,
@@ -50,6 +51,7 @@ export async function deactivate(
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
+  const commandLogger = selectCommandLogger(this.logger, json);
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
   const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
@@ -57,7 +59,7 @@ export async function deactivate(
     throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
   }
 
-  this.logger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
+  commandLogger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
 
   let body: DeactivatePolicyBundleResponse;
   try {
@@ -87,5 +89,5 @@ export async function deactivate(
       ].join('\n'),
   });
 
-  this.logger.info(colors.green('Policy bundle version deactivated.'));
+  commandLogger.info(colors.green('Policy bundle version deactivated.'));
 }

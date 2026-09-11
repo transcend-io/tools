@@ -1,10 +1,12 @@
 import { buildCommand } from '@stricli/core';
 
 import {
+  projectJsonParameter,
+  projectNoInteractiveParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import {
   customFunctionDirectoryParameter,
-  customFunctionJsonParameter,
   customFunctionManifestParameter,
-  customFunctionNoInteractiveParameter,
   customFunctionVariablesParameter,
 } from '../constants.js';
 
@@ -22,8 +24,8 @@ export const checkCommand = buildCommand({
         brief: 'Apply Deno formatting to manifest-referenced files',
         default: false,
       },
-      noInteractive: customFunctionNoInteractiveParameter,
-      json: customFunctionJsonParameter,
+      noInteractive: projectNoInteractiveParameter,
+      json: projectJsonParameter,
     },
     positional: {
       kind: 'tuple',

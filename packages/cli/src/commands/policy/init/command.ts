@@ -1,5 +1,13 @@
 import { buildCommand } from '@stricli/core';
 
+import {
+  projectDryRunParameter,
+  projectJsonParameter,
+  projectNoInteractiveParameter,
+  projectYesParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
 export const initCommand = buildCommand({
   loader: async () => {
     const { init } = await import('./impl.js');
@@ -23,37 +31,16 @@ export const initCommand = buildCommand({
         optional: true,
       },
       noInteractive: {
-        kind: 'boolean',
+        ...projectNoInteractiveParameter,
         brief: 'Disable prompts and enable optional setup only through explicit flags',
-        default: false,
       },
-      dryRun: {
-        kind: 'boolean',
-        brief: 'Preview all changes without writing files',
-        default: false,
-      },
-      yes: {
-        kind: 'boolean',
-        brief: 'Skip only the final plan confirmation',
-        default: false,
-      },
-      json: {
-        kind: 'boolean',
-        brief: 'Emit one stable JSON result and imply non-interactive output',
-        default: false,
-      },
+      dryRun: projectDryRunParameter,
+      yes: projectYesParameter,
+      json: projectJsonParameter,
     },
     positional: {
       kind: 'tuple',
-      parameters: [
-        {
-          brief: 'Policy project directory',
-          placeholder: 'directory',
-          parse: String,
-          optional: true,
-          default: 'transcend/policy',
-        },
-      ],
+      parameters: [policyDirectoryParameter],
     },
   },
   docs: {

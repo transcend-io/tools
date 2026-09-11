@@ -5,7 +5,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
-import { customFunctionJsonParameter } from '../constants.js';
+import { projectJsonParameter } from '../../../lib/scaffolding/command-parameters.js';
 
 export const listCommand = buildCommand({
   loader: async () => {
@@ -18,7 +18,7 @@ export const listCommand = buildCommand({
         scopes: [ScopeName.ViewDataMap],
       }),
       transcendUrl: createTranscendUrlParameter(),
-      json: customFunctionJsonParameter,
+      json: projectJsonParameter,
     },
   },
   docs: {

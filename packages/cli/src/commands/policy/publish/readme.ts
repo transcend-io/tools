@@ -7,9 +7,8 @@ const examples = buildExamples<PublishCommandFlags>(
   ['policy', 'publish'],
   [
     {
-      description: 'Publish a local policy directory as the main bundle',
+      description: 'Publish the default local policy project as the main bundle',
       flags: {
-        dir: './policies',
         'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
@@ -17,7 +16,6 @@ const examples = buildExamples<PublishCommandFlags>(
     {
       description: 'Publish with an explicit version label and description',
       flags: {
-        dir: './policies',
         'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         version: '2026-06-25',
@@ -27,7 +25,6 @@ const examples = buildExamples<PublishCommandFlags>(
     {
       description: 'Publish to the US-hosted Transcend API',
       flags: {
-        dir: './policies',
         'bundle-name': 'common',
         auth: '$TRANSCEND_API_KEY',
         'transcend-url': 'https://api.us.transcend.io',
@@ -36,7 +33,6 @@ const examples = buildExamples<PublishCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        dir: './policies',
         'bundle-name': 'main',
       },
     },
@@ -46,6 +42,12 @@ const examples = buildExamples<PublishCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+Pass another policy project directory positionally:
+
+\`\`\`sh
+transcend policy publish ./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
+\`\`\`
 
 Requires the **${TRANSCEND_SCOPES[ScopeName.ManagePolicyEngineBundles].title}** scope on your API key.
 `;

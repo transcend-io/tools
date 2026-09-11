@@ -27,7 +27,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
     expect(workflow).toContain(`version: "${POLICY_STARTER_REGAL_VERSION}"`);
     expect(workflow).toContain('npm install --global @transcend-io/cli@10.27.4');
     expect(workflow).toContain(
-      'transcend policy lint\n          --dir "$POLICY_DIRECTORY"\n          --noInteractive\n          --json',
+      'transcend policy lint\n          "$POLICY_DIRECTORY"\n          --noInteractive\n          --json',
     );
     expect(workflow.match(/uses: [^\n]+@[a-f0-9]{40}/gu)).toHaveLength(3);
     expect(workflow).not.toContain('pull_request_target:');

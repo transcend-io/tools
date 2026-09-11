@@ -1,17 +1,17 @@
 import { buildCommand } from '@stricli/core';
 
+import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
 export const testCommand = buildCommand({
   loader: async () => {
     const { test } = await import('./impl.js');
     return test;
   },
   parameters: {
-    flags: {
-      dir: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Directory containing Rego policy files and tests',
-      },
+    flags: {},
+    positional: {
+      kind: 'tuple',
+      parameters: [policyDirectoryParameter],
     },
   },
   docs: {
