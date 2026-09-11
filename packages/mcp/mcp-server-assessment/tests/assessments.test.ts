@@ -1541,7 +1541,8 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: false,
         code: 'ASSESSMENT_PREFILL_INCOMPLETE',
-        retryable: true,
+        // The form exists, so retrying this call builds a second one.
+        retryable: false,
         details: {
           assessmentId: 'assess-incomplete',
           answersApplied: 0,
@@ -1558,9 +1559,54 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
-    it('keeps both halves of a multi-select where only some values match an option', async () => {
-      // Writing just the matched ids dropped the rest and still reported the
-      // question answered, so a value the option list did not cover vanished.
+    it('joins values matching no option into one written-in answer', async () => {
+      // The question has one free-text box however many values miss, so sending
+      // them separately was rejected and took the matched options down with it.
+      const form = {
+        id: 'assess-other',
+        title: 'Other Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Which categories?',
+                referenceId: 'ref-1',
+                type: 'MULTI_SELECT',
+                allowSelectOther: true,
+                answerOptions: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+                selectedAnswers: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Other Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': ['Usage data', 'Location data', 'Device data'] },
+      } as never);
+
+      // Semicolons, because the values themselves may contain commas.
+      expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
+        assessmentQuestionId: 'q1',
+        assessmentAnswerIds: ['opt-1'],
+        assessmentAnswerValues: [{ value: 'Location data; Device data', isUserCreated: true }],
+      });
+      // Nothing was lost, so nothing is handed back to repair.
+      expect(result).toMatchObject({ success: true });
+    });
+
+    it('hands back values a question that takes no written-in answer cannot hold', async () => {
       const form = {
         id: 'assess-mixed',
         title: 'Mixed Assessment',
@@ -1587,18 +1633,40 @@ describe('Assessment Tools', () => {
       mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
 
       const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
-      await tool.handler({
+      const result = await tool.handler({
         title: 'Mixed Assessment',
         assessmentGroupId: 'grp-1',
         assigneeIds: ['user-1'],
-        answers: { 'ref-1': ['Usage data', 'Location data'] },
+        answers: { 'ref-1': ['Usage data', 'Location data', 'Device data'] },
       } as never);
 
+      // Without allowSelectOther the API refuses a written value outright, so
+      // only the options go, and the rest are reported rather than attempted.
       expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
         assessmentQuestionId: 'q1',
         assessmentAnswerIds: ['opt-1'],
-        assessmentAnswerValues: [{ value: 'Location data', isUserCreated: true }],
       });
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        details: {
+          missedOptionValues: [
+            {
+              question: 'Which categories?',
+              // Ids travel with the titles because the remedy addresses the
+              // question and its options by id, not by the referenceId the
+              // answers were keyed by.
+              questionId: 'q1',
+              values: ['Location data', 'Device data'],
+              options: [{ id: 'opt-1', value: 'Usage data' }],
+            },
+          ],
+        },
+      });
+      expect((result as any).error).toContain('2 values matched no answer option');
+      // The keys all matched, so key advice would send the caller hunting for a
+      // problem it does not have.
+      expect((result as any).error).not.toContain('Keys must match');
     });
 
     it('matches answers keyed by the referenceId taken from the template export', async () => {

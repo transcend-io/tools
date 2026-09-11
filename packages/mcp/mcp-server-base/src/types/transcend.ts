@@ -1333,6 +1333,13 @@ export interface AssessmentFormQuestion {
   type: string;
   /** Narrows `type` for select questions, e.g. USER, TEAM, ATTRIBUTE_KEY */
   subType?: string;
+  /**
+   * Whether the question offers a free-text box beside its options.
+   *
+   * Not implied by `subType`: a CUSTOM select with this false rejects a
+   * written value rather than storing it beside the chosen options.
+   */
+  allowSelectOther?: boolean;
   /** Guidance shown alongside the question */
   description?: string;
   /** Whether the form cannot be submitted while this is unanswered */
