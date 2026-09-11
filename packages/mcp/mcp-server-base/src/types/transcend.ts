@@ -435,6 +435,126 @@ export interface PreferenceUpsertResponse {
   errors?: unknown[];
 }
 
+/**
+ * A preference choice. Exactly one field carries the value; the other two come
+ * back as null, so narrow with `!= null` rather than an `undefined` check.
+ */
+export interface RocPreferenceChoice {
+  /** The boolean value of the preference */
+  booleanValue?: boolean | null;
+  /** The select value(string) of the preference */
+  selectValue?: string | null;
+  /** The multi-select values of the preference */
+  selectValues?: string[] | null;
+}
+
+export interface RocPreference {
+  /** The topic of the preference */
+  topic: string;
+  /** The choice made by the user for this preference topic */
+  choice: RocPreferenceChoice;
+}
+
+/**
+ * A preference on a raw archived purpose, exactly as submitted. Unlike
+ * {@link RocPreference}, the choice may be null, meaning the preference was
+ * cleared in that update.
+ */
+export interface RocRawPreference {
+  /** The topic of the preference */
+  topic: string;
+  /** The choice as submitted; null means the preference was cleared */
+  choice: RocPreferenceChoice | null;
+}
+
+/**
+ * Purpose state on the replayed ROC timeline, used for both
+ * `preferencesAtCurrentTime` and every `changeFromPrevState` bucket.
+ *
+ * Provenance, workflow settings and async processing live on the stored
+ * purpose but are stripped before the purpose reaches this endpoint, so they
+ * are never returned here.
+ */
+export interface RocPurpose {
+  /** Purpose slug */
+  purpose: string;
+  /** Consent value; always resolved to a boolean on the timeline */
+  consent: boolean;
+  /** ISO 8601 timestamp for when this purpose value last changed */
+  timestamp: string;
+  /** Associated preferences; an empty array when the purpose has none */
+  preferences: RocPreference[];
+  /** ISO 8601 timestamp for when this purpose's consent expires; null unless an expiration rule stamped one */
+  expiresAt?: string | null;
+}
+
+/**
+ * Purpose exactly as submitted in a raw archived record. Unlike
+ * {@link RocPurpose}, consent may be null to signal the purpose was cleared,
+ * and no expiration is returned.
+ */
+export interface RocRawPurpose {
+  /** Purpose slug */
+  purpose: string;
+  /** Consent value; null means the purpose was cleared in this update */
+  consent: boolean | null;
+  /** ISO 8601 timestamp for this purpose value */
+  timestamp: string;
+  /** Preferences as submitted; an empty array when the purpose has none */
+  preferences: RocRawPreference[];
+}
+
+export interface RocRawConsentRecord {
+  /** ISO 8601 timestamp for when the consent update was submitted */
+  timestamp: string;
+  /** Whether consent was explicitly confirmed; null on archived payloads written before the field existed */
+  confirmed?: boolean | null;
+  /** Purpose consent updates, exactly as submitted */
+  purposes: RocRawPurpose[];
+  /** Organization partition; null when the archived payload carried none */
+  partition?: string | null;
+  /** User identifiers, decrypted on this endpoint; an empty array when none */
+  identifiers: PreferenceStoreIdentifier[];
+  /** JSON-serialized consent metadata; null when the update carried none */
+  metadata?: string | null;
+}
+
+export interface RocUserRecordDiff {
+  /** Purposes added */
+  added: RocPurpose[];
+  /** Purposes removed */
+  removed: RocPurpose[];
+  /** Purposes updated */
+  updated: RocPurpose[];
+}
+
+export interface RocUserRecord {
+  /** Cumulative state of every purpose the user has set, as of this record */
+  preferencesAtCurrentTime: RocPurpose[];
+  /** Changes from the previous state; null on the first record, which has nothing to diff against */
+  changeFromPrevState?: RocUserRecordDiff | null;
+  /** Raw archived Record of Consent (ROC) payload; null unless includeRawRequest is true */
+  rawRequest?: RocRawConsentRecord | null;
+}
+
+export interface RocQueryInput {
+  /** Consent partition (airgap bundle id) the lookup is scoped to */
+  partition: string;
+  /** Identifier to query */
+  identifier: PreferenceStoreIdentifier;
+  /** Maximum number of records to return */
+  limit?: number;
+  /** Whether to include the raw request in the response */
+  includeRawRequest?: boolean;
+}
+
+export interface RocQueryResponse {
+  /** Consent change timeline for the user, oldest-first */
+  records: RocUserRecord[];
+  /** Whether the response contains the initial record */
+  containsInitialRecord: boolean;
+}
+
 export interface AirgapBundle {
   id: string;
   name: string;

@@ -39,6 +39,8 @@ import type {
   NERExtractionInput,
   NERExtractionResult,
   RequestOptions,
+  RocQueryResponse,
+  RocQueryInput,
 } from '../types/transcend.js';
 import { SimpleLogger, type Logger } from './graphql/base.js';
 import { TRANSCEND_MCP_USER_AGENT } from './mcp-user-agent.js';
@@ -524,6 +526,18 @@ export class TranscendRestClient {
     } catch {
       return null;
     }
+  }
+
+  async listRocRecords(input: RocQueryInput): Promise<RocQueryResponse> {
+    const { partition, identifier, limit, includeRawRequest } = input;
+    return this.makeRequest(`/v1/preferences/${encodeURIComponent(partition)}/consent-records`, {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier,
+        ...(limit !== undefined && { limit }),
+        ...(includeRawRequest !== undefined && { includeRawRequest }),
+      }),
+    });
   }
 
   async classifyText(input: LLMClassificationInput): Promise<LLMClassificationResult[]> {
