@@ -59,10 +59,7 @@ export function createPreferencesQueryTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_query',
-    description:
-      'Query consent preferences for multiple users by their identifiers. ' +
-      'hasNextPage is true only when a cursor is present and the page is full; ' +
-      'stop paging if a follow-up returns empty or nodes show system.decryptionStatus ERROR.',
+    description: 'Query consent preferences for multiple users by their identifiers',
     category: 'Preference Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

@@ -8,8 +8,7 @@ export const PARTITION_DESCRIBE =
 
 /** Preference Store timestamps must include millisecond precision in UTC. */
 export const TIMESTAMP_DESCRIBE =
-  'UTC ISO 8601 timestamp with milliseconds (e.g. 2024-01-15T10:30:00.000Z). ' +
-  'Preference Store rejects variants without milliseconds (e.g. ...00Z).';
+  'UTC ISO 8601 with milliseconds (e.g. 2024-01-15T10:30:00.000Z); ...00Z is rejected.';
 
 /**
  * Shared describe for mergeRecordsOnConflict on upsert and identifier mutations.

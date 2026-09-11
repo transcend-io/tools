@@ -12,10 +12,7 @@ export const UpsertPreferencesSchema = z.object({
   skipWorkflowTriggers: z
     .boolean()
     .optional()
-    .describe(
-      'When true, skip consent workflow triggers and downstream integrations for these updates. ' +
-        'Pass true when testing in a shared partition so upserts do not spam real webhooks/automations.',
-    ),
+    .describe('Skip consent workflow triggers/webhooks (use when testing).'),
 });
 export type UpsertPreferencesInput = z.infer<typeof UpsertPreferencesSchema>;
 
@@ -24,10 +21,10 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'preferences_upsert',
     description:
-      'Batch upsert consent preference records for multiple users. Set ' +
-      'records[].options.mergeRecordsOnConflict to false to fail instead of merging when ' +
-      'identifiers span two existing records (API default is merge). Call preferences_list_partitions ' +
-      'first and pass purposes[].enabled (boolean) — Preference Store rejects a "consent" field.',
+      'Batch upsert consent preference records for multiple users. ' +
+      'records[].options.mergeRecordsOnConflict controls merge vs fail (default merge). ' +
+      'Call preferences_list_partitions first and pass purposes[].enabled (boolean) — ' +
+      'Preference Store rejects a "consent" field.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {
