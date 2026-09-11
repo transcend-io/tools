@@ -1,10 +1,9 @@
-import { dirname, resolve } from 'node:path';
-
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllCustomFunctions,
+  NOOP_LOGGER,
   resolveEffectiveSombraId,
   resolveExistingCustomFunction,
   syncCustomFunction,
@@ -16,24 +15,41 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { buildCustomFunctionPushJsonResult } from '../../../lib/custom-functions/command-output.js';
 import {
   readCustomFunctionsManifest,
   writeCustomFunctionIdsToManifest,
 } from '../../../lib/custom-functions/manifest.js';
+import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
+import { resolveCustomFunctionProjectPaths } from '../../../lib/custom-functions/paths.js';
+import { discoverCustomFunctionManifests } from '../../../lib/custom-functions/project-discovery.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
 
 export interface CustomFunctionsPushCommandFlags {
+  /** Transcend API key. */
   auth: string;
+  /** Optional Sombra internal key. */
   sombraAuth?: string;
+  /** Transcend backend URL. */
   transcendUrl: string;
-  file: string;
+  /** Explicit manifest path. */
+  manifest?: string;
+  /** Manifest variable substitutions. */
   variables: string;
+  /** Preview remote changes without applying them. */
   dryRun: boolean;
+  /** Emit stable JSON output. */
+  json: boolean;
+  /** Promote new revisions to active. */
   promote: boolean;
+  /** Push even when no changes can be detected. */
   force: boolean;
+  /** Skip test payload execution. */
   skipTests: boolean;
+  /** Write assigned IDs back to the manifest. */
   updateManifest: boolean;
+  /** Default Sombra gateway ID. */
   sombraId?: string;
 }
 
@@ -43,27 +59,35 @@ export async function push(
     auth,
     sombraAuth,
     transcendUrl,
-    file = './transcend-functions.yml',
+    manifest,
     variables,
     dryRun,
+    json,
     promote,
     force,
     skipTests,
     updateManifest,
     sombraId,
   }: CustomFunctionsPushCommandFlags,
+  directory?: string,
 ): Promise<void> {
   doneInputValidation(this.process);
 
+  const cwd = this.process.cwd();
+  const { manifestDirectory, manifestPath } = resolveCustomFunctionProjectPaths(cwd, {
+    ...(directory ? { directory } : {}),
+    ...(manifest ? { manifest } : {}),
+  });
+
   // Read and validate the manifest before performing auth or network setup.
-  if (!this.fs.existsSync(file)) {
-    const scaffoldedManifest = './transcend/custom-functions/transcend-functions.yml';
-    const suggestion = this.fs.existsSync(scaffoldedManifest)
-      ? ` Did you mean --file=${scaffoldedManifest}?`
-      : ' You can specify the file path using --file=./transcend-functions.yml';
-    this.logger.error(
-      colors.red(`The manifest file does not exist on disk: ${file}.${suggestion}`),
-    );
+  if (!this.fs.existsSync(manifestPath)) {
+    const message = formatMissingManifestMessage({
+      cwd,
+      manifestPath,
+      discoveredManifestPaths: discoverCustomFunctionManifests(this, cwd),
+      command: 'push',
+    });
+    this.logger.error(colors.red(message));
     this.process.exit(1);
   }
 
@@ -78,19 +102,21 @@ export async function push(
     this.process.exit(1);
   }
   const apiKey = apiKeyOrList as string;
+  const commandLogger = json ? NOOP_LOGGER : this.logger;
 
   const vars = parseVariablesFromString(variables);
-  this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
-  const manifestDirectory = dirname(resolve(file));
-  const configs = readCustomFunctionsManifest(file, vars, (path) =>
+  commandLogger.info(colors.magenta(`Reading manifest "${manifestPath}"...`));
+  const configs = readCustomFunctionsManifest(manifestPath, vars, (path) =>
     assertPathPhysicallyContained(this, manifestDirectory, path),
   );
-  this.logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));
+  commandLogger.info(
+    colors.green(`Found ${configs.length} custom function(s) in "${manifestPath}"`),
+  );
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKey);
 
   // Fetch existing functions once to diff against
-  const existing = await fetchAllCustomFunctions(client, { logger: this.logger });
+  const existing = await fetchAllCustomFunctions(client, { logger: commandLogger });
 
   // Each custom function belongs to a single Sombra gateway whose keys sign
   // its code, so code must be signed against that specific gateway's customer
@@ -107,7 +133,7 @@ export async function push(
     if (cached) {
       return cached;
     }
-    this.logger.info(
+    commandLogger.info(
       colors.magenta(
         `Connecting to the ${
           gatewaySombraId ? `Sombra gateway "${gatewaySombraId}"` : 'primary Sombra gateway'
@@ -115,7 +141,7 @@ export async function push(
       ),
     );
     const sombra = await createSombraGotInstance(transcendUrl, apiKey, {
-      logger: this.logger,
+      logger: commandLogger,
       sombraApiKey,
       ...(gatewaySombraId ? { sombraId: gatewaySombraId } : {}),
     });
@@ -179,7 +205,7 @@ export async function push(
         ...(!skipTests && input.testPayloads !== undefined
           ? { testPayloads: input.testPayloads }
           : {}),
-        logger: this.logger,
+        logger: commandLogger,
       });
       results.push({ name: input.name, result });
 
@@ -189,16 +215,16 @@ export async function push(
       switch (result.outcome) {
         case 'created':
           if (result.createdDataSilo && result.dataSiloId) {
-            this.logger.info(
+            commandLogger.info(
               colors.green(
                 `Created DSR integration (data silo ${result.dataSiloId}) for "${input.name}"`,
               ),
             );
           }
-          this.logger.info(colors.green(`Created custom function "${input.name}"${suffix}`));
+          commandLogger.info(colors.green(`Created custom function "${input.name}"${suffix}`));
           break;
         case 'updated':
-          this.logger.info(
+          commandLogger.info(
             colors.green(
               `Pushed new revision to "${input.name}"${suffix}${changes}${
                 result.promoted ? ' and promoted to active' : ' as a draft'
@@ -207,14 +233,14 @@ export async function push(
           );
           break;
         case 'metadata-updated':
-          this.logger.info(
+          commandLogger.info(
             colors.green(
               `Updated metadata for "${input.name}"${changes} — code unchanged, no new revision`,
             ),
           );
           break;
         case 'skipped':
-          this.logger.info(
+          commandLogger.info(
             colors.yellow(
               `Skipped "${input.name}" — no changes detected ` +
                 '(env variable values cannot be diffed; use --force if only values changed)',
@@ -222,7 +248,7 @@ export async function push(
           );
           break;
         case 'would-create':
-          this.logger.info(
+          commandLogger.info(
             colors.cyan(
               `[dry run] Would create custom function "${input.name}"${
                 input.type === CustomFunctionType.Dsr && !input.dataSiloId
@@ -233,13 +259,13 @@ export async function push(
           );
           break;
         case 'would-update':
-          this.logger.info(
+          commandLogger.info(
             colors.cyan(`[dry run] Would push a new revision to "${input.name}"${changes}`),
           );
           break;
         case 'test-failed': {
           const failed = (result.testResults ?? []).filter(({ passed }) => !passed);
-          this.logger.error(
+          commandLogger.error(
             colors.red(
               `Rejected "${input.name}" — ${failed.length} of ${
                 result.testResults?.length ?? 0
@@ -248,7 +274,7 @@ export async function push(
           );
           failed.forEach(({ payloadType, result: execution }) => {
             const label = payloadType ? `[${payloadType}] ` : '';
-            this.logger.error(
+            commandLogger.error(
               colors.red(
                 `  ${label}${
                   execution.error
@@ -258,11 +284,11 @@ export async function push(
               ),
             );
             execution.logs.forEach(({ file: logFile, message }) => {
-              this.logger.error(colors.red(`    [${logFile}] ${message}`));
+              commandLogger.error(colors.red(`    [${logFile}] ${message}`));
             });
           });
           if (result.createdDataSilo) {
-            this.logger.error(
+            commandLogger.error(
               colors.red(
                 `  The DSR integration (data silo) created for "${input.name}" was rolled back.`,
               ),
@@ -279,7 +305,7 @@ export async function push(
         (input.testPayloads === undefined || input.testPayloads.length === 0) &&
         (result.outcome === 'created' || result.outcome === 'updated')
       ) {
-        this.logger.warn(
+        commandLogger.warn(
           colors.yellow(
             `Custom function "${input.name}" was pushed without a test run — add a ` +
               'test-payload to its manifest entry to enable test-before-promote.',
@@ -307,7 +333,7 @@ export async function push(
             covered === CustomFunctionPayloadType.DataPoint
               ? CustomFunctionPayloadType.RequestEnricher
               : CustomFunctionPayloadType.DataPoint;
-          this.logger.warn(
+          commandLogger.warn(
             colors.yellow(
               `DSR custom function "${input.name}" only tests its ${covered} export — if it ` +
                 `also implements the ${uncovered} export, add a test payload with ` +
@@ -318,7 +344,7 @@ export async function push(
       }
     } catch (err) {
       results.push({ name: input.name, error: err as Error });
-      this.logger.error(
+      commandLogger.error(
         colors.red(`Failed to sync custom function "${input.name}": ${(err as Error).message}`),
       );
     }
@@ -339,35 +365,34 @@ export async function push(
       };
       return Object.keys(ids).length > 0 ? ids : undefined;
     });
-    const updatedCount = writeCustomFunctionIdsToManifest(file, idsByIndex);
+    const updatedCount = writeCustomFunctionIdsToManifest(manifestPath, idsByIndex);
     if (updatedCount > 0) {
-      this.logger.info(
+      commandLogger.info(
         colors.green(
-          `Wrote assigned id(s) back to ${updatedCount} manifest entr(ies) in "${file}" — ` +
+          `Wrote assigned id(s) back to ${updatedCount} manifest entr(ies) in "${manifestPath}" — ` +
             'commit this change so future pushes match by ID.',
         ),
       );
     }
   }
 
-  // Summarize
-  const count = (outcome: CustomFunctionSyncResult['outcome']): number =>
-    results.filter(({ result }) => result?.outcome === outcome).length;
-  const failures = results.filter(({ error }) => error !== undefined);
-  const rejected = count('test-failed');
-  this.logger.info(
-    colors.magenta(
-      `Custom function sync complete: ${count('created') + count('would-create')} created, ${
-        count('updated') + count('would-update')
-      } updated, ${count('metadata-updated')} metadata-only, ${count(
-        'skipped',
-      )} skipped, ${rejected} rejected (test failed), ${failures.length} failed${
-        dryRun ? ' (dry run)' : ''
-      }`,
-    ),
-  );
+  const output = buildCustomFunctionPushJsonResult(manifestPath, dryRun, results);
+  if (json) {
+    this.process.stdout.write(`${JSON.stringify(output)}\n`);
+  } else {
+    const { summary } = output;
+    commandLogger.info(
+      colors.magenta(
+        `Custom function sync complete: ${summary.created} created, ${summary.updated} updated, ` +
+          `${summary.metadataUpdated} metadata-only, ${summary.skipped} skipped, ` +
+          `${summary.rejected} rejected (test failed), ${summary.failed} failed${
+            dryRun ? ' (dry run)' : ''
+          }`,
+      ),
+    );
+  }
 
-  if (failures.length > 0 || rejected > 0) {
+  if (output.status === 'failed') {
     this.process.exit(1);
   }
 }

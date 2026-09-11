@@ -483,9 +483,7 @@ export function buildAddFunctionPlan(
       options.generated.displayName,
     )}${variablesArgument}`,
     `transcend custom-functions check ${projectArguments}${variablesArgument}`,
-    `transcend custom-functions push --file=${quoteShellArgument(
-      displayProjectPath(state.invocationDirectory, state.manifestPath),
-    )} --dryRun${variablesArgument}`,
+    `transcend custom-functions push ${projectArguments} --dryRun${variablesArgument}`,
   ];
   if (variableNames.length > 0) {
     plan.warnings.push(

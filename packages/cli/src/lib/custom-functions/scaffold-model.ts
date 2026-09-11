@@ -1,7 +1,7 @@
 import type { ExistingProjectSkillDirectory } from '../scaffolding/agent-skill.js';
 import type { ProjectPlan } from '../scaffolding/project-plan.js';
 
-/** Version of the stable scaffold/check JSON result contract. */
+/** Version of the stable Custom Function JSON result contracts. */
 export const CUSTOM_FUNCTION_RESULT_VERSION = 1 as const;
 
 /** One repository setup capability. */

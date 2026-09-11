@@ -7,6 +7,13 @@ import {
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 import { uuidParser } from '../../../lib/cli/parsers.js';
+import {
+  customFunctionDirectoryParameter,
+  customFunctionDryRunParameter,
+  customFunctionJsonParameter,
+  customFunctionManifestParameter,
+  customFunctionVariablesParameter,
+} from '../constants.js';
 
 export const pushCommand = buildCommand({
   loader: async () => {
@@ -20,24 +27,10 @@ export const pushCommand = buildCommand({
       }),
       sombraAuth: createSombraAuthParameter(),
       transcendUrl: createTranscendUrlParameter(),
-      file: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Path to the custom functions manifest YAML file',
-        default: './transcend-functions.yml',
-      },
-      variables: {
-        kind: 'parsed',
-        parse: String,
-        brief:
-          'Variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.',
-        default: '',
-      },
-      dryRun: {
-        kind: 'boolean',
-        brief: 'When true, report what would change without pushing anything',
-        default: false,
-      },
+      manifest: customFunctionManifestParameter,
+      variables: customFunctionVariablesParameter,
+      dryRun: customFunctionDryRunParameter,
+      json: customFunctionJsonParameter,
       promote: {
         kind: 'boolean',
         brief:
@@ -69,6 +62,10 @@ export const pushCommand = buildCommand({
           'Default Sombra gateway for functions whose manifest entry (or existing function) does not pin one. Each function is signed against the gateway it belongs to. Defaults to the primary Sombra of the organization.',
         optional: true,
       },
+    },
+    positional: {
+      kind: 'tuple',
+      parameters: [customFunctionDirectoryParameter],
     },
   },
   docs: {
