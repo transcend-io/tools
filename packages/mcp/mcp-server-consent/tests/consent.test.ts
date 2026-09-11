@@ -1,5 +1,6 @@
-import { isCapabilityAwareTool, McpClientCapability } from '@transcend-io/mcp-server-base';
 import {
+  isCapabilityAwareTool,
+  McpClientCapability,
   ErrorCode,
   ToolError,
   type RocQueryResponse,
