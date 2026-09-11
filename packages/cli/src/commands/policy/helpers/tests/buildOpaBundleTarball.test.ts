@@ -14,7 +14,18 @@ const constantsMock = vi.hoisted(() => ({
   MAX_BUNDLE_DECOMPRESSED_BYTES: 51200,
 }));
 
-vi.mock('../../constants.js', () => constantsMock);
+vi.mock('@transcend-io/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@transcend-io/utils')>();
+  return {
+    ...actual,
+    get MAX_BUNDLE_COMPRESSED_BYTES() {
+      return constantsMock.MAX_BUNDLE_COMPRESSED_BYTES;
+    },
+    get MAX_BUNDLE_DECOMPRESSED_BYTES() {
+      return constantsMock.MAX_BUNDLE_DECOMPRESSED_BYTES;
+    },
+  };
+});
 
 vi.mock('../assertOpaInstalled.js', () => ({
   assertOpaInstalled: vi.fn(),
