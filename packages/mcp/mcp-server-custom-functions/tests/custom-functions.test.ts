@@ -187,6 +187,36 @@ describe('Custom Functions tools', () => {
     expect(graphql.promoteCustomFunctionVersion).toHaveBeenCalledWith('cf-1', 'version-2');
   });
 
+  it('lists custom functions without returning JWTs', async () => {
+    graphql.listCustomFunctions.mockResolvedValue({
+      nodes: [
+        {
+          id: 'cf-1',
+          name: 'Example',
+          type: 'GENERAL',
+          lifecycleState: 'ACTIVE',
+          sombraId: 'sombra-1',
+          hasPendingDraft: false,
+        },
+      ],
+      totalCount: 1,
+      hasNextPage: false,
+    });
+
+    const result = await getTool('custom_functions_list').handler({
+      text: 'Example',
+      first: 50,
+      offset: 0,
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: [{ id: 'cf-1', name: 'Example' }],
+      totalCount: 1,
+    });
+    expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
+  });
+
   it('unwraps code without returning signed JWTs', async () => {
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: { id: 'cf-1', name: 'Example' },

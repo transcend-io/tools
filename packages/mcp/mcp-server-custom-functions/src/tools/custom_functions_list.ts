@@ -1,9 +1,15 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { CustomFunctionLifecycleState, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
 
-export const CustomFunctionsListSchema = z.object({
+export const CustomFunctionsListSchema = OffsetPaginationSchema.extend({
   type: z.nativeEnum(CustomFunctionType).optional().describe('Filter by custom function type'),
   lifecycleState: z
     .nativeEnum(CustomFunctionLifecycleState)
@@ -17,21 +23,6 @@ export const CustomFunctionsListSchema = z.object({
       'Free-text search across custom functions. Pass the unique name from upsert to find a ' +
         'function you just created',
     ),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Maximum results to return, from 1 to 100'),
-  offset: z
-    .number()
-    .int()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of matching results to skip'),
 });
 export type CustomFunctionsListInput = z.infer<typeof CustomFunctionsListSchema>;
 
@@ -48,13 +39,13 @@ export function createCustomFunctionsListTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: CustomFunctionsListSchema,
-    handler: async ({ type, lifecycleState, dataSiloId, text, limit, offset }) => {
+    handler: async ({ type, lifecycleState, dataSiloId, text, first, offset }) => {
       const result = await graphql.listCustomFunctions({
         type,
         lifecycleState,
         dataSiloId,
         text,
-        first: limit,
+        first,
         offset,
       });
       return createListResult(result.nodes, {
