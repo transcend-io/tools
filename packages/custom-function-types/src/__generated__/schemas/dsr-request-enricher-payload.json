@@ -1,0 +1,427 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "coreIdentifier": {
+      "$ref": "#/definitions/CustomFunction.CoreIdentifier",
+      "description": "Optional override for the identifier Transcend would add."
+    },
+    "extras": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dataSilo": {
+          "$ref": "#/definitions/CustomFunction.DataSilo",
+          "description": "Integration used to route an unsaved test invocation."
+        },
+        "enricher": {
+          "$ref": "#/definitions/CustomFunction.Enricher",
+          "description": "Enricher being processed."
+        },
+        "identifier": {
+          "$ref": "#/definitions/CustomFunction.Identifier",
+          "description": "Identifier type being processed."
+        },
+        "requestEnricherId": {
+          "type": "string",
+          "description": "Unique ID for this enricher and request combination."
+        },
+        "request": {
+          "$ref": "#/definitions/CustomFunction.Request",
+          "description": "Privacy request being processed."
+        },
+        "organization": {
+          "$ref": "#/definitions/CustomFunction.Organization",
+          "description": "Organization that owns the request."
+        },
+        "purpose": {
+          "$ref": "#/definitions/CustomFunction.PurposeChange",
+          "description": "Consent-purpose change that triggered this request, when applicable."
+        }
+      },
+      "required": [
+        "enricher",
+        "identifier",
+        "organization",
+        "request",
+        "requestEnricherId"
+      ],
+      "description": "Test metadata accepted before Transcend prepares the handler payload."
+    },
+    "requestIdentifier": {
+      "$ref": "#/definitions/CustomFunction.RequestIdentifier",
+      "description": "Identifier provided as input to the enricher."
+    },
+    "type": {
+      "$ref": "#/definitions/CustomFunction.RequestAction",
+      "description": "Privacy request operation."
+    },
+    "dataSubject": {
+      "$ref": "#/definitions/CustomFunction.DataSubject",
+      "description": "Information about the person making the request."
+    },
+    "isTest": {
+      "type": "boolean",
+      "description": "Whether this is a test request."
+    }
+  },
+  "required": [
+    "dataSubject",
+    "extras",
+    "isTest",
+    "requestIdentifier",
+    "type"
+  ],
+  "description": "Payload supplied when locally testing a request-enricher export.\n\nTranscend adds `coreIdentifier` when it is omitted.",
+  "definitions": {
+    "CustomFunction.CoreIdentifier": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "The identifier value."
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "The authenticated identifier attached to every invocation."
+    },
+    "CustomFunction.DataSilo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Integration ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Integration title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Integration description."
+        },
+        "link": {
+          "type": "string",
+          "description": "URL path to the integration in Transcend."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "link"
+      ],
+      "additionalProperties": false,
+      "description": "Integration associated with a datapoint invocation."
+    },
+    "CustomFunction.Enricher": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Enricher ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Enricher title."
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false,
+      "description": "Request-enricher configuration metadata."
+    },
+    "CustomFunction.Identifier": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier type ID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Unique identifier type name."
+        },
+        "type": {
+          "type": "string",
+          "description": "Identifier category."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Identifier type being enriched."
+    },
+    "CustomFunction.Request": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "string",
+          "description": "Free-form details added to the request."
+        },
+        "id": {
+          "type": "string",
+          "description": "Request ID."
+        },
+        "link": {
+          "type": "string",
+          "description": "URL path to the request in Transcend."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO-8601 creation timestamp."
+        },
+        "locale": {
+          "type": "string",
+          "description": "IETF BCP 47 locale."
+        },
+        "origin": {
+          "$ref": "#/definitions/CustomFunction.RequestOrigin",
+          "description": "Channel through which the request entered Transcend."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomFunction.RequestAttribute"
+          },
+          "description": "Custom fields attached to the request."
+        },
+        "country": {
+          "type": "string",
+          "description": "ISO 3166-1 alpha-2 country code, when available."
+        },
+        "countrySubDivision": {
+          "type": "string",
+          "description": "ISO 3166-2 country subdivision code, when available."
+        },
+        "partition": {
+          "$ref": "#/definitions/CustomFunction.Partition",
+          "description": "Consent partition to which the request is scoped."
+        }
+      },
+      "required": [
+        "details",
+        "id",
+        "link",
+        "createdAt",
+        "locale",
+        "origin"
+      ],
+      "additionalProperties": false,
+      "description": "Privacy request metadata shared by data subject request payloads."
+    },
+    "CustomFunction.RequestOrigin": {
+      "type": "string",
+      "enum": [
+        "PRIVACY_CENTER",
+        "ADMIN_DASHBOARD",
+        "API",
+        "SHOPIFY"
+      ],
+      "description": "The channel through which a privacy request entered Transcend."
+    },
+    "CustomFunction.RequestAttribute": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Custom field name."
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Values assigned to the custom field."
+        }
+      },
+      "additionalProperties": false,
+      "description": "A custom field attached to a privacy request."
+    },
+    "CustomFunction.Partition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Partition row ID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable partition name."
+        },
+        "partition": {
+          "type": "string",
+          "description": "Unique partition key."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "partition"
+      ],
+      "additionalProperties": false,
+      "description": "Consent partition information attached to a privacy request."
+    },
+    "CustomFunction.Organization": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Organization ID."
+        },
+        "uri": {
+          "type": "string",
+          "description": "Organization URI."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable organization name."
+        }
+      },
+      "required": [
+        "id",
+        "uri",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Transcend organization that owns the Custom Function."
+    },
+    "CustomFunction.PurposeChange": {
+      "type": "object",
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "description": "Purpose name."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the purpose is enabled."
+        },
+        "preferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomFunction.Preference"
+          },
+          "description": "Current preferences associated with the purpose."
+        }
+      },
+      "required": [
+        "purpose",
+        "enabled"
+      ],
+      "additionalProperties": false,
+      "description": "Consent-purpose change that triggered the workflow."
+    },
+    "CustomFunction.Preference": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "Preference topic."
+        },
+        "choice": {
+          "$ref": "#/definitions/CustomFunction.PreferenceChoice",
+          "description": "Current preference choice."
+        }
+      },
+      "required": [
+        "topic",
+        "choice"
+      ],
+      "additionalProperties": false,
+      "description": "Preference included with a consent-purpose change."
+    },
+    "CustomFunction.PreferenceChoice": {
+      "type": "object",
+      "properties": {
+        "selectValue": {
+          "type": "string",
+          "description": "Selected scalar value."
+        },
+        "selectValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Selected list values."
+        },
+        "booleanValue": {
+          "type": "boolean",
+          "description": "Selected boolean value."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Preference choice included with a consent-purpose change."
+    },
+    "CustomFunction.RequestIdentifier": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Identifier type name."
+        },
+        "value": {
+          "type": "string",
+          "description": "Identifier value."
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "Input identifier passed to a request enricher."
+    },
+    "CustomFunction.RequestAction": {
+      "type": "string",
+      "enum": [
+        "ACCESS",
+        "ERASURE",
+        "RECTIFICATION",
+        "RESTRICTION",
+        "BUSINESS_PURPOSE",
+        "PLACE_ON_LEGAL_HOLD",
+        "REMOVE_FROM_LEGAL_HOLD",
+        "AUTOMATED_DECISION_MAKING_OPT_OUT",
+        "USE_OF_SENSITIVE_INFORMATION_OPT_OUT",
+        "CONTACT_OPT_OUT",
+        "SALE_OPT_OUT",
+        "TRACKING_OPT_OUT",
+        "CUSTOM_OPT_OUT",
+        "AUTOMATED_DECISION_MAKING_OPT_IN",
+        "USE_OF_SENSITIVE_INFORMATION_OPT_IN",
+        "SALE_OPT_IN",
+        "TRACKING_OPT_IN",
+        "CONTACT_OPT_IN",
+        "CUSTOM_OPT_IN"
+      ],
+      "description": "A privacy request operation delivered to a data subject request function."
+    },
+    "CustomFunction.DataSubject": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Customer-defined data subject type."
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "The class of data subject making the request."
+    }
+  },
+  "$id": "file:///dsr-request-enricher-custom-function-payload.schema.json",
+  "title": "Data subject request (DSR) request enricher Custom Function payload"
+}

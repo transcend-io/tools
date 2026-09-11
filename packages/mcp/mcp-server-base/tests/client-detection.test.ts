@@ -104,11 +104,24 @@ describe('whatIsTheClient', () => {
 
 describe('quirksFor', () => {
   it('reports no quirks for a host without an entry', () => {
-    // The registry is empty today, so this is every host. It stays meaningful as
-    // entries are added: a host nobody wrote a workaround for must not inherit
-    // someone else's.
+    // A host nobody wrote a workaround for must not inherit someone else's, which
+    // is the property that keeps the registry from quietly widening as it grows.
     expect(HOST_QUIRKS[McpHostClient.Claude]).toBeUndefined();
     expect(quirksFor(McpHostClient.Claude)).toEqual({});
     expect(quirksFor(McpHostClient.Unknown)).toEqual({});
+  });
+
+  it('reports that Cursor may decline without asking anybody', () => {
+    expect(quirksFor(McpHostClient.Cursor).mayDeclineWithoutAsking).toBe(true);
+  });
+
+  it('gives no other host the decline workaround', () => {
+    // Cursor's cross-window routing failure is Cursor's. A second host answering
+    // `decline` means the user said no until someone proves otherwise for it too.
+    const others = Object.values(McpHostClient).filter((host) => host !== McpHostClient.Cursor);
+
+    for (const host of others) {
+      expect(quirksFor(host).mayDeclineWithoutAsking, host).toBeUndefined();
+    }
   });
 });

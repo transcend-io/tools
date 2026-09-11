@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
+import { experimentalToolsEnabled } from '../oauth/env.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
 import type { UiResourceDefinition } from './ui-resource.js';
 
@@ -80,6 +81,12 @@ export interface ToolDefinition {
    * `model` for tools that exist only so an MCP App view can call them.
    */
   visibility?: readonly ToolVisibility[];
+  /**
+   * When true, this tool is omitted from registration unless
+   * `TRANSCEND_MCP_EXPERIMENTAL=1` is set. Use for unfinished or high-risk
+   * surfaces that should stay out of the default catalog.
+   */
+  experimental?: boolean;
 }
 
 export interface ToolClients {
@@ -139,6 +146,12 @@ export function defineTool<T>(config: {
    * `model` for tools that exist only so an MCP App view can call them.
    */
   visibility?: readonly ToolVisibility[];
+  /**
+   * When true, this tool is omitted from registration unless
+   * `TRANSCEND_MCP_EXPERIMENTAL=1` is set. Use for unfinished or high-risk
+   * surfaces that should stay out of the default catalog.
+   */
+  experimental?: boolean;
 }): ToolDefinition {
   // Descriptions are the only signal an LLM caller has for what each argument
   // means, so refuse to construct a tool whose input schema has any field
@@ -183,19 +196,12 @@ export function assertConfirmableSchema(
   }
 }
 
-/** Gated tools must be annotated as mutating and destructive. */
+/** Gated tools must be annotated as mutating. destructiveHint is independent — it tells hosts how loudly to warn, not whether the server gate runs. */
 export function assertConfirmableAnnotations(toolName: string, annotations: ToolAnnotations): void {
   if (annotations.readOnlyHint) {
     throw new Error(
       `Tool "${toolName}" declares confirmation but annotates readOnlyHint: true. ` +
         'Confirmation gates a mutation, and a read-only tool has nothing to approve.',
-    );
-  }
-  if (!annotations.destructiveHint) {
-    throw new Error(
-      `Tool "${toolName}" declares confirmation but annotates destructiveHint: false. ` +
-        'Hosts use destructiveHint to decide how to prompt for a tool call, so it has to ' +
-        'agree with the gate.',
     );
   }
 }
@@ -224,4 +230,17 @@ export function isVisibleToModel(
   tool: ToolDefinition,
 ): boolean {
   return (tool.visibility ?? DEFAULT_TOOL_VISIBILITY).includes('model');
+}
+
+/**
+ * Whether a tool should be registered with the server / registry.
+ *
+ * Experimental tools stay out of the catalog unless
+ * {@link experimentalToolsEnabled} is on.
+ */
+export function shouldRegisterTool(
+  /** Tool to test */
+  tool: ToolDefinition,
+): boolean {
+  return !tool.experimental || experimentalToolsEnabled();
 }

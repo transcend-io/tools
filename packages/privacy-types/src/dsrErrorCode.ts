@@ -46,6 +46,12 @@ export const DsrErrorCode = makeEnum({
    */
   DataSiloNotInWorkflow: 'DATA_SILO_NOT_IN_WORKFLOW',
   /**
+   * This request set both `dataSiloIds` and `ignoreDataSiloIds`. The two are
+   * mutually exclusive: `dataSiloIds` restricts fulfillment to a subset of the
+   * workflow's connected silos, `ignoreDataSiloIds` excludes silos from it.
+   */
+  ConflictingDataSiloFilters: 'CONFLICTING_DATA_SILO_FILTERS',
+  /**
    * The `type` asserted on this request does not match the workflow config's
    * request action. `type` is optional; omit it to derive from the workflow.
    */

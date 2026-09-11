@@ -84,7 +84,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.trackingPurposes ? { purposeIds: item.trackingPurposes } : {}),
+          ...(item.trackingPurposes ? { trackingType: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         const dfResult = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(

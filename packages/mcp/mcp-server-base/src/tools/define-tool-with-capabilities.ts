@@ -6,10 +6,11 @@ import { type z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
-import { withConfirmation, type ConfirmationGate } from './confirmation.js';
+import { withConfirmation, type ConfirmationGate } from './confirmation/index.js';
 import {
   confirmationViewError,
   defineTool,
+  shouldRegisterTool,
   type ToolAnnotations,
   type ToolConfirmation,
   type ToolDefinition,
@@ -172,6 +173,11 @@ export function defineToolWithCapabilities<T>(config: {
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;
+  /**
+   * When true, this tool is omitted from registration unless
+   * `TRANSCEND_MCP_EXPERIMENTAL=1` is set.
+   */
+  experimental?: boolean;
   /** Alternate implementations keyed by the capability that unlocks them */
   variants: ToolVariants<T>;
 }): CapabilityAwareToolDefinition {
@@ -273,6 +279,7 @@ export function expandToolsForClient(
     if (!usesMcpApp) continue;
 
     for (const companion of mcpApp.appOnlyTools ?? []) {
+      if (!shouldRegisterTool(companion)) continue;
       expanded.push({ ...companion, visibility: ['app'] });
     }
 

@@ -16,15 +16,24 @@
  *
  * @example
  * ```tsx
- * import { useMcpApp } from '@transcend-io/mcp-server-base/ui';
+ * import { useMcpApp, useTool } from '@transcend-io/mcp-server-base/ui';
+ * import { FullscreenButton } from '@transcend-io/mcp-ui-common';
  *
  * export function View() {
- *   const { data, isConnected } = useMcpApp<{ greeting: string }>({
+ *   const { app, data, isConnected } = useMcpApp<{ greeting: string }>({
  *     appInfo: { name: 'my-view', version: '1.0.0' },
+ *     capabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
  *   });
- *   return <p>{isConnected ? data?.greeting : 'Connecting…'}</p>;
+ *   const org = useTool<{ name: string }>(app, 'admin_get_organization');
+ *   return (
+ *     <>
+ *       <FullscreenButton app={app} />
+ *       <p>{isConnected ? data?.greeting : 'Connecting…'}</p>
+ *     </>
+ *   );
  * }
  * ```
  */
 
 export { useMcpApp, type McpAppState, type UseMcpAppOptions } from './use-mcp-app.js';
+export { useTool, type UseToolState, type ParsedToolResult } from './use-tool.js';

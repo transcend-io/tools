@@ -4,9 +4,11 @@ export const ClassifyTextSchema = z.object({
   texts: z.array(z.string()).describe('Array of text strings to classify'),
   categories: z
     .array(z.string())
-    .optional()
-    .describe('Specific categories to classify against (optional)'),
-  model: z.string().optional().describe('LLM model to use for classification (optional)'),
+    .min(1)
+    .describe(
+      'Category labels to classify against (required). Common PII labels include EMAIL, PHONE, NAME, IP_ADDRESS, LOCATION, and NOT_PERSONAL_DATA.',
+    ),
+  model: z.string().optional().describe('LLM model type override (sent as model_type)'),
 });
 export type ClassifyTextInput = z.infer<typeof ClassifyTextSchema>;
 
@@ -15,7 +17,7 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients) {
   return defineTool({
     name: 'discovery_classify_text',
     description:
-      "Classify text content using Transcend's LLM classifier to identify data categories",
+      "Classify text content using Transcend's LLM classifier to identify data categories. Requires at least one category label.",
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

@@ -239,6 +239,8 @@ export interface TranscendCliDeleteDataFlowsResponse {
   deleteDataFlows: {
     /** Client mutation ID */
     clientMutationId: string | null;
+    /** Whether the delete succeeded */
+    success: boolean;
   };
 }
 
@@ -246,6 +248,7 @@ export const DELETE_DATA_FLOWS = gql`
   mutation TranscendCliDeleteDataFlows($input: DeleteDataFlowsInput!) {
     deleteDataFlows(input: $input) {
       clientMutationId
+      success
     }
   }
 `;

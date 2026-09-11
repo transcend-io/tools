@@ -8,12 +8,14 @@ import { createAssessmentsCreateTemplateTool } from './assessments_create_templa
 import { createAssessmentsExportTemplateTool } from './assessments_export_template.js';
 import { createAssessmentsGetTool } from './assessments_get.js';
 import { createAssessmentsListTool } from './assessments_list.js';
+import { createAssessmentsListCommentsTool } from './assessments_list_comments.js';
 import { createAssessmentsListGroupsTool } from './assessments_list_groups.js';
 import { createAssessmentsListTemplatesTool } from './assessments_list_templates.js';
 import { createAssessmentsPrefillTool } from './assessments_prefill.js';
 import { createAssessmentsSubmitResponseTool } from './assessments_submit_response.js';
 import { createAssessmentsUpdateTool } from './assessments_update.js';
 import { createAssessmentsUpdateAssigneesTool } from './assessments_update_assignees.js';
+import { createAssessmentsWriteCommentTool } from './assessments_write_comment.js';
 
 export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -22,6 +24,8 @@ export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
     createAssessmentsCreateTool(clients),
     createAssessmentsCreateGroupTool(clients),
     createAssessmentsListGroupsTool(clients),
+    createAssessmentsListCommentsTool(clients),
+    createAssessmentsWriteCommentTool(clients),
     createAssessmentsUpdateTool(clients),
     createAssessmentsListTemplatesTool(clients),
     createAssessmentsUpdateAssigneesTool(clients),

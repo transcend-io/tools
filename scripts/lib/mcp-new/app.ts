@@ -7,9 +7,8 @@
  * `vite.config.base.ts`, which is what keeps these templates short enough not to
  * drift from what the build expects.
  *
- * The only kind that touches a manifest: `tsconfig.ui.json`, the gitignore entry
- * for the built documents, three scripts, and the browser-side devDependencies,
- * each added only when it is missing.
+ * The only kind that touches a manifest: `tsconfig.ui.json`, three scripts, and
+ * the browser-side devDependencies, each added only when it is missing.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -283,7 +282,7 @@ export function installDevDependencies(): void {
   }
 }
 
-/** Adds `tsconfig.ui.json` and the gitignore entry, if absent. */
+/** Adds `tsconfig.ui.json`, if absent. */
 function wirePackageFiles(pkg: McpPackage): void {
   const tsconfigPath = join(pkg.dir, 'tsconfig.ui.json');
   if (!existsSync(tsconfigPath)) {
@@ -300,16 +299,6 @@ function wirePackageFiles(pkg: McpPackage): void {
         2,
       )}\n`,
     );
-  }
-
-  const gitignorePath = join(pkg.dir, '.gitignore');
-  const entry = 'src/ui/generated/';
-  const existing = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf8') : '';
-  if (!existing.split('\n').includes(entry)) {
-    const header = '# Vite-built MCP App views, rebuilt by `pnpm prebuild`';
-    const prefix = existing === '' || existing.endsWith('\n') ? existing : `${existing}\n`;
-    writeFileSync(gitignorePath, `${prefix}${header}\n${entry}\n`);
-    logger.log(`  updated ${relative(repoRoot, gitignorePath)}`);
   }
 }
 

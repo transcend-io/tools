@@ -1,4 +1,10 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { OrderDirection, ScopeName } from '@transcend-io/privacy-types';
 
 import type { ScopeName as GraphqlScopeName } from '../__generated__/graphql.js';
@@ -7,20 +13,17 @@ import type { AdminMixin } from '../graphql.js';
 /** GraphQL UserOrderField values exposed on admin_list_users */
 const USER_ORDER_FIELDS = ['name', 'createdAt', 'updatedAt'] as const;
 
-export const ListUsersSchema = z.object({
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for offset pagination (default: 0)'),
+const SCOPE_NAME_VALUES = new Set<string>(Object.values(ScopeName));
+
+function isScopeName(value: string): value is ScopeName {
+  return SCOPE_NAME_VALUES.has(value);
+}
+
+const scopeNameString = z.string().refine(isScopeName, {
+  message: 'Unknown scope. Call admin_list_scopes for valid ScopeName values.',
+});
+
+export const ListUsersSchema = OffsetPaginationSchema.extend({
   text: z
     .string()
     .optional()
@@ -46,14 +49,16 @@ export const ListUsersSchema = z.object({
       'Filter to users on these team UUIDs. Resolve team names to IDs with admin_list_teams first.',
     ),
   scopeNames: z
-    .array(z.nativeEnum(ScopeName))
-    .optional()
-    .describe('Filter by directly assigned ScopeName enum values (not free text)'),
-  derivedScopeNames: z
-    .array(z.nativeEnum(ScopeName))
+    .array(scopeNameString)
     .optional()
     .describe(
-      'Filter by derived ScopeName values (includes grants via teams, dependencies, and admins)',
+      'Filter by directly assigned ScopeName values. Call admin_list_scopes for valid names.',
+    ),
+  derivedScopeNames: z
+    .array(scopeNameString)
+    .optional()
+    .describe(
+      'Filter by derived ScopeName values (teams, dependencies, admins). Call admin_list_scopes.',
     ),
   lastLoggedInAfter: z
     .string()
@@ -72,7 +77,15 @@ export const ListUsersSchema = z.object({
     .optional()
     .describe('Sort direction ASC or DESC (default: ASC, matching Admin Users)'),
 });
-export type ListUsersInput = z.infer<typeof ListUsersSchema>;
+export type ListUsersInput = Omit<
+  z.infer<typeof ListUsersSchema>,
+  'scopeNames' | 'derivedScopeNames'
+> & {
+  /** Filter by directly assigned ScopeName values */
+  scopeNames?: ScopeName[];
+  /** Filter by derived ScopeName values */
+  derivedScopeNames?: ScopeName[];
+};
 
 export function createAdminListUsersTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
@@ -82,8 +95,8 @@ export function createAdminListUsersTool(clients: ToolClients) {
       'List users in your Transcend organization with the same filters as Administration → Users. ' +
       'text searches name and email (case-insensitive substring). ' +
       'Team filters need UUIDs — call admin_list_teams then pass teamIds. ' +
-      'scopeNames / derivedScopeNames use ScopeName enum values. ' +
-      'Pagination is offset-based (limit + offset); default sort is name ASC.',
+      'scopeNames / derivedScopeNames use ScopeName values from admin_list_scopes. ' +
+      'Default sort is name ASC.',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

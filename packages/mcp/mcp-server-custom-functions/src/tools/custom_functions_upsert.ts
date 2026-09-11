@@ -26,77 +26,38 @@ const TestPayloadSchema = z.object({
 
 export const CustomFunctionsUpsertSchema = z
   .object({
-    id: z
-      .string()
-      .optional()
-      .describe('Custom function ID to update; omit to create a new custom function'),
-    versionId: z
-      .string()
-      .optional()
-      .describe(
-        'Existing draft version ID to update in place. Only valid when id is set. ' +
-          'Omit to create or replace the pending draft',
-      ),
-    type: z
-      .nativeEnum(CustomFunctionType)
-      .describe('DSR for data-silo privacy request code, or GENERAL for Rules Automation code'),
+    id: z.string().optional().describe('ID to update; omit to create'),
+    versionId: z.string().optional().describe('Draft version ID to update; requires id'),
+    type: z.nativeEnum(CustomFunctionType).describe('DSR or GENERAL'),
     dataSiloId: z
       .string()
       .optional()
       .describe(
-        'Existing Custom Function data silo ID when creating a DSR function. Omit to auto-create ' +
-          'a customFunction integration on the resolved gateway. Do not pass webhook silos; filter ' +
-          'inventory_list_data_silos with customSiloConnectionStrategy=CUSTOM_FUNCTION. The ' +
-          'returned dataSiloId is only needed later if you trial unsaved DSR code',
+        'Existing CUSTOM_FUNCTION silo for DSR create; omit to auto-create. Not webhook silos.',
       ),
     sombraId: z
       .string()
       .optional()
-      .describe(
-        'Sombra gateway ID. Omit unless this tool errors with a list of gateway IDs. Never pass ' +
-          'on DSR create — GraphQL rejects it because the data silo owns the gateway. When unknown, ' +
-          'call custom_functions_list first',
-      ),
-    name: z
-      .string()
-      .optional()
-      .describe(
-        'Display name. Required when creating (id omitted). Use a unique prefix so ' +
-          'custom_functions_list text search can find this function',
-      ),
-    description: z.string().optional().describe('Description of the custom function behavior'),
+      .describe('Gateway ID; omit unless an error lists options. Never on DSR create.'),
+    name: z.string().optional().describe('Required on create; keep unique for list search'),
+    description: z.string().optional().describe('Behavior description'),
     code: z
       .string()
       .min(1)
-      .describe(
-        'Plaintext TypeScript source. GENERAL requires a callable default export; DSR requires ' +
-          'callable default and enricher exports',
-      ),
+      .describe('Plaintext TypeScript (GENERAL: default export; DSR: default + enricher)'),
     userDefinedEnv: z
       .record(z.string(), z.string())
       .optional()
       .default({})
-      .describe('Environment variables available to the function at runtime'),
-    allowedHosts: z
-      .array(z.string())
-      .optional()
-      .default([])
-      .describe('Network hosts the function is allowed to contact'),
-    allowThirdPartyImports: z
-      .boolean()
-      .optional()
-      .describe('Allow imports from Sombra-approved third-party repositories'),
-    timeoutMs: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .describe('Maximum function runtime in milliseconds'),
+      .describe('Runtime env vars'),
+    allowedHosts: z.array(z.string()).optional().default([]).describe('Allowed hosts'),
+    allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
+    timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
     setActive: z
       .boolean()
       .optional()
       .default(true)
-      .describe('Create GENERAL functions as active immediately; ignored for DSR and updates'),
+      .describe('Activate GENERAL on create; ignored for DSR/updates'),
     promote: z
       .boolean()
       .optional()

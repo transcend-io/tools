@@ -4,8 +4,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
-import { logger } from '../../../../logger.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { defaultPolicyDownloadOutputPath, download } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
@@ -72,18 +71,15 @@ const activeDownloadResponse = {
 };
 
 describe('download', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   let tempDir: string;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
+    context.reset();
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-download-'));
   });
 
@@ -124,12 +120,10 @@ describe('download', () => {
     );
     expect(gotMock).toHaveBeenCalledWith(sampleDownloadResponse.downloadUrl);
     expect(Buffer.from(fs.readFileSync(outputPath))).toEqual(Buffer.from('bundle-bytes'));
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundleName  main'));
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining(`output      ${outputPath}`));
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('sha256      deadbeef'));
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Policy bundle downloaded successfully.'),
-    );
+    expect(context.stdout).toContain('bundleName  main');
+    expect(context.stdout).toContain(`output      ${outputPath}`);
+    expect(context.stdout).toContain('sha256      deadbeef');
+    expect(context.stdout).toContain('Policy bundle downloaded successfully.');
   });
 
   it('downloads the active version when --version is omitted', async () => {
@@ -157,7 +151,7 @@ describe('download', () => {
       'v1/policy-engine/policy-bundles/resolved-bundle-id/versions/active-version-id',
     );
     expect(Buffer.from(fs.readFileSync(outputPath))).toEqual(Buffer.from('active-bytes'));
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('version     active-label'));
+    expect(context.stdout).toContain('version     active-label');
   });
 
   it('throws when --version is omitted and the bundle has no active version', async () => {
@@ -198,8 +192,8 @@ describe('download', () => {
     });
 
     expect(gotMock).not.toHaveBeenCalled();
-    expect(stdout.write).toHaveBeenCalledWith(
-      expect.stringContaining('"downloadUrl": "https://s3.example.com/presigned-bundle.tar.gz"'),
+    expect(context.stdout).toContain(
+      '"downloadUrl": "https://s3.example.com/presigned-bundle.tar.gz"',
     );
   });
 

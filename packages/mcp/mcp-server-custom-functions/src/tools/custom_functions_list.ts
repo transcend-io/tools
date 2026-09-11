@@ -10,19 +10,13 @@ import { CustomFunctionLifecycleState, CustomFunctionType } from '@transcend-io/
 import type { CustomFunctionsMixin } from '../graphql.js';
 
 export const CustomFunctionsListSchema = OffsetPaginationSchema.extend({
-  type: z.nativeEnum(CustomFunctionType).optional().describe('Filter by custom function type'),
+  type: z.nativeEnum(CustomFunctionType).optional().describe('Filter by type'),
   lifecycleState: z
     .nativeEnum(CustomFunctionLifecycleState)
     .optional()
-    .describe('Filter by custom function lifecycle state'),
-  dataSiloId: z.string().optional().describe('Filter DSR functions by linked data silo ID'),
-  text: z
-    .string()
-    .optional()
-    .describe(
-      'Free-text search across custom functions. Pass the unique name from upsert to find a ' +
-        'function you just created',
-    ),
+    .describe('Filter by lifecycle state'),
+  dataSiloId: z.string().optional().describe('Filter DSR functions by data silo ID'),
+  text: z.string().optional().describe('Free-text search (use the unique name from upsert)'),
 });
 export type CustomFunctionsListInput = z.infer<typeof CustomFunctionsListSchema>;
 
@@ -31,21 +25,19 @@ export function createCustomFunctionsListTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_list',
     description:
-      'List Custom Functions with lifecycle, gateway, data silo, active version, pending draft, ' +
-      'and successfulTestRun metadata. Pass text with the unique name from upsert to find a ' +
-      'function you just created. Omit sombraId on upsert unless this list (or an error) shows ' +
-      'multiple gateways.',
+      'List Custom Functions (lifecycle, gateway, silo, versions, successfulTestRun). ' +
+      'Search with text; use results to decide whether upsert needs sombraId.',
     category: 'Custom Functions',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: CustomFunctionsListSchema,
-    handler: async ({ type, lifecycleState, dataSiloId, text, first, offset }) => {
+    handler: async ({ type, lifecycleState, dataSiloId, text, limit, offset }) => {
       const result = await graphql.listCustomFunctions({
         type,
         lifecycleState,
         dataSiloId,
         text,
-        first,
+        first: limit,
         offset,
       });
       return createListResult(result.nodes, {
