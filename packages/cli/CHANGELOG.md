@@ -1,5 +1,14 @@
 # @transcend-io/cli
 
+## 10.29.2
+
+### Patch Changes
+
+- c4f1a55: Upgrade csv-parse to patch CVE
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+  - @transcend-io/sdk@2.1.8
+
 ## 10.29.1
 
 ### Patch Changes
