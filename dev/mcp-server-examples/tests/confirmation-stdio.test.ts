@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ElicitRequestSchema, type ElicitResult } from '@modelcontextprotocol/sdk/types.js';
+import { HUMAN_RESPONSE_FLOOR_MS } from '@transcend-io/mcp-server-base';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const cliPath = join(dirname(fileURLToPath(import.meta.url)), '../dist/cli.mjs');
@@ -63,10 +64,12 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
   let client: Client;
   let prompts: { message: string }[];
   let answer: ElicitResult;
+  let answerAfterMs: number;
 
   beforeAll(async () => {
     prompts = [];
     answer = { action: 'accept', content: { confirmed: true } };
+    answerAfterMs = 0;
 
     client = new Client(
       { name: 'cursor', version: '1.0.0' },
@@ -74,6 +77,13 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
     );
     client.setRequestHandler(ElicitRequestSchema, async (request) => {
       prompts.push({ message: request.params.message });
+      // A case that means "a person answered" has to look like one from the
+      // server's side of the pipe, which is the only place the gate can tell the
+      // difference. This client identifies as Cursor, whose declines the gate
+      // distrusts when they arrive faster than anybody could have made them.
+      if (answerAfterMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, answerAfterMs));
+      }
       return answer;
     });
 
@@ -102,7 +112,9 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
   it('does not run when the user declines', async () => {
     prompts = [];
     answer = { action: 'decline' };
+    answerAfterMs = HUMAN_RESPONSE_FLOOR_MS + 50;
     const result = await call(client, ARGS);
+    answerAfterMs = 0;
 
     expect(prompts).toHaveLength(1);
     expect(result.success).toBe(false);
@@ -117,6 +129,25 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
 
     expect(result.success).toBe(false);
     expect(result.code).toBe('CONFIRMATION_CANCELLED');
+  });
+
+  it('recovers a token when the host declines without asking anybody', async () => {
+    // The Cursor failure end to end: the host answers `decline` on its own, and
+    // the run continues through the token instead of dead-ending on a refusal
+    // the user never gave.
+    prompts = [];
+    answer = { action: 'decline' };
+    const declined = await call(client, ARGS);
+
+    expect(declined.success).toBe(false);
+    expect(declined.code).toBe('CONFIRMATION_REQUIRED');
+    const approvalToken = declined.details?.approvalToken;
+    expect(approvalToken).toEqual(expect.any(String));
+
+    const approved = await call(client, { ...ARGS, approvalToken });
+
+    expect(approved.success).toBe(true);
+    expect(approved.data!.message).toContain('rec-42');
   });
 });
 

@@ -1,0 +1,629 @@
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import type {
+  CapturedProcessResult,
+  CapturedProcessRunner,
+} from '../../../../lib/cli/run-captured-process.js';
+import { RECOMMENDED_DENO_VERSION } from '../../../../lib/custom-functions/deno-runtime.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import { runCustomFunctionChecks } from '../helpers.js';
+
+const temporaryRoots: string[] = [];
+const recommendedDenoOutput = `deno ${RECOMMENDED_DENO_VERSION}\n`;
+
+/**
+ * Build an empty Deno module graph for one source.
+ *
+ * @param sourcePath - Root source path
+ * @returns Serialized graph
+ */
+function emptyModuleGraph(sourcePath: string): string {
+  const specifier = pathToFileURL(sourcePath).href;
+  return JSON.stringify({
+    roots: [specifier],
+    modules: [{ specifier, dependencies: [] }],
+  });
+}
+
+/**
+ * Create and register an isolated temporary directory.
+ *
+ * @returns Temporary directory
+ */
+function makeTemporaryRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), 'custom-function-check-'));
+  temporaryRoots.push(root);
+  return root;
+}
+
+/**
+ * Write a minimal valid General Custom Function project.
+ *
+ * @param root - Project directory
+ * @returns Paths used by the project
+ */
+function writeGeneralProject(root: string) {
+  const manifestPath = join(root, 'transcend-functions.yml');
+  const sourcePath = join(root, 'function.ts');
+  const payloadPath = join(root, 'payload.json');
+  writeFileSync(
+    manifestPath,
+    `functions:
+  - name: Example
+    code: ./function.ts
+    test-payload: ./payload.json
+`,
+  );
+  writeFileSync(sourcePath, 'export default () => {}\n');
+  writeFileSync(payloadPath, '{"event":"example"}\n');
+  return { manifestPath, sourcePath, payloadPath };
+}
+
+/**
+ * Return a successful captured Deno result.
+ *
+ * @param overrides - Result values to replace
+ * @returns Captured process result
+ */
+function processResult(overrides: Partial<CapturedProcessResult> = {}): CapturedProcessResult {
+  return {
+    code: 0,
+    stdout: '',
+    stderr: '',
+    ...overrides,
+  };
+}
+
+/**
+ * Build a Deno-not-found result.
+ *
+ * @returns Captured process result
+ */
+function missingDenoResult(): CapturedProcessResult {
+  const error = Object.assign(new Error('spawn deno ENOENT'), {
+    code: 'ENOENT',
+  }) as NodeJS.ErrnoException;
+  return processResult({ code: 1, error });
+}
+
+afterEach(() => {
+  temporaryRoots.splice(0).forEach((root) => {
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
+describe('runCustomFunctionChecks without Deno', () => {
+  it('rejects manifest references that escape through symbolic links', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(join(outside, 'function.ts'), 'export default () => {};\n');
+    symlinkSync(join(outside, 'function.ts'), join(root, 'function.ts'));
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Escaped source
+    code: ./function.ts
+`,
+    );
+    const context = buildContextForTest({ cwd: root });
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, () =>
+      Promise.resolve(missingDenoResult()),
+    );
+
+    expect(result.checks).toContainEqual({ name: 'files', status: 'failed' });
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'source.outside-project' }),
+    );
+  });
+
+  it('collects multiple payload diagnostics before reporting skipped Deno checks', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Broken payloads
+    code: ./function.ts
+    test-payloads:
+      - payload: ./missing.json
+      - payload: ./invalid.json
+      - payload: ./schema.json
+`,
+    );
+    writeFileSync(join(root, 'function.ts'), 'export default () => {};\n');
+    writeFileSync(join(root, 'invalid.json'), '{\n');
+    writeFileSync(join(root, 'schema.json'), '[]\n');
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      return Promise.resolve(missingDenoResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(calls).toEqual([['--version']]);
+    expect(result.status).toBe('failed');
+    expect(result.checks).toEqual([
+      { name: 'manifest', status: 'passed' },
+      { name: 'files', status: 'passed' },
+      { name: 'payloads', status: 'failed' },
+      { name: 'runtime', status: 'failed' },
+      { name: 'exports', status: 'skipped' },
+      { name: 'typecheck', status: 'skipped' },
+      { name: 'lint', status: 'skipped' },
+      { name: 'format', status: 'skipped' },
+    ]);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(
+      expect.arrayContaining([
+        'payload.missing',
+        'payload.invalid-json',
+        'payload.schema',
+        'deno.missing',
+      ]),
+    );
+  });
+
+  it('skips dependent checks when the manifest is invalid', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(manifestPath, 'functions: invalid\n');
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = () => {
+      throw new Error('Deno should not run for an invalid manifest.');
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.checks).toContainEqual({ name: 'manifest', status: 'failed' });
+    expect(result.checks).toContainEqual({ name: 'runtime', status: 'skipped' });
+    expect(result.checks).toContainEqual({ name: 'format', status: 'skipped' });
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['manifest.invalid']);
+  });
+
+  it('rejects Deno versions outside major version 2', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = () =>
+      Promise.resolve(processResult({ stdout: 'deno 1.46.3\n' }));
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.checks).toEqual(
+      expect.arrayContaining([
+        { name: 'runtime', status: 'failed' },
+        { name: 'exports', status: 'skipped' },
+        { name: 'typecheck', status: 'skipped' },
+        { name: 'lint', status: 'skipped' },
+        { name: 'format', status: 'skipped' },
+      ]),
+    );
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'deno.unsupported-version',
+        message: expect.stringContaining('Deno 2.x is required; found 1.46.3'),
+      }),
+    );
+  });
+});
+
+describe('runCustomFunctionChecks with mocked Deno', () => {
+  it('does not load a Deno configuration that escapes through a symlink', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    writeFileSync(join(outside, 'deno.json'), '{}\n');
+    symlinkSync(join(outside, 'deno.json'), join(root, 'deno.json'));
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(calls).toEqual([['--version']]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'deno.config-outside-project' }),
+    );
+    expect(result.checks).toContainEqual({ name: 'format', status: 'failed' });
+  });
+
+  it('follows a Deno config importMap reference for export inspection', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const importMapPath = join(root, 'imports.json');
+    writeFileSync(join(root, 'deno.json'), '{"importMap":"./imports.json"}\n');
+    writeFileSync(importMapPath, '{"imports":{}}\n');
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.status).toBe('passed');
+    expect(result.diagnostics).toContainEqual({
+      code: 'deno.version-mismatch',
+      severity: 'warning',
+      message: 'Deno 2.5.6 is compatible, but 2.4.5 matches the current production runtime.',
+    });
+    expect(calls).toContainEqual([
+      'doc',
+      '--json',
+      '--import-map',
+      importMapPath,
+      join(root, 'function.ts'),
+    ]);
+  });
+
+  it('extracts inline deno.json imports for export inspection', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    writeFileSync(
+      join(root, 'deno.json'),
+      JSON.stringify(
+        {
+          imports: {
+            '@transcend-io/custom-function-types': 'npm:@transcend-io/custom-function-types@0.1.0',
+          },
+          tasks: { 'custom-functions:check': 'transcend custom-functions check' },
+          compilerOptions: { strict: true },
+        },
+        null,
+        2,
+      ),
+    );
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+    const docCall = calls.find(([command]) => command === 'doc')!;
+    const importMapDataUrl = docCall[3]!;
+
+    expect(result.status).toBe('passed');
+    expect(importMapDataUrl).toMatch(/^data:application\/json,/u);
+    expect(JSON.parse(decodeURIComponent(importMapDataUrl.split(',', 2)[1]!))).toEqual({
+      imports: {
+        '@transcend-io/custom-function-types': 'npm:@transcend-io/custom-function-types@0.1.0',
+      },
+    });
+    expect(calls).toContainEqual([
+      'doc',
+      '--json',
+      '--import-map',
+      importMapDataUrl,
+      join(root, 'function.ts'),
+    ]);
+  });
+
+  it('only treats top-level Deno document nodes as exports', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(
+          processResult({
+            stdout: '[{"name":"helper","functionDef":{"params":[{"name":"default"}]}}]',
+          }),
+        );
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      return Promise.resolve(processResult({ stdout: options.input ?? '' }));
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'exports.default-missing' }),
+    );
+  });
+
+  it('rejects local runtime imports that cannot be deployed', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'info') {
+        const specifier = pathToFileURL(sourcePath).href;
+        return Promise.resolve(
+          processResult({
+            stdout: JSON.stringify({
+              roots: [specifier],
+              modules: [
+                {
+                  specifier,
+                  dependencies: [
+                    {
+                      specifier: './helper.ts',
+                      code: { specifier: pathToFileURL(join(root, 'helper.ts')).href },
+                    },
+                  ],
+                },
+              ],
+            }),
+          }),
+        );
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'source.local-runtime-import',
+        message: expect.stringContaining('./helper.ts'),
+      }),
+    );
+    expect(result.checks).toContainEqual({ name: 'files', status: 'failed' });
+  });
+
+  it('reports export, typecheck, lint, and format failures independently', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath, payloadPath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[]' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'check') {
+        return Promise.resolve(processResult({ code: 1, stderr: 'type failure' }));
+      }
+      if (args[0] === 'lint') {
+        return Promise.resolve(processResult({ code: 1, stderr: 'lint failure' }));
+      }
+      if (args[0] === 'fmt' && args.includes('--check')) {
+        return Promise.resolve(processResult({ code: 1, stderr: 'format failure' }));
+      }
+      return Promise.resolve(processResult({ stdout: options.input ?? '' }));
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.checks).toEqual([
+      { name: 'manifest', status: 'passed' },
+      { name: 'files', status: 'passed' },
+      { name: 'payloads', status: 'passed' },
+      { name: 'runtime', status: 'passed' },
+      { name: 'exports', status: 'failed' },
+      { name: 'typecheck', status: 'failed' },
+      { name: 'lint', status: 'failed' },
+      { name: 'format', status: 'failed' },
+    ]);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual([
+      'exports.default-missing',
+      'deno.typecheck',
+      'deno.lint',
+      'deno.format',
+    ]);
+    expect(result.diagnostics.find(({ code }) => code === 'deno.format')?.message).not.toContain(
+      '@@',
+    );
+    expect(calls).toContainEqual(['doc', '--json', sourcePath]);
+    expect(calls).toContainEqual(['info', '--json', '--no-config', sourcePath]);
+    expect(calls).toContainEqual(['check', '--no-config', sourcePath]);
+    expect(calls).toContainEqual(['lint', '--no-config', sourcePath]);
+    expect(calls).toContainEqual([
+      'fmt',
+      '--check',
+      '--no-config',
+      sourcePath,
+      payloadPath,
+      manifestPath,
+    ]);
+  });
+
+  it.each([
+    { label: '--fix', fix: true, useConfirmation: false },
+    { label: 'confirmation', fix: false, useConfirmation: true },
+  ])('repairs formatting with $label', async ({ fix, useConfirmation }) => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const confirmFormat = vi.fn<(patch: string) => Promise<boolean>>(() => Promise.resolve(true));
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'fmt' && args.includes('--check')) {
+        return Promise.resolve(processResult({ code: 1 }));
+      }
+      if (args[0] === 'fmt' && args.at(-1) === '-') {
+        const input = options.input ?? '';
+        return Promise.resolve(
+          processResult({
+            stdout: input.includes('export default') ? input.replace('{}\n', '{};\n') : input,
+          }),
+        );
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(
+      context,
+      {
+        manifestPath,
+        fix,
+        ...(useConfirmation ? { confirmFormat } : {}),
+      },
+      runner,
+    );
+
+    expect(result.status).toBe('passed');
+    expect(result.checks).toContainEqual({ name: 'format', status: 'passed' });
+    expect(
+      calls.some((args) => args[0] === 'fmt' && !args.includes('--check') && args.at(-1) !== '-'),
+    ).toBe(false);
+    expect(readFileSync(sourcePath, 'utf8')).toContain('{};');
+    if (useConfirmation) {
+      expect(confirmFormat).toHaveBeenCalledOnce();
+      expect(confirmFormat.mock.calls[0]![0]).toContain('Index: function.ts');
+    } else {
+      expect(confirmFormat).not.toHaveBeenCalled();
+    }
+  });
+
+  it('does not apply a stale formatting preview', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      if (args[0] === 'fmt' && args.includes('--check')) {
+        return Promise.resolve(processResult({ code: 1 }));
+      }
+      if (args[0] === 'fmt' && args.at(-1) === '-') {
+        const input = options.input ?? '';
+        return Promise.resolve(
+          processResult({
+            stdout: input.includes('export default') ? input.replace('{}\n', '{};\n') : input,
+          }),
+        );
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(
+      context,
+      {
+        manifestPath,
+        fix: false,
+        confirmFormat: () => {
+          writeFileSync(sourcePath, 'changed while awaiting approval\n');
+          return Promise.resolve(true);
+        },
+      },
+      runner,
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'deno.format-fix' }));
+    expect(readFileSync(sourcePath, 'utf8')).toBe('changed while awaiting approval\n');
+  });
+
+  it('requires variables for every manifest placeholder', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Placeholder paths
+    code: ./functions/<<parameters.source>>.ts
+    test-payload: ./payloads/<<parameters.payload>>.json
+`,
+    );
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = () => Promise.resolve(missingDenoResult());
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'manifest.invalid',
+        message: expect.stringContaining('Found variable that was not set: source'),
+      }),
+    );
+    expect(result.checks).toContainEqual({ name: 'manifest', status: 'failed' });
+    expect(result.checks).toContainEqual({ name: 'payloads', status: 'skipped' });
+  });
+
+  it('resolves source and payload paths when variables are provided', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Parameterized paths
+    code: ./<<parameters.source>>
+    test-payload: ./<<parameters.payload>>
+`,
+    );
+    writeFileSync(join(root, 'function.ts'), 'export default () => {};\n');
+    writeFileSync(join(root, 'payload.json'), '{"event":"example"}\n');
+    const context = buildContextForTest({ cwd: root });
+
+    const result = await runCustomFunctionChecks(
+      context,
+      {
+        manifestPath,
+        variables: { source: 'function.ts', payload: 'payload.json' },
+        fix: false,
+      },
+      () => Promise.resolve(missingDenoResult()),
+    );
+
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['deno.missing']);
+    expect(result.checks).toContainEqual({ name: 'files', status: 'passed' });
+    expect(result.checks).toContainEqual({ name: 'payloads', status: 'passed' });
+  });
+});

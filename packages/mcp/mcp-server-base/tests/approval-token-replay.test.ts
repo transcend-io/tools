@@ -15,7 +15,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildMcpServer } from '../src/server/build-server.js';
-import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation.js';
+import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation/index.js';
 import { defineTool } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 

@@ -1,4 +1,3 @@
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
@@ -9,7 +8,9 @@ import {
   expandToolsForClient,
   isVisibleToModel,
   resolveToolVariant,
+  shouldRegisterTool,
   SimpleLogger,
+  toolInputSchema,
   withConfirmation,
   type ClientCapabilityReport,
   type ConfirmationGate,
@@ -72,15 +73,15 @@ export class ToolRegistry {
 
   private registerToolsFromModule(tools: ToolDefinition[]): void {
     for (const tool of tools) {
+      if (!shouldRegisterTool(tool)) {
+        continue;
+      }
       if (this.tools.has(tool.name)) {
         this.logger.warn('Duplicate tool name - skipping', { toolName: tool.name });
         continue;
       }
       this.tools.set(tool.name, tool);
-      this.jsonSchemaCache.set(
-        tool.name,
-        toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
-      );
+      this.jsonSchemaCache.set(tool.name, toolInputSchema(tool.zodSchema));
     }
   }
 

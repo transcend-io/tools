@@ -1,10 +1,12 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type ListOptions,
   type PaginatedResponse,
   type Request,
   type RequestDataSilo,
   type RequestDetails,
+  type RequestEnricherSummary,
   type RequestType,
 } from '@transcend-io/mcp-server-base';
 
@@ -12,12 +14,13 @@ import { graphql } from './__generated__/gql.js';
 import type {
   RequestDataSiloFiltersInput,
   RequestDataSiloStatus,
+  RequestFiltersInput,
   VisualRequestDataSiloStatus,
 } from './__generated__/graphql.js';
 
 const ListRequestsDoc = graphql(/* GraphQL */ `
-  query DsrListRequests($first: Int, $after: String) {
-    requests(first: $first, after: $after) {
+  query DsrListRequests($first: Int, $after: String, $filterBy: RequestFiltersInput) {
+    requests(first: $first, after: $after, filterBy: $filterBy) {
       nodes {
         id
         type
@@ -68,6 +71,28 @@ const GetRequestDoc = graphql(/* GraphQL */ `
   }
 `);
 
+/** Same shape as CLI/SDK REQUEST_ENRICHERS — request does not nest enrichers. */
+const ListRequestEnrichersDoc = graphql(/* GraphQL */ `
+  query DsrListRequestEnrichers($first: Int!, $offset: Int!, $requestId: ID!) {
+    requestEnrichers(
+      input: { requestId: $requestId }
+      first: $first
+      offset: $offset
+      useMaster: false
+    ) {
+      nodes {
+        status
+        enricher {
+          id
+          title
+          type
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
 const ListRequestDataSilosDoc = graphql(/* GraphQL */ `
   query DsrListRequestDataSilos(
     $first: Int
@@ -99,21 +124,6 @@ const ListRequestDataSilosDoc = graphql(/* GraphQL */ `
         }
       }
       totalCount
-    }
-  }
-`);
-
-const EmployeeMakeDataSubjectRequestDoc = graphql(/* GraphQL */ `
-  mutation DsrEmployeeMakeRequest($input: EmployeeRequestInput!) {
-    employeeMakeDataSubjectRequest(input: $input) {
-      clientMutationId
-      request {
-        id
-        type
-        status
-        createdAt
-        updatedAt
-      }
     }
   }
 `);
@@ -150,6 +160,14 @@ function mapTeams(teams: { id: string; name: string }[] | null | undefined): Req
   }));
 }
 
+/** Options for listing privacy requests (DSRs) */
+export interface ListRequestsOptions extends ListOptions {
+  /** Fuzzy/exact search across request identifiers (email, phone, etc.) */
+  identifierValue?: string;
+  /** Exact match on primary email address only */
+  emails?: string[];
+}
+
 /** Filters for listing request–data-silo jobs on a DSR */
 export interface ListRequestDataSilosOptions extends ListOptions {
   /** Request ID to list silo jobs for (required) */
@@ -163,10 +181,15 @@ export interface ListRequestDataSilosOptions extends ListOptions {
 }
 
 export class DSRMixin extends TranscendGraphQLBase {
-  async listRequests(options?: ListOptions): Promise<PaginatedResponse<Request>> {
+  async listRequests(options?: ListRequestsOptions): Promise<PaginatedResponse<Request>> {
+    const filterBy: RequestFiltersInput = {
+      ...(options?.identifierValue ? { identifierValue: options.identifierValue } : {}),
+      ...(options?.emails?.length ? { emails: options.emails } : {}),
+    };
     const data = await this.makeRequest(ListRequestsDoc, {
       first: Math.min(options?.first ?? 50, 100),
       after: options?.after ?? null,
+      filterBy: Object.keys(filterBy).length > 0 ? filterBy : undefined,
     });
     return {
       nodes: data.requests.nodes.map((node) => ({
@@ -188,8 +211,26 @@ export class DSRMixin extends TranscendGraphQLBase {
   }
 
   async getRequest(id: string): Promise<RequestDetails> {
-    const data = await this.makeRequest(GetRequestDoc, { id });
+    // Request does not nest enrichers — fetch both in parallel (CLI REQUEST_ENRICHERS).
+    const [data, enrichersData] = await Promise.all([
+      this.makeRequest(GetRequestDoc, { id }),
+      this.makeRequest(ListRequestEnrichersDoc, {
+        first: 100,
+        offset: 0,
+        requestId: id,
+      }),
+    ]);
     const r = data.request;
+    const requestEnrichers: RequestEnricherSummary[] = enrichersData.requestEnrichers.nodes.map(
+      (node) => ({
+        status: node.status,
+        enricher: {
+          id: node.enricher.id,
+          title: node.enricher.title,
+          type: node.enricher.type,
+        },
+      }),
+    );
     return {
       id: r.id,
       type: r.type as RequestType,
@@ -202,6 +243,7 @@ export class DSRMixin extends TranscendGraphQLBase {
       isSilent: r.isSilent,
       owners: mapOwners(r.owners),
       teams: mapTeams(r.teams),
+      requestEnrichers,
     };
   }
 
@@ -249,37 +291,8 @@ export class DSRMixin extends TranscendGraphQLBase {
     const totalCount = connection.totalCount;
     return {
       nodes,
-      pageInfo: {
-        hasNextPage: offset + nodes.length < totalCount,
-        hasPreviousPage: offset > 0,
-      },
+      pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
       totalCount,
-    };
-  }
-
-  async employeeMakeDataSubjectRequest(input: {
-    type: RequestType;
-    email: string;
-    coreIdentifier?: string;
-    locale?: string;
-    isSilent?: boolean;
-    subjectType: string;
-    attributes?: Record<string, unknown>;
-    clientMutationId?: string;
-  }): Promise<{ request: Request; clientMutationId?: string }> {
-    const data = await this.makeRequest(EmployeeMakeDataSubjectRequestDoc, {
-      input: input as never,
-    });
-    const payload = data.employeeMakeDataSubjectRequest;
-    return {
-      request: {
-        id: payload.request.id,
-        type: payload.request.type as RequestType,
-        status: payload.request.status as Request['status'],
-        createdAt: payload.request.createdAt,
-        updatedAt: payload.request.updatedAt,
-      },
-      clientMutationId: payload.clientMutationId ?? undefined,
     };
   }
 

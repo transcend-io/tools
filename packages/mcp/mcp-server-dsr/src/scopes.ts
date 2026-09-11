@@ -8,4 +8,5 @@ export const DSR_OAUTH_SCOPES = [
   ScopeName.ManageAssignedRequests,
   ScopeName.ViewRequestCompilation,
   ScopeName.ManageRequestCompilation,
+  ScopeName.ViewWorkflows,
 ] as const;

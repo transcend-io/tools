@@ -3,14 +3,11 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { CustomFunctionsMixin } from '../graphql.js';
 
 export const CustomFunctionsGetCodeSchema = z.object({
-  id: z.string().describe('Custom function ID from custom_functions_list or upsert'),
+  id: z.string().describe('Custom function ID from list or upsert'),
   versionId: z
     .string()
     .optional()
-    .describe(
-      'Expected readable version ID. Omit to read the active version, or the latest draft when ' +
-        'no active version exists',
-    ),
+    .describe('Readable version ID; omit for active, or latest draft if none'),
 });
 export type CustomFunctionsGetCodeInput = z.infer<typeof CustomFunctionsGetCodeSchema>;
 
@@ -19,10 +16,8 @@ export function createCustomFunctionsGetCodeTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_get_code',
     description:
-      'Load plaintext TypeScript and runtime context for a Custom Function so it can be edited. ' +
-      'Returns version.successfulTestRun so you can confirm custom_functions_test_run. ' +
-      'This is read-only but sensitive: userDefinedEnv may contain secrets. Readable version is ' +
-      'the active version, or the latest draft when no active version exists.',
+      'Load plaintext TypeScript and runtime context for editing. Returns ' +
+      'version.successfulTestRun. Sensitive: userDefinedEnv may include secrets.',
     category: 'Custom Functions',
     readOnly: true,
     requireSombra: true,

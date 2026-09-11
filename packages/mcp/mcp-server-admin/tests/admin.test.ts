@@ -1,3 +1,4 @@
+import { TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AdminMixin } from '../src/graphql.js';
@@ -9,6 +10,7 @@ const EXPECTED_TOOL_NAMES = [
   'admin_list_users',
   'admin_list_teams',
   'admin_list_api_keys',
+  'admin_list_scopes',
   'admin_create_api_key',
   'admin_get_privacy_center',
   'admin_test_connection',
@@ -57,9 +59,9 @@ describe('Admin Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 8 tools with expected names', () => {
+  it('registers exactly 9 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(9);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -73,6 +75,26 @@ describe('Admin Tools', () => {
       expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
         expect.arrayContaining(['title', 'scopes']),
       );
+      expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
+    });
+
+    it('keeps a short description that points at admin_list_scopes', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
+
+      expect(tool.description.length).toBeLessThanOrEqual(700);
+      expect(tool.description).toContain('admin_list_scopes');
+    });
+
+    it('zodSchema rejects unknown scope names', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
+
+      const result = tool.zodSchema.safeParse({
+        title: 'Test Key',
+        scopes: ['notARealScope'],
+      });
+      expect(result.success).toBe(false);
       expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
     });
 
@@ -106,6 +128,71 @@ describe('Admin Tools', () => {
         scopes: ['readWrite'],
         dataSilos: undefined,
       });
+    });
+  });
+
+  describe('admin_list_scopes', () => {
+    it('returns compact rows for every TRANSCEND_SCOPES key by default', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
+
+      const result = (await tool.handler({})) as {
+        success: boolean;
+        data: Array<{
+          name: string;
+          title: string;
+          type: string;
+          dependencies: string[];
+          description?: string;
+          products?: string[];
+        }>;
+        totalCount: number;
+      };
+
+      const catalogNames = Object.keys(TRANSCEND_SCOPES);
+      expect(result.success).toBe(true);
+      expect(result.totalCount).toBe(catalogNames.length);
+      expect(result.data.map((row) => row.name)).toEqual(catalogNames);
+      expect(result.data[0]).toEqual({
+        name: result.data[0].name,
+        title: expect.any(String),
+        type: expect.any(String),
+        dependencies: expect.any(Array),
+      });
+      expect(result.data[0]).not.toHaveProperty('description');
+      expect(result.data[0]).not.toHaveProperty('products');
+      expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
+      expect(mockGraphql.listApiKeys).not.toHaveBeenCalled();
+    });
+
+    it('adds description and products when includeDetails is true', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
+
+      const result = (await tool.handler({ includeDetails: true })) as {
+        data: Array<{ description?: string; products?: string[] }>;
+      };
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          description: expect.any(String),
+          products: expect.any(Array),
+        }),
+      );
+    });
+
+    it('filters by text over name, title, and description', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
+
+      const result = (await tool.handler({ text: 'consent' })) as {
+        data: Array<{ name: string }>;
+        totalCount: number;
+      };
+
+      expect(result.totalCount).toBeGreaterThan(0);
+      expect(result.totalCount).toBeLessThan(Object.keys(TRANSCEND_SCOPES).length);
+      expect(result.data.some((row) => row.name.toLowerCase().includes('consent'))).toBe(true);
     });
   });
 

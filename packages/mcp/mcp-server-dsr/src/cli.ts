@@ -3,6 +3,7 @@ import { createMCPServer, createTranscendRestClient } from '@transcend-io/mcp-se
 
 import packageJson from '../package.json' with { type: 'json' };
 import { DSRMixin } from './graphql.js';
+import { getDsrPrompts } from './prompts/index.js';
 import { DSR_OAUTH_SCOPES } from './scopes.js';
 import { getDSRTools } from './tools/index.js';
 
@@ -11,6 +12,7 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: DSR_OAUTH_SCOPES,
   getTools: getDSRTools,
+  getPrompts: getDsrPrompts,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
     const graphql = new DSRMixin(auth, graphqlUrl);
     return {

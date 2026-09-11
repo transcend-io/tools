@@ -65,7 +65,7 @@ describe('Custom Functions tools', () => {
 
     const result = await getTool('custom_functions_list').handler({
       text: 'Example',
-      first: 50,
+      limit: 50,
       offset: 0,
     });
 

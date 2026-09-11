@@ -106,6 +106,9 @@ const SharedLoadOptions = t.intersection([
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,
     hostThemeMap: t.record(URLHostString, ThemeKey),
+    customCssUrlMap: t.record(ThemeKey, AbsoluteUrlString),
+    // Override the locale used to load localized messages
+    overrideLocale: t.string,
   }),
 ]);
 
@@ -114,6 +117,10 @@ export const LoadOptions = t.intersection([
   SharedLoadOptions,
   t.type({
     themeConfigMap: t.record(ThemeKey, ThemeConfigurationMinimal),
+  }),
+  t.partial({
+    // Override the viewport height used when rendering the consent UI
+    viewportHeightOverride: t.string,
   }),
 ]);
 

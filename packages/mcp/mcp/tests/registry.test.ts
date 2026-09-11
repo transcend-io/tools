@@ -1,6 +1,7 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  isVisibleToModel,
   TranscendRestClient,
   type AuthCredentials,
   type ToolClients,
@@ -51,6 +52,17 @@ describe('ToolRegistry', () => {
     expect(unique.size).toBe(names.length);
   });
 
+  // A `cursor` param is only honest where the underlying API threads it through to a real
+  // endCursor. Everywhere else it was silently dropped, so callers paged forever on page one.
+  it('only exposes cursor on the tools whose API actually pages by cursor', () => {
+    const withCursor = allTools
+      .filter((tool) => 'cursor' in (tool.zodSchema as { shape: Record<string, unknown> }).shape)
+      .map((tool) => tool.name)
+      .sort();
+
+    expect(withCursor).toEqual(['dsr_list', 'preferences_query']);
+  });
+
   it('ToolRegistry registers all tools with correct count', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
@@ -60,13 +72,17 @@ describe('ToolRegistry', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-    expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
+    // Experimental tools are defined but omitted from registration unless
+    // TRANSCEND_MCP_EXPERIMENTAL=1 (unset in this test).
+    const experimental = allTools.filter((tool) => tool.experimental).length;
+    const expectedRegistered = EXPECTED_UMBRELLA_TOOL_COUNT - experimental;
+    expect(registry.getToolCount()).toBe(expectedRegistered);
 
-    // Registering a tool and describing it to an embedder differ now: the embedded
-    // path cannot obtain a confirmation, so gated tools are withheld from the list.
-    // No tool declares one yet, so this holds at zero until the first is gated.
+    // Registering a tool and describing it to an embedder differ: gated tools and
+    // tools with visibility omitting `model` stay callable but are withheld from the list.
+    const hidden = registry.getAllTools().filter((tool) => !isVisibleToModel(tool)).length;
     const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated);
+    expect(registry.getToolList()).toHaveLength(expectedRegistered - gated - hidden);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {

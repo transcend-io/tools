@@ -93,6 +93,22 @@ export const Preference = t.type({
 /** Override type. */
 export type Preference = t.TypeOf<typeof Preference>;
 
+/** Maximum length for a preference-store purpose `sourceSystem` label. */
+export const MAX_SOURCE_SYSTEM_LENGTH = 128;
+
+/**
+ * Free-form source-system label written/read on preference-store purpose items.
+ * Non-empty and at most {@link MAX_SOURCE_SYSTEM_LENGTH} characters.
+ */
+export const SourceSystemLabel = t.refinement(
+  t.string,
+  (value): value is string => value.length > 0 && value.length <= MAX_SOURCE_SYSTEM_LENGTH,
+  'SourceSystemLabel',
+);
+
+/** Override type. */
+export type SourceSystemLabel = t.TypeOf<typeof SourceSystemLabel>;
+
 /**
  * The format for a preference store purpose
  */
@@ -106,6 +122,10 @@ export const PreferenceStorePurposeResponse = t.intersection([
   t.partial({
     /** additional preference associated with this purpose */
     preferences: t.array(Preference),
+    /** Caller-provided source system label (e.g. "Adobe") */
+    sourceSystem: SourceSystemLabel,
+    /** Timestamp of when the purpose was last updated (ISO 8601) */
+    timestamp: t.string,
   }),
 ]);
 
@@ -198,8 +218,6 @@ export type PreferenceStoreWorkflowSettings = t.TypeOf<typeof PreferenceStoreWor
 export const PreferenceStorePurposeUpdate = t.intersection([
   PreferenceStorePurposeResponse,
   t.partial({
-    /** Timestamp of when the purpose was last updated (ISO 8601) */
-    timestamp: t.string,
     /** Additional tags to forward to the DSR event */
     attributes: t.array(CustomFieldApiInput),
     /** Consent workflow settings */

@@ -5,9 +5,21 @@ const examples = buildExamples<LintCommandFlags>(
   ['policy', 'lint'],
   [
     {
-      description: 'Lint a local policy directory and optionally format Rego files',
+      description: 'Verify the default local policy project',
+      flags: {},
+    },
+    {
+      description: 'Verify and format a custom policy project',
       flags: {
         dir: './policies',
+        fix: true,
+      },
+    },
+    {
+      description: 'Run the verification gate in CI or an editor',
+      flags: {
+        noInteractive: true,
+        json: true,
       },
     },
   ],

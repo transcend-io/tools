@@ -6,12 +6,6 @@ export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 
 export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';
 export {
-  PurposeConsentSchema,
-  type PurposeConsentInput,
-  SetPreferencesSchema,
-  type SetPreferencesInput,
-} from './tools/consent_set_preferences.js';
-export {
   ListAirgapBundlesSchema,
   type ListAirgapBundlesInput,
 } from './tools/consent_list_airgap_bundles.js';
@@ -41,6 +35,11 @@ export {
   UpdateCookiesSchema,
   type UpdateCookiesInput,
 } from './tools/consent_update_cookies.js';
+export { DeleteCookiesSchema, type DeleteCookiesInput } from './tools/consent_delete_cookies.js';
+export {
+  DeleteDataFlowsSchema,
+  type DeleteDataFlowsInput,
+} from './tools/consent_delete_data_flows.js';
 export {
   UpdateDataFlowItemSchema,
   type UpdateDataFlowItemInput,
@@ -53,3 +52,40 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
+export { ConsentTriageTypeSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
+export {
+  COOKIE_TRIAGE_FETCH_MAX,
+  COOKIE_TRIAGE_FETCH_PAGE_SIZE,
+  COOKIE_TRIAGE_MAX_PER_PURPOSE,
+  COOKIE_TRIAGE_MIN_OCCURRENCES,
+  COOKIE_TRIAGE_PURPOSE_LABELS,
+  COOKIE_TRIAGE_PURPOSE_ORDER,
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
+  CookieTriagePurposeCategory,
+} from './lib/cookieTriageConfig.js';
+export {
+  ConsentTriageType,
+  CookieTriageDecision,
+  CookieTriageLoadStatus,
+  type CookieTriageAnalysis,
+  type CookieTriageAppInput,
+  type CookieTriageAppPayload,
+  type CookieTriageCategoryPayload,
+} from './lib/cookieTriageTypes.js';
+export {
+  fetchConsentTriageItems,
+  fetchCookiesForTriage,
+  fetchDataFlowsForTriage,
+  fetchTriageOrganizationName,
+} from './lib/fetchConsentTriageItems.js';
+export {
+  projectCookieForTriage,
+  projectDataFlowForTriage,
+  projectListNodeForTriage,
+  type ConsentTriageListNode,
+} from './lib/projectTriageItem.js';
+export {
+  compareCookiesByOccurrencesDesc,
+  groupCookiesForTriage,
+} from './lib/groupCookiesForTriage.js';
+export { resolvePrimaryCookiePurpose } from './lib/resolvePrimaryCookiePurpose.js';

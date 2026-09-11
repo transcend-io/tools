@@ -56,6 +56,51 @@
   --color-focus: var(--color-ring-primary, var(--border-focused, #3e2ebc));
 
   /*
+   * KPI / metric cards stay on a light surface even when the host is dark.
+   * Status colors (`text-success`, `text-danger`) are authored for light
+   * backgrounds, and Claude's dark chrome makes them unreadable — so these
+   * deliberately skip host background/text variables and use Transcend light
+   * tokens only.
+   */
+  --color-card: var(--background-default, #ffffff);
+  --color-card-sunken: var(--background-neutral, #ebebef);
+  --color-on-card: var(--text, #1e1d28);
+  --color-on-card-muted: var(--text-subtle, #55535f);
+  --color-on-card-subtle: var(--text-subtlest, #85838f);
+  --color-card-line: var(--border-default, #d6d5db);
+  /*
+   * White label on bold fills (`bg-brand`, `bg-fill-*`). Skips host
+   * `--color-text-inverse`, which a dark host may flip to a dark color.
+   */
+  --color-on-fill: var(--text-inverse, #ffffff);
+
+  /*
+   * Fills for bars and swatches. Separate from the `--color-success` family
+   * below because those resolve to `--text-*-bold` — near-black green and brown
+   * that read as mud when painted as a shape rather than set as type.
+   */
+  --color-fill-brand: var(--background-brand-bold, #5f5bf7);
+  --color-fill-success: var(--background-success-bold, #008200);
+  --color-fill-warning: var(--background-warning-bold, #c98300);
+  --color-fill-danger: var(--background-danger-bold, #bb0036);
+  --color-fill-neutral: var(--background-neutral, #ebebef);
+  /* Dormant badge — warmer than fill-warning so it reads as a status chip */
+  --color-fill-dormant: var(--background-warning-bold, #ec9e00);
+  /* Soft brand wash for selected multi-select rows */
+  --color-fill-brand-subtle: var(--background-brand-subtle, #cfd1fe);
+
+  /*
+   * Consent purpose accent colors (cookie triage outline badges: border + text).
+   * Fallbacks match the Agentic Assist purpose-badge mockups.
+   */
+  --color-purpose-essential: var(--chart-teal, #44c9a4);
+  --color-purpose-functional: var(--background-accent-yellow-bold, #f4c139);
+  --color-purpose-advertising: var(--palette-red-400, #fb544e);
+  --color-purpose-analytics: var(--chart-orange, #fd7a36);
+  --color-purpose-sale: var(--background-accent-purple-bold, #7c35fb);
+  --color-purpose-other: var(--text-subtle, #485060);
+
+  /*
    * Brand and status are Transcend's identity, so tokens lead here and the host
    * is only the fallback.
    */
@@ -82,6 +127,9 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
 
   /* Type scale. Sizes and their line heights travel together as one utility. */
+  /* Ours: chrome / badge copy below body sm (host scale starts at text-sm). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
   --text-sm: var(--font-text-sm-size, 0.8125rem);
   --text-sm--line-height: var(--font-text-sm-line-height, 1.25rem);
   --text-md: var(--font-text-md-size, 0.875rem);
@@ -90,6 +138,10 @@
   --text-heading-sm--line-height: var(--font-heading-sm-line-height, 1.5rem);
   --text-heading-md: var(--font-heading-md-size, 1.125rem);
   --text-heading-md--line-height: var(--font-heading-md-line-height, 1.625rem);
+  /* Ours: a display number that outranks its label, which the heading
+     sizes above are too close to do. */
+  --text-metric: 1.75rem;
+  --text-metric--line-height: 2.125rem;
 
   --radius-sm: var(--border-radius-sm, 6px);
   --radius-md: var(--border-radius-md, 8px);
@@ -105,6 +157,15 @@
   --spacing: 0.25rem;
   --breakpoint-sm: 24rem;
   --breakpoint-md: 32rem;
+  --breakpoint-lg: 48rem;
+
+  /*
+   * Widest a view's content grows before it reads as stretched rather than
+   * full-bleed. A host gives an app whatever width the conversation has, and an
+   * inspector or maximized panel is often far wider than the content can fill.
+   * Structural, so it is ours rather than the host's.
+   */
+  --container-view: 64rem;
 }
 
 @layer base {
@@ -200,14 +261,5 @@
   :focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 }

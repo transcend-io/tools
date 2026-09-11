@@ -1,0 +1,73 @@
+/*
+ * Deliberately unlayered. The shared theme declares its rules in cascade
+ * layers, so these component-owned keyframes win without `!important`.
+ */
+.transcend-logo-spinner-trim {
+  stroke-dasharray: 1 999;
+  stroke-dashoffset: 1;
+  animation: transcend-logo-spinner-trim var(--transcend-logo-spinner-trim-duration)
+    var(--transcend-logo-spinner-trim-ease) infinite;
+}
+
+.transcend-logo-spinner-inner {
+  stroke-dasharray: var(--transcend-logo-spinner-inner-tip);
+  stroke-dashoffset: 0;
+  animation:
+    transcend-logo-spinner-fill var(--transcend-logo-spinner-fill-duration) ease-out forwards,
+    transcend-logo-spinner-spin var(--transcend-logo-spinner-inner-duration) linear
+      var(--transcend-logo-spinner-fill-duration) infinite;
+}
+
+@keyframes transcend-logo-spinner-trim {
+  0%,
+  4% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+
+  8% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+
+  22%,
+  72% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  86% {
+    stroke-dashoffset: -1;
+    opacity: 1;
+  }
+
+  90%,
+  100% {
+    stroke-dashoffset: -1;
+    opacity: 0;
+  }
+}
+
+@keyframes transcend-logo-spinner-fill {
+  from {
+    stroke-dasharray: var(--transcend-logo-spinner-inner-tip);
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dasharray: var(--transcend-logo-spinner-inner-rest);
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes transcend-logo-spinner-spin {
+  from {
+    stroke-dasharray: var(--transcend-logo-spinner-inner-rest);
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dasharray: var(--transcend-logo-spinner-inner-rest);
+    stroke-dashoffset: -1;
+  }
+}

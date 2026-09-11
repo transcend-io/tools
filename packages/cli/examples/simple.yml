@@ -19,13 +19,13 @@ templates:
 
 # Manage at: https://app.transcend.io/privacy-requests/identifiers
 # See https://docs.transcend.io/docs/identity-enrichment
-# Define enricher or pre-flight check webhooks that will be executed
+# Define preflight check webhooks that will be executed
 # prior to privacy request workflows. Some examples may include:
 #   - identity enrichment: look up additional identifiers for that user.
 #                          i.e. map an email address to a user ID
 #   - fraud check: auto-cancel requests if the user is flagged for fraudulent behavior
 #   - customer check: auto-cancel request for some custom business criteria
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     url: https://example.acme.com/transcend-enrichment-webhook

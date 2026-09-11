@@ -1,19 +1,22 @@
 import type { PromptDefinition } from '@transcend-io/mcp-server-base';
 
+import { ConsentTriageType } from '../lib/cookieTriageTypes.js';
+
 export const consentTriagePrompt: PromptDefinition = {
   name: 'consent-triage',
   description:
     'Systematically triage cookies and data flows discovered by Transcend consent telemetry. ' +
-    'Walks through setup, batch fetching, research, review, and classification push.',
+    'Opens consent_cookie_triage_review_app for interactive review, then pushes confirmed classifications.',
   arguments: [
     {
       name: 'triage_type',
-      description: 'What to triage: "cookies", "data_flows", or "both" (default: "both")',
+      description: `What to triage: "${ConsentTriageType.Cookies}", "${ConsentTriageType.DataFlows}", or "both" (default: "both")`,
       required: false,
     },
     {
       name: 'batch_size',
-      description: 'Number of items per batch (default: 10)',
+      description:
+        'Number of items per batch for markdown-only review when the MCP App host is unavailable (default: 10)',
       required: false,
     },
   ],
@@ -26,7 +29,9 @@ export const consentTriagePrompt: PromptDefinition = {
         role: 'user',
         content: {
           type: 'text',
-          text: `Triage ${triageType === 'both' ? 'cookies and data flows' : triageType} in batches of ${batchSize}, sorted by highest traffic first.`,
+          text: `Triage ${
+            triageType === 'both' ? 'cookies and data flows' : triageType
+          }. Prefer consent_cookie_triage_review_app with triageType for interactive review; use batch size ${batchSize} only for markdown-only fallback.`,
         },
       },
       {
@@ -57,28 +62,47 @@ Present the customer's setup:
 |---------|------|-----------------|
 | (from API) | (from API) | (cross-ref with regimes) |
 
-Present triage stats:
+Present triage stats from \`consent_get_inventory_stats\` (cookie and data-flow counts match the Consent Manager tables; CSP data flows are omitted like the UI):
 
 | Metric | Cookies | Data Flows |
 |--------|---------|------------|
-| Needs Review | X | Y |
-| Live (Approved) | X | Y |
-| Junk | X | Y |
+| Needs Review | cookies.needReviewCount | dataFlows.needReviewCount |
+| Live (Approved) | cookies.liveCount | dataFlows.liveCount |
+| Junk | cookies.junkCount | dataFlows.junkCount |
 
-## Phase 2: Fetch Batch
+## Phase 2: Open the review UI (default)
 
-Fetch the next batch of items needing review, sorted by highest traffic:
+Call \`consent_cookie_triage_review_app\` with only \`triageType\`:
 
 ${[
-  triageType === 'cookies' || triageType === 'both'
-    ? '- `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' +
-      batchSize +
-      ', order_field: "occurrences", order_direction: "DESC" }`'
+  triageType === ConsentTriageType.Cookies || triageType === 'both'
+    ? `- Cookies: \`{ "triageType": "${ConsentTriageType.Cookies}" }\` — opens the review UI (App hosts page consent_list_cookies in the view; otherwise the tool returns them grouped by purpose)`
     : '',
-  triageType === 'data_flows' || triageType === 'both'
-    ? '- `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' +
+  triageType === ConsentTriageType.DataFlows || triageType === 'both'
+    ? `- Data flows: \`{ "triageType": "${ConsentTriageType.DataFlows}" }\` — opens the review UI (App hosts page consent_list_data_flows in the view; otherwise the tool returns them grouped by purpose)`
+    : '',
+]
+  .filter(Boolean)
+  .join('\n')}
+
+Do **not** pre-fetch cookies/data flows for the app, and do **not** pass classification suggestions. After the user reviews in the UI, push confirmed changes with \`consent_update_cookies\`, \`consent_update_data_flows\`, or \`consent_bulk_triage\`.
+
+When triaging both, open cookies first, then data flows (or ask the user which to start with).
+
+## Phase 3: Markdown fallback (no MCP App host)
+
+If the host cannot render MCP Apps, fetch a batch and present findings in markdown:
+
+${[
+  triageType === ConsentTriageType.Cookies || triageType === 'both'
+    ? '- Cookies: `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' +
       batchSize +
-      ', order_field: "occurrences", order_direction: "DESC" }`'
+      ', orderField: "occurrences", orderDirection: "DESC" }`'
+    : '',
+  triageType === ConsentTriageType.DataFlows || triageType === 'both'
+    ? '- Data flows: `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' +
+      batchSize +
+      ', orderField: "occurrences", orderDirection: "DESC" }`'
     : '',
 ]
   .filter(Boolean)
@@ -89,15 +113,18 @@ Present in this table format:
 | # | Name/Domain | Type | Service | Auto-Purposes | Occurrences | Sites | First Seen |
 |---|-------------|------|---------|---------------|-------------|-------|------------|
 
-## Phase 3: Research
-
-For each item in the batch, research its purpose using web search and CMP databases.
+For each item, research its purpose using web search and CMP databases.
 Use the \`consent-research-tracker\` prompt for detailed research methodology.
 If browser/DevTools access is available, use the \`consent-inspect-site\` prompt for live site investigation.
 
 Split items into parallel research groups of 3–5 items each for efficiency.
 
-## Phase 4: Present Findings
+For each researched item, decide:
+- **approve** — vendor/docs clearly identify the tracker and its consent purpose
+- **junk** — noise, duplicate, test artifact, or not a real tracker
+- **review** — conflicting sources, unknown vendor, or low confidence
+
+Include a one-sentence **reason** citing the evidence.
 
 For each researched item, present:
 
@@ -123,7 +150,7 @@ Then show a summary action table:
 
 Ask the user to confirm, modify, or reject each recommendation before proceeding.
 
-## Phase 5: Push Classifications
+## Phase 4: Push Classifications
 
 For confirmed items, update Transcend:
 
@@ -133,7 +160,7 @@ For confirmed items, update Transcend:
 
 After pushing, report what was updated and show the remaining triage count.
 
-## Phase 6: Loop
+## Phase 5: Loop
 
 Ask the user if they want to continue with the next batch. Repeat from Phase 2.
 
