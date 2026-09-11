@@ -17,9 +17,9 @@ export SOMBRA_URL=https://your-customer-ingress.example.com
 export SOMBRA_CUSTOMER_KEY=your-customer-ingress-key
 ```
 
-The credentials need `ViewDataMap`, `ManageDataMap`, `ConnectDataSilos`, `ViewEmailTemplates`,
-and `ExecuteRules`. `SOMBRA_URL` and `SOMBRA_CUSTOMER_KEY` must refer to the same single-tenant
-gateway used by the target data silo or GENERAL function.
+The credentials need `ViewCustomFunction` and `ManageCustomFunction`. `SOMBRA_URL` and
+`SOMBRA_CUSTOMER_KEY` must refer to the same single-tenant gateway used by the target data silo
+or GENERAL function.
 
 ## Tools
 
