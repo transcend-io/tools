@@ -987,6 +987,7 @@ enum DatabaseModelName {
   sombraApiKey
   sombraAuditLog
   sombraKey
+  sombraReplicaTelemetry
   sombraJobScheduler
   subject
   ssoProvider
@@ -2003,6 +2004,11 @@ enum DynamicAssessmentQuestionSubType {
   SENSITIVE_CATEGORY
 }
 
+enum AssessmentQuestionCommentType {
+  INTERNAL
+  RESPONDENT
+}
+
 enum AssessmentTriggerAction {
   SEND_TARGET_ASSESSMENT
 }
@@ -2931,11 +2937,14 @@ enum DownloadAndDecryptError {
   SERVICE_WORKER_LOST
   SINK_BACKPRESSURE_TIMEOUT
   STREAMSAVER_INIT_FAILED
+  DOWNLOAD_MANAGER_CANCELLED
   BROWSER_BLOCKED
   NETWORK_ERROR
   SAVE_DIALOG_CANCELLED
   SAVE_DIALOG_UNAVAILABLE
   NATIVE_WRITER_FAILED
+  OPFS_UNAVAILABLE
+  OPFS_WRITE_FAILED
   WASM_UNAVAILABLE
   WASM_LOAD_FAILED
   UNKNOWN
@@ -3080,6 +3089,15 @@ enum RequestDownloadAttemptOutcome {
   INTERRUPTED
 }
 
+enum RequestDownloadOutcomeBucket {
+  COMPLETED
+  FAILED
+  INTERRUPTED
+  ABANDONED
+  IN_PROGRESS
+  NEVER_ATTEMPTED
+}
+
 enum RequestDataSiloStatusSuccess {
   RESOLVED
   SKIPPED
@@ -3199,6 +3217,7 @@ enum DownloadSinkMode {
   FILE_SYSTEM_ACCESS
   STREAM_SAVER
   IN_MEMORY_BLOB
+  OPFS
 }
 
 enum DownloadSinkVariant {
@@ -4244,6 +4263,8 @@ enum CookiesColumnName {
   status
   statusJunk
   teams
+  siteOwners
+  siteTeams
   occurrences
   maxAge
   consentSiteCountLastWeek
@@ -4271,6 +4292,8 @@ enum DataFlowsColumnName {
   status
   statusJunk
   teams
+  siteOwners
+  siteTeams
   type
   occurrences
   consentSiteCountLastWeek
@@ -4815,6 +4838,7 @@ enum AnalyticsDataSource {
   REQUEST_FULFILLMENTS_OVER_TIME
   REQUEST_FULFILLMENT_BY_TYPE
   REQUEST_VOLUME_OVER_TIME
+  REQUEST_DOWNLOAD_OUTCOMES
   PRIVACY_RISKS
   HISTORICAL_REQUESTS_BY_STATUS
   VISITOR_CHOICES
@@ -5129,7 +5153,7 @@ type Query {
   dropRunRequests(first: Int, last: Int, before: String, after: String, filterBy: DropRunRequestFiltersInput!): DropRunRequestsPayload!
   dropRuns(first: Int, last: Int, before: String, after: String, filterBy: DropRunFiltersInput): DropRunsPayload!
   enricher(id: ID!): Enricher!
-  enrichers(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: EnricherFiltersInput, orderBy: [EnricherOrder!]): EnrichersPayload!
+  enrichers(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: EnricherFiltersInput, orderBy: [EnricherOrder!]): PreflightsPayload! @deprecated(reason: "Use preflights instead")
   experiences(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ExperienceFiltersInput, orderBy: [ExperienceOrder!]): ExperiencesPayload!
   getTokenSecrets(id: ID!): GetTokenSecretsPayload!
   globalActionItemCollections(filterBy: GlobalActionItemCollectionFiltersInput!): GlobalActionItemCollectionsPayload!
@@ -5167,6 +5191,7 @@ type Query {
   preferenceTopicOptionValueDataPoints(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueDataPointFilterInput): PreferenceTopicOptionValueDataPointsPayload!
   preferenceTopicOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueFilterInput): PreferenceTopicOptionValuesPayload!
   preferenceTopics(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicFilterInput): PreferenceTopicsPayload!
+  preflights(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: EnricherFiltersInput, orderBy: [EnricherOrder!]): PreflightsPayload!
   privacyCenter(lookup: PrivacyCenterLookupInput): PrivacyCenterStringified!
   privacyCenterDeployment(input: PrivacyCenterIdInput!): PrivacyCenterDeployment!
   privacyCenterPolicies(lookup: PrivacyCenterLookupInput): [Policy!]!
@@ -6476,6 +6501,7 @@ input ApiKeyInput {
   redactPersonalIdentifiers: Boolean
   scopes: [ScopeName!]
   dataSilos: [ID!]
+  expiresAt: Date
 }
 
 interface ApiKeyInterface {
@@ -7016,6 +7042,7 @@ input AssessmentNewRowVendorModelInput {
 type AssessmentQuestionComment {
   id: ID!
   content: String!
+  commentType: AssessmentQuestionCommentType!
   author: UserPreview
   externalAuthorEmail: String
   parentCommentId: ID
@@ -9684,6 +9711,8 @@ type Cookie {
   attributeValues: [AttributeValue!]!
   owners: [UserPreview!]!
   teams: [TeamPreview!]!
+  siteOwners: [UserPreview!]!
+  siteTeams: [TeamPreview!]!
   pendingTelemetryMetadataSync: Boolean!
   occurrences: Float!
   maxAge: Float
@@ -9930,6 +9959,7 @@ input CreateAssessmentGroupInput {
 
 input CreateAssessmentQuestionCommentInput {
   content: String!
+  commentType: AssessmentQuestionCommentType
   assessmentQuestionId: ID!
   parentCommentId: ID
 }
@@ -11092,6 +11122,7 @@ type CustomFunctionVersionPreview {
   signedCodeJwt: String!
   successfulTestRun: Boolean!
   author: UserPreview
+  apiKey: ApiKeyPreview
 }
 
 type CustomFunctionVersionsPayload {
@@ -11184,6 +11215,8 @@ type DataFlow {
   attributeValues: [AttributeValue!]!
   owners: [UserPreview!]!
   teams: [TeamPreview!]!
+  siteOwners: [UserPreview!]!
+  siteTeams: [TeamPreview!]!
   pendingTelemetryMetadataSync: Boolean!
   occurrences: Float!
   consentSiteCountAllTime: Int!
@@ -13775,12 +13808,6 @@ type EnricherPreview implements EnricherInterface {
   type: EnricherType!
 }
 
-type EnrichersPayload {
-  clientMutationId: String
-  nodes: [Enricher!]!
-  totalCount: Int!
-}
-
 input EnricherVerificationMapInput {
   crossReferenceKey: String!
   identifierId: ID!
@@ -15768,6 +15795,12 @@ type PreferenceTopicsPayload {
   nodes: [PreferenceTopic!]!
   totalCount: Int!
   groupCount: Int!
+}
+
+type PreflightsPayload {
+  clientMutationId: String
+  nodes: [Enricher!]!
+  totalCount: Int!
 }
 
 input PrepareDataSubjectRequestAttachmentFileInput {
@@ -19326,6 +19359,18 @@ type SombraProfile {
   email: String
 }
 
+type SombraReplicaResourceTelemetry {
+  instanceId: String!
+  hostname: String!
+  reportedAt: String!
+  memoryRssBytes: String!
+  memoryLimitBytes: String!
+  cpuPercent: Float!
+  eventLoopLagP99Ms: Float!
+  inflightRequests: Int!
+  uptimeSeconds: Float!
+}
+
 type SombraSession {
   profile: SombraProfile!
   coreIdentifier: SombraCoreIdentifier!
@@ -20375,6 +20420,7 @@ input UpdateApiKeyInput {
   dataSilos: [ID!]
   isMcp: Boolean
   redactPersonalIdentifiers: Boolean
+  expiresAt: Date
 }
 
 type UpdateAssessmentEmailSetPayload {
