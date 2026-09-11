@@ -38,8 +38,8 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewEmployees);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAssessments);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewConsentManager);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ExecuteRules);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ConnectDataSilos);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCustomFunction);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ManageCustomFunction);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCodeScanning);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewRequests);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);
