@@ -157,6 +157,21 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           payloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
         })[] = [];
         if (testPayloads && testPayloads.length > 0) {
+          // Pre-persist runs omit id (GraphQL rejects JWTs when id is set), so load
+          // silo/gateway from the stored row when the caller did not pass them.
+          if (
+            id &&
+            ((type === 'DSR' && !resolvedDataSiloId) || (type === 'GENERAL' && !resolvedSombraId))
+          ) {
+            const stored = await graphql.getSignedCustomFunctionVersion(id);
+            resolvedDataSiloId = resolvedDataSiloId ?? stored.customFunction.dataSiloId;
+            resolvedSombraId = resolvedSombraId ?? stored.customFunction.sombraId;
+            if (type === 'DSR' && !resolvedDataSiloId) {
+              throw new Error(
+                `Custom function ${id} has no linked data silo. Pass dataSiloId when using testPayloads.`,
+              );
+            }
+          }
           for (const testPayload of testPayloads) {
             const run = await executeCustomFunctionTestRun(graphql, clients.rest, {
               type,

@@ -618,6 +618,23 @@ describe('Custom Functions tools', () => {
   });
 
   it('omits id when testPayloads gate an update so GraphQL accepts signed JWTs', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: {
+        id: 'cf-1',
+        name: 'DSR Example',
+        type: 'DSR',
+        lifecycleState: 'ACTIVE',
+        dataSiloId: 'silo-1',
+        hasPendingDraft: false,
+      },
+      version: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+      ...SIGNED,
+    });
     graphql.testRunCustomFunction.mockResolvedValue({
       exitCode: 0,
       logs: [],
@@ -631,10 +648,10 @@ describe('Custom Functions tools', () => {
       draftVersion: { id: 'version-2', successfulTestRun: true },
     });
 
+    // Omit dataSiloId on update — pre-persist runs must load it from the stored row.
     await getTool('custom_functions_upsert').handler({
       id: 'cf-1',
       type: 'DSR',
-      dataSiloId: 'silo-1',
       code: 'export const enricher = () => true; export default enricher;',
       userDefinedEnv: {},
       allowedHosts: [],
@@ -643,10 +660,17 @@ describe('Custom Functions tools', () => {
       testPayloads: [{}],
     });
 
+    expect(graphql.getSignedCustomFunctionVersion).toHaveBeenCalledWith('cf-1');
     expect(graphql.testRunCustomFunction).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'DSR', ...SIGNED }),
     );
     expect(graphql.testRunCustomFunction.mock.calls[0]?.[0]).not.toHaveProperty('id');
+    const call = graphql.testRunCustomFunction.mock.calls[0]?.[0] as {
+      payload: string;
+    };
+    expect(JSON.parse(Buffer.from(call.payload, 'base64').toString('utf8'))).toMatchObject({
+      extras: { dataSilo: { id: 'silo-1' } },
+    });
   });
 
   it('rolls back a created DSR silo when upsert testPayloads fail', async () => {
