@@ -29,9 +29,14 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_create_template',
     description:
-      'Create an assessment form template with sections and questions (JSON import). ' +
+      'Create a new assessment form template with sections and questions inline. ' +
+      'This is the "import" side of the JSON import/export workflow. ' +
+      'You can provide the full template structure (sections with questions and answer options) in a single call. ' +
       'Question types: LONG_ANSWER_TEXT, SHORT_ANSWER_TEXT, SINGLE_SELECT, MULTI_SELECT, FILE. ' +
-      'Missing referenceId becomes a UUID; allowSelectOther forces subType CUSTOM.',
+      'SubTypes: NONE, CUSTOM, USER, TEAM, DATA_SUB_CATEGORY, HAS_PERSONAL_DATA, ATTRIBUTE_KEY, SENSITIVE_CATEGORY. ' +
+      'Auto-corrections: referenceId is auto-generated as UUID if missing or not UUID format; ' +
+      'subType is auto-set to CUSTOM when allowSelectOther is true; ' +
+      'requireRiskEvaluation is ignored when no riskFrameworkId is provided.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

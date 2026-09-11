@@ -19,20 +19,37 @@ const COMMENT_FETCH_CHUNK = 100;
 
 export const ListAssessmentCommentsSchema = z
   .object({
-    assessmentId: z.string().describe('Assessment form ID (from assessments_list)'),
+    assessmentId: z
+      .string()
+      .describe(
+        'ID of the assessment form whose feedback you want. Call assessments_list to look ' +
+          'one up by title or status.',
+      ),
     authorIds: z
       .array(z.string())
       .optional()
-      .describe('Filter by author user IDs (admin_list_users); omit for all'),
+      .describe(
+        'Only comments written by these people. Call admin_list_users to turn a name or ' +
+          'email into an id, or assessments_list with includeDetails to see who is reviewing ' +
+          'a form. Omit for every author.',
+      ),
     resolution: z
       .enum(['OPEN', 'RESOLVED', 'ALL'])
       .optional()
       .default('OPEN')
-      .describe('Filter by root thread resolution; default OPEN'),
+      .describe(
+        'OPEN / RESOLVED filter by the root of each thread (the row with no ' +
+          'parentCommentId). A reply is open only while its root is unresolved — replies ' +
+          'are not resolved on their own. ALL returns both. Default OPEN.',
+      ),
     levels: z
       .array(z.enum(['FORM', 'SECTION', 'QUESTION']))
       .optional()
-      .describe('Filter by FORM / SECTION / QUESTION; omit for all'),
+      .describe(
+        'Only feedback left at these levels: FORM for the assessment as a whole, SECTION ' +
+          'for one of its sections, QUESTION for a single question. Use QUESTION for "what ' +
+          'did reviewers say about the answers". Omit for every level.',
+      ),
   })
   .merge(OffsetPaginationSchema);
 export type ListAssessmentCommentsInput = z.infer<typeof ListAssessmentCommentsSchema>;
@@ -108,8 +125,13 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list_comments',
     description:
-      'List reviewer feedback on one assessment (form/section/question). Resolution follows ' +
-      'the root comment. Filter with levels, authorIds, resolution; reply via write_comment.',
+      'Read the reviewer feedback on one assessment — the comments left on it during review. ' +
+      'Returns feedback from all three levels at once, whether it was left on the form as a ' +
+      'whole, on a section, or on a single question, each row naming what it sits on. ' +
+      'Resolution is per thread on the root comment (no parentCommentId); replies close when ' +
+      'that root is resolved. Narrow with levels, authorIds, and resolution (OPEN/RESOLVED/' +
+      'ALL). Use this rather than assessments_get, which only counts feedback. To reply or ' +
+      'resolve a thread, call assessments_write_comment with the root id, level, and targetId.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

@@ -76,8 +76,6 @@ describe('InventoryMixin', () => {
             outerType: null,
             createdAt: '2024-01-01T00:00:00.000Z',
             connectionState: 'CONNECTED',
-            customSiloConnectionStrategy: 'WEBHOOK',
-            sombraId: 'sombra-1',
             notes: 'note',
             contactName: 'Ada',
             contactEmail: 'ada@example.com',
@@ -129,9 +127,6 @@ describe('InventoryMixin', () => {
       expect(result).toMatchObject({
         id: 'silo-1',
         notes: 'note',
-        connectionState: 'CONNECTED',
-        customSiloConnectionStrategy: 'WEBHOOK',
-        sombraId: 'sombra-1',
         contactName: 'Ada',
         contactEmail: 'ada@example.com',
         websiteUrl: 'https://example.com',
@@ -260,31 +255,6 @@ describe('InventoryMixin', () => {
         first: 10,
         offset: 0,
         filterBy: { text: 'ZEL8168', titles: ['Acme Silo'] },
-      });
-    });
-
-    it('passes customSiloConnectionStrategy via filterBy', async () => {
-      const mockFetch = mockFetchQueue([
-        {
-          dataSilos: {
-            nodes: [],
-            totalCount: 0,
-          },
-        },
-      ]);
-      vi.stubGlobal('fetch', mockFetch);
-
-      const client = new InventoryMixin(API_KEY_AUTH);
-      await client.listDataSilos({
-        first: 10,
-        offset: 0,
-        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
-      });
-
-      const body = lastRequestBody(mockFetch);
-      expect(body.query).toContain('customSiloConnectionStrategy');
-      expect(body.variables).toMatchObject({
-        filterBy: { customSiloConnectionStrategy: 'CUSTOM_FUNCTION' },
       });
     });
   });
@@ -757,43 +727,6 @@ describe('InventoryMixin', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSilos');
       expect(requestBodyAt(mockFetch, 1).query).toContain('updateDataSilos');
-    });
-
-    it('forwards sombraId on create for customFunction silos', async () => {
-      const mockFetch = mockFetchQueue([
-        {
-          createDataSilos: {
-            dataSilos: [
-              {
-                id: 'silo-cf',
-                title: 'CF Silo',
-                type: 'api',
-                isLive: false,
-                createdAt: '2024-01-01T00:00:00.000Z',
-                sombraId: 'sombra-1',
-                customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
-              },
-            ],
-          },
-        },
-      ]);
-      vi.stubGlobal('fetch', mockFetch);
-
-      const client = new InventoryMixin(API_KEY_AUTH);
-      const result = await client.writeDataSilo({
-        integrationName: 'customFunction',
-        title: 'CF Silo',
-        sombraId: 'sombra-1',
-      });
-
-      expect(result.created).toBe(true);
-      expect(result.dataSilo.sombraId).toBe('sombra-1');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-      expect(requestBodyAt(mockFetch, 0).variables.input[0]).toMatchObject({
-        name: 'customFunction',
-        title: 'CF Silo',
-        sombraId: 'sombra-1',
-      });
     });
 
     it('updates by id without creating', async () => {

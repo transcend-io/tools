@@ -113,8 +113,6 @@ const GetDataSiloDoc = graphql(/* GraphQL */ `
       outerType
       createdAt
       connectionState
-      customSiloConnectionStrategy
-      sombraId
       notes
       contactName
       contactEmail
@@ -184,8 +182,6 @@ const CreateDataSilosDoc = graphql(/* GraphQL */ `
         description
         isLive
         createdAt
-        sombraId
-        customSiloConnectionStrategy
       }
     }
   }
@@ -338,8 +334,6 @@ function mapDataSilo<
     description?: string | null;
     isLive: boolean;
     createdAt: string;
-    sombraId?: string | null;
-    customSiloConnectionStrategy?: string | null;
   },
 >(node: T): DataSilo {
   return {
@@ -349,8 +343,6 @@ function mapDataSilo<
     description: node.description ?? undefined,
     isLive: node.isLive,
     createdAt: node.createdAt,
-    sombraId: node.sombraId ?? undefined,
-    customSiloConnectionStrategy: node.customSiloConnectionStrategy ?? undefined,
   };
 }
 
@@ -404,12 +396,10 @@ export class InventoryMixin extends TranscendGraphQLBase {
       text?: string;
       /** Exact title matches (GraphQL filterBy.titles) */
       titles?: string[];
-      /** Filter to Custom Function integrations with `CUSTOM_FUNCTION` */
-      customSiloConnectionStrategy?: string;
     },
   ): Promise<PaginatedResponse<DataSilo>> {
-    const { text, titles, customSiloConnectionStrategy, ...listOptions } = options ?? {};
-    const filterBy = buildFilterBy({ text, titles, customSiloConnectionStrategy });
+    const { text, titles, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text, titles });
     const query = `
       query ListDataSilos($first: Int, $offset: Int, $filterBy: DataSiloFiltersInput) {
         dataSilos(first: $first, offset: $offset, filterBy: $filterBy) {
@@ -420,8 +410,6 @@ export class InventoryMixin extends TranscendGraphQLBase {
             isLive
             outerType
             createdAt
-            connectionState
-            customSiloConnectionStrategy
           }
           totalCount
         }
@@ -444,9 +432,6 @@ export class InventoryMixin extends TranscendGraphQLBase {
       isLive: silo.isLive,
       outerType: silo.outerType ?? undefined,
       createdAt: silo.createdAt,
-      connectionState: silo.connectionState,
-      customSiloConnectionStrategy: silo.customSiloConnectionStrategy ?? undefined,
-      sombraId: silo.sombraId ?? undefined,
       notes: silo.notes ?? undefined,
       contactName: silo.contactName ?? undefined,
       contactEmail: silo.contactEmail ?? undefined,
@@ -568,18 +553,10 @@ export class InventoryMixin extends TranscendGraphQLBase {
     created: boolean;
   }> {
     const { id, integrationName, ...updateFields } = input;
-    const { title, description, country, countrySubDivision, sombraId, ...postCreateFields } =
-      updateFields;
-    const fieldsForUpdate = {
-      title,
-      description,
-      country,
-      countrySubDivision,
-      ...postCreateFields,
-    };
+    const { title, description, country, countrySubDivision, ...postCreateFields } = updateFields;
 
     if (id) {
-      const dataSilo = await this.updateDataSilo({ id, ...fieldsForUpdate });
+      const dataSilo = await this.updateDataSilo({ id, ...updateFields });
       return { dataSilo, created: false };
     }
 
@@ -593,7 +570,6 @@ export class InventoryMixin extends TranscendGraphQLBase {
       description,
       country,
       countrySubDivision,
-      sombraId,
     });
 
     // Only fields that createDataSilo does not accept need a follow-up update.
@@ -605,7 +581,7 @@ export class InventoryMixin extends TranscendGraphQLBase {
       try {
         dataSilo = await this.updateDataSilo({
           id: dataSilo.id,
-          ...fieldsForUpdate,
+          ...updateFields,
         });
       } catch (error) {
         const updateError = error instanceof Error ? error.message : String(error);

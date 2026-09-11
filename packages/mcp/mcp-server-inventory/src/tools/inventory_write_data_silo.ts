@@ -44,13 +44,6 @@ export const WriteDataSiloSchema = z
         'Catalog integration name (GraphQL `name`), e.g. "server", "salesforce". Required when ' +
           'creating (dataSiloId omitted). Call inventory_list_catalog_integrations to search.',
       ),
-    sombraId: z
-      .string()
-      .optional()
-      .describe(
-        'Sombra gateway ID required when creating integrationName "customFunction". ' +
-          'Reuse from custom_functions_list or inventory_get_data_silo.',
-      ),
     ...DataSiloMetadataSchema,
   })
   .refine((data) => Boolean(data.dataSiloId || data.integrationName), {
@@ -63,9 +56,11 @@ export function createInventoryWriteDataSiloTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_write_data_silo',
     description:
-      'Create or update a data silo. Pass dataSiloId to update, or integrationName to create ' +
-      '(never upserts by title). For Custom Functions use integrationName "customFunction" and ' +
-      'sombraId. If post-create metadata patch fails, retry with details.dataSiloId.',
+      'Create or update a data silo (Data Systems table). Pass `dataSiloId` to update by ID, or ' +
+      '`integrationName` to create a new data system (always creates — never upserts by title). ' +
+      'When creating, optional metadata fields (owners, vendor, purposes, subjects, etc.) are applied ' +
+      'after create in one call. Create-then-patch is not atomic: if the metadata update fails, the ' +
+      'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

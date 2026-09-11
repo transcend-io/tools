@@ -10,15 +10,29 @@ import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
 export const GetAssessmentSchema = z.object({
-  assessmentId: z.string().describe('Assessment form ID (from assessments_list)'),
+  assessmentId: z
+    .string()
+    .describe(
+      'ID of the assessment form to read. Call assessments_list to look one up by title ' +
+        'or status.',
+    ),
   sectionIds: z
     .array(z.string())
     .optional()
-    .describe('Expand these sections with questions and answers; omit for section list only'),
+    .describe(
+      'Expand these sections, returning their questions, answer options and submitted ' +
+        'answers in full. Omit on the first call: you get the section list back and pick from ' +
+        'it. A whole form can run to hundreds of questions, far more than fits in one response.',
+    ),
   questionText: z
     .string()
     .optional()
-    .describe('Return matching questions/answers by text instead of whole sections'),
+    .describe(
+      'Return only the questions whose text matches this, with their answers, instead of ' +
+        'whole sections. Use it to answer whether a form covers a topic — "retention", ' +
+        '"third party" — without guessing which section holds it. Combine with sectionIds to ' +
+        'search inside those sections.',
+    ),
 });
 export type GetAssessmentInput = z.infer<typeof GetAssessmentSchema>;
 
@@ -28,9 +42,13 @@ export function createAssessmentsGetTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_get',
     description:
-      'Read one assessment. With only assessmentId returns sections and question counts (not ' +
-      'question text). Pass sectionIds to expand sections, or questionText to search. Feedback ' +
-      'counts here; use assessments_list_comments to read comments. Use returned `url` as-is.',
+      'Read one filled-in assessment and the answers submitted to it. Given only assessmentId ' +
+      'it returns the section list with a question count each, NOT the question text. To read ' +
+      'the questions, either pass questionText to get just the ones on a topic wherever they ' +
+      'sit, or sectionIds to expand whole sections; every sectionId must exist or the call ' +
+      'fails, and reading the form in full means passing every one of them. Reviewer feedback ' +
+      'is counted here but read with assessments_list_comments. Surface the returned `url` ' +
+      'verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

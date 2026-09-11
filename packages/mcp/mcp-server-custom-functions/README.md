@@ -44,11 +44,10 @@ upsert (omit sombraId / dataSiloId, unique name)
 Successful responses include a `nextStep` string naming the following tool call.
 
 Creating a DSR function without `dataSiloId` also creates a `customFunction` data silo on the
-resolved Sombra gateway. Pass an existing Custom Function silo ID only when you already have one
-(`CUSTOM_FUNCTION` strategy; `inventory_list_data_silos` with
-`customSiloConnectionStrategy=CUSTOM_FUNCTION`). Creating a GENERAL function (and a new DSR
-integration) omits `sombraId` unless the tool errors with a list of gateway IDs; never pass
-`sombraId` on DSR create. Use a unique `name` so `custom_functions_list` `text` can find the row.
+resolved Sombra gateway. Pass an existing Custom Function silo ID only when you already have one.
+Creating a GENERAL function (and a new DSR integration) omits `sombraId` unless the tool errors
+with a list of gateway IDs; never pass `sombraId` on DSR create. Use a unique `name` so
+`custom_functions_list` `text` can find the row.
 
 DSR code must expose callable default and `enricher` exports. GENERAL code must expose a callable
 default export.
