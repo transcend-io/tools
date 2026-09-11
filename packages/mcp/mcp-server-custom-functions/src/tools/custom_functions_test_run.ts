@@ -10,75 +10,40 @@ export const CustomFunctionsTestRunSchema = z
     id: z
       .string()
       .optional()
-      .describe(
-        'Preferred after save: pass only this id (omit code) to execute the readable version ' +
-          '(active, else latest draft). DSR stored runs bind Activity. GENERAL stored runs replay ' +
-          'the saved JWT pair like the dashboard Test button. successfulTestRun is persisted on ' +
-          'save (testPayloads or a draft upsert), not by testing an already-active version. ' +
-          'Combine with code to trial unsaved edits without binding Activity',
-      ),
+      .describe('Saved function ID; prefer alone after upsert. DSR stored runs bind Activity'),
     type: z
       .nativeEnum(CustomFunctionType)
       .optional()
-      .describe(
-        'Required when id is omitted. Inferred from the stored function when id is set. DSR for ' +
-          'privacy request code, or GENERAL for Rules Automation code',
-      ),
+      .describe('Required without id (DSR or GENERAL). Inferred when id is set'),
     code: z
       .string()
       .min(1)
       .optional()
-      .describe(
-        'Plaintext TypeScript for unsaved trials only. Required when id is omitted. DSR unsaved ' +
-          'trials also need dataSiloId from upsert. GENERAL requires a callable default export; DSR ' +
-          'requires callable default and enricher exports',
-      ),
+      .describe('Unsaved TypeScript trial; required without id. DSR also needs dataSiloId'),
     payload: z
       .record(z.string(), z.unknown())
       .optional()
-      .describe(
-        'JSON test payload. Omit unless you need a specific body. GENERAL defaults to ' +
-          '{ "message": "hello world!" } (the backend may add coreIdentifier). DSR uses a stub ' +
-          'ACCESS payload; the silo id is injected — do not hand-build extras',
-      ),
+      .describe('Optional JSON body; omit for type-specific defaults'),
     payloadType: z
       .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
       .optional()
-      .describe('DSR only. Which export to invoke; defaults to DATA_POINT. Omit for GENERAL'),
+      .describe('DSR only; defaults to DATA_POINT. Omit for GENERAL'),
     sombraId: z
       .string()
       .optional()
-      .describe(
-        'GENERAL gateway ID. Omit when id is set. For unsaved GENERAL tests, omit unless the tool ' +
-          'errors with a list of gateway IDs',
-      ),
+      .describe('GENERAL gateway; omit with id unless an error lists options'),
     dataSiloId: z
       .string()
       .optional()
-      .describe(
-        'DSR data silo ID. Omit when id is set (the stored silo is used). Required for unsaved DSR ' +
-          'tests: pass the dataSiloId from the upsert response',
-      ),
+      .describe('DSR silo; omit with id. Required for unsaved DSR tests'),
     userDefinedEnv: z
       .record(z.string(), z.string())
       .optional()
       .default({})
-      .describe('Environment variables available to the function at runtime'),
-    allowedHosts: z
-      .array(z.string())
-      .optional()
-      .default([])
-      .describe('Network hosts the test function is allowed to contact'),
-    allowThirdPartyImports: z
-      .boolean()
-      .optional()
-      .describe('Allow imports from Sombra-approved third-party repositories'),
-    timeoutMs: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .describe('Maximum test runtime in milliseconds'),
+      .describe('Runtime env vars'),
+    allowedHosts: z.array(z.string()).optional().default([]).describe('Allowed hosts'),
+    allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
+    timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
   })
   .superRefine((input, context) => {
     if (!input.id && !input.code) {
@@ -117,12 +82,8 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_test_run',
     description:
-      'Test Custom Function code for DSR or GENERAL. After upsert, pass only { id } (omit code) ' +
-      'to execute the saved version. DSR stored runs bind Activity. The tested badge is persisted ' +
-      'on save like the dashboard (testPayloads on upsert, or a draft upsert after a passing test). ' +
-      'Pass code to trial unsaved plaintext; DSR unsaved trials need dataSiloId from upsert. Omit ' +
-      'payload unless you need a specific body. Responses include passed, exitCode, logs, error, ' +
-      'and timeMs.',
+      'Test Custom Function code (DSR or GENERAL). Pass { id } alone to run the saved version; ' +
+      'pass code for an unsaved trial. Responses include passed, exitCode, logs, error, and timeMs.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,

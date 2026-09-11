@@ -13,15 +13,11 @@ const TestPayloadSchema = z.object({
   payload: z
     .record(z.string(), z.unknown())
     .optional()
-    .describe(
-      'JSON test payload. Omit unless you need a specific body. GENERAL defaults to ' +
-        '{ "message": "hello world!" } (the backend may add coreIdentifier). DSR uses a stub ' +
-        'ACCESS payload and injects the function silo — do not hand-build extras',
-    ),
+    .describe('Optional JSON body; omit for type-specific defaults'),
   payloadType: z
     .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
     .optional()
-    .describe('DSR only. Which export to invoke; defaults to DATA_POINT. Omit for GENERAL'),
+    .describe('DSR only; defaults to DATA_POINT. Omit for GENERAL'),
 });
 
 export const CustomFunctionsUpsertSchema = z
@@ -32,13 +28,11 @@ export const CustomFunctionsUpsertSchema = z
     dataSiloId: z
       .string()
       .optional()
-      .describe(
-        'Existing CUSTOM_FUNCTION silo for DSR create; omit to auto-create. Not webhook silos.',
-      ),
+      .describe('Existing CUSTOM_FUNCTION silo for DSR create; omit to auto-create'),
     sombraId: z
       .string()
       .optional()
-      .describe('Gateway ID; omit unless an error lists options. Never on DSR create.'),
+      .describe('Gateway ID; omit unless an error lists options. Never on DSR create'),
     name: z.string().optional().describe('Required on create; keep unique for list search'),
     description: z.string().optional().describe('Behavior description'),
     code: z
@@ -62,18 +56,11 @@ export const CustomFunctionsUpsertSchema = z
       .boolean()
       .optional()
       .default(false)
-      .describe(
-        'Promote the resulting draft after an update. Requires id. Default is false so updates ' +
-          'stay as drafts; call custom_functions_promote_version with draftVersion.id when ready',
-      ),
+      .describe('After update, promote the draft to active. Default false'),
     testPayloads: z
       .array(TestPayloadSchema)
       .optional()
-      .describe(
-        'Pre-persist gating only: test-run signed code before saving. All must pass or the write ' +
-          'is skipped and a new DSR silo is rolled back. Passing runs set successfulTestRun on the ' +
-          'saved version (dashboard save-after-test). They do not bind Activity.',
-      ),
+      .describe('Pre-persist tests; all must pass or the write is skipped'),
   })
   .superRefine((input, context) => {
     if (!input.id && !input.name) {
@@ -107,12 +94,9 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_upsert',
     description:
-      'Create or update a Custom Function from plaintext TypeScript. Happy path: upsert ' +
-      '(omit sombraId and dataSiloId, pass a unique name, optionally testPayloads to persist ' +
-      'successfulTestRun at save) → custom_functions_test_run with { id } to execute → draft ' +
-      'upsert (promote false) → custom_functions_promote_version. Creating a DSR function ' +
-      'without dataSiloId also creates a customFunction data silo. Updates create or replace a ' +
-      'draft. testPayloads is pre-persist gating only and does not bind Activity.',
+      'Create or update a Custom Function from plaintext TypeScript. On create, omit sombraId ' +
+      'and dataSiloId unless an error requires them; pass a unique name for list search. DSR ' +
+      'create without dataSiloId also creates a customFunction data silo. Updates write a draft.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
