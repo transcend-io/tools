@@ -18,7 +18,7 @@ const MAX_TOOL_DESCRIPTION_CHARS = 700;
  * Ceiling for the full stdio-shaped tools/list JSON (name, description,
  * inputSchema, annotations). Character length of JSON.stringify.
  */
-const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
+const MAX_TOOLS_LIST_JSON_CHARS = 87_000;
 
 function listDescriptors(registry: ToolRegistry) {
   return registry
