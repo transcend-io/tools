@@ -11,6 +11,7 @@ import {
   type DataSilo,
   type DataSiloCreateInput,
   type DataSiloDetails,
+  type DataSiloListRow,
   type DataSiloType,
   type DataSiloUpdateInput,
   type DataSiloWriteInput,
@@ -378,6 +379,63 @@ function mapVendorPreview<
   };
 }
 
+/**
+ * Caller-facing sort columns for {@link InventoryMixin.listDataSilos}, mapped
+ * onto `DataSiloBulkPreviewOrderField`. The enum also offers `updatedAt`,
+ * `totalObjects`, `sensitiveObjects`, `connectionState` and
+ * `lastDiscoClassScanStatus`; they are left out until something asks for them.
+ */
+export type ListDataSilosSortField = 'title' | 'createdAt';
+
+/**
+ * The `includeDetails` half of the data silo list selection.
+ *
+ * `dataSilos` returns `DataSiloBulkPreview`, which carries every field the
+ * singular `dataSilo` does, so widening the list costs a field selection rather
+ * than a second query.
+ */
+const DATA_SILO_LIST_DETAIL_SELECTION = `
+            description
+            notes
+            connectionState
+            country
+            countrySubDivision
+            contactName
+            contactEmail
+            websiteUrl
+            subDataPointCount
+            vendor {
+              id
+              title
+            }
+            businessEntities {
+              id
+              title
+              description
+            }
+            processingPurposeSubCategories {
+              id
+              name
+              purpose
+              description
+            }
+`;
+
+/** A `dataSilos` node as selected above, before purpose names are normalized. */
+type RawDataSiloListRow = Omit<DataSiloListRow, 'processingPurposeSubCategories'> & {
+  /** Silo-level purposes, whose `name` may be blank until normalized */
+  processingPurposeSubCategories?: {
+    /** Purpose subcategory ID */
+    id: string;
+    /** Subcategory name, blank for the default subcategory */
+    name: string;
+    /** Parent processing purpose */
+    purpose: string;
+    /** Purpose description */
+    description?: string | null;
+  }[];
+};
+
 /** Build a GraphQL filterBy object, omitting empty/undefined keys. */
 function buildFilterBy(parts: Record<string, unknown>): Record<string, unknown> | undefined {
   const filterBy: Record<string, unknown> = {};
@@ -396,13 +454,80 @@ export class InventoryMixin extends TranscendGraphQLBase {
       text?: string;
       /** Exact title matches (GraphQL filterBy.titles) */
       titles?: string[];
+      /** Specific data silo IDs (GraphQL filterBy.ids) */
+      ids?: string[];
+      /** Catalog integration types, e.g. "server" (GraphQL filterBy.type) */
+      types?: string[];
+      /** Owner user IDs (GraphQL filterBy.owners) */
+      ownerIds?: string[];
+      /** Owner team IDs (GraphQL filterBy.teams) */
+      teamIds?: string[];
+      /** Restrict to systems with no owner (GraphQL filterBy.includeNulls) */
+      unassignedOnly?: boolean;
+      /** Whether the silo is live for DSR processing (GraphQL filterBy.isLive) */
+      isLive?: boolean;
+      /** ISO country codes (GraphQL filterBy.country) */
+      countries?: string[];
+      /** Linked vendor IDs (GraphQL filterBy.vendors) */
+      vendorIds?: string[];
+      /** Linked business entity IDs (GraphQL filterBy.businessEntityIds) */
+      businessEntityIds?: string[];
+      /** Lower bound on creation date (GraphQL filterBy.createdAtAfter) */
+      createdAfter?: string;
+      /** Upper bound on creation date (GraphQL filterBy.createdAtBefore) */
+      createdBefore?: string;
+      /** Column to sort on, applied via GraphQL orderBy */
+      sortField?: ListDataSilosSortField;
+      /** Sort direction, applied only alongside `sortField` */
+      sortDirection?: 'ASC' | 'DESC';
+      /** Widen the row selection past owners and teams */
+      includeDetails?: boolean;
     },
-  ): Promise<PaginatedResponse<DataSilo>> {
-    const { text, titles, ...listOptions } = options ?? {};
-    const filterBy = buildFilterBy({ text, titles });
+  ): Promise<PaginatedResponse<DataSiloListRow>> {
+    const {
+      text,
+      titles,
+      ids,
+      types,
+      ownerIds,
+      teamIds,
+      unassignedOnly,
+      isLive,
+      countries,
+      vendorIds,
+      businessEntityIds,
+      createdAfter,
+      createdBefore,
+      sortField,
+      sortDirection,
+      includeDetails,
+      ...listOptions
+    } = options ?? {};
+    const filterBy = buildFilterBy({
+      text,
+      titles,
+      ids,
+      type: types,
+      owners: ownerIds,
+      teams: teamIds,
+      // The schema's only nullable-filter value. There is no TEAMS counterpart,
+      // so "no team assigned" cannot be asked of the API.
+      includeNulls: unassignedOnly ? ['OWNERS'] : undefined,
+      isLive,
+      country: countries,
+      vendors: vendorIds,
+      businessEntityIds,
+      createdAtAfter: createdAfter,
+      createdAtBefore: createdBefore,
+    });
     const query = `
-      query ListDataSilos($first: Int, $offset: Int, $filterBy: DataSiloFiltersInput) {
-        dataSilos(first: $first, offset: $offset, filterBy: $filterBy) {
+      query ListDataSilos(
+        $first: Int
+        $offset: Int
+        $filterBy: DataSiloFiltersInput
+        $orderBy: [DataSiloBulkPreviewOrder!]
+      ) {
+        dataSilos(first: $first, offset: $offset, filterBy: $filterBy, orderBy: $orderBy) {
           nodes {
             id
             title
@@ -410,14 +535,42 @@ export class InventoryMixin extends TranscendGraphQLBase {
             isLive
             outerType
             createdAt
+            owners {
+              id
+              email
+              name
+            }
+            teams {
+              id
+              name
+            }
+            ${includeDetails ? DATA_SILO_LIST_DETAIL_SELECTION : ''}
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<DataSilo>(query, 'dataSilos', listOptions, {
-      variables: filterBy ? { filterBy } : {},
-    });
+    return this.listConnection<RawDataSiloListRow, DataSiloListRow>(
+      query,
+      'dataSilos',
+      listOptions,
+      {
+        mapNode: ({ processingPurposeSubCategories, ...node }): DataSiloListRow => ({
+          ...node,
+          // Blank subcategory names become "Other" here for the same reason the
+          // detail read does it: the name is the key the write tools take back.
+          ...(processingPurposeSubCategories && {
+            processingPurposeSubCategories: processingPurposeSubCategories.map(mapDataPurpose),
+          }),
+        }),
+        variables: {
+          ...(filterBy ? { filterBy } : {}),
+          ...(sortField
+            ? { orderBy: [{ field: sortField, direction: sortDirection ?? 'ASC' }] }
+            : {}),
+        },
+      },
+    );
   }
 
   async getDataSilo(id: string): Promise<DataSiloDetails> {

@@ -191,18 +191,28 @@ describe('Inventory Tools', () => {
   });
 
   describe('inventory_list_data_silos', () => {
-    it('returns list on success', async () => {
-      const nodes = [{ id: '1', title: 'A', type: 'api' as const }];
-      mockGraphql.listDataSilos.mockResolvedValue({
-        nodes,
-        totalCount: 1,
-        pageInfo: { hasNextPage: false, hasPreviousPage: false },
-      });
+    const listTool = () => getTools().find((t) => t.name === 'inventory_list_data_silos')!;
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+    const page = <T>(nodes: T[], totalCount = nodes.length) => ({
+      nodes,
+      totalCount,
+      pageInfo: { hasNextPage: false, hasPreviousPage: false },
+    });
 
-      const result = await tool.handler({ limit: 10, offset: 0 });
+    it('returns owners and teams on every row without a detail read', async () => {
+      const nodes = [
+        {
+          id: '1',
+          title: 'A',
+          type: 'api' as const,
+          owners: [{ id: 'u1', email: 'dan@example.com', name: 'Dan' }],
+          teams: [{ id: 't1', name: 'Privacy' }],
+        },
+      ];
+      mockGraphql.listDataSilos.mockResolvedValue(page(nodes));
+
+      const tool = listTool();
+      const result = await tool.handler(tool.zodSchema.parse({ limit: 10, offset: 0 }) as never);
 
       expect(result).toMatchObject({
         success: true,
@@ -210,60 +220,180 @@ describe('Inventory Tools', () => {
         count: 1,
         totalCount: 1,
       });
-      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
-        first: 10,
-        offset: 0,
-        text: undefined,
-        titles: undefined,
-      });
+      expect(mockGraphql.getDataSilo).not.toHaveBeenCalled();
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 10, offset: 0, includeDetails: false }),
+      );
     });
 
     it('forwards text and titles filters', async () => {
-      mockGraphql.listDataSilos.mockResolvedValue({
-        nodes: [],
-        totalCount: 0,
-        pageInfo: { hasNextPage: false, hasPreviousPage: false },
-      });
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 1));
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+      const tool = listTool();
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'ZEL8168', titles: ['Acme'], limit: 10, offset: 0 }) as never,
+      );
 
-      await tool.handler({ text: 'ZEL8168', titles: ['Acme'], limit: 10, offset: 0 });
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'ZEL8168', titles: ['Acme'] }),
+      );
+    });
 
-      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
-        first: 10,
-        offset: 0,
-        text: 'ZEL8168',
-        titles: ['Acme'],
-      });
+    it('forwards the ownership filters', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 1));
+
+      const tool = listTool();
+      await tool.handler(
+        tool.zodSchema.parse({
+          ownerIds: ['u1'],
+          teamIds: ['t1'],
+          types: ['googleCloudPlatform'],
+          limit: 10,
+          offset: 0,
+        }) as never,
+      );
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ownerIds: ['u1'],
+          teamIds: ['t1'],
+          types: ['googleCloudPlatform'],
+        }),
+      );
+    });
+
+    it('forwards unassignedOnly for unowned-system triage', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 1));
+
+      const tool = listTool();
+      await tool.handler(tool.zodSchema.parse({ unassignedOnly: true }) as never);
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({ unassignedOnly: true }),
+      );
+    });
+
+    it('forwards includeDetails and the mapped sort field', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 1));
+
+      const tool = listTool();
+      await tool.handler(
+        tool.zodSchema.parse({
+          includeDetails: true,
+          sortBy: 'title',
+          sortDirection: 'DESC',
+        }) as never,
+      );
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({
+          includeDetails: true,
+          sortField: 'title',
+          sortDirection: 'DESC',
+        }),
+      );
+    });
+
+    it('omits sort plumbing when sortBy is absent', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 1));
+
+      const tool = listTool();
+      await tool.handler(tool.zodSchema.parse({}) as never);
+
+      const [args] = mockGraphql.listDataSilos.mock.calls[0];
+      expect(args).not.toHaveProperty('sortField');
     });
 
     it('forwards offset for pagination', async () => {
-      mockGraphql.listDataSilos.mockResolvedValue({
-        nodes: [],
-        totalCount: 261,
-        pageInfo: { hasNextPage: false, hasPreviousPage: true },
-      });
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 261));
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+      const tool = listTool();
+      await tool.handler(tool.zodSchema.parse({ limit: 100, offset: 100 }) as never);
 
-      await tool.handler({ limit: 100, offset: 100 });
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 100, offset: 100 }),
+      );
+    });
 
-      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
-        first: 100,
-        offset: 100,
-        text: undefined,
-        titles: undefined,
-      });
+    it('rejects an array filter resolved to nothing rather than listing every system', () => {
+      const tool = listTool();
+      expect(tool.zodSchema.safeParse({ ownerIds: [] }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ types: [] }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ titles: [] }).success).toBe(false);
+    });
+
+    it('rejects a sortBy the API cannot order on', () => {
+      expect(listTool().zodSchema.safeParse({ sortBy: 'ownerName' }).success).toBe(false);
+    });
+
+    it('rejects a date bound that is not ISO 8601', () => {
+      const tool = listTool();
+      expect(tool.zodSchema.safeParse({ createdAfter: 'last friday' }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ createdAfter: '2026-01-31' }).success).toBe(true);
+    });
+
+    it('errors on an offset past the end instead of returning an empty page', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 269));
+
+      const tool = listTool();
+      await expect(
+        tool.handler(tool.zodSchema.parse({ limit: 50, offset: 300 }) as never),
+      ).rejects.toThrow(/past the end/);
+    });
+
+    it('hands back the next offset, so triaging 269 silos needs no arithmetic', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page(new Array(100).fill({ id: 'x' }), 269));
+
+      const tool = listTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 100, offset: 0 }) as never,
+      )) as { paginationNote: string };
+
+      expect(result.paginationNote).toBe(
+        'Showing 100 of 269 matches. Fetch the next page with offset 100.',
+      );
+    });
+
+    it('says so plainly once the last page is in hand', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page(new Array(69).fill({ id: 'x' }), 269));
+
+      const tool = listTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 100, offset: 200 }) as never,
+      )) as { paginationNote: string };
+
+      expect(result.paginationNote).toContain('No further pages');
+    });
+
+    it('says a zero-match page succeeded, naming the filters applied', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 0));
+
+      const tool = listTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ unassignedOnly: true, types: ['api'] }) as never,
+      )) as { paginationNote: string };
+
+      expect(result.paginationNote).toContain('unassignedOnly');
+      expect(result.paginationNote).toContain('types');
+      expect(result.paginationNote).toContain('succeeded');
+    });
+
+    it('reports isLive: false as a filter but unassignedOnly: false as none', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue(page([], 0));
+
+      const tool = listTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ isLive: false, unassignedOnly: false }) as never,
+      )) as { paginationNote: string };
+
+      expect(result.paginationNote).toContain('isLive');
+      expect(result.paginationNote).not.toContain('unassignedOnly');
     });
 
     it('throws when client throws', async () => {
       mockGraphql.listDataSilos.mockRejectedValue(new Error('GraphQL error'));
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
-
+      const tool = listTool();
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });

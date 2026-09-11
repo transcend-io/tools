@@ -783,6 +783,44 @@ export interface DataSiloDetails extends DataSilo {
   dependentDataSilos?: DataSilo[];
 }
 
+/**
+ * Row shape returned by `inventory_list_data_silos`.
+ *
+ * `owners` and `teams` are always selected. They are the axis ownership triage
+ * runs on, and leaving them to the detail endpoint meant answering "which
+ * systems are unassigned" cost one extra request per silo. Everything after
+ * them is opt-in through `includeDetails`, because it roughly triples the bytes
+ * per row and no ownership question needs it.
+ */
+export interface DataSiloListRow extends DataSilo {
+  /** Users who own this system; empty when nobody is assigned */
+  owners: InventoryUserPreview[];
+  /** Teams who own this system; empty when none is assigned */
+  teams: InventoryTeamPreview[];
+  /** Free-form notes; only present with `includeDetails` */
+  notes?: string;
+  /** Integration connection state; only present with `includeDetails` */
+  connectionState?: string;
+  /** ISO country code; only present with `includeDetails` */
+  country?: string;
+  /** ISO country subdivision; only present with `includeDetails` */
+  countrySubDivision?: string;
+  /** Primary contact name; only present with `includeDetails` */
+  contactName?: string;
+  /** Primary contact email; only present with `includeDetails` */
+  contactEmail?: string;
+  /** Website URL; only present with `includeDetails` */
+  websiteUrl?: string;
+  /** Count of classified fields on the system; only present with `includeDetails` */
+  subDataPointCount?: number;
+  /** Linked vendor from the Vendors table; only present with `includeDetails` */
+  vendor?: Pick<Vendor, 'id' | 'title'>;
+  /** Linked business entities; only present with `includeDetails` */
+  businessEntities?: BusinessEntity[];
+  /** Silo-level purpose of processing assignments; only present with `includeDetails` */
+  processingPurposeSubCategories?: DataPurpose[];
+}
+
 export interface DataSiloCreateInput {
   /** Catalog integration name (GraphQL `name`), e.g. "server", "Salesforce" */
   name: string;

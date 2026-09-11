@@ -257,6 +257,125 @@ describe('InventoryMixin', () => {
         filterBy: { text: 'ZEL8168', titles: ['Acme Silo'] },
       });
     });
+
+    it('always selects owners and teams, so ownership needs no detail read', async () => {
+      const mockFetch = mockFetchQueue([{ dataSilos: { nodes: [], totalCount: 0 } }]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({ first: 10, offset: 0 });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('owners {');
+      expect(body.query).toContain('email');
+      expect(body.query).toContain('teams {');
+      // The compact default must not drag the heavy block along with it.
+      expect(body.query).not.toContain('subDataPointCount');
+      expect(body.query).not.toContain('businessEntities {');
+    });
+
+    it('widens the selection only when includeDetails is set', async () => {
+      const mockFetch = mockFetchQueue([{ dataSilos: { nodes: [], totalCount: 0 } }]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({ first: 10, offset: 0, includeDetails: true });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('subDataPointCount');
+      expect(body.query).toContain('businessEntities {');
+      expect(body.query).toContain('processingPurposeSubCategories {');
+    });
+
+    it('maps the ownership filters onto DataSiloFiltersInput field names', async () => {
+      const mockFetch = mockFetchQueue([{ dataSilos: { nodes: [], totalCount: 0 } }]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({
+        first: 10,
+        offset: 0,
+        ownerIds: ['u1'],
+        teamIds: ['t1'],
+        types: ['googleCloudPlatform'],
+        countries: ['IE'],
+        vendorIds: ['v1'],
+        createdAfter: '2026-01-01',
+      });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.variables.filterBy).toEqual({
+        owners: ['u1'],
+        teams: ['t1'],
+        type: ['googleCloudPlatform'],
+        country: ['IE'],
+        vendors: ['v1'],
+        createdAtAfter: '2026-01-01',
+      });
+    });
+
+    it('asks for unowned systems through the includeNulls enum', async () => {
+      const mockFetch = mockFetchQueue([{ dataSilos: { nodes: [], totalCount: 0 } }]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({ first: 10, offset: 0, unassignedOnly: true });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.variables.filterBy).toEqual({ includeNulls: ['OWNERS'] });
+    });
+
+    it('sends orderBy only when a sort field is given', async () => {
+      const mockFetch = mockFetchQueue([
+        { dataSilos: { nodes: [], totalCount: 0 } },
+        { dataSilos: { nodes: [], totalCount: 0 } },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({ first: 10, offset: 0 });
+      expect(lastRequestBody(mockFetch).variables).not.toHaveProperty('orderBy');
+
+      await client.listDataSilos({
+        first: 10,
+        offset: 0,
+        sortField: 'title',
+        sortDirection: 'DESC',
+      });
+      expect(lastRequestBody(mockFetch).variables.orderBy).toEqual([
+        { field: 'title', direction: 'DESC' },
+      ]);
+    });
+
+    it('normalizes a blank purpose name so it matches the write-tool default', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          dataSilos: {
+            nodes: [
+              {
+                id: '1',
+                title: 'A',
+                type: 'api',
+                owners: [],
+                teams: [],
+                processingPurposeSubCategories: [
+                  { id: 'p1', name: '', purpose: 'ESSENTIAL', description: null },
+                ],
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.listDataSilos({ first: 10, offset: 0, includeDetails: true });
+
+      expect(result.nodes[0]?.processingPurposeSubCategories).toEqual([
+        { id: 'p1', name: 'Other', purpose: 'ESSENTIAL', description: undefined },
+      ]);
+    });
   });
 
   describe('listCatalogs', () => {
