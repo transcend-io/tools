@@ -68,6 +68,21 @@ export const DsrErrorCode = makeEnum({
    * the workflow collects regions and regionList is non-empty.
    */
   RegionNotInWorkflow: 'REGION_NOT_IN_WORKFLOW',
+  /**
+   * This request's input failed shape, option, or field-pairing validation
+   * (gateway codec decode or backend per-item checks).
+   */
+  InvalidRequestInput: 'INVALID_REQUEST_INPUT',
+  /**
+   * A Sombra-signed identifier JWT on this request failed verification or
+   * decode (tampered, expired, or malformed).
+   */
+  InvalidIdentifierJwt: 'INVALID_IDENTIFIER_JWT',
+  /**
+   * The targeted workflow config is saved as a draft and cannot be used to
+   * submit requests.
+   */
+  DraftWorkflowConfig: 'DRAFT_WORKFLOW_CONFIG',
 });
 
 /** Type override */
