@@ -323,14 +323,35 @@ describe('Consent Tools', () => {
     const mockRocQueryResponse: RocQueryResponse = {
       records: [
         // The initial record has no previous state to diff against, which is why`changeFromPrevState` is optional.
-        { preferencesAtCurrentTime: [{ topic: 'Marketing', choice: { booleanValue: false } }] },
         {
-          preferencesAtCurrentTime: [{ topic: 'Marketing', choice: { booleanValue: true } }],
+          preferencesAtCurrentTime: [
+            {
+              purpose: 'Marketing',
+              consent: false,
+              timestamp: '2026-01-01T00:00:00.000Z',
+              preferences: [],
+            },
+          ],
+        },
+        {
+          preferencesAtCurrentTime: [
+            {
+              purpose: 'Marketing',
+              consent: true,
+              timestamp: '2026-01-02T00:00:00.000Z',
+              preferences: [{ topic: 'EmailMarketing', choice: { booleanValue: true } }],
+            },
+          ],
           changeFromPrevState: {
             added: [],
             removed: [],
             updated: [
-              { purpose: 'Marketing', consent: true, timestamp: '2026-01-02T00:00:00.000Z' },
+              {
+                purpose: 'Marketing',
+                consent: true,
+                timestamp: '2026-01-02T00:00:00.000Z',
+                preferences: [{ topic: 'EmailMarketing', choice: { booleanValue: true } }],
+              },
             ],
           },
         },
