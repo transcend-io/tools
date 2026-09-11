@@ -45,6 +45,7 @@
     "@transcend-io/mcp-server-assessment": "workspace:*",
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/mcp-server-consent": "workspace:*",
+    "@transcend-io/mcp-server-custom-functions": "workspace:*",
     "@transcend-io/mcp-server-discovery": "workspace:*",
     "@transcend-io/mcp-server-docs": "workspace:*",
     "@transcend-io/mcp-server-dsr": "workspace:*",

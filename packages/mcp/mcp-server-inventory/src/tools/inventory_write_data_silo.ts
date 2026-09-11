@@ -48,9 +48,8 @@ export const WriteDataSiloSchema = z
       .string()
       .optional()
       .describe(
-        'Sombra gateway ID. Required when creating with integrationName "customFunction" ' +
-          '(DSR Custom Function integrations must be pinned to a dedicated Sombra). Reuse ' +
-          'sombraId from custom_functions_list or inventory_get_data_silo.',
+        'Sombra gateway ID required when creating integrationName "customFunction". ' +
+          'Reuse from custom_functions_list or inventory_get_data_silo.',
       ),
     ...DataSiloMetadataSchema,
   })
@@ -65,10 +64,9 @@ export function createInventoryWriteDataSiloTool(clients: ToolClients) {
     name: 'inventory_write_data_silo',
     description:
       'Create or update a data silo (Data Systems table). Pass `dataSiloId` to update by ID, or ' +
-      '`integrationName` to create a new data system (always creates — never upserts by title). ' +
-      'For a DSR Custom Function integration, pass integrationName "customFunction" and sombraId. ' +
-      'When creating, optional metadata fields (owners, vendor, purposes, subjects, etc.) are applied ' +
-      'after create in one call. Create-then-patch is not atomic: if the metadata update fails, the ' +
+      '`integrationName` to create (always creates — never upserts by title). For Custom Function ' +
+      'integrations pass integrationName "customFunction" and sombraId. Optional metadata ' +
+      '(owners, vendor, purposes, subjects, etc.) applies after create; if that patch fails the ' +
       'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again.',
     category: 'Data Inventory',
     readOnly: false,

@@ -239,6 +239,7 @@ packages/mcp/
   mcp-server-admin/      # Domain: org, users, API keys
   mcp-server-assessment/
   mcp-server-consent/
+  mcp-server-custom-functions/
   mcp-server-discovery/
   mcp-server-dsr/
   mcp-server-inventory/
