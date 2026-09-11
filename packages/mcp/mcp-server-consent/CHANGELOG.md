@@ -1,5 +1,16 @@
 # @transcend-io/mcp-server-consent
 
+## 1.2.0
+
+### Minor Changes
+
+- 13092af: Added consent_list_roc_records tool
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-base@2.4.0
+
 ## 1.1.2
 
 ### Patch Changes
