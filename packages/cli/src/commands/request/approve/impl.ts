@@ -32,7 +32,7 @@ export async function approve(
     concurrency,
   }: ApproveCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await approvePrivacyRequests({
     transcendUrl,

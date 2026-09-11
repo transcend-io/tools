@@ -35,9 +35,10 @@ afterEach(() => {
  * Writes a throwaway package whose `src/ui` holds the given files.
  *
  * @param files - Paths under `src/ui`, in posix form, each written empty
+ * @param manifest - Optional package.json body; discovery reads this for the widget kit
  * @returns Absolute path to the package
  */
-function fakePackage(files: string[]): string {
+function fakePackage(files: string[], manifest?: Record<string, unknown>): string {
   const root = mkdtempSync(path.join(tmpdir(), 'mcp-app-build-'));
   temporaryRoots.push(root);
 
@@ -45,6 +46,9 @@ function fakePackage(files: string[]): string {
     const absolute = path.join(root, 'src', 'ui', ...file.split('/'));
     mkdirSync(path.dirname(absolute), { recursive: true });
     writeFileSync(absolute, '');
+  }
+  if (manifest !== undefined) {
+    writeFileSync(path.join(root, 'package.json'), `${JSON.stringify(manifest)}\n`);
   }
   return root;
 }
@@ -226,6 +230,30 @@ describe('synthesizeMcpAppViews', () => {
     expect(css).toContain("@source './**/*.{ts,tsx}';");
     expect(css).toContain("@source '../_shared/**/*.{ts,tsx}';");
     expect(css).toContain("@source '../_icons/**/*.{ts,tsx}';");
+  });
+
+  test('a package that depends on mcp-ui-common sources the kit in the synthesized stylesheet', () => {
+    const view = discoverMcpAppViews(
+      fakePackage(['hello/HelloView.tsx'], {
+        name: 'fixture-with-kit',
+        devDependencies: { '@transcend-io/mcp-ui-common': 'workspace:*' },
+      }),
+    )[0]!;
+    const css = load(synthesizeMcpAppViews([view]))(view.cssId);
+
+    expect(css).toContain('mcp-ui-common/src/**/*.{ts,tsx}');
+  });
+
+  test('a package that does not depend on mcp-ui-common does not source the kit', () => {
+    const view = discoverMcpAppViews(
+      fakePackage(['hello/HelloView.tsx'], {
+        name: 'fixture-without-kit',
+        devDependencies: { react: 'catalog:' },
+      }),
+    )[0]!;
+    const css = load(synthesizeMcpAppViews([view]))(view.cssId);
+
+    expect(css).not.toContain('mcp-ui-common');
   });
 
   test('the entry resolves its stylesheet as a sibling that exists nowhere on disk', () => {

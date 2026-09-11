@@ -1,24 +1,12 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, syncDataFlows } from '@transcend-io/sdk';
-import { splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 
-import { DataFlowInput, DataFlowCsvInput } from '../../codecs.js';
+import { DataFlowCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/readCsv.js';
-
-const OMIT_COLUMNS = [
-  'ID',
-  'Activity',
-  'Encounters',
-  'Last Seen At',
-  'Has Native Do Not Sell/Share Support',
-  'IAB USP API Support',
-  'Service Description',
-  'Website URL',
-  'Categories of Recipients',
-];
+import { mapDataFlowCsvRowsToInputs } from './mapConsentCsvRowsToInputs.js';
 
 /**
  * Upload a set of data flows from CSV
@@ -50,43 +38,7 @@ export async function uploadDataFlowsFromCsv({
   logger.info(colors.magenta(`Reading "${file}" from disk`));
   const dataFlowInputs = readCsv(file, DataFlowCsvInput);
 
-  // Convert these data flow inputs into a format that the other function can use
-  const validatedDataFlowInputs = dataFlowInputs.map(
-    ({
-      Type,
-      Notes,
-      // TODO: https://transcend.height.app/T-26391 - export in CSV
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      Service,
-      Purpose,
-      Status,
-      Owners,
-      Teams,
-      'Connections Made To': value,
-      ...rest
-    }): DataFlowInput => ({
-      value,
-      type: Type,
-      description: Notes,
-      trackingPurposes: splitCsvToList(Purpose),
-      // TODO: https://transcend.height.app/T-26391
-      // service: Service,
-      // Apply the trackerStatus to all values in the CSV -> allows for customer to define tracker status
-      // on a row by row basis if needed
-      status: Status || trackerStatus,
-      owners: Owners ? splitCsvToList(Owners) : undefined,
-      teams: Teams ? splitCsvToList(Teams) : undefined,
-      // all remaining options are attribute
-      attributes: Object.entries(rest)
-        // filter out native columns that are exported from the admin dashboard
-        // but not custom attributes
-        .filter(([key]) => !OMIT_COLUMNS.includes(key))
-        .map(([key, value]) => ({
-          key,
-          values: splitCsvToList(value),
-        })),
-    }),
-  );
+  const validatedDataFlowInputs = mapDataFlowCsvRowsToInputs(dataFlowInputs, trackerStatus);
 
   // Upload the data flows into Transcend dashboard
   const syncedDataFlows = await syncDataFlows(client, validatedDataFlowInputs, {

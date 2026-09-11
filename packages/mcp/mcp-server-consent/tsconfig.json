@@ -8,5 +8,6 @@
     "isolatedDeclarations": false,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/ui/**"]
 }

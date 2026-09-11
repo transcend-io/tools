@@ -1,5 +1,11 @@
 # @transcend-io/utils
 
+## 0.2.1
+
+### Patch Changes
+
+- 48a41a5: Bump `fast-csv` from `^4.3.6` to `^5.0.0`.
+
 ## 0.2.0
 
 ### Minor Changes

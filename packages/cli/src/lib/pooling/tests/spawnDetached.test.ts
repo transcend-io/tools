@@ -1,33 +1,16 @@
-import { spawn } from 'node:child_process';
+import { describe, it, expect, vi } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import { spawnDetached } from '../os.js';
-
-/**
- * Mock child_process BEFORE importing the SUT.
- * Inline factory avoids hoisting pitfalls.
- */
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
-}));
-
-const mSpawn = vi.mocked(spawn);
+import { spawnDetached, type PoolingOsPorts } from '../os.js';
 
 describe('spawnDetached', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('spawns with detached+ignore, calls unref, and returns true', () => {
     const unref = vi.fn();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref } as any);
+    const spawn = vi.fn(() => ({ unref })) as unknown as PoolingOsPorts['spawn'];
 
-    const ok = spawnDetached('cmd', ['a', 'b']);
+    const ok = spawnDetached('cmd', ['a', 'b'], { spawn });
 
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('cmd', ['a', 'b'], {
+    expect(spawn).toHaveBeenCalledWith('cmd', ['a', 'b'], {
       stdio: 'ignore',
       detached: true,
     });
@@ -35,11 +18,11 @@ describe('spawnDetached', () => {
   });
 
   it('returns false if spawn throws', () => {
-    mSpawn.mockImplementation(() => {
+    const spawn = vi.fn(() => {
       throw new Error('boom');
-    });
+    }) as unknown as PoolingOsPorts['spawn'];
 
-    const ok = spawnDetached('whatever', []);
+    const ok = spawnDetached('whatever', [], { spawn });
     expect(ok).toBe(false);
   });
 });

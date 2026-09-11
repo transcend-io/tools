@@ -8,7 +8,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { findCodePackagesInFolder } from '../../../lib/code-scanning/index.js';
 import { syncCodePackages } from '../../../lib/graphql/index.js';
-import { logger } from '../../../logger.js';
 
 const REPO_ERROR =
   'A repository name must be provided. ' +
@@ -27,7 +26,7 @@ export async function scanPackages(
   this: LocalContext,
   { auth, scanPath, ignoreDirs, repositoryName, transcendUrl }: ScanPackagesCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Ensure repository name is specified
   let gitRepositoryName = repositoryName;
@@ -40,11 +39,11 @@ export async function scanPackages(
         ? (url.split(':').pop() || '').split('.')
         : url.split('/').slice(3).join('/').split('.');
       if (!gitRepositoryName) {
-        logger.error(colors.red(REPO_ERROR));
+        this.logger.error(colors.red(REPO_ERROR));
         this.process.exit(1);
       }
     } catch (err) {
-      logger.error(colors.red(`${REPO_ERROR} - Got error: ${err.message}`));
+      this.logger.error(colors.red(`${REPO_ERROR} - Got error: ${err.message}`));
       this.process.exit(1);
     }
   }
@@ -66,7 +65,7 @@ export async function scanPackages(
   newUrl.pathname = '/code-scanning/code-packages';
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(
       `Scan found ${results.length} packages at ${scanPath}! ` + `View results at '${newUrl.href}'`,
     ),

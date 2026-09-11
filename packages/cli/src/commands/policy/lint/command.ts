@@ -10,15 +10,31 @@ export const lintCommand = buildCommand({
       dir: {
         kind: 'parsed',
         parse: String,
-        brief: 'Directory containing Rego policy files',
+        brief: 'Directory containing the local policy project',
+        default: 'transcend/policy',
+      },
+      fix: {
+        kind: 'boolean',
+        brief: 'Apply OPA formatting without running broad Regal fixes',
+        default: false,
+      },
+      noInteractive: {
+        kind: 'boolean',
+        brief: 'Disable the optional formatting confirmation',
+        default: false,
+      },
+      json: {
+        kind: 'boolean',
+        brief: 'Emit one stable JSON result and imply non-interactive behavior',
+        default: false,
       },
     },
   },
   docs: {
-    brief: 'Lint and optionally format a local policy bundle',
+    brief: 'Verify a local policy project with OPA and Regal',
     fullDescription:
-      'Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. ' +
-      'When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. ' +
-      'Requires the `opa` CLI on PATH. No Transcend API key is needed.',
+      'Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, ' +
+      'runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. ' +
+      'No Transcend API key is needed.',
   },
 });

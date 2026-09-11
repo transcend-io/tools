@@ -6,7 +6,6 @@ import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { updateConsentManagerVersionToLatest } from '../../../lib/consent-manager/index.js';
-import { logger } from '../../../logger.js';
 
 export interface UpdateConsentManagerCommandFlags {
   auth: string;
@@ -24,10 +23,10 @@ export async function updateConsentManager(
     transcendUrl,
   }: UpdateConsentManagerCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
-  const apiKeyOrList = await validateTranscendAuth(auth);
+  const apiKeyOrList = await validateTranscendAuth(auth, this);
 
   // Handle single update
   if (typeof apiKeyOrList === 'string') {
@@ -38,10 +37,10 @@ export async function updateConsentManager(
       auth: apiKeyOrList,
       bundleTypes,
     });
-    logger.info(colors.green('Successfully updated Consent Manager!'));
+    this.logger.info(colors.green('Successfully updated Consent Manager!'));
   } else {
     await mapSeries(apiKeyOrList, async (apiKey) => {
-      logger.info(
+      this.logger.info(
         colors.magenta(`Updating Consent Manager for organization "${apiKey.organizationName}"...`),
       );
 
@@ -52,12 +51,12 @@ export async function updateConsentManager(
         bundleTypes,
       });
 
-      logger.info(
+      this.logger.info(
         colors.green(
           `Successfully updated Consent Manager for organization "${apiKey.organizationName}"!`,
         ),
       );
     });
-    logger.info(colors.green('Successfully updated Consent Managers!'));
+    this.logger.info(colors.green('Successfully updated Consent Managers!'));
   }
 }

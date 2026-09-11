@@ -43,7 +43,7 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCodeScanning);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewRequests);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewPrivacyCenter);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewManagedConsentDatabaseAdminApi);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAllActionItems);
   });
 });

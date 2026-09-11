@@ -1,4 +1,4 @@
-import { ToolError } from '../errors.js';
+import { ErrorCode, ToolError } from '../errors.js';
 
 export function createToolResult(
   /** Whether the tool call succeeded */
@@ -73,6 +73,71 @@ export function createListResult(
     ...(options?.paginationNote && { paginationNote: options.paginationNote }),
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * A `paginationNote` for a list that came back empty, naming the filters that
+ * were applied.
+ *
+ * An empty `data` array reads exactly like a failed lookup. Cold-read agents
+ * that hit one spend a second, unfiltered call re-deriving the answer by hand
+ * before they will trust the zero, or report the emptiness as a tool failure.
+ * Saying the query succeeded, and against what, is what makes the zero usable.
+ *
+ * @param subject - Plural noun for what was being listed, e.g. `data silos`
+ * @param appliedFilters - Names of the filters, as the caller passed them
+ * @returns The note to attach to the empty page
+ */
+export function describeNoMatches(subject: string, appliedFilters: string[]): string {
+  if (appliedFilters.length === 0) {
+    return `This organization has no ${subject}. The query succeeded.`;
+  }
+  return (
+    `No ${subject} match the filters applied (${appliedFilters.join(', ')}). ` +
+    'The query succeeded; relax or drop a filter rather than retrying it unchanged.'
+  );
+}
+
+/**
+ * Rejects an `offset` that starts past the end of the result set.
+ *
+ * An empty page from a non-zero offset is byte-identical to filters that
+ * matched nothing, so an agent that overshoots concludes the records do not
+ * exist rather than correcting the offset. Offset zero is deliberately left
+ * alone: an empty first page is a real "nothing matched" and belongs to
+ * `describeNoMatches`.
+ *
+ * @param subject - Singular noun for what was being listed, e.g. `data silo`
+ * @param offset - Offset the caller asked for
+ * @param totalCount - Rows matching the filters overall
+ * @param appliedFilters - Names of the filters, as the caller passed them
+ * @throws ToolError when the offset starts at or past `totalCount`
+ */
+export function assertOffsetInRange({
+  subject,
+  offset,
+  totalCount,
+  appliedFilters,
+}: {
+  subject: string;
+  offset: number | undefined;
+  totalCount: number;
+  appliedFilters: string[];
+}): void {
+  // Tolerates an absent offset: schemas default it to 0, but handlers are also
+  // called directly, and an unpaged call must never be the thing that throws.
+  if (!offset || offset < totalCount) return;
+  throw new ToolError(
+    ErrorCode.VALIDATION_ERROR,
+    `offset ${offset} is past the end of the result set: ${totalCount} ` +
+      `${subject}(s) match ${
+        appliedFilters.length > 0
+          ? `the filters (${appliedFilters.join(', ')})`
+          : 'with no filters applied'
+      }. Retry with an offset below ${totalCount}.`,
+    false,
+    { offset, totalCount, appliedFilters },
+  );
 }
 
 export function groupBy<T>(array: T[], key: keyof T): Record<string, number> {

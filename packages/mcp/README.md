@@ -238,7 +238,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    85 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    88 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    14 | Consent management, analytics, cookie triage     |

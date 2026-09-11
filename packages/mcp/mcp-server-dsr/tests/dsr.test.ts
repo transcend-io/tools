@@ -7,14 +7,11 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_poll_status',
   'dsr_list',
   'dsr_get_details',
-  'dsr_download_keys',
   'dsr_list_identifiers',
   'dsr_list_request_data_silos',
+  'dsr_list_pending_requests',
   'dsr_enrich_identifiers',
-  'dsr_respond_access',
-  'dsr_respond_erasure',
   'dsr_cancel',
-  'dsr_submit_on_behalf',
   'dsr_analyze',
 ] as const;
 
@@ -23,18 +20,15 @@ describe('DSR Tools', () => {
     listRequests: ReturnType<typeof vi.fn>;
     getRequest: ReturnType<typeof vi.fn>;
     listRequestDataSilos: ReturnType<typeof vi.fn>;
-    employeeMakeDataSubjectRequest: ReturnType<typeof vi.fn>;
     cancelRequest: ReturnType<typeof vi.fn>;
   };
 
   let mockRest: {
     submitDSR: ReturnType<typeof vi.fn>;
     pollDSRStatus: ReturnType<typeof vi.fn>;
-    downloadKeys: ReturnType<typeof vi.fn>;
-    listDSRIdentifiers: ReturnType<typeof vi.fn>;
+    listRequestIdentifiers: ReturnType<typeof vi.fn>;
     enrichIdentifiers: ReturnType<typeof vi.fn>;
-    respondAccess: ReturnType<typeof vi.fn>;
-    respondErasure: ReturnType<typeof vi.fn>;
+    getPendingRequests: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -42,17 +36,14 @@ describe('DSR Tools', () => {
       listRequests: vi.fn(),
       getRequest: vi.fn(),
       listRequestDataSilos: vi.fn(),
-      employeeMakeDataSubjectRequest: vi.fn(),
       cancelRequest: vi.fn(),
     };
     mockRest = {
       submitDSR: vi.fn(),
       pollDSRStatus: vi.fn(),
-      downloadKeys: vi.fn(),
-      listDSRIdentifiers: vi.fn(),
+      listRequestIdentifiers: vi.fn(),
       enrichIdentifiers: vi.fn(),
-      respondAccess: vi.fn(),
-      respondErasure: vi.fn(),
+      getPendingRequests: vi.fn(),
     };
   });
 
@@ -63,10 +54,57 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 13 tools with expected names', () => {
+  it('registers exactly 10 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(13);
+    expect(tools).toHaveLength(10);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('dsr_submit', () => {
+    it('requires Sombra and calls rest.submitDSR with workflowConfigId payload', async () => {
+      mockRest.submitDSR.mockResolvedValue([
+        {
+          id: 'req-1',
+          status: 'COMPILING',
+          type: 'ACCESS',
+          link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+        },
+      ]);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_submit')!;
+
+      expect(tool.requireSombra).toBe(true);
+
+      const result = await tool.handler({
+        workflowConfigId: 'wf-config-1',
+        email: 'person@example.com',
+        locale: 'en-US',
+        isSilent: true,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          requests: [
+            {
+              id: 'req-1',
+              status: 'COMPILING',
+              type: 'ACCESS',
+              link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+            },
+          ],
+          message: 'DSR submitted successfully (ACCESS)',
+        },
+      });
+      expect(mockRest.submitDSR).toHaveBeenCalledWith({
+        workflowConfigId: 'wf-config-1',
+        email: 'person@example.com',
+        coreIdentifier: undefined,
+        locale: 'en-US',
+        isSilent: true,
+      });
+    });
   });
 
   describe('dsr_get_details', () => {
@@ -98,6 +136,66 @@ describe('DSR Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: details });
       expect(mockGraphql.getRequest).toHaveBeenCalledWith('req-1');
+    });
+  });
+
+  describe('dsr_list_identifiers', () => {
+    it('zodSchema rejects when requestId is missing', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['requestId']);
+    });
+
+    it('returns identifiers with pagination metadata on success', async () => {
+      const identifiers = [
+        { id: 'ri-1', name: 'email', value: 'a@b.com', type: 'email' },
+        { id: 'ri-2', name: 'phone', value: '+1123123123', type: 'phone' },
+      ];
+      mockRest.listRequestIdentifiers.mockResolvedValue(identifiers);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      expect(tool.requireSombra).toBe(true);
+
+      const result = await tool.handler({
+        requestId: 'req-1',
+        limit: 2,
+        offset: 0,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: identifiers,
+        hasNextPage: true,
+      });
+      expect(mockRest.listRequestIdentifiers).toHaveBeenCalledWith('req-1', {
+        first: 2,
+        offset: 0,
+      });
+    });
+
+    it('sets hasNextPage false when page is shorter than limit', async () => {
+      mockRest.listRequestIdentifiers.mockResolvedValue([
+        { id: 'ri-1', name: 'email', value: 'a@b.com', type: 'email' },
+      ]);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      const result = await tool.handler({
+        requestId: 'req-1',
+        limit: 50,
+        offset: 0,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        hasNextPage: false,
+      });
     });
   });
 
@@ -138,7 +236,7 @@ describe('DSR Tools', () => {
       const result = await tool.handler({
         requestId: 'req-1',
         status: ['ERROR'],
-        first: 10,
+        limit: 10,
         offset: 0,
       });
 
@@ -169,6 +267,75 @@ describe('DSR Tools', () => {
       const result = await tool.handler({});
 
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: undefined,
+        emails: undefined,
+      });
+    });
+
+    it('passes identifierValue to listRequests', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({ identifierValue: '555-1234' });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: '555-1234',
+        emails: undefined,
+      });
+    });
+
+    it('passes emails to listRequests', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({ emails: ['a@example.com'] });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: undefined,
+        emails: ['a@example.com'],
+      });
+    });
+
+    it('passes identifierValue and emails together', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({
+        identifierValue: 'user@example.com',
+        emails: ['primary@example.com'],
+      });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: 'user@example.com',
+        emails: ['primary@example.com'],
+      });
     });
 
     it('throws when client throws', async () => {
@@ -178,6 +345,84 @@ describe('DSR Tools', () => {
       const tool = tools.find((t) => t.name === 'dsr_list')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+  });
+
+  describe('dsr_enrich_identifiers', () => {
+    it('requires nonce or requestId + enricherId in schema', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      expect(tool.zodSchema.safeParse({ identifiers: { email: 'a@b.com' } }).success).toBe(false);
+      expect(
+        tool.zodSchema.safeParse({
+          nonce: 'nonce-1',
+          identifiers: { email: 'a@b.com' },
+        }).success,
+      ).toBe(true);
+    });
+
+    it('calls enrichIdentifiers with nonce', async () => {
+      mockRest.enrichIdentifiers.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      await tool.handler({ nonce: 'nonce-1', identifiers: { email: 'a@b.com' } });
+
+      expect(mockRest.enrichIdentifiers).toHaveBeenCalledWith({
+        nonce: 'nonce-1',
+        requestId: undefined,
+        enricherId: undefined,
+        identifiers: { email: 'a@b.com' },
+      });
+    });
+  });
+
+  describe('dsr_list_pending_requests', () => {
+    it('requires Sombra and returns pending items', async () => {
+      mockRest.getPendingRequests.mockResolvedValue({
+        items: [{ requestId: 'req-1', nonce: 'jwt-nonce' }],
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_pending_requests')!;
+
+      expect(tool.requireSombra).toBe(true);
+      expect(tool.description).toMatch(/API key linked to this data silo/i);
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-1',
+        requestType: 'ACCESS',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          items: [{ requestId: 'req-1', nonce: 'jwt-nonce' }],
+          count: 1,
+        },
+      });
+      expect(mockRest.getPendingRequests).toHaveBeenCalledWith('silo-1', 'ACCESS');
+    });
+
+    it('returns a silo-association hint on 401', async () => {
+      mockRest.getPendingRequests.mockRejectedValue(
+        new Error('REST API error: 401 Unauthorized - API key invalid'),
+      );
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_pending_requests')!;
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-algolia',
+        requestType: 'ERASURE',
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringMatching(/associated with data silo silo-algolia/i),
+      });
     });
   });
 });

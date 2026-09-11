@@ -1,5 +1,7 @@
 import { LRUCache } from 'lru-cache';
 
+import { clearSearchIndexCache } from './docsSearch.js';
+
 /** Public docs index URL (llms.txt). */
 export const LLMS_TXT_URL = 'https://docs.transcend.io/llms.txt';
 
@@ -10,7 +12,7 @@ const INDEX_CACHE_KEY = 'index';
 const DEFAULT_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_BODY_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8_000;
-const MAX_BODY_CACHE_ENTRIES = 400;
+const MAX_BODY_CACHE_ENTRIES = 600;
 
 /** A single article entry from llms.txt. */
 export interface DocEntry {
@@ -39,9 +41,13 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
 
     const linkMatch = /^- \[(.+)\]\((.+)\)\s*$/.exec(line);
     if (linkMatch?.[1] && linkMatch[2] && currentSection) {
+      const title = linkMatch[1].trim();
+      if (!title) {
+        continue;
+      }
       entries.push({
         section: currentSection,
-        title: linkMatch[1].trim(),
+        title,
         url: linkMatch[2].trim(),
       });
     }
@@ -116,4 +122,5 @@ export function assertDocsHost(url: string): void {
 export function resetDocsCachesForTests(): void {
   indexCache.clear();
   bodyCache.clear();
+  clearSearchIndexCache();
 }

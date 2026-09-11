@@ -91,6 +91,24 @@ export interface Request {
   teams?: InventoryTeamPreview[];
 }
 
+/** Nested enricher definition on a request-enricher job */
+export interface RequestEnricherEnricher {
+  /** Enricher UUID — pass as `enricherId` / `x-transcend-enricher-id` */
+  id: string;
+  /** Display title */
+  title: string;
+  /** Enricher type (e.g. SOMBRA, PERSON) */
+  type: string;
+}
+
+/** Enricher job attached to a privacy request (preflight / enrichment stage) */
+export interface RequestEnricherSummary {
+  /** Status of this enricher job on the request (e.g. ENRICHING, RESOLVED, ERROR) */
+  status: string;
+  /** Enricher definition; use `enricher.id` as `enricherId` for `dsr_enrich_identifiers` */
+  enricher: RequestEnricherEnricher;
+}
+
 export interface RequestDetails extends Request {
   dataSubjectType?: string;
   locale?: string;
@@ -99,6 +117,8 @@ export interface RequestDetails extends Request {
   requestIdentifiers?: RequestIdentifier[];
   requestDataSilos?: RequestDataSilo[];
   requestFiles?: RequestFile[];
+  /** Enricher jobs for this request (for discovering enricherId without a nonce) */
+  requestEnrichers?: RequestEnricherSummary[];
 }
 
 export interface RequestIdentifier {
@@ -151,23 +171,56 @@ export interface RequestFile {
 }
 
 export interface DSRSubmission {
-  type: RequestType;
+  /**
+   * Published workflow config UUID (Privacy Requests → Workflows).
+   * Request type and subject class are derived from this config.
+   */
+  workflowConfigId: string;
+  /** Email address of the data subject (required when not silent) */
   email: string;
+  /** Core identifier; defaults to email when omitted */
   coreIdentifier?: string;
-  subjectType?: string;
-  name?: string;
-  phone?: string;
+  /** Locale for communications (e.g. en-US) */
   locale?: string;
+  /** When true, suppress email notifications to the data subject */
   isSilent?: boolean;
-  skipSecondaryLookup?: boolean;
-  additionalIdentifiers?: Record<string, string>;
 }
 
 export interface DSRResponse {
+  /** Privacy request ID */
   id: string;
+  /** Request status */
   status: string;
+  /** Optional server message */
   message?: string;
+  /** Optional nonce */
   nonce?: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Subject email on the created request */
+  email?: string | null;
+  /** Core identifier on the created request */
+  coreIdentifier?: string;
+  /** Admin dashboard deep link */
+  link?: string;
+}
+
+/**
+ * Minimal summary of a request returned from bulk DSR create.
+ */
+export interface DSRCreatedSummary {
+  /** Privacy request ID */
+  id: string;
+  /** Request status */
+  status: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface DownloadKey {
@@ -176,23 +229,27 @@ export interface DownloadKey {
 }
 
 export interface EnrichIdentifiersInput {
-  requestId: string;
+  /** JWT nonce from webhook or pending-requests (preferred) */
+  nonce?: string;
+  /** Request ID for manual enrichment when nonce is unavailable */
+  requestId?: string;
+  /** Enricher ID for manual enrichment when nonce is unavailable */
+  enricherId?: string;
+  /** Identifier names and values to add */
   identifiers: Record<string, string>;
 }
 
 export interface AccessResponseInput {
-  requestId: string;
-  dataSiloId: string;
-  profiles?: Record<string, unknown>[];
-  files?: {
-    fileName: string;
-    fileData: string;
-  }[];
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile data to return for the access request */
+  profiles?: { profileId?: string; profileData?: unknown }[];
 }
 
 export interface ErasureResponseInput {
-  requestId: string;
-  dataSiloId: string;
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile IDs that were erased */
   profileIds?: string[];
 }
 
@@ -222,22 +279,152 @@ export interface UserPreferences {
   confirmed?: boolean;
 }
 
+export interface PreferenceStoreIdentifier {
+  /** Identifier name (e.g. email, phone) */
+  name: string;
+  /** Identifier value */
+  value: string;
+}
+
 export interface PreferenceQueryInput {
+  /** Preference store partition key */
   partition: string;
+  /** Identifiers to query */
   identifiers: {
+    /** Identifier value */
     value: string;
-    type?: string;
+    /** Identifier name (optional; inferred when omitted) */
+    name?: string;
+  }[];
+  /** Max records per page (1–50) */
+  limit?: number;
+  /** Pagination cursor from a previous query */
+  cursor?: string;
+}
+
+export interface PreferenceQueryResult {
+  /** Matching preference records */
+  nodes: unknown[];
+  /** Cursor for the next page, if any */
+  cursor?: string;
+}
+
+export interface PreferenceUpsertRecord {
+  /** Partition key for this record */
+  partition: string;
+  /** ISO 8601 timestamp for the consent update */
+  timestamp: string;
+  /** Whether consent was explicitly confirmed */
+  confirmed?: boolean;
+  /** User identifiers */
+  identifiers?: PreferenceStoreIdentifier[];
+  /** Legacy user ID (prefer identifiers) */
+  userId?: string;
+  /** Purpose consent updates */
+  purposes: {
+    /** Purpose slug */
+    purpose: string;
+    /** Whether the purpose is enabled (Preference Store wire field) */
+    enabled: boolean;
+    /** ISO 8601 timestamp for this purpose */
+    timestamp?: string;
   }[];
 }
 
 export interface PreferenceUpsertInput {
-  partition: string;
+  /** Records to upsert */
+  records: PreferenceUpsertRecord[];
+  /** When true, skip workflow triggers */
+  skipWorkflowTriggers?: boolean;
+}
+
+export interface PreferenceDeleteRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the deletion */
+  timestamp: string;
+}
+
+export interface PreferenceAppendIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to append */
+  append: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when append value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceUpdateIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier update details */
+  update: {
+    /** Identifier name */
+    name: string;
+    /** Current identifier value */
+    oldValue: string;
+    /** New identifier value */
+    newValue: string;
+  };
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when update value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceDeleteIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to delete */
+  delete: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceIdentifiersResponse {
+  /** Overall success when the API includes it */
+  success?: boolean;
+  /** Per-record operation results */
   records: {
-    identifier: string;
-    identifierType?: string;
-    purposes: ConsentPreference[];
-    confirmed?: boolean;
+    /** Whether the operation succeeded */
+    success: boolean;
+    /** Remaining identifiers when requested */
+    identifiers?: PreferenceStoreIdentifier[];
+    /** Error message when success is false */
+    errorMessage?: string;
   }[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
+}
+
+export interface PreferenceUpsertResponse {
+  /** Overall success flag from Preference Store */
+  success?: boolean;
+  /** Successfully written records */
+  nodes?: unknown[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
 }
 
 export interface AirgapBundle {
@@ -412,7 +599,7 @@ export interface InventoryTeamPreview {
 export interface BusinessEntity {
   /** Unique identifier */
   id: string;
-  /** Display title (use with inventory_update_data_silo `businessEntityTitles`) */
+  /** Display title (use with inventory_write_data_silo `businessEntityTitles`) */
   title: string;
   /** Description */
   description?: string;
@@ -420,7 +607,7 @@ export interface BusinessEntity {
 
 /** Data subject row for inventory list / silo blocklist resolution */
 export interface DataSubject {
-  /** Unique identifier (use with inventory_update_data_silo `dataSubjectBlockListIds`) */
+  /** Unique identifier (use with inventory_write_data_silo `dataSubjectBlockListIds`) */
   id: string;
   /** Machine type key (e.g. CUSTOMER, EMPLOYEE) */
   type: string;
@@ -537,6 +724,18 @@ export interface DataSiloUpdateInput {
   isLive?: boolean;
 }
 
+export interface DataSiloWriteInput extends Omit<DataSiloUpdateInput, 'id'> {
+  /** Existing data silo ID (update path when set) */
+  id?: string;
+  /** Catalog integration name (GraphQL `name`) required to create when id is omitted */
+  integrationName?: string;
+  /**
+   * Sombra gateway ID. Required when creating with `integrationName` `customFunction`
+   * (DSR Custom Function integrations must be pinned to a dedicated Sombra).
+   */
+  sombraId?: string;
+}
+
 export interface DataPoint {
   /** Unique identifier */
   id: string;
@@ -584,6 +783,10 @@ export interface DataCategory {
   description?: string;
   /** Optional classification regex */
   regex?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface DataPurpose {
@@ -613,7 +816,7 @@ export interface DataCatalog {
 
 /**
  * Integration catalog entry from GraphQL `catalogs`.
- * Pass `integrationName` to `inventory_create_data_silo`.
+ * Pass `integrationName` to `inventory_write_data_silo`.
  */
 export interface CatalogIntegration {
   /** Catalog slug for createDataSilos (`name`) */
@@ -712,6 +915,45 @@ export interface ProcessingPurposeWriteInput {
   purpose?: string;
   /** Description */
   description?: string;
+}
+
+export interface DataCategoryCreateInput {
+  /** Subcategory display name */
+  name: string;
+  /** Top-level data category type */
+  category: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryUpdateInput {
+  /** Data subcategory ID */
+  id: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryWriteInput {
+  /** Existing data subcategory ID (update path when set) */
+  id?: string;
+  /** Subcategory display name (upsert key with category when id is omitted) */
+  name?: string;
+  /** Top-level data category type (upsert key with name when id is omitted) */
+  category?: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface VendorCreateInput {
@@ -851,33 +1093,64 @@ export interface DiscoveryPlugin {
 }
 
 export interface LLMClassificationInput {
+  /** Text strings to classify */
   texts: string[];
-  categories?: string[];
+  /** Category labels to classify against */
+  categories: string[];
+  /** LLM model type override */
   model?: string;
 }
 
 export interface LLMClassificationResult {
+  /** Input text that was classified */
   text: string;
+  /** Classification guesses for this text */
   classifications: {
+    /** Predicted category label */
     category: string;
+    /** Confidence score (0–1); derived from confidenceLabel when only ordinals are returned */
     confidence: number;
+    /** Parent category when available */
     subcategory?: string;
+    /** Ordinal confidence from the classifier when present (HIGH / MEDIUM / LOW) */
+    confidenceLabel?: string;
   }[];
 }
 
 export interface NERExtractionInput {
+  /** Text to extract entities from */
   text: string;
-  entityTypes?: string[];
+  /** Entity type labels to extract */
+  entityTypes: string[];
 }
 
 export interface NERExtractionResult {
+  /** Extracted entities */
   entities: {
+    /** Extracted entity value */
     text: string;
+    /** Entity type label */
     type: string;
-    start: number;
-    end: number;
+    /** Confidence score */
     confidence: number;
+    /** Source text snippet when available */
+    snippet?: string;
   }[];
+}
+
+export interface PendingRequestItem {
+  /** Pending identifier value */
+  identifier: string;
+  /** Identifier type */
+  type: string;
+  /** Core identifier for the request */
+  coreIdentifier: string;
+  /** Data silo ID */
+  dataSiloId: string;
+  /** Privacy request ID */
+  requestId: string;
+  /** JWT nonce for responding to this pending item */
+  nonce: string;
 }
 
 // Assessment Types
@@ -892,6 +1165,24 @@ export type AssessmentFormStatus =
 
 /** @deprecated Use AssessmentFormStatus */
 export type AssessmentStatus = AssessmentFormStatus;
+
+/** A Transcend user attached to an assessment as an assignee or reviewer. */
+export interface AssessmentParticipant {
+  /** Transcend user ID, usable as `assigneeIds`/`reviewerIds` in `assessments_list` */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Email address */
+  email: string;
+}
+
+/** Someone outside the organization a form was shared with. */
+export interface AssessmentExternalParticipant {
+  /** External assignee ID */
+  id: string;
+  /** Email address, usable as `externalAssigneeEmails` in `assessments_list` */
+  email: string;
+}
 
 export interface Assessment {
   /** Unique identifier */
@@ -908,14 +1199,31 @@ export interface Assessment {
    * `listAssessments` so callers can build deep links to the group view.
    */
   assessmentGroupId?: string;
+  /** Title of the assessment group, so callers can name it without a second lookup */
+  assessmentGroupTitle?: string;
   /** Source template, when expanded */
   template?: AssessmentTemplate;
-  /** Primary assignee */
-  assignee?: User;
-  /** Reviewer */
-  reviewer?: User;
-  /** Optional due date (ISO 8601) */
-  dueDate?: string;
+  /**
+   * Internal Transcend users the form is assigned to. A form can carry several,
+   * which is why this is a list rather than a single assignee.
+   */
+  assignees?: AssessmentParticipant[];
+  /** Internal Transcend users reviewing the form */
+  reviewers?: AssessmentParticipant[];
+  /** Non-Transcend recipients the form was shared with, identified by email only */
+  externalAssignees?: AssessmentExternalParticipant[];
+  /** Whether the form has been archived out of the working set */
+  isArchived?: boolean;
+  /** Whether the form is locked against further edits */
+  isLocked?: boolean;
+  /**
+   * Due date (ISO 8601), or `null` where none is set.
+   *
+   * Explicitly null rather than absent: a dropped key is indistinguishable from
+   * a field the query never asked for, which reads as broken plumbing behind
+   * the `dueBefore` filter rather than as a form nobody gave a deadline.
+   */
+  dueDate?: string | null;
   /** When the form was submitted for review (ISO 8601) */
   submittedAt?: string;
   /** When the form was fully completed (ISO 8601) */
@@ -929,13 +1237,27 @@ export interface Assessment {
 }
 
 export interface AssessmentTemplate {
+  /** Unique identifier, usable as `templateId` in `assessments_export_template` */
   id: string;
+  /** Display title */
   title: string;
+  /** Optional description */
   description?: string;
-  version: string;
+  /** Publication status, `DRAFT` or `PUBLISHED` */
+  status?: string;
+  /**
+   * How the template came to exist: `MANUAL` if someone built it,
+   * `DATA_INVENTORY` if it was generated from the data inventory, `IMPORT` if
+   * it came in with a OneTrust import
+   */
+  source?: string;
+  /** Sections in the template, when expanded */
   sections?: AssessmentTemplateSection[];
-  isActive: boolean;
-  createdAt: string;
+  /** Whether the template has been archived out of the working set */
+  isArchived?: boolean;
+  /** When the template was created (ISO 8601) */
+  createdAt?: string;
+  /** When the template was last updated (ISO 8601) */
   updatedAt?: string;
 }
 
@@ -948,33 +1270,124 @@ export interface AssessmentTemplateSection {
 }
 
 export interface AssessmentSection {
+  /** Unique identifier */
   id: string;
+  /** Heading the section is shown under */
   title?: string;
+  /** Position of the section within the form, zero-based */
   index?: number;
+  /** Review state of this section, distinct from the form's own status */
   status?: string;
+  /** The template section this one was built from */
   templateSection?: AssessmentTemplateSection;
+  /** Submitted answers, when the caller asked for section contents */
   responses?: AssessmentResponse[];
+  /** Whether every required question in the section has been answered */
   isComplete?: boolean;
+  /** Questions in the section, present only for sections the caller expanded */
   questions?: AssessmentFormQuestion[];
+  /**
+   * How many questions the section holds. Returned in place of `questions`
+   * when a caller asks for the section index rather than section contents, so
+   * they can size a drill-down before paying for it.
+   */
+  questionCount?: number;
+}
+
+/** Which part of an assessment form a comment hangs off. */
+export type AssessmentCommentLevel = 'FORM' | 'SECTION' | 'QUESTION';
+
+/**
+ * Who wrote a comment. Reviewers outside the organization comment via a share
+ * link and have an email but no user record, so every field is optional.
+ */
+export interface AssessmentCommentAuthor {
+  /** ID of the internal user who wrote the comment, when there is one */
+  id?: string;
+  /** Email address of the author, including external reviewers */
+  email?: string;
+  /** Display name of the author */
+  name?: string;
+}
+
+/**
+ * A comment left on an assessment form, one of its sections, or one of its
+ * questions. The three levels are separate entities in the API but share this
+ * shape; `level` and `targetId` say which record a comment hangs off.
+ */
+export interface AssessmentComment {
+  /** Unique identifier */
+  id: string;
+  /** Whether the comment is attached to the form, a section, or a question */
+  level: AssessmentCommentLevel;
+  /** ID of the form, section, or question the comment is attached to */
+  targetId: string;
+  /** Body of the comment */
+  content: string;
+  /** Who wrote the comment */
+  author?: AssessmentCommentAuthor;
+  /** ID of the comment this one replies to, when it is a threaded reply */
+  parentCommentId?: string;
+  /**
+   * When the root of this thread was resolved (ISO 8601). Set on root comments
+   * only; replies stay open/closed with their parent and usually omit this.
+   */
+  resolvedAt?: string;
+  /** Number of files attached to the comment */
+  fileCount?: number;
+  /** When the comment was created (ISO 8601) */
+  createdAt: string;
+  /** When the comment was last edited (ISO 8601) */
+  updatedAt?: string;
 }
 
 export interface AssessmentFormQuestion {
+  /** Unique identifier */
   id: string;
+  /** The question as it is put to the respondent */
   title?: string;
+  /** Position of the question within its section, zero-based */
   index?: number;
+  /** Answer shape, e.g. LONG_ANSWER_TEXT, SINGLE_SELECT, FILE */
   type: string;
+  /** Narrows `type` for select questions, e.g. USER, TEAM, ATTRIBUTE_KEY */
   subType?: string;
+  /** Guidance shown alongside the question */
   description?: string;
+  /** Whether the form cannot be submitted while this is unanswered */
   isRequired?: boolean;
+  /** Hint text shown in an empty answer field */
   placeholder?: string;
+  /** Stable key for matching this question across forms built from one template */
   referenceId?: string;
+  /** Choices offered for select questions; absent on free-text questions */
   answerOptions?: AssessmentAnswerOption[];
+  /** Choices the respondent actually picked, or their typed answer */
   selectedAnswers?: AssessmentAnswerOption[];
+  /** Comments left on this question, when the caller asked for them */
+  comments?: AssessmentComment[];
 }
 
+/**
+ * A question found by searching a form's text, carrying the section it sits in.
+ *
+ * Questions are reached through sections everywhere else, so a match pulled out
+ * of that nesting has to say where it came from or the caller cannot place it.
+ */
+export interface AssessmentQuestionMatch extends AssessmentFormQuestion {
+  /** ID of the section holding this question */
+  sectionId: string;
+  /** Title of that section, when it has one */
+  sectionTitle?: string;
+}
+
+/** One selectable choice on a question, and the shape a submitted answer takes. */
 export interface AssessmentAnswerOption {
+  /** Unique identifier */
   id: string;
+  /** Position among the choices offered, zero-based */
   index?: number;
+  /** Text of the choice, or the respondent's answer when it is a submitted one */
   value: string;
 }
 
@@ -1001,6 +1414,8 @@ export interface AssessmentResponse {
 export interface AssessmentGroup {
   id: string;
   title: string;
+  /** Free-text summary of the group. Searched by the `text` filter. */
+  description: string;
   assessmentFormTemplate?: {
     id: string;
     title: string;
@@ -1130,6 +1545,14 @@ export interface AssessmentPrefillInput {
 export interface Workflow {
   id: string;
   title: { defaultMessage: string };
+  /** Dashboard internal name when present */
+  internalName?: string;
+  /** Visibility of the workflow config (e.g. published vs draft) */
+  workflowConfigVisibility?: string;
+  /** DSR action type derived from the workflow (e.g. ACCESS, ERASURE) */
+  actionType?: string;
+  /** Data subject class for the workflow (e.g. customer, employee) */
+  subjectType?: string;
   type?: string;
   description?: string;
   isActive?: boolean;

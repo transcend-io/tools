@@ -40,9 +40,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   // DSR
   declare listRequests: InstanceType<typeof DSRMixin>['listRequests'];
   declare getRequest: InstanceType<typeof DSRMixin>['getRequest'];
-  declare employeeMakeDataSubjectRequest: InstanceType<
-    typeof DSRMixin
-  >['employeeMakeDataSubjectRequest'];
   declare cancelRequest: InstanceType<typeof DSRMixin>['cancelRequest'];
 
   // Inventory
@@ -51,6 +48,7 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listCatalogs: InstanceType<typeof InventoryMixin>['listCatalogs'];
   declare createDataSilo: InstanceType<typeof InventoryMixin>['createDataSilo'];
   declare updateDataSilo: InstanceType<typeof InventoryMixin>['updateDataSilo'];
+  declare writeDataSilo: InstanceType<typeof InventoryMixin>['writeDataSilo'];
   declare listVendors: InstanceType<typeof InventoryMixin>['listVendors'];
   declare writeVendor: InstanceType<typeof InventoryMixin>['writeVendor'];
   declare listDataPoints: InstanceType<typeof InventoryMixin>['listDataPoints'];
@@ -60,6 +58,7 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listDataCategories: InstanceType<typeof InventoryMixin>['listDataCategories'];
   declare listProcessingPurposes: InstanceType<typeof InventoryMixin>['listProcessingPurposes'];
   declare writeProcessingPurpose: InstanceType<typeof InventoryMixin>['writeProcessingPurpose'];
+  declare writeDataCategory: InstanceType<typeof InventoryMixin>['writeDataCategory'];
   declare listBusinessEntities: InstanceType<typeof InventoryMixin>['listBusinessEntities'];
   declare listDataSubjects: InstanceType<typeof InventoryMixin>['listDataSubjects'];
 

@@ -55,7 +55,29 @@ for (const fileName of readdirSync(schemaRoot)) {
   };
 
   // Build the JSON schema from io-ts codec
-  const jsonSchema = { ...schemaDefaults, ...toJsonSchema(TranscendInput) };
+  const jsonSchema = { ...schemaDefaults, ...toJsonSchema(TranscendInput) } as {
+    $schema: string;
+    $id: string;
+    title: string;
+    description: string;
+    type?: string;
+    properties?: Record<string, Record<string, unknown>>;
+  };
+
+  // Canonical preflight checks key, plus a deprecated `enrichers` alias that $ref's it
+  // (draft-07: sibling keywords next to $ref are unreliable, so use allOf).
+  if (jsonSchema.properties?.preflights) {
+    jsonSchema.properties.preflights.description =
+      'Preflight check definitions (identity enrichment, fraud checks, etc.) run before privacy request workflows.';
+  }
+  if (jsonSchema.properties?.enrichers && jsonSchema.properties?.preflights) {
+    jsonSchema.properties.enrichers = {
+      deprecated: true,
+      description:
+        'Deprecated: use `preflights` instead. Legacy alias for preflight check definitions.',
+      allOf: [{ $ref: '#/properties/preflights' }],
+    };
+  }
 
   const schemaFilePath = join(schemaRoot, fileName);
 

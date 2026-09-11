@@ -37,7 +37,7 @@ const allTools = [
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
 
 describe('MCP Tool Annotations', () => {
-  it('registers all umbrella tools (deduped like ToolRegistry)', () => {
+  it('defines all umbrella tools across domain packages', () => {
     expect(allTools.length).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
   });
 
@@ -84,12 +84,13 @@ describe('MCP Tool Annotations', () => {
       'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
+      'consent_delete_cookies',
+      'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
-      'dsr_submit_on_behalf',
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
@@ -124,11 +125,14 @@ describe('MCP Tool Annotations', () => {
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
-      'dsr_submit_on_behalf',
+      'preferences_append_identifiers',
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
+      'preferences_upsert',
     ];
+
+    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
 
     // Exact in both directions: adding a gate makes a tool refuse on hosts that
     // cannot ask, and dropping one silently un-guards an irreversible action.
@@ -145,28 +149,33 @@ describe('MCP Tool Annotations', () => {
       expect(tool.confirmation?.hint.trim()).not.toBe('');
     });
 
-    it('every gated tool is also annotated destructive and mutating', () => {
+    it('every gated tool is annotated mutating', () => {
       for (const tool of allTools.filter((t) => t.confirmation)) {
-        expect(tool.annotations.destructiveHint, `${tool.name}`).toBe(true);
         expect(tool.annotations.readOnlyHint, `${tool.name}`).toBe(false);
       }
     });
+
+    it.each(expectedGatedNonDestructive)(
+      '%s is gated without destructiveHint (confirmation and destructiveHint are independent)',
+      (name) => {
+        const tool = toolByName(name);
+        expect(tool.confirmation?.hint.trim()).not.toBe('');
+        expect(tool.annotations.destructiveHint).toBe(false);
+      },
+    );
   });
 
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
-      'consent_set_preferences',
       'preferences_upsert',
       'preferences_update_identifiers',
-      'inventory_update_data_silo',
       'inventory_write_vendor',
       'inventory_write_processing_purpose',
       'inventory_update_or_create_data_point',
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
-      'dsr_respond_erasure',
     ];
 
     it.each(expectedIdempotentMutative)(
