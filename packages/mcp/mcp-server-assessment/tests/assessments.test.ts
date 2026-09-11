@@ -1147,20 +1147,12 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('resolves templateId to assessmentGroupId when assessmentGroupId not provided', async () => {
-      const mockGroup = {
-        id: 'grp-from-template',
-        assessmentFormTemplate: { id: 'tpl-1' },
-      };
-      mockGraphql.listAssessmentGroups.mockResolvedValue({
-        nodes: [mockGroup],
-        totalCount: 1,
-        pageInfo: { hasNextPage: false },
-      });
-
+    it('creates in the named group without looking any group up', async () => {
+      // The group is where the form lives, so it is taken as given rather than
+      // inferred from a template, which could only ever name one group.
       const mockAssessment = {
         id: 'assess-2',
-        title: 'From Template',
+        title: 'In A Group',
         status: 'DRAFT',
       };
       mockGraphql.createAssessment.mockResolvedValue(mockAssessment);
@@ -1169,8 +1161,8 @@ describe('Assessment Tools', () => {
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
       const result = await tool.handler({
-        title: 'From Template',
-        templateId: 'tpl-1',
+        title: 'In A Group',
+        assessmentGroupId: 'grp-1',
       });
 
       expect(result).toMatchObject({
@@ -1179,12 +1171,23 @@ describe('Assessment Tools', () => {
           assessment: expect.objectContaining(mockAssessment),
         }),
       });
-      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith({ first: 100 });
+      expect(mockGraphql.listAssessmentGroups).not.toHaveBeenCalled();
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
-        title: 'From Template',
-        assessmentGroupId: 'grp-from-template',
+        title: 'In A Group',
+        assessmentGroupId: 'grp-1',
         assigneeIds: undefined,
       });
+    });
+
+    it('rejects a create with no group', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'assessments_create')!;
+
+      const result = tool.zodSchema.safeParse({ title: 'No Group' });
+
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['assessmentGroupId']);
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
 
     it('throws when client throws', async () => {
