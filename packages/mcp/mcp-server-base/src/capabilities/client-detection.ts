@@ -60,14 +60,30 @@ export interface HostQuirks {
    * HTML is served lazily, so the markup must be a literal string.
    */
   requiresEagerUiHtml?: boolean;
+  /**
+   * Host may answer an elicitation with `decline` without having put it to
+   * anybody, so a decline is not on its own evidence that a person said no.
+   *
+   * Only consulted where an answer arrived faster than a person could give one
+   * and a soft confirmation exists to fall back on — see `confirmation.ts`.
+   */
+  mayDeclineWithoutAsking?: boolean;
 }
 
 /** Known workarounds keyed by host. Absent means the host needs none. */
 export const HOST_QUIRKS: Readonly<Partial<Record<McpHostClient, HostQuirks>>> = {
-  // Intentionally empty. Add an entry with a TODO and a ticket when a host
-  // misbehaves, e.g.:
-  //   // TODO(LINK-0000): drop once <host> ships the fix in <version>.
-  //   [McpHostClient.SomeHost]: { requiresEagerUiHtml: true },
+  // Cursor runs every window's MCP servers in one shared process, and routes a
+  // server-initiated request to the window that owns the connection. When that
+  // is not the window the caller is in, delivery fails and Cursor answers the
+  // server with `decline` rather than an error, which reads as a refusal from a
+  // user who was never shown anything:
+  //   WARN [McpProcessMain] Cannot route MCP lease elicitation request for
+  //   window 1 in window 3
+  // Added by ZEL-8310. Still reproducing on 3.17.8, per
+  // https://forum.cursor.com/t/mcp-elicitation-create-hangs-agent-on-windows-in-cursor-3-10-20-but-works-on-macos/165391
+  // TODO: https://linear.app/transcend/issue/ZEL-8311 - remove when Cursor's
+  // multi-window elicitation support is ready.
+  [McpHostClient.Cursor]: { mayDeclineWithoutAsking: true },
 };
 
 /** Returns the workarounds needed for a host, or an empty object when none apply. */

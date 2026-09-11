@@ -1,10 +1,15 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { IdentifierSchema } from './preferences_query.js';
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
+import { DeleteRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const DeletePreferencesSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to delete'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
+  records: z.array(DeleteRecordSchema).min(1).describe('Preference records to delete'),
 });
 export type DeletePreferencesInput = z.infer<typeof DeletePreferencesSchema>;
 
@@ -24,19 +29,23 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: DeletePreferencesSchema,
-    handler: async ({ partition, identifiers }) => {
-      const result = await rest.deletePreferences(
-        partition,
-        identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        })),
-      );
+    handler: async ({ partition, records }) => {
+      const result = await rest.deletePreferences(partition, records);
 
-      return createToolResult(true, {
-        ...result,
-        message: `Successfully deleted ${result.count} preference records`,
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? `Processed deletion for ${records.length} preference record(s)`
+            : `Preference delete completed with ${failureCount} failure(s)`,
+        },
+        `Preference delete failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

@@ -1,5 +1,425 @@
 # @transcend-io/mcp-server-base
 
+## 2.3.0
+
+### Minor Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+## 2.2.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+## 2.2.1
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+## 2.2.0
+
+### Minor Changes
+
+- aefe248: Bound what `assessments_get` returns.
+
+  It returned every section, question, answer option and answer at once — a six-section,
+  twenty-question DPIA already ran to roughly 30,000 characters, and real forms have hundreds of
+  questions. Neither `sections` nor `questions` takes pagination arguments, so the only way to
+  bound the response is not to ask for the parts you do not want.
+
+  `assessmentId` alone now returns the section list with a question count each. `sectionIds`
+  expands the sections you name, and fails naming any ID the form does not have rather than
+  returning the rest in a response shaped like a complete one.
+
+  Free-text answers no longer come back twice. The API models a typed response as an answer
+  option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
+  Options are now dropped only when every one was selected, so select questions are unaffected.
+
+  Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+  a status, so confirming an assignment took previously meant querying the list index for a single
+  form whose ID the caller was already holding.
+
+  Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
+  of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
+
+  Breaking: pass `sectionIds` to get full section contents.
+
+- aefe248: Add `questionText` to `assessments_get`, so finding what a form asks does not mean guessing
+  which section holds it.
+
+  Reading a form meant naming sections and trusting their titles. One staging form has a section
+  titled "Data Storage and Security" whose questions are all legal basis and compliance, so the
+  guess-expand-repeat loop is the over-fetching the section list exists to prevent.
+
+  `questionText` returns only the questions whose text matches, with their answers and the
+  section each sits in. Pass `sectionIds` alongside it to search within those sections rather
+  than expanding them. Matches are drained rather than paged, since they cannot outnumber the
+  form's questions.
+
+  Answers cannot be searched — the API matches question and form titles only — and an empty
+  result says so, phrased as an answer rather than a failed lookup.
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+### Patch Changes
+
+- 74f2734: Emit the `VALIDATION_ERROR` code from `ErrorCode` rather than a string literal.
+
+  Both sites already produced that exact string, so the wire format is unchanged. Naming it keeps the
+  two in step if the code is ever renamed.
+
+## 2.1.0
+
+### Minor Changes
+
+- 60d1ea0: Add an `experimental` flag on tools and gate registration behind `TRANSCEND_MCP_EXPERIMENTAL=1`.
+
+  Tools marked `experimental: true` are omitted from server and umbrella registry registration unless
+  the env var is exactly `1`, so unfinished surfaces stay out of the default catalog.
+
+## 2.0.0
+
+### Major Changes
+
+- 2e8558d: Give `assessments_list` the filters, sorting and paging the API already supports.
+
+  It previously accepted a single `status` and nothing else, so every other question — who owns
+  this, what is overdue, which forms belong to this group — meant paging the whole index and
+  matching in-model. It now forwards `text`, `ids`, `statuses`, `assigneeIds`, `reviewerIds`,
+  `externalAssigneeEmails`, `assessmentGroupIds` and four date bounds to
+  `AssessmentFormFiltersInput`, sorts by `title`, `status` or `submittedAt`, and pages with
+  `offset`.
+
+  Rows carry the group title alongside its ID, and an opt-in `includeDetails` fetches assignees,
+  reviewers, external assignees, dates and lock state — roughly triple the bytes per row, so a
+  caller who only wants titles and statuses does not pay for them.
+
+  There is deliberately no `templateIds` filter. `AssessmentFormFiltersInput` declares one and the
+  server rejects it: a form reaches its template only through its group. Resolve the group with
+  `assessments_list_groups` and filter on its ID.
+
+  Two things read as bugs rather than results, and no longer do: an empty page from an `offset`
+  past the end is now a validation error naming `totalCount`, and an array filter must hold at
+  least one value, so a caller that resolved a lookup to nothing gets an error instead of the
+  whole organization.
+
+  Breaking: `status` is replaced by `statuses`, and `Assessment` replaces the single `assignee`
+  and `reviewer` with the `assignees`, `reviewers` and `externalAssignees` lists the API returns.
+  `dueDate` is now explicitly `null` when unset rather than absent, since a dropped key reads as
+  broken plumbing behind `dueBefore`.
+
+- 2730f0d: Let `assessments_list_templates` filter, and stop inventing the fields it returns.
+
+  The tool took nothing but `limit`, so finding a template by name meant paging the catalog. It now
+  forwards `text`, `ids` and `statuses` to `AssessmentFormTemplateFiltersInput`, and pages with
+  `offset`.
+
+  Rows carry the real `status`, `source`, `isArchived`, `createdAt` and `updatedAt`. The mapper
+  previously hardcoded `version: '1.0.0'`, `isActive: true` and `createdAt: new Date()`, which
+  reported every template in the organization as created today and active — three fields that were
+  never anything but fiction.
+
+  The description said templates are what you build assessments from, without saying that only
+  `PUBLISHED` ones can be, so a caller could pick a draft and fail at create time.
+
+  Breaking: `AssessmentTemplate` drops `version` and `isActive`, and `createdAt` is now optional
+  since it comes from the API rather than the clock.
+
+### Minor Changes
+
+- 6dccc24: Let `assessments_list_groups` filter instead of paging.
+
+  The tool took nothing but `limit`, so resolving a group by name meant walking the whole catalog.
+  It now forwards `text`, `ids` and `templateIds` to `AssessmentGroupFiltersInput`, and pages with
+  `offset` rather than the `cursor` it advertised and never honored.
+
+  `text` matches a group's description as well as its title, so `AssessmentGroup` now carries
+  `description`. Without it a caller cannot see why a group it does not recognize came back, and
+  has no way to audit its own search.
+
+  Group rows are also the only route from a form to its template — `AssessmentFormRaw` reaches its
+  group but not its template — which is what makes `templateIds` worth having here and not on
+  `assessments_list`.
+
+- 746e2da: Add two helpers for the two ways an empty list page misleads a cold-read agent.
+
+  `describeNoMatches(subject, appliedFilters)` builds the `paginationNote` for a genuinely empty
+  result. A bare `[]` reads like a failed lookup, so agents re-derive the answer with a second
+  unfiltered call, or report the zero as a tool failure. The note says the query succeeded and
+  names the filters that produced the zero.
+
+  `assertOffsetInRange({ subject, offset, totalCount, appliedFilters })` throws a validation error
+  when a caller pages past the end. That page is byte-identical to "nothing matched", so an agent
+  that overshoots concludes the records do not exist instead of correcting the offset. Offset zero
+  is left alone — an empty first page is a real no-match and belongs to `describeNoMatches`.
+
+  List tools adopt these separately; nothing changes for existing callers.
+
+## 1.9.0
+
+### Minor Changes
+
+- 7e7d797: Consolidate every paginated tool onto two schemas, fix a `hasNextPage` bug that made
+  agents page forever, and give eight tools the paging they never had.
+
+  Pagination had drifted into three shared schemas and fourteen inline copies across 27
+  tools, producing four caller-facing conventions. `PaginationSchema` was marked deprecated
+  yet had eight users; `CursorPaginationSchema`, marked preferred, had none — not even
+  `dsr_list`, the one tool that genuinely pages by cursor.
+
+  Checking the GraphQL schema settled what shapes are actually needed. Of the list fields
+  the MCP servers query, 24 accept `first`/`offset` and return `nodes` plus `totalCount`
+  with no `pageInfo`; exactly one, `requests`, accepts `after` and returns a real
+  `pageInfo.endCursor`. So there are two shapes, and `CursorPaginationSchema` is for the
+  rare case rather than the default. Both now expose `limit` — 22 of 27 tools already used
+  that name, and `first` is the GraphQL wire name, which mixins map internally so Relay
+  vocabulary never reaches callers. `PaginationSchema` is deleted.
+
+  Because almost no payload carries a `pageInfo`, every mixin synthesized one, and they
+  disagreed. Eight wrote `nodeCount < totalCount`, which ignores where the page starts: on
+  the last page 20 rows against a total of 120 still compares true, so `hasNextPage` never
+  went false. An agent told to page until it did would loop until it exhausted its context.
+  That affected `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `workflows_list`, `workflows_list_email_templates`, `admin_list_teams`,
+  `admin_list_api_keys` and `discovery_list_scans`. A shared `derivePageInfo` helper in
+  `mcp-server-base` now owns the comparison, and every offset-paginated mixin routes
+  through it.
+
+  Eight tools returned `hasNextPage: true` with no continuation parameter at all, because
+  their query documents never declared the `$offset` the schema has always accepted —
+  `ListApiKeysDoc` twelve lines below `ListTeamsDoc` declares it correctly. `admin_list_teams`,
+  `workflows_list`, `consent_list_purposes`, `discovery_list_scans`, `discovery_list_plugins`,
+  `assessments_list`, `assessments_list_groups` and `assessments_list_templates` now page.
+  This adds `$offset` to the shared `TranscendCliPurposes` query in the SDK, which is
+  backward compatible: the argument is optional and existing CLI callers are unaffected.
+
+  Tools renamed from `first` to `limit`: `dsr_list_identifiers`,
+  `dsr_list_request_data_silos`, `consent_list_cookies`, `consent_list_data_flows` and
+  `inventory_list_categories`. Nine tools drop a `cursor` parameter that was never wired to
+  anything. `preferences_query` keeps `limit`/`cursor` but not the shared bound, since its
+  REST endpoint caps a page at 50 rather than 100.
+
+  Descriptions no longer explain how to paginate — "Paginate with `offset` until
+  `hasNextPage` is false", "max 100", "Note: cursor pagination is not supported". The schema
+  already carries the bounds, defaults and parameter names, so that prose was spending
+  `tools/list` budget on every call to restate machine-readable facts. Removing it more than
+  paid for the eight tools that gained `offset`: the paginated surface costs 1,473 characters
+  less than on main, and the payload as a whole drops from 82,531 to 76,794 characters once
+  the per-schema `$schema` pointer goes too.
+
+  A new contract test asserts across the whole registry that no tool exposes `first` or
+  `after`, that no tool caps with `limit` without offering a continuation parameter, that
+  `limit` is bounded identically everywhere, and that descriptions do not restate paging
+  mechanics — plus unit coverage pinning the `derivePageInfo` termination cases.
+
+  Every paginated tool was also driven against a real org by hand while developing this
+  change, checking that each page is no larger than `limit`, that the continuation parameter
+  advances, that the last page reports `hasNextPage: false`, and that an offset past the end
+  does not promise another page. Of the 27 paginated tools, 25 pass every check,
+  `dsr_list_identifiers` has no rows in that org, and `preferences_query` needs a partition
+  no list call can supply. That probe was a throwaway harness rather than a committed test,
+  so nothing in the suite points at a live environment.
+
+  It caught something the mocked tests could not: `consent_list_regimes` returned four
+  rows for `limit: 3`. Probing the API directly showed `experiences` answers `first: n` with
+  `n + 1` rows at every size, and the tool forwarded that verbatim, so `limit` was a lie and
+  offset paging double-counted the seam. It now trims to `limit`, which keeps paging gapless
+  because the extra row is the one the next offset starts on.
+
+  The two `discovery_*` tools remain built on `dataSilos` and synthesize their rows, so
+  `discovery_list_scans` reports a hardcoded `COMPLETED` status and `discovery_list_plugins`
+  derives integration types per page. Their descriptions now say so rather than overclaiming;
+  repointing them at the real `discoClassScans` and `plugins` fields is follow-up work.
+
+- 7e7d797: Remove the `cursor` parameter from the nine list tools whose API never paged by cursor,
+  and stop emitting a `$schema` pointer on every tool's input schema.
+
+  `PaginationSchema` pairs `limit` with `cursor`, so every tool that merged it advertised
+  cursor pagination whether or not its query supported one. Only `dsr_list` declares `$after`
+  and returns a real `endCursor`; `preferences_query` threads a cursor through the preference
+  store REST endpoint. In the other nine the value was passed to the client as `after`,
+  dropped before the request was built, and `hasNextPage` came back from a `pageInfo` that
+  never advanced. An agent handed `hasNextPage: true` would page forever on page one.
+
+  Dropped from `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `discovery_list_plugins`, `discovery_list_scans`, `workflows_list`,
+  `workflows_list_email_templates`, `admin_list_teams` and `admin_list_api_keys`. Passing
+  `cursor` to any of these now fails schema validation rather than being silently ignored.
+
+  Descriptions were corrected to match. Several said "API does not support cursor pagination"
+  — true but unhelpful once the parameter is gone, and wrong for `admin_list_api_keys` and
+  `workflows_list_email_templates`, which have working `offset` pagination the text told
+  callers not to expect. Those two now say to page with `offset`; the rest state the `limit`
+  ceiling. The duplicated dashboard-URL sentence across the assessment tools was condensed to
+  one short form.
+
+  A registry test now pins the set of tools exposing `cursor` to `dsr_list` and
+  `preferences_query`, so a dead one cannot be reintroduced by merging `PaginationSchema`.
+
+  Separately, `toJsonSchemaCompat` stamps `"$schema": "http://json-schema.org/draft-07/schema#"`
+  onto every schema it produces, and both the umbrella registry and `buildMcpServer` were
+  forwarding it to clients verbatim. MCP already fixes the dialect for `inputSchema`, so those
+  50 characters told clients nothing, 82 times over. A new `toolInputSchema` helper in
+  `mcp-server-base` strips it at the two places descriptors are built, cutting about 4 KB from
+  every `tools/list` response.
+
+## 1.8.1
+
+### Patch Changes
+
+- bccab7e: Recover the confirmation gate on Cursor, which declines prompts it never showed anybody.
+
+  Cursor runs every window's MCP servers in one shared process and routes a server-initiated
+  request to the window that owns the connection. When the caller is in a different window,
+  delivery fails and Cursor answers `elicitation/create` with `{ action: "decline" }` — logging
+  `Cannot route MCP lease elicitation request for window 1 in window 3` — so the gate reported
+  `CONFIRMATION_DECLINED` for a refusal nobody made, and every gated tool was unusable for as
+  long as a second window was open.
+
+  On stdio a decline is now reinterpreted as "nobody was asked", handing back an approval token
+  to replay, but only when all three hold: the host is one whose declines are known to be
+  unprompted (Cursor, the first entry in `HOST_QUIRKS`), the answer arrived in under 250ms, and a
+  token can actually be minted. Undelivered prompts came back in 1-4ms against roughly a minute
+  for a real approval, so the floor sits far from both. `cancel` and `accept` are untouched, since
+  a dismissal is how Cursor reports the user closing the prompt and a fast accept is what an
+  always-allowed call looks like.
+
+  HTTP is unchanged: with no token store behind it, a fast decline there would only swap one
+  refusal for a less accurate one, so it stays `CONFIRMATION_DECLINED`.
+
+  The token still requires the agent to put the action to the user and be told yes, so the
+  protection is the same one form-less hosts have always had. What is given up is narrower: a
+  Cursor user whose genuine "decline" lands within 250ms has it read as a dropped prompt instead,
+  and is asked again in chat.
+
+## 1.8.0
+
+### Minor Changes
+
+- 557a80b: Reject arguments a tool never declared, instead of silently dropping them.
+
+  Zod strips unknown keys by default, so a misspelled argument name parsed cleanly and the tool
+  ran whatever it does with no arguments — while reporting success. An agent calling `docs_list`
+  with `{ query: … }` instead of `{ keyword: … }` received the entire 417-article catalog as a
+  successful result, and on a destructive tool the same slip performs the write without the
+  fields the caller meant to send.
+
+  `tools/call` now validates against a strict schema and refuses unrecognized arguments with a
+  `VALIDATION_ERROR` that names both the rejected argument and the accepted ones, so an agent can
+  correct itself in one retry.
+
+  Confirmation-gated tools still accept `approvalToken` even on transports whose gate does not
+  advertise it, so a replayed token reaches the gate and gets its own explanation rather than a
+  bare unknown-argument error. The advertised input schema is unchanged.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+
+## 1.7.4
+
+### Patch Changes
+
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+
+## 1.7.3
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+## 1.7.2
+
+### Patch Changes
+
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+
+## 1.7.1
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+
+## 1.7.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+
+## 1.6.0
+
+### Minor Changes
+
+- 2b82ee8: Add `inventory_write_category` to create or update Data Inventory data subcategories (ZEL-8169). Enrich `inventory_list_categories` to query `dataSubCategories` with ids, owners, teams, and optional text search.
+- bd397d4: Add `inventory_write_data_silo` to create or update data systems in one MCP call (ZEL-8221). Create-by-integrationName always creates a new silo; update-by-id applies metadata without title upsert. Replaces `inventory_create_data_silo` and `inventory_update_data_silo`.
+
+### Patch Changes
+
+- d00bd92: **@transcend-io/mcp-server-base:** Ask for the confirmation decision with no form fields at all, and read it from the host's accept and decline buttons. This replaces the checkbox described in 1.3.1, which itself replaced a titled select.
+
+  Both earlier shapes asked the user for a second gesture after the button they had already pressed, and both could be answered wrongly. `elicitInput` validates the host's answer against the schema it sent, so a rejected answer reaches the gate as "nobody was asked" — a rendered, approved form reported as a refusal, with every gated tool then falling through to the token fallback. Cursor hit that with the select by answering with a value matching neither option's `const`; a host answering the checkbox's `true` as a string would have fared no better. Requesting nothing leaves no shape to get wrong: the SDK only validates a non-empty `content`, and a schema with no properties and no required fields has nothing to reject.
+
+  `ElicitResult.action` already carried the decision, and the gate already read `decline` and `cancel` from it, so only the redundant field is gone. An `accept` is now the approval outright, whatever the host puts in `content`. That does mean a host returning `accept` without putting the question to anybody has approved on the user's behalf, which is the same trust the HTTP policy in 1.5.0 already documents — a client could equally have ticked the checkbox itself. What the gate still enforces is that the host was asked, and that no token is ever issued for a model to relay.
+
+  Verified in Cursor: the prompt renders as the tool's hint plus Accept and Cancel, accepting runs the action, and dismissing returns `CONFIRMATION_CANCELLED` without running it. Note that Cursor maps its Cancel to the protocol's `cancel`, so `CONFIRMATION_DECLINED` is reachable only from hosts that offer a distinct decline.
+
 ## 1.5.0
 
 ### Minor Changes

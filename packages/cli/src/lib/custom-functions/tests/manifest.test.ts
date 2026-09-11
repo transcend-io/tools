@@ -1,10 +1,17 @@
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { readCustomFunctionsManifest, writeCustomFunctionIdsToManifest } from '../manifest.js';
+import {
+  insertCustomFunctionManifestEntry,
+  isCustomFunctionManifestPathContained,
+  parseCustomFunctionsManifest,
+  readCustomFunctionsManifest,
+  type CustomFunctionManifestEntry,
+  writeCustomFunctionIdsToManifest,
+} from '../manifest.js';
 
 const MANIFEST = `# Custom functions synced from this repo
 functions:
@@ -38,7 +45,175 @@ function writeFixture(contents: string): string {
   return join(dir, 'transcend-functions.yml');
 }
 
+describe('parseCustomFunctionsManifest', () => {
+  it('parses unresolved parameters without reading referenced files', () => {
+    const manifest = parseCustomFunctionsManifest(`functions:
+  - name: Pure Parse
+    code: ./functions/does-not-exist.ts
+    env:
+      API_KEY: <<parameters.apiKey>>
+`);
+
+    expect(manifest.functions[0]).toMatchObject({
+      name: 'Pure Parse',
+      code: './functions/does-not-exist.ts',
+      env: { API_KEY: '<<parameters.apiKey>>' },
+    });
+  });
+
+  it('rejects duplicate ids', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - id: same-id
+    name: One
+    code: ./functions/a.ts
+  - id: same-id
+    name: Two
+    code: ./functions/b.ts
+`),
+    ).toThrow(/Duplicate custom function ids in manifest: same-id/);
+  });
+
+  it('rejects duplicate id-less names', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Same Name
+    code: ./functions/a.ts
+  - name: Same Name
+    code: ./functions/b.ts
+`),
+    ).toThrow(/Duplicate custom function names in manifest without ids: Same Name/);
+  });
+
+  it('allows duplicate names when every duplicate has an id', () => {
+    expect(
+      parseCustomFunctionsManifest(`functions:
+  - id: first-id
+    name: Same Name
+    code: ./functions/a.ts
+  - id: second-id
+    name: Same Name
+    code: ./functions/b.ts
+`).functions,
+    ).toHaveLength(2);
+  });
+
+  it('rejects mutually exclusive test payload fields', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Conflicted
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+    test-payloads:
+      - payload: ./test-payloads/a.json
+`),
+    ).toThrow(/sets both test-payload and test-payloads/);
+  });
+
+  it('rejects test-payload-type without the shorthand test-payload', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Typed Without Payload
+    code: ./functions/a.ts
+    test-payload-type: REQUEST_ENRICHER
+`),
+    ).toThrow(/sets test-payload-type without test-payload/);
+  });
+
+  it('rejects unsupported test payload types through the manifest codec', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Unsupported Type
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+    test-payload-type: MAESTRO
+`),
+    ).toThrow();
+  });
+
+  it('rejects DSR payload types on General functions', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: General With Typed Payload
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+    test-payload-type: DATA_POINT
+`),
+    ).toThrow(/sets a DSR payload type but is not type DSR/);
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: General With Typed Payload List
+    code: ./functions/a.ts
+    test-payloads:
+      - payload: ./test-payloads/a.json
+        payload-type: REQUEST_ENRICHER
+`),
+    ).toThrow(/sets a DSR payload type but is not type DSR/);
+  });
+
+  it('rejects referenced paths outside the manifest directory', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Escaped Code
+    code: ../outside.ts
+`),
+    ).toThrow(/code path outside the manifest directory/);
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Escaped Payload
+    code: ./functions/a.ts
+    test-payload: /tmp/payload.json
+`),
+    ).toThrow(/test-payload path outside the manifest directory/);
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: Escaped Payload List
+    code: ./functions/a.ts
+    test-payloads:
+      - payload: ../../payload.json
+`),
+    ).toThrow(/test-payloads\[0\]\.payload path outside the manifest directory/);
+  });
+
+  it('exposes reusable lexical path containment checking', () => {
+    expect(isCustomFunctionManifestPathContained('./functions/a.ts')).toBe(true);
+    expect(isCustomFunctionManifestPathContained('functions/../functions/a.ts')).toBe(true);
+    expect(isCustomFunctionManifestPathContained('../outside.ts')).toBe(false);
+    expect(isCustomFunctionManifestPathContained('/tmp/outside.ts')).toBe(false);
+  });
+});
+
 describe('readCustomFunctionsManifest', () => {
+  it('rejects parent-relative source paths', () => {
+    const manifestPath = writeFixture(`functions:
+  - name: Shared source
+    code: ../shared.ts
+`);
+
+    expect(() => readCustomFunctionsManifest(manifestPath)).toThrow(
+      /code path outside the manifest directory/,
+    );
+  });
+
+  it('applies path validation before reading source and payload files', () => {
+    const manifestPath = writeFixture(`functions:
+  - name: Validated paths
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+`);
+    const manifestDirectory = dirname(manifestPath);
+    mkdirSync(join(manifestDirectory, 'test-payloads'));
+    writeFileSync(join(manifestDirectory, 'test-payloads', 'a.json'), '{}');
+    const validatedPaths: string[] = [];
+
+    readCustomFunctionsManifest(manifestPath, {}, (path) => validatedPaths.push(path));
+
+    expect(validatedPaths).toEqual([
+      join(manifestDirectory, 'functions', 'a.ts'),
+      join(manifestDirectory, 'test-payloads', 'a.json'),
+    ]);
+  });
+
   it('passes ids through and allows duplicate names when disambiguated by id', () => {
     const filePath = writeFixture(MANIFEST);
     const configs = readCustomFunctionsManifest(filePath, { crmApiKey: 'secret' });
@@ -64,10 +239,23 @@ describe('readCustomFunctionsManifest', () => {
     expect(configs[1]!.sombraAuthEnv).toBeUndefined();
   });
 
+  it('substitutes variables before parsing and hydrating referenced files', () => {
+    const filePath = writeFixture(`functions:
+  - name: Variable Path
+    code: <<parameters.codePath>>
+`);
+    const configs = readCustomFunctionsManifest(filePath, { codePath: './functions/a.ts' });
+    expect(configs[0]).toMatchObject({
+      name: 'Variable Path',
+      code: 'export default async () => 1;',
+    });
+  });
+
   it('loads and parses test payload files relative to the manifest', () => {
     const filePath = writeFixture(`functions:
   - name: With Test
     code: ./functions/a.ts
+    type: DSR
     test-payload: ./test-payloads/with-test.json
     test-payload-type: REQUEST_ENRICHER
   - name: Without Test
@@ -195,6 +383,68 @@ describe('readCustomFunctionsManifest', () => {
     expect(() => readCustomFunctionsManifest(filePath)).toThrow(
       /Duplicate custom function ids in manifest: same-id/,
     );
+  });
+});
+
+describe('insertCustomFunctionManifestEntry', () => {
+  it('appends an entry while preserving comments, order, styles, and placeholders', () => {
+    const contents = `# Manifest comment
+functions:
+  # Existing entry comment
+  - name: 'Existing Function'
+    code: "./functions/a.ts"
+    env:
+      API_KEY: <<parameters.apiKey>>
+`;
+    const updated = insertCustomFunctionManifestEntry(contents, {
+      name: 'Added Function',
+      code: './functions/b.ts',
+      description: 'Added later',
+    });
+
+    expect(updated).toContain('# Manifest comment');
+    expect(updated).toContain('# Existing entry comment');
+    expect(updated).toContain("name: 'Existing Function'");
+    expect(updated).toContain('code: "./functions/a.ts"');
+    expect(updated).toContain('API_KEY: <<parameters.apiKey>>');
+    expect(updated.indexOf('name: Added Function')).toBeGreaterThan(
+      updated.indexOf("name: 'Existing Function'"),
+    );
+    expect(parseCustomFunctionsManifest(updated).functions).toEqual([
+      {
+        name: 'Existing Function',
+        code: './functions/a.ts',
+        env: { API_KEY: '<<parameters.apiKey>>' },
+      },
+      {
+        name: 'Added Function',
+        code: './functions/b.ts',
+        description: 'Added later',
+      },
+    ]);
+  });
+
+  it('validates inserted entries with the manifest codec', () => {
+    expect(() =>
+      insertCustomFunctionManifestEntry('functions: []\n', {
+        name: 'Missing Code',
+      } as CustomFunctionManifestEntry),
+    ).toThrow();
+  });
+
+  it('validates resulting duplicate-name semantics', () => {
+    expect(() =>
+      insertCustomFunctionManifestEntry(
+        `functions:
+  - name: Existing
+    code: ./functions/a.ts
+`,
+        {
+          name: 'Existing',
+          code: './functions/b.ts',
+        },
+      ),
+    ).toThrow(/Duplicate custom function names in manifest without ids: Existing/);
   });
 });
 

@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
 import colors from 'colors';
@@ -7,7 +6,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
-import { logger } from '../../../logger.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
   buildPolicyBundleFormData,
@@ -64,7 +62,7 @@ export async function publish(
     debug = false,
   }: PublishCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
   const resolvedDir = path.resolve(dir);
@@ -73,7 +71,7 @@ export async function publish(
 
   let bundlePath: string | undefined;
   try {
-    logger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
+    this.logger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
     bundlePath = await buildOpaBundleTarball(resolvedDir);
 
     const existingBundleId = await resolveBundleIdByName(client, bundleName);
@@ -81,7 +79,7 @@ export async function publish(
     let responseBody: CreatePolicyBundleResponse | CreatePolicyBundleVersionResponse;
 
     if (existingBundleId) {
-      logger.info(colors.green(`Uploading new version for bundle "${bundleName}"...`));
+      this.logger.info(colors.green(`Uploading new version for bundle "${bundleName}"...`));
       const form = buildPolicyBundleFormData({
         bundlePath,
         version: versionLabel,
@@ -94,7 +92,7 @@ export async function publish(
       );
     } else {
       if (!this.process.stdin.isTTY && !yes) {
-        logger.error(
+        this.logger.error(
           colors.red(
             'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
           ),
@@ -104,19 +102,21 @@ export async function publish(
       }
 
       if (!yes) {
-        logger.warn(
+        this.logger.warn(
           colors.yellow(`No policy bundle named "${bundleName}" exists for this organization.`),
         );
         const shouldCreate = await inquirerConfirmBoolean({
           message: `No policy bundle named "${bundleName}" exists. Create a new bundle and upload its first version?`,
         });
         if (!shouldCreate) {
-          logger.info(colors.yellow('Publish cancelled.'));
+          this.logger.info(colors.yellow('Publish cancelled.'));
           return;
         }
       }
 
-      logger.info(colors.green(`Creating bundle "${bundleName}" and uploading first version...`));
+      this.logger.info(
+        colors.green(`Creating bundle "${bundleName}" and uploading first version...`),
+      );
       const createForm = buildPolicyBundleFormData({
         bundlePath,
         version: versionLabel,
@@ -138,20 +138,20 @@ export async function publish(
       renderTable: () => formatPolicyBundleVersionSummary(responseBody.version),
     });
 
-    logger.info(colors.green('Policy bundle version uploaded successfully.'));
+    this.logger.info(colors.green('Policy bundle version uploaded successfully.'));
 
     const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
       version: responseBody.version.version,
       'bundle-name': bundleName,
     });
-    logger.info(
+    this.logger.info(
       colors.yellow(
         `Publishing a policy does not activate it. To activate this version, run:\n  ${activateCommand}`,
       ),
     );
   } finally {
-    if (bundlePath && fs.existsSync(bundlePath)) {
-      fs.unlinkSync(bundlePath);
+    if (bundlePath && this.fs.existsSync(bundlePath)) {
+      this.fs.unlinkSync(bundlePath);
     }
   }
 }

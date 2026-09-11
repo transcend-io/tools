@@ -39,7 +39,7 @@ import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 /* eslint-disable max-lines */
-import { TranscendInput } from '../../codecs.js';
+import { TranscendInput, normalizeTranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
@@ -57,7 +57,7 @@ const CONCURRENCY = 10;
  * @returns Structured sync result with per-resource errors
  */
 export async function syncConfigurationToTranscend(
-  input: TranscendInput,
+  rawInput: TranscendInput,
   client: GraphQLClient,
   {
     pageSize = 50,
@@ -82,6 +82,7 @@ export async function syncConfigurationToTranscend(
     warnings?: string[];
   },
 ): Promise<SyncResult> {
+  const input = normalizeTranscendInput(rawInput);
   const activeLogger = syncLogger ?? logger;
   const errors: SyncError[] = [];
   let encounteredError = false;
@@ -100,7 +101,7 @@ export async function syncConfigurationToTranscend(
     identifiers,
     'data-subjects': dataSubjects,
     'business-entities': businessEntities,
-    enrichers,
+    preflights,
     cookies,
     'consent-manager': consentManager,
     'data-silos': dataSilos,
@@ -137,7 +138,7 @@ export async function syncConfigurationToTranscend(
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
-    enrichers || identifiers
+    preflights || identifiers
       ? fetchIdentifiersAndCreateMissing(client, {
           input,
           skipPublish: !publishToPrivacyCenter,
@@ -145,7 +146,7 @@ export async function syncConfigurationToTranscend(
         })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
-    dataSilos || dataSubjects || enrichers || processingActivities
+    dataSilos || dataSubjects || preflights || processingActivities
       ? ensureAllDataSubjectsExist(input, client)
       : {},
     // Grab API keys
@@ -344,31 +345,33 @@ export async function syncConfigurationToTranscend(
     encounteredError = encounteredError || !actionItemsSuccess;
   }
 
-  // Sync enrichers
-  if (enrichers) {
-    logger.info(colors.magenta(`Syncing "${enrichers.length}" enrichers...`));
+  // Sync preflight checks
+  if (preflights) {
+    logger.info(colors.magenta(`Syncing "${preflights.length}" preflight checks...`));
     await map(
-      enrichers,
-      async (enricher) => {
-        logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
+      preflights,
+      async (preflight) => {
+        logger.info(colors.magenta(`Syncing preflight check "${preflight.title}"...`));
         try {
           await syncEnricher(client, {
-            input: enricher,
+            input: preflight,
             identifierByName,
             dataSubjectsByName,
             logger,
           });
-          logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
+          logger.info(colors.green(`Successfully synced preflight check "${preflight.title}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.error(colors.red(`Failed to sync enricher "${enricher.title}"! - ${err.message}`));
+          logger.error(
+            colors.red(`Failed to sync preflight check "${preflight.title}"! - ${err.message}`),
+          );
         }
       },
       {
         concurrency: CONCURRENCY,
       },
     );
-    logger.info(colors.green(`Synced "${enrichers.length}" enrichers!`));
+    logger.info(colors.green(`Synced "${preflights.length}" preflight checks!`));
   }
 
   // Sync identifiers

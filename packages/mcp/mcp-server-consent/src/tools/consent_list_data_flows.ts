@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  derivePageInfo,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   DataFlowOrderField,
@@ -9,20 +16,7 @@ import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sd
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const ListDataFlowsSchema = z.object({
-  limit: z
-    .number()
-    .min(1)
-    .max(200)
-    .optional()
-    .default(50)
-    .describe('Maximum number of data flows to return per page (1-200, default 50).'),
-  offset: z
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default 0).'),
+export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
@@ -31,28 +25,33 @@ export const ListDataFlowsSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats needReviewCount; set true for the full triage backlog ' +
-        'including never-active flows.',
+      'Include zero-activity flows. Omit so NEEDS_REVIEW totals match ' +
+        'consent_get_inventory_stats; set true for the full never-active backlog.',
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
   unmappedOnly: z
     .boolean()
     .optional()
-    .describe(
-      'Return only unmapped/orphaned flows with no associated service (catalog integration). ' +
-        'Useful with status=LIVE to find approved flows that are not mapped to a service.',
-    ),
+    .describe('Only unmapped flows (no service). Useful with status=LIVE for approved orphans.'),
   type: z
     .nativeEnum(DataFlowScope)
     .optional()
     .describe('Filter by data flow scope type (e.g. HOST, PATH, REGEX, CSP)'),
-  minOccurrences: z
-    .number()
-    .min(0)
+  trackingTypes: z
+    .array(z.string())
+    .min(1)
     .optional()
-    .describe('Only return flows with at least this many occurrences (traffic)'),
+    .describe('Purpose slugs from consent_list_purposes (e.g. Advertising).'),
+  minOccurrences: z.number().min(0).optional().describe('Minimum occurrence (traffic) count.'),
+  lastDiscoveredAtBefore: z
+    .string()
+    .optional()
+    .describe('ISO 8601 upper bound on lastDiscoveredAt.'),
+  lastDiscoveredAtAfter: z
+    .string()
+    .optional()
+    .describe('ISO 8601 lower bound on lastDiscoveredAt.'),
   orderField: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
   orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
@@ -63,10 +62,9 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     name: 'consent_list_data_flows',
     description:
       'List data flows (network requests) in your consent manager. ' +
-      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
-      'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more. ' +
-      'Use unmappedOnly to find approved flows with no service, type to filter by scope ' +
-      '(e.g. CSP), and minOccurrences to focus on high-traffic flows.',
+      'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
+      'Returns value (URL/host), service, purposes, occurrences. ' +
+      'Filter via unmappedOnly, type, trackingTypes, minOccurrences, lastDiscoveredAtBefore/After.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -81,7 +79,10 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       service,
       unmappedOnly,
       type,
+      trackingTypes,
       minOccurrences,
+      lastDiscoveredAtBefore,
+      lastDiscoveredAtAfter,
       orderField,
       orderDirection,
     }) => {
@@ -99,16 +100,28 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           // server-side, so unmappedOnly takes precedence over a named service filter.
           ...(unmappedOnly ? { service: '' } : service ? { service } : {}),
           ...(type ? { type } : {}),
+          ...(trackingTypes ? { trackingTypes } : {}),
           ...(minOccurrences !== undefined ? { minOccurrences } : {}),
+          ...(lastDiscoveredAtBefore ? { lastDiscoveredAtBefore } : {}),
+          ...(lastDiscoveredAtAfter ? { lastDiscoveredAtAfter } : {}),
         },
         ...(orderField && orderDirection
-          ? { orderBy: [{ field: orderField, direction: orderDirection }] }
+          ? {
+              orderBy: [
+                { field: orderField, direction: orderDirection },
+                // Stable tie-breaker so offset pages don't overlap when
+                // many rows share the same occurrences value.
+                ...(orderField === DataFlowOrderField.Occurrences
+                  ? [{ field: DataFlowOrderField.Value, direction: OrderDirection.Asc }]
+                  : []),
+              ],
+            }
           : {}),
       });
       const { nodes, totalCount } = data.dataFlows;
       return createListResult(nodes, {
         totalCount,
-        hasNextPage: offset + nodes.length < totalCount,
+        hasNextPage: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }).hasNextPage,
       });
     },
   });

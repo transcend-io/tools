@@ -13,6 +13,7 @@ catalog:
   '@graphql-typed-document-node/core': ^3.2.0
   '@modelcontextprotocol/ext-apps': ^1.7.5
   '@modelcontextprotocol/sdk': ^1.29.0
+  '@orama/orama': ^3.1.18
   '@tailwindcss/vite': ^4.3.3
   '@terrazzo/cli': 2.0.3
   '@terrazzo/plugin-css': 2.0.3
@@ -22,9 +23,12 @@ catalog:
   '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@types/semver': ^7.7.1
+  ajv: ^8.20.0
   colorjs.io: 0.6.1
+  diff: ^9.0.0
   graphql: ^16.14.0
   husky: ^9.1.7
+  jsonc-parser: ^3.3.1
   lodash: ^4.18.1
   lru-cache: ^11.5.1
   oxfmt: ^0.54.0
@@ -35,6 +39,7 @@ catalog:
   semver: ^7.7.4
   syncpack: ^14.2.0
   tailwindcss: ^4.3.3
+  ts-json-schema-generator: ^2.9.0
   tsdown: ^0.21.2
   turbo: ^2.9.14
   typescript: ^6.0.0
@@ -47,10 +52,6 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
-  # Renovate security update: pnpm@10.34.4
-  - pnpm@10.34.4
-  # Renovate security update: undici@6.28.0
-  - undici@6.28.0
 
 onlyBuiltDependencies:
   - esbuild

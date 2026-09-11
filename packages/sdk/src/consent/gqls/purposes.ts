@@ -82,8 +82,8 @@ export interface TranscendCliPurposesResponse {
 }
 
 export const PURPOSES = gql`
-  query TranscendCliPurposes($first: Int!) {
-    purposes(first: $first) {
+  query TranscendCliPurposes($first: Int!, $offset: Int) {
+    purposes(first: $first, offset: $offset) {
       nodes {
         id
         name

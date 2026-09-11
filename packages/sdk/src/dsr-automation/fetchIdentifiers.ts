@@ -7,7 +7,17 @@ import { fetchAllIdentifiers, type Identifier } from '../data-inventory/fetchAll
 import { CREATE_IDENTIFIER, NEW_IDENTIFIER_TYPES } from './gqls/dsrIdentifier.js';
 
 export interface IdentifiersAndCreateMissingInput {
-  /** Enricher configurations */
+  /** Preflight check configurations */
+  preflights?: {
+    /** Input identifier name */
+    'input-identifier'?: string;
+    /** Output identifier names */
+    'output-identifiers': string[];
+  }[];
+  /**
+   * @deprecated Use `preflights` instead.
+   * Preflight check configurations (legacy key).
+   */
   enrichers?: {
     /** Input identifier name */
     'input-identifier'?: string;
@@ -46,15 +56,16 @@ export async function fetchIdentifiersAndCreateMissing(
   },
 ): Promise<{ [k in string]: Identifier }> {
   const { input, skipPublish = false, logger = NOOP_LOGGER } = options;
-  const { enrichers = [], 'data-silos': dataSilos = [], identifiers = [] } = input;
+  const { enrichers = [], preflights = [], 'data-silos': dataSilos = [], identifiers = [] } = input;
+  const allPreflights = [...preflights, ...enrichers];
   const allIdentifiers = await fetchAllIdentifiers(client, { logger });
   const identifiersByName = keyBy(allIdentifiers, 'name');
 
   const expectedIdentifiers = uniq([
     ...flatten(
-      enrichers.map((enricher) => [
-        enricher['input-identifier'],
-        ...enricher['output-identifiers'],
+      allPreflights.map((preflight) => [
+        preflight['input-identifier'],
+        ...preflight['output-identifiers'],
       ]),
     ),
     ...flatten(dataSilos.map((dataSilo) => dataSilo['identity-keys'])),

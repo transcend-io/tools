@@ -1,5 +1,158 @@
 # @transcend-io/mcp-server-docs
 
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+  - @transcend-io/mcp-server-base@2.2.0
+
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [60d1ea0]
+  - @transcend-io/mcp-server-base@2.1.0
+
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [2e8558d]
+- Updated dependencies [6dccc24]
+- Updated dependencies [2730f0d]
+- Updated dependencies [746e2da]
+  - @transcend-io/mcp-server-base@2.0.0
+
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [7e7d797]
+- Updated dependencies [7e7d797]
+  - @transcend-io/mcp-server-base@1.9.0
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+  - @transcend-io/mcp-server-base@1.8.1
+
+## 0.4.0
+
+### Minor Changes
+
+- 557a80b: Rename the `docs_list` search argument from `keyword` to `query`, and tighten BM25 matching.
+
+  `query` is what comparable search tools name this argument — Linear, Notion, and Datadog all use
+  it — so the rename stops `docs_list` from being the one search tool in a caller's toolset that
+  differs from the convention.
+
+  Search now uses `tolerance: 0` and `threshold: 0.3`. Fuzzy matching cost accuracy on every set
+  of a labeled benchmark, and a typo it "rescued" returned unrelated articles rather than the
+  intended one. The threshold change leaves recall unchanged while cutting matches on a typical
+  query from roughly 417 to 131, so the reported `totalCount` is a usable signal rather than
+  close to the size of the corpus.
+
+  The argument description now asks for the most distinctive terms rather than a whole sentence,
+  since generic words match most articles and blur the ranking.
+
+  Search returns 20 results rather than 10. On the same benchmark, targets that missed the top ten
+  sat at a median rank of 16 and 19, so one page deeper lifts hit@k from 87% to 95% on title terms
+  and 88% to 95% on natural questions, for roughly 434 extra tokens. There is deliberately no
+  offset: almost nothing recoverable ranks past 30, and paging only helps a caller that knows it
+  missed — at rank 16 the first ten results all look plausible, so the miss goes unnoticed and the
+  page is never requested.
+
+  `docs_list` also no longer answers an argument-less call with the whole catalog. It returns the
+  seven documentation sections with their article counts — 540 characters against the roughly 69KB
+  the full listing cost — which is a better answer to "what is documented" and makes the next call
+  obvious. Listing a single section is capped at 50 articles, since the largest holds 125. Whenever
+  results are withheld, the response now carries a note saying how many and what to change; a
+  truncated response the caller cannot distinguish from a complete one is what made the previous
+  behavior hard to notice. An unrecognized `section` is now an error naming the valid ones instead
+  of an empty list that reads like "no such articles", and a `query` that is present but blank is
+  an error rather than a silent fall-through to browsing — the caller asked to search, so answering
+  with the section list and reporting success hides the fact that no search ran.
+
+- 557a80b: Rank `docs_list` keyword results with in-process Orama BM25 over article bodies (not just titles) so queries like "session" can surface Consent Dashboard and telemetry docs (ZEL-8224).
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.3.25
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.3.24
+
+### Patch Changes
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.3.23
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.3.22
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.3.21
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.3.20
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+  - @transcend-io/mcp-server-base@1.6.0
+
 ## 0.3.19
 
 ### Patch Changes

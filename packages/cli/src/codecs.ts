@@ -148,10 +148,10 @@ export const TeamInput = t.intersection([
 export type TeamInput = t.TypeOf<typeof TeamInput>;
 
 /**
- * Input to define an enricher
+ * Input to define a preflight check (formerly called an "enricher")
  *
- * Define enricher or pre-flight check webhooks that will be executed
- * prior to privacy request workflows. Some examples may include:
+ * Define preflight check webhooks that will be executed prior to privacy
+ * request workflows. Some examples may include:
  *  - identity enrichment: look up additional identifiers for that user.
  *                         i.e. map an email address to a user ID
  *  - fraud check: auto-cancel requests if the user is flagged for fraudulent behavior
@@ -161,24 +161,24 @@ export type TeamInput = t.TypeOf<typeof TeamInput>;
  */
 export const EnricherInput = t.intersection([
   t.type({
-    /** The display title of the enricher */
+    /** The display title of the preflight check */
     title: t.string,
 
     /**
-     * The names of the identifiers that can be resolved by this enricher.
+     * The names of the identifiers that can be resolved by this preflight check.
      * i.e. email -> [userId, phone, advertisingId]
      */
     'output-identifiers': t.array(t.string),
   }),
   t.partial({
-    /** Internal description for why the enricher is needed */
+    /** Internal description for why the preflight check is needed */
     description: t.string,
-    /** The URL of the enricher */
+    /** The URL of the preflight check webhook */
     url: t.string,
-    /** The type of enricher */
+    /** The type of preflight check */
     type: valuesOf(EnricherType),
     /**
-     * The name of the identifier that will be the input to this enricher.
+     * The name of the identifier that will be the input to this preflight check.
      * Whenever a privacy request contains this identifier, the webhook will
      * be called with the value of that identifier as input
      */
@@ -192,11 +192,11 @@ export const EnricherInput = t.intersection([
      */
     lookerQueryTitle: t.string,
     /**
-     * The duration (in ms) that the enricher should take to execute.
+     * The duration (in ms) that the preflight check should take to execute.
      */
     expirationDuration: t.number,
     /**
-     * The status that the enricher should transfer to when condition is met.
+     * The status that the preflight check should transfer to when condition is met.
      */
     transitionRequestStatus: valuesOf(PreflightRequestStatus),
     /**
@@ -206,18 +206,24 @@ export const EnricherInput = t.intersection([
     /** The list of regions that should trigger the preflight check */
     regionList: t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
     /**
-     * Specify which data subjects the enricher should run for
+     * Specify which data subjects the preflight check should run for
      */
     'data-subjects': t.array(t.string),
     /** Headers to include in the webhook */
     headers: t.array(WebhookHeader),
-    /** The privacy actions that the enricher should run against */
+    /** The privacy actions that the preflight check should run against */
     'privacy-actions': t.array(valuesOf(RequestAction)),
   }),
 ]);
 
 /** Type override */
 export type EnricherInput = t.TypeOf<typeof EnricherInput>;
+
+/** Alias for {@link EnricherInput} */
+export const PreflightInput = EnricherInput;
+
+/** Type override */
+export type PreflightInput = EnricherInput;
 
 /**
  * The processing purpose for a field
@@ -2048,9 +2054,13 @@ export const TranscendInput = t.partial({
    */
   templates: t.array(TemplateInput),
   /**
-   * Enricher definitions
+   * Preflight check definitions
    */
-  enrichers: t.array(EnricherInput),
+  preflights: t.array(PreflightInput),
+  /**
+   * @deprecated Use `preflights` instead. Kept for legacy transcend.yml support.
+   */
+  enrichers: t.array(PreflightInput),
   /**
    * Attribute definitions
    */
@@ -2149,6 +2159,23 @@ export const TranscendInput = t.partial({
 
 /** Type override */
 export type TranscendInput = t.TypeOf<typeof TranscendInput>;
+
+/**
+ * Fold legacy `enrichers` into `preflights` and drop the deprecated key.
+ *
+ * @param input - Parsed transcend.yml contents
+ * @returns Input with only the canonical `preflights` key
+ */
+export function normalizeTranscendInput(input: TranscendInput): TranscendInput {
+  const { enrichers, preflights, ...rest } = input;
+  if (enrichers === undefined && preflights === undefined) {
+    return input;
+  }
+  return {
+    ...rest,
+    preflights: [...(preflights ?? []), ...(enrichers ?? [])],
+  };
+}
 
 /**
  * The output of `tr-generate-api-keys` that can be provided to `tr-push`

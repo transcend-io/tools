@@ -54,30 +54,16 @@ describe('osc8Link', () => {
     expect(osc8Link(ph)).toBe(ph);
   });
 
-  it('falls back to label/absPath when pathToFileURL throws (isolated via runtime mock)', async () => {
-    // Ensure fresh module graph for this test
-    vi.resetModules();
-
-    // Runtime-mock node:url so pathToFileURL throws only for this import
-    vi.doMock('node:url', () => ({
-      pathToFileURL: () => {
-        throw new Error('forced throw for test');
-      },
-    }));
-
-    // Import a fresh copy of the SUT that sees the mocked node:url
-    const { osc8Link: mockedOsc8Link } = await import('../osc8Link.js');
-
+  it('falls back to label/absPath when pathToFileURL throws', () => {
+    const pathToFileUrl = vi.fn(() => {
+      throw new Error('forced throw for test');
+    });
     const rel = 'relative/path.txt';
     // No label → returns the raw argument when pathToFileURL fails
-    expect(mockedOsc8Link(rel)).toBe(rel);
+    expect(osc8Link(rel, undefined, pathToFileUrl)).toBe(rel);
 
     // With label → returns the label unchanged when pathToFileURL fails
     const label = 'click me';
-    expect(mockedOsc8Link(rel, label)).toBe(label);
-
-    // Cleanup to avoid affecting other files (not strictly necessary here, but good practice)
-    vi.resetModules();
-    vi.unmock('node:url');
+    expect(osc8Link(rel, label, pathToFileUrl)).toBe(label);
   });
 });

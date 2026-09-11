@@ -101,4 +101,41 @@ describe('MCP app view convention', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  test('a package that depends on mcp-ui-common sources the kit for every view', () => {
+    const root = mkdtempSync(join(tmpdir(), 'mcp-view-convention-'));
+    try {
+      mkdirSync(join(root, 'src', 'ui', 'ok'), { recursive: true });
+      writeFileSync(join(root, 'src', 'ui', 'ok', 'OkView.tsx'), '');
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({
+          name: 'fixture-with-kit',
+          devDependencies: { '@transcend-io/mcp-ui-common': 'workspace:*' },
+        }),
+      );
+
+      const [view] = discoverMcpAppViews(root);
+      expect(view?.sharedDirectories).toEqual([join(repoRoot, 'dev', 'mcp-ui-common', 'src')]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('a package that does not depend on mcp-ui-common does not source the kit', () => {
+    const root = mkdtempSync(join(tmpdir(), 'mcp-view-convention-'));
+    try {
+      mkdirSync(join(root, 'src', 'ui', 'ok'), { recursive: true });
+      writeFileSync(join(root, 'src', 'ui', 'ok', 'OkView.tsx'), '');
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({ name: 'fixture-without-kit', devDependencies: { react: 'catalog:' } }),
+      );
+
+      const [view] = discoverMcpAppViews(root);
+      expect(view?.sharedDirectories).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

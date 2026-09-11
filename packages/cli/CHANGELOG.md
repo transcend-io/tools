@@ -1,5 +1,153 @@
 # @transcend-io/cli
 
+## 10.29.1
+
+### Patch Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/sdk@2.1.7
+
+## 10.29.0
+
+### Minor Changes
+
+- f74e10f: Add local Policy Engine scaffolding and validation.
+
+  `policy init` creates a safe, publishable Rego v1 starter and can merge repository-level VS Code tooling, install a portable policy authoring skill, and generate credential-free GitHub Actions validation. The transactional setup preserves existing policy, editor, workflow, and customized skill content.
+
+  `policy lint` now requires a manifest, OPA 1.x, and Regal, and verifies formatting, production compilation, and tests. Existing lint invocations may newly fail until these requirements are met.
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+### Patch Changes
+
+- 27e7c7a: Say which Custom Function type each `custom-functions new` template produces.
+
+  The command described its templates by the code they emit ("General or DSR starter", "Generated
+  handler and fixture shape"), which does not map onto the two product concepts a caller is choosing
+  between: a General function triggered by Rules Automation, and a DSR function triggered by a
+  Workflow step. The interactive flow now asks for that type first, using
+  `CustomFunctionType` from `@transcend-io/privacy-types` rather than a parallel local union.
+  General continues immediately because it has only one template; DSR opens a second prompt for a
+  data point resolver, preflight check, or both. The flag brief, command description, and README
+  use the same language.
+
+  The scaffolded DSR enricher comments and the skill's CI recipe follow the same wording, and that
+  recipe now pins Deno 2.4.5 to match the version this repository validates against.
+
+- Updated dependencies [e03b2bd]
+  - @transcend-io/sdk@2.1.6
+
+## 10.28.0
+
+### Minor Changes
+
+- 7384caa: Add a guided local workflow for developing Custom Functions without Transcend credentials.
+
+  `custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions run` exercises those payloads in a credential-free local Deno simulator and shows function logs. `custom-functions check` validates the project locally with Deno before it is pushed.
+
+  The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
+
+  The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
+
+### Patch Changes
+
+- cfc269d: Fix Custom Function export checks for Deno configurations that contain non-import-map settings.
+- 7630f48: Widen undici range for security patches
+- Updated dependencies [7384caa]
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.27.5
+
+### Patch Changes
+
+- 46488a6: Route CLI runtime I/O through Stricli's isolated command context and centralize pooling UI
+  wiring so embedded and test invocations can provide their own process streams, filesystem, and
+  logger.
+- 118c5b6: Move CSV and YAML filesystem access to Stricli command boundaries while preserving reusable,
+  pure parsing, serialization, and file-selection helpers.
+- c5fb568: Move consent CSV parsing and row mapping into pure functions while routing command filesystem,
+  logging, network, and exit behavior through the isolated CLI context.
+- Updated dependencies [7e7d797]
+  - @transcend-io/sdk@2.1.5
+
+## 10.27.4
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/airgap.js-types@14.2.41
+  - @transcend-io/sdk@2.1.4
+
+## 10.27.3
+
+### Patch Changes
+
+- ff0204c: Add `ConsentSite` to `AttributeSupportedResourceType` for Consent Manager domain custom fields. Regenerate CLI transcend.yml JSON schemas to match.
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/airgap.js-types@14.2.40
+  - @transcend-io/sdk@2.1.3
+
+## 10.27.2
+
+### Patch Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/airgap.js-types@14.2.39
+  - @transcend-io/sdk@2.1.2
+
+## 10.27.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+  - @transcend-io/sdk@2.1.1
+
+## 10.27.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 48a41a5: Bump `fast-csv` from `^4.3.6` to `^5.0.0`.
+- 6e5c4cf: Bump `undici` from `6.27.0` to `6.28.0` to address CVE-2026-15157 (CRLF injection via blob-like body `type`, GHSA-m8rv-5g2x-5cg5), CVE-2026-16728 (downstream response desynchronization via retry interceptor, GHSA-8xcm-r25x-g524), and CVE-2026-16729 (cookie attribute injection via `setCookie`, GHSA-v3r7-h72x-cjcm).
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+- Updated dependencies [a5e8334]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/sdk@2.1.0
+  - @transcend-io/airgap.js-types@14.2.37
+
 ## 10.26.1
 
 ### Patch Changes

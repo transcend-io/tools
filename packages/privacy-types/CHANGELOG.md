@@ -1,5 +1,37 @@
 # @transcend-io/privacy-types
 
+## 5.26.0
+
+### Minor Changes
+
+- a19b07e: Add `viewportHeightOverride` to `LoadOptions` and `overrideLocale` to `SharedLoadOptions` in UI v2 load options.
+
+## 5.25.0
+
+### Minor Changes
+
+- ff0204c: Add `ConsentSite` to `AttributeSupportedResourceType` for Consent Manager domain custom fields. Regenerate CLI transcend.yml JSON schemas to match.
+
+## 5.24.0
+
+### Minor Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+
+## 5.23.0
+
+### Minor Changes
+
+- ea1ab3c: Add `DsrErrorCode.ConflictingDataSiloFilters` (`CONFLICTING_DATA_SILO_FILTERS`) for bulk DSR inputs that set both `dataSiloIds` and `ignoreDataSiloIds`.
+
+## 5.22.0
+
+### Minor Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 1f72e6a: add customCssUrlMap to UI v2 load options
+- 6a09b61: Add optional `sourceSystem` (non-empty, max 128 chars via `SourceSystemLabel`) and optional per-purpose `timestamp` to `PreferenceStorePurposeResponse`, which flows into `PreferenceStorePurposeUpdate` for PUT `/v1/preferences` and preference query responses (PIK-8191).
+
 ## 5.20.0
 
 ### Minor Changes

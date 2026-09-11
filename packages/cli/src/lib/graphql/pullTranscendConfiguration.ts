@@ -1469,9 +1469,9 @@ export async function pullTranscendConfiguration(
     result.templates = templates.map(({ title }) => ({ title }));
   }
 
-  // Save enrichers
+  // Save preflight checks (API still returns them as enrichers)
   if (enrichers.length > 0 && resources.includes(TranscendPullResource.Enrichers)) {
-    result.enrichers = enrichers.map(
+    result.preflights = enrichers.map(
       ({
         title,
         url,

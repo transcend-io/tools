@@ -1,5 +1,283 @@
 # @transcend-io/mcp-server-consent
 
+## 1.1.0
+
+### Minor Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+  - @transcend-io/sdk@2.1.7
+
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 1.0.4
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+- Updated dependencies [e03b2bd]
+  - @transcend-io/mcp-server-base@2.2.0
+  - @transcend-io/sdk@2.1.6
+
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [60d1ea0]
+  - @transcend-io/mcp-server-base@2.1.0
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [2e8558d]
+- Updated dependencies [6dccc24]
+- Updated dependencies [2730f0d]
+- Updated dependencies [746e2da]
+  - @transcend-io/mcp-server-base@2.0.0
+
+## 1.0.0
+
+### Major Changes
+
+- 7e7d797: Consolidate every paginated tool onto two schemas, fix a `hasNextPage` bug that made
+  agents page forever, and give eight tools the paging they never had.
+
+  Pagination had drifted into three shared schemas and fourteen inline copies across 27
+  tools, producing four caller-facing conventions. `PaginationSchema` was marked deprecated
+  yet had eight users; `CursorPaginationSchema`, marked preferred, had none — not even
+  `dsr_list`, the one tool that genuinely pages by cursor.
+
+  Checking the GraphQL schema settled what shapes are actually needed. Of the list fields
+  the MCP servers query, 24 accept `first`/`offset` and return `nodes` plus `totalCount`
+  with no `pageInfo`; exactly one, `requests`, accepts `after` and returns a real
+  `pageInfo.endCursor`. So there are two shapes, and `CursorPaginationSchema` is for the
+  rare case rather than the default. Both now expose `limit` — 22 of 27 tools already used
+  that name, and `first` is the GraphQL wire name, which mixins map internally so Relay
+  vocabulary never reaches callers. `PaginationSchema` is deleted.
+
+  Because almost no payload carries a `pageInfo`, every mixin synthesized one, and they
+  disagreed. Eight wrote `nodeCount < totalCount`, which ignores where the page starts: on
+  the last page 20 rows against a total of 120 still compares true, so `hasNextPage` never
+  went false. An agent told to page until it did would loop until it exhausted its context.
+  That affected `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `workflows_list`, `workflows_list_email_templates`, `admin_list_teams`,
+  `admin_list_api_keys` and `discovery_list_scans`. A shared `derivePageInfo` helper in
+  `mcp-server-base` now owns the comparison, and every offset-paginated mixin routes
+  through it.
+
+  Eight tools returned `hasNextPage: true` with no continuation parameter at all, because
+  their query documents never declared the `$offset` the schema has always accepted —
+  `ListApiKeysDoc` twelve lines below `ListTeamsDoc` declares it correctly. `admin_list_teams`,
+  `workflows_list`, `consent_list_purposes`, `discovery_list_scans`, `discovery_list_plugins`,
+  `assessments_list`, `assessments_list_groups` and `assessments_list_templates` now page.
+  This adds `$offset` to the shared `TranscendCliPurposes` query in the SDK, which is
+  backward compatible: the argument is optional and existing CLI callers are unaffected.
+
+  Tools renamed from `first` to `limit`: `dsr_list_identifiers`,
+  `dsr_list_request_data_silos`, `consent_list_cookies`, `consent_list_data_flows` and
+  `inventory_list_categories`. Nine tools drop a `cursor` parameter that was never wired to
+  anything. `preferences_query` keeps `limit`/`cursor` but not the shared bound, since its
+  REST endpoint caps a page at 50 rather than 100.
+
+  Descriptions no longer explain how to paginate — "Paginate with `offset` until
+  `hasNextPage` is false", "max 100", "Note: cursor pagination is not supported". The schema
+  already carries the bounds, defaults and parameter names, so that prose was spending
+  `tools/list` budget on every call to restate machine-readable facts. Removing it more than
+  paid for the eight tools that gained `offset`: the paginated surface costs 1,473 characters
+  less than on main, and the payload as a whole drops from 82,531 to 76,794 characters once
+  the per-schema `$schema` pointer goes too.
+
+  A new contract test asserts across the whole registry that no tool exposes `first` or
+  `after`, that no tool caps with `limit` without offering a continuation parameter, that
+  `limit` is bounded identically everywhere, and that descriptions do not restate paging
+  mechanics — plus unit coverage pinning the `derivePageInfo` termination cases.
+
+  Every paginated tool was also driven against a real org by hand while developing this
+  change, checking that each page is no larger than `limit`, that the continuation parameter
+  advances, that the last page reports `hasNextPage: false`, and that an offset past the end
+  does not promise another page. Of the 27 paginated tools, 25 pass every check,
+  `dsr_list_identifiers` has no rows in that org, and `preferences_query` needs a partition
+  no list call can supply. That probe was a throwaway harness rather than a committed test,
+  so nothing in the suite points at a live environment.
+
+  It caught something the mocked tests could not: `consent_list_regimes` returned four
+  rows for `limit: 3`. Probing the API directly showed `experiences` answers `first: n` with
+  `n + 1` rows at every size, and the tool forwarded that verbatim, so `limit` was a lie and
+  offset paging double-counted the seam. It now trims to `limit`, which keeps paging gapless
+  because the extra row is the one the next offset starts on.
+
+  The two `discovery_*` tools remain built on `dataSilos` and synthesize their rows, so
+  `discovery_list_scans` reports a hardcoded `COMPLETED` status and `discovery_list_plugins`
+  derives integration types per page. Their descriptions now say so rather than overclaiming;
+  repointing them at the real `discoClassScans` and `plugins` fields is follow-up work.
+
+### Patch Changes
+
+- Updated dependencies [7e7d797]
+- Updated dependencies [7e7d797]
+  - @transcend-io/mcp-server-base@1.9.0
+  - @transcend-io/sdk@2.1.5
+
+## 0.9.6
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+- Updated dependencies [a19b07e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/sdk@2.1.4
+
+## 0.9.5
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/sdk@2.1.3
+
+## 0.9.4
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.9.2
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.9.1
+
+### Patch Changes
+
+- cef7025: Ignore Vite-built MCP App documents from the repo root instead of a per-package
+  gitignore.
+
+## 0.9.0
+
+### Minor Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/sdk@2.1.2
+
+## 0.8.3
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.8.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/sdk@2.1.1
+
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.8.0
+
+### Minor Changes
+
+- bfd2b1a: Make `consent_get_inventory_stats` data-flow counts match the Consent Manager table (CSP rows omitted, same as the UI).
+
+  `consent_list_cookies` and `consent_list_data_flows` now paginate with shared `OffsetPaginationSchema` (`first`/`offset`) instead of a custom `limit`/`offset` pair.
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [6c6ea93]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+- Updated dependencies [a5e8334]
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/sdk@2.1.0
+
 ## 0.7.1
 
 ### Patch Changes

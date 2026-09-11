@@ -1,18 +1,15 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-export const UpdateIdentifiersItemSchema = z.object({
-  oldValue: z.string().describe('Old identifier value'),
-  newValue: z.string().describe('New identifier value'),
-  type: z.string().optional().describe('Identifier type (optional)'),
-});
-export type UpdateIdentifiersItemInput = z.infer<typeof UpdateIdentifiersItemSchema>;
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
+import { UpdateRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const UpdateIdentifiersSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  userId: z.string().describe('User ID to update identifiers for'),
-  identifiers: z
-    .array(UpdateIdentifiersItemSchema)
-    .describe('Array of identifier update objects with old and new values'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
+  records: z.array(UpdateRecordSchema).min(1).describe('Identifier update operations to perform'),
 });
 export type UpdateIdentifiersInput = z.infer<typeof UpdateIdentifiersSchema>;
 
@@ -20,7 +17,9 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_update_identifiers',
-    description: 'Update existing identifiers for a user (e.g., when email changes)',
+    description:
+      'Rewrite an existing identifier value in place, moving its consent history onto the ' +
+      'new value. The old value stops resolving.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {
@@ -32,22 +31,23 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,
-    handler: async ({ partition, userId, identifiers }) => {
-      const result = await rest.updateIdentifiers(
-        partition,
-        userId,
-        identifiers.map((id) => ({
-          oldValue: id.oldValue,
-          newValue: id.newValue,
-          type: id.type,
-        })),
-      );
+    handler: async ({ partition, records }) => {
+      const result = await rest.updateIdentifiers(partition, records);
 
-      return createToolResult(true, {
-        ...result,
-        identifiersUpdated: identifiers.length,
-        message: 'Identifiers updated successfully',
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? 'Identifiers updated successfully'
+            : `Identifier update completed with ${failureCount} failure(s)`,
+        },
+        `Identifier update failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

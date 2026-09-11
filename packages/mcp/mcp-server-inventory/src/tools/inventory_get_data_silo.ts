@@ -16,7 +16,7 @@ export function createInventoryGetDataSiloTool(clients: ToolClients) {
       'silo-level processing purposes, owners, teams, business entities, data subjects ' +
       '(allowlist + blocklist), contact/website/notes metadata, identifiers, connectionState, ' +
       'customSiloConnectionStrategy, and sombraId. DSR Custom Functions require CUSTOM_FUNCTION ' +
-      'strategy and a sombraId. Use before inventory_update_data_silo to avoid overwriting ' +
+      'strategy and a sombraId. Use before inventory_write_data_silo to avoid overwriting ' +
       'existing assignments. For datapoints on this silo, call inventory_list_data_points with dataSiloId.',
     category: 'Data Inventory',
     readOnly: true,

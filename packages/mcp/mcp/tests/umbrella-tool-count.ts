@@ -1,5 +1,6 @@
 /**
- * Single source of truth for the expected number of tools in the umbrella server.
- * Update this constant when tools are added or removed from any domain package.
+ * Expected number of tools defined across domain packages (including experimental).
+ * Update when tools are added or removed. Registry registration may be lower when
+ * `experimental: true` tools are omitted (see `shouldRegisterTool`).
  */
-export const EXPECTED_UMBRELLA_TOOL_COUNT = 81;
+export const EXPECTED_UMBRELLA_TOOL_COUNT = 84;
