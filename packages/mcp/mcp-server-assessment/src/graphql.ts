@@ -603,6 +603,225 @@ const ListQuestionCommentsDoc = graphql(/* GraphQL */ `
   }
 `);
 
+const CreateAssessmentFormCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateFormComments($input: CreateAssessmentFormCommentsInput!) {
+    createAssessmentFormComments(input: $input) {
+      assessmentFormComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const CreateAssessmentSectionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateSectionComments($input: CreateAssessmentSectionCommentsInput!) {
+    createAssessmentSectionComments(input: $input) {
+      assessmentSectionComments {
+        id
+        content
+        assessmentSectionId
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const CreateAssessmentQuestionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateQuestionComments($input: CreateAssessmentQuestionCommentsInput!) {
+    createAssessmentQuestionComments(input: $input) {
+      assessmentQuestionComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const UpdateAssessmentFormCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsUpdateFormComments($input: UpdateAssessmentFormCommentsInput!) {
+    updateAssessmentFormComments(input: $input) {
+      assessmentFormComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const UpdateAssessmentSectionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsUpdateSectionComments($input: [UpdateAssessmentSectionCommentInput!]!) {
+    updateAssessmentSectionComments(input: $input) {
+      assessmentSectionComments {
+        id
+        content
+        assessmentSectionId
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const UpdateAssessmentQuestionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsUpdateQuestionComments($input: [UpdateAssessmentQuestionCommentInput!]!) {
+    updateAssessmentQuestionComments(input: $input) {
+      assessmentQuestionComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const ResolveAssessmentFormCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsResolveFormComments($input: ResolveAssessmentFormCommentsInput!) {
+    resolveAssessmentFormComments(input: $input) {
+      assessmentFormComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const ResolveAssessmentSectionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsResolveSectionComments($input: ResolveAssessmentSectionCommentsInput!) {
+    resolveAssessmentSectionComments(input: $input) {
+      assessmentSectionComments {
+        id
+        content
+        assessmentSectionId
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const ResolveAssessmentQuestionCommentsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsResolveQuestionComments($input: ResolveAssessmentQuestionCommentsInput!) {
+    resolveAssessmentQuestionComments(input: $input) {
+      assessmentQuestionComments {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+    }
+  }
+`);
+
 const SelectAssessmentQuestionAnswersDoc = graphql(/* GraphQL */ `
   mutation AssessmentsSelectAnswers($input: SelectAssessmentQuestionAnswerInput!) {
     selectAssessmentQuestionAnswers(input: $input) {
@@ -1260,6 +1479,251 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       SECTION: section?.assessmentSectionComments.totalCount ?? 0,
       QUESTION: question?.assessmentQuestionComments.totalCount ?? 0,
     };
+  }
+
+  /**
+   * Create a top-level comment or a threaded reply on a form, section, or
+   * question. The three levels are separate mutations; `level` picks which one.
+   */
+  async createAssessmentComment(input: {
+    /** Whether the comment hangs off the form, a section, or a question */
+    level: AssessmentCommentLevel;
+    /** ID of the form, section, or question the comment attaches to */
+    targetId: string;
+    /** Body of the comment */
+    content: string;
+    /** Parent comment id when this is a threaded reply */
+    parentCommentId?: string;
+  }): Promise<AssessmentComment> {
+    const { level, targetId, content, parentCommentId } = input;
+    if (level === 'FORM') {
+      const data = await this.makeRequest(CreateAssessmentFormCommentsDoc, {
+        input: {
+          assessmentFormComments: [{ content, assessmentFormId: targetId, parentCommentId }],
+        },
+      });
+      const created = data.createAssessmentFormComments.assessmentFormComments[0];
+      if (!created) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'createAssessmentFormComments returned no comment',
+          false,
+        );
+      }
+      return toComment(created, 'FORM', targetId);
+    }
+    if (level === 'SECTION') {
+      const data = await this.makeRequest(CreateAssessmentSectionCommentsDoc, {
+        input: {
+          assessmentSectionComments: [{ content, assessmentSectionId: targetId, parentCommentId }],
+        },
+      });
+      const created = data.createAssessmentSectionComments.assessmentSectionComments[0];
+      if (!created) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'createAssessmentSectionComments returned no comment',
+          false,
+        );
+      }
+      return toComment(created, 'SECTION', created.assessmentSectionId);
+    }
+    const data = await this.makeRequest(CreateAssessmentQuestionCommentsDoc, {
+      input: {
+        assessmentQuestionComments: [{ content, assessmentQuestionId: targetId, parentCommentId }],
+      },
+    });
+    const created = data.createAssessmentQuestionComments.assessmentQuestionComments[0];
+    if (!created) {
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        'createAssessmentQuestionComments returned no comment',
+        false,
+      );
+    }
+    return toComment(created, 'QUESTION', targetId);
+  }
+
+  /**
+   * Rewrite the body of an existing comment. `targetId` is required for the
+   * shared {@link AssessmentComment} shape — FORM and QUESTION update payloads
+   * do not echo the anchor id, and SECTION does only via `assessmentSectionId`.
+   */
+  async updateAssessmentComment(input: {
+    /** Whether the comment hangs off the form, a section, or a question */
+    level: AssessmentCommentLevel;
+    /** ID of the comment to edit */
+    commentId: string;
+    /** New body of the comment */
+    content: string;
+    /**
+     * ID of the form, section, or question the comment hangs off. Required for
+     * FORM and QUESTION responses; for SECTION the API returns it and this is
+     * used only as a fallback.
+     */
+    targetId?: string;
+  }): Promise<AssessmentComment> {
+    const { level, commentId, content, targetId } = input;
+    if (level === 'FORM') {
+      if (!targetId) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'targetId is required when editing a FORM comment. Pass the assessment ' +
+            'form id (same as assessmentId). Call assessments_list_comments to look it up.',
+          false,
+          { level, commentId },
+        );
+      }
+      const data = await this.makeRequest(UpdateAssessmentFormCommentsDoc, {
+        input: {
+          assessmentFormComments: [{ id: commentId, content }],
+        },
+      });
+      const updated = data.updateAssessmentFormComments.assessmentFormComments[0];
+      if (!updated) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'updateAssessmentFormComments returned no comment',
+          false,
+        );
+      }
+      return toComment(updated, 'FORM', targetId);
+    }
+    if (level === 'SECTION') {
+      const data = await this.makeRequest(UpdateAssessmentSectionCommentsDoc, {
+        input: [{ id: commentId, content }],
+      });
+      const updated = data.updateAssessmentSectionComments.assessmentSectionComments[0];
+      if (!updated) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'updateAssessmentSectionComments returned no comment',
+          false,
+        );
+      }
+      const sectionId = updated.assessmentSectionId || targetId;
+      if (!sectionId) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'targetId is required when editing a SECTION comment and the API did not ' +
+            'return assessmentSectionId. Pass the section id from assessments_list_comments.',
+          false,
+          { level, commentId },
+        );
+      }
+      return toComment(updated, 'SECTION', sectionId);
+    }
+    if (!targetId) {
+      throw new ToolError(
+        ErrorCode.VALIDATION_ERROR,
+        'targetId is required when editing a QUESTION comment. Pass the question ' +
+          'id from assessments_list_comments (the row targetId).',
+        false,
+        { level, commentId },
+      );
+    }
+    const data = await this.makeRequest(UpdateAssessmentQuestionCommentsDoc, {
+      input: [{ id: commentId, content }],
+    });
+    const updated = data.updateAssessmentQuestionComments.assessmentQuestionComments[0];
+    if (!updated) {
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        'updateAssessmentQuestionComments returned no comment',
+        false,
+      );
+    }
+    return toComment(updated, 'QUESTION', targetId);
+  }
+
+  /**
+   * Mark a comment resolved or reopen it. Same level routing as create/update;
+   * `targetId` is needed for FORM/QUESTION responses because those payloads do
+   * not echo the anchor id.
+   */
+  async resolveAssessmentComment(input: {
+    /** Whether the comment hangs off the form, a section, or a question */
+    level: AssessmentCommentLevel;
+    /** ID of the comment to resolve or reopen */
+    commentId: string;
+    /** True to mark resolved, false to reopen */
+    isResolved: boolean;
+    /**
+     * ID of the form, section, or question the comment hangs off. Required for
+     * FORM and QUESTION responses; for SECTION the API returns it and this is
+     * used only as a fallback.
+     */
+    targetId?: string;
+  }): Promise<AssessmentComment> {
+    const { level, commentId, isResolved, targetId } = input;
+    if (level === 'FORM') {
+      if (!targetId) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'targetId is required when resolving a FORM comment. Pass the assessment ' +
+            'form id (same as assessmentId). Call assessments_list_comments to look it up.',
+          false,
+          { level, commentId },
+        );
+      }
+      const data = await this.makeRequest(ResolveAssessmentFormCommentsDoc, {
+        input: { ids: [commentId], isResolved },
+      });
+      const updated = data.resolveAssessmentFormComments.assessmentFormComments[0];
+      if (!updated) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'resolveAssessmentFormComments returned no comment',
+          false,
+        );
+      }
+      return toComment(updated, 'FORM', targetId);
+    }
+    if (level === 'SECTION') {
+      const data = await this.makeRequest(ResolveAssessmentSectionCommentsDoc, {
+        input: { ids: [commentId], isResolved },
+      });
+      const updated = data.resolveAssessmentSectionComments.assessmentSectionComments[0];
+      if (!updated) {
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          'resolveAssessmentSectionComments returned no comment',
+          false,
+        );
+      }
+      const sectionId = updated.assessmentSectionId || targetId;
+      if (!sectionId) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'targetId is required when resolving a SECTION comment and the API did not ' +
+            'return assessmentSectionId. Pass the section id from assessments_list_comments.',
+          false,
+          { level, commentId },
+        );
+      }
+      return toComment(updated, 'SECTION', sectionId);
+    }
+    if (!targetId) {
+      throw new ToolError(
+        ErrorCode.VALIDATION_ERROR,
+        'targetId is required when resolving a QUESTION comment. Pass the question ' +
+          'id from assessments_list_comments (the row targetId).',
+        false,
+        { level, commentId },
+      );
+    }
+    const data = await this.makeRequest(ResolveAssessmentQuestionCommentsDoc, {
+      input: { ids: [commentId], isResolved },
+    });
+    const updated = data.resolveAssessmentQuestionComments.assessmentQuestionComments[0];
+    if (!updated) {
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        'resolveAssessmentQuestionComments returned no comment',
+        false,
+      );
+    }
+    return toComment(updated, 'QUESTION', targetId);
   }
 
   async selectAssessmentQuestionAnswers(input: {

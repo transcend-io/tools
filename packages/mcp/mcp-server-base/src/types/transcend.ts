@@ -329,6 +329,14 @@ export interface PreferenceUpsertRecord {
     /** ISO 8601 timestamp for this purpose */
     timestamp?: string;
   }[];
+  /** Optional flags for upsert conflict handling */
+  options?: {
+    /**
+     * When identifiers match two different existing records: true merges them
+     * (API default if omitted); false fails the record with a conflict error.
+     */
+    mergeRecordsOnConflict?: boolean;
+  };
 }
 
 export interface PreferenceUpsertInput {
@@ -1432,7 +1440,10 @@ export interface AssessmentComment {
   author?: AssessmentCommentAuthor;
   /** ID of the comment this one replies to, when it is a threaded reply */
   parentCommentId?: string;
-  /** When the comment was resolved (ISO 8601); absent while it is still open */
+  /**
+   * When the root of this thread was resolved (ISO 8601). Set on root comments
+   * only; replies stay open/closed with their parent and usually omit this.
+   */
   resolvedAt?: string;
   /** Number of files attached to the comment */
   fileCount?: number;

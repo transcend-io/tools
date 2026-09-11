@@ -15,6 +15,9 @@ describe('Assessment Tools', () => {
     listAssessmentSectionComments: ReturnType<typeof vi.fn>;
     listAssessmentQuestionComments: ReturnType<typeof vi.fn>;
     countAssessmentComments: ReturnType<typeof vi.fn>;
+    createAssessmentComment: ReturnType<typeof vi.fn>;
+    updateAssessmentComment: ReturnType<typeof vi.fn>;
+    resolveAssessmentComment: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
     selectAssessmentQuestionAnswers: ReturnType<typeof vi.fn>;
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
@@ -41,6 +44,9 @@ describe('Assessment Tools', () => {
         sectionIds: ['sec-1', 'sec-2'],
       }),
       countAssessmentComments: vi.fn().mockResolvedValue({ FORM: 0, SECTION: 0, QUESTION: 0 }),
+      createAssessmentComment: vi.fn(),
+      updateAssessmentComment: vi.fn(),
+      resolveAssessmentComment: vi.fn(),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
       updateAssessmentFormAssignees: vi.fn(),
@@ -564,6 +570,57 @@ describe('Assessment Tools', () => {
       expect(all.data.totalCount).toBe(2);
     });
 
+    it('treats replies as open or resolved with their root, not their own stamp', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [
+          comment('c-root', 'FORM', 'form-1', { resolvedAt: '2026-02-01T00:00:00.000Z' }),
+          // Replies keep resolvedAt unset; only the root closes the thread.
+          comment('c-reply', 'FORM', 'form-1', {
+            parentCommentId: 'c-root',
+            createdAt: '2026-02-02T00:00:00.000Z',
+          }),
+          comment('c-open-root', 'FORM', 'form-1', { createdAt: '2026-02-03T00:00:00.000Z' }),
+          comment('c-open-reply', 'FORM', 'form-1', {
+            parentCommentId: 'c-open-root',
+            createdAt: '2026-02-04T00:00:00.000Z',
+          }),
+        ],
+        totalCount: 4,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
+        sectionTitles: {},
+        sectionIds: [],
+      });
+
+      const open = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+      const resolved = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'RESOLVED',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      expect(open.data.comments.map((c: any) => c.id)).toEqual(['c-open-root', 'c-open-reply']);
+      expect(resolved.data.comments.map((c: any) => c.id)).toEqual(['c-root', 'c-reply']);
+    });
+
+    it('documents that resolution follows the root of the thread', () => {
+      expect(commentsTool().description).toMatch(/root comment/);
+      const { shape } = commentsTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+      expect(shape.resolution.description).toMatch(/root/);
+    });
+
     it('filters by author upstream, and applies the same filter to question comments', async () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [
@@ -678,6 +735,300 @@ describe('Assessment Tools', () => {
       const parsed = commentsTool().zodSchema.safeParse({ assessmentId: 'form-1' });
       expect(parsed.success).toBe(true);
       expect((parsed.data as any).resolution).toBe('OPEN');
+    });
+  });
+
+  describe('assessments_write_comment', () => {
+    const writeTool = () => getTools().find((t) => t.name === 'assessments_write_comment')!;
+
+    const created = (overrides: Record<string, unknown> = {}) => ({
+      id: 'c-new',
+      level: 'FORM',
+      targetId: 'form-1',
+      content: 'Hello',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      ...overrides,
+    });
+
+    it('documents that only the root of a thread is resolved', () => {
+      expect(writeTool().description).toMatch(/root comment/);
+      const { shape } = writeTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+      expect(shape.commentId.description).toMatch(/root id/);
+      expect(shape.resolved.description).toMatch(/Replies are not resolved alone/);
+    });
+
+    it('creates a top-level FORM comment', async () => {
+      mockGraphql.createAssessmentComment.mockResolvedValue(
+        created({ content: 'Looks good overall.' }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        content: 'Looks good overall.',
+        level: 'FORM',
+        targetId: 'form-1',
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(result.success).toBe(true);
+      expect(mockGraphql.createAssessmentComment).toHaveBeenCalledWith({
+        level: 'FORM',
+        targetId: 'form-1',
+        content: 'Looks good overall.',
+        parentCommentId: undefined,
+      });
+      expect(mockGraphql.updateAssessmentComment).not.toHaveBeenCalled();
+      expect(result.data.comment.content).toBe('Looks good overall.');
+      expect(result.data.message).toContain('Comment created');
+      expect(result.data.url).toContain('form-1');
+    });
+
+    it('replies to a SECTION comment with parentCommentId', async () => {
+      mockGraphql.createAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-reply',
+          level: 'SECTION',
+          targetId: 'sec-1',
+          parentCommentId: 'c-parent',
+          content: 'Will fix this section.',
+        }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        content: 'Will fix this section.',
+        level: 'SECTION',
+        targetId: 'sec-1',
+        parentCommentId: 'c-parent',
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.createAssessmentComment).toHaveBeenCalledWith({
+        level: 'SECTION',
+        targetId: 'sec-1',
+        content: 'Will fix this section.',
+        parentCommentId: 'c-parent',
+      });
+      expect(result.data.comment.parentCommentId).toBe('c-parent');
+      expect(result.data.message).toContain('Reply posted');
+    });
+
+    it('edits a QUESTION comment via commentId', async () => {
+      mockGraphql.updateAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-q1',
+          level: 'QUESTION',
+          targetId: 'q-1',
+          content: 'Updated answer clarification.',
+        }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        content: 'Updated answer clarification.',
+        level: 'QUESTION',
+        targetId: 'q-1',
+        commentId: 'c-q1',
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.createAssessmentComment).not.toHaveBeenCalled();
+      expect(mockGraphql.updateAssessmentComment).toHaveBeenCalledWith({
+        level: 'QUESTION',
+        commentId: 'c-q1',
+        content: 'Updated answer clarification.',
+        targetId: 'q-1',
+      });
+      expect(result.data.message).toContain('Comment updated');
+    });
+
+    it('defaults FORM edit targetId to assessmentId', async () => {
+      mockGraphql.updateAssessmentComment.mockResolvedValue(
+        created({ id: 'c-f1', content: 'Edited form note.' }),
+      );
+
+      await writeTool().handler({
+        assessmentId: 'form-1',
+        content: 'Edited form note.',
+        level: 'FORM',
+        commentId: 'c-f1',
+      });
+
+      expect(mockGraphql.updateAssessmentComment).toHaveBeenCalledWith({
+        level: 'FORM',
+        commentId: 'c-f1',
+        content: 'Edited form note.',
+        targetId: 'form-1',
+      });
+    });
+
+    it('rejects create without targetId', async () => {
+      await expect(
+        writeTool().handler({
+          assessmentId: 'form-1',
+          content: 'Missing anchor',
+          level: 'SECTION',
+        }),
+      ).rejects.toThrow(/targetId is required when creating/);
+      expect(mockGraphql.createAssessmentComment).not.toHaveBeenCalled();
+    });
+
+    it('rejects commentId together with parentCommentId', async () => {
+      await expect(
+        writeTool().handler({
+          assessmentId: 'form-1',
+          content: 'Nope',
+          level: 'FORM',
+          commentId: 'c-1',
+          parentCommentId: 'c-parent',
+        }),
+      ).rejects.toThrow(/either commentId.*or parentCommentId/);
+      expect(mockGraphql.updateAssessmentComment).not.toHaveBeenCalled();
+      expect(mockGraphql.createAssessmentComment).not.toHaveBeenCalled();
+    });
+
+    it('rejects QUESTION edit without targetId', async () => {
+      await expect(
+        writeTool().handler({
+          assessmentId: 'form-1',
+          content: 'Edited',
+          level: 'QUESTION',
+          commentId: 'c-q1',
+        }),
+      ).rejects.toThrow(/targetId is required when editing a QUESTION/);
+      expect(mockGraphql.updateAssessmentComment).not.toHaveBeenCalled();
+    });
+
+    it('resolves a FORM comment via commentId and resolved', async () => {
+      mockGraphql.resolveAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-f1',
+          content: 'Please clarify retention.',
+          resolvedAt: '2026-03-02T00:00:00.000Z',
+        }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        level: 'FORM',
+        commentId: 'c-f1',
+        resolved: true,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.updateAssessmentComment).not.toHaveBeenCalled();
+      expect(mockGraphql.resolveAssessmentComment).toHaveBeenCalledWith({
+        level: 'FORM',
+        commentId: 'c-f1',
+        isResolved: true,
+        targetId: 'form-1',
+      });
+      expect(result.data.comment.resolvedAt).toBeDefined();
+      expect(result.data.message).toContain('resolved');
+    });
+
+    it('reopens a comment with resolved false', async () => {
+      mockGraphql.resolveAssessmentComment.mockResolvedValue(
+        created({ id: 'c-f1', content: 'Still open', resolvedAt: undefined }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        level: 'FORM',
+        commentId: 'c-f1',
+        resolved: false,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.resolveAssessmentComment).toHaveBeenCalledWith(
+        expect.objectContaining({ isResolved: false }),
+      );
+      expect(result.data.message).toContain('reopened');
+    });
+
+    it('edits and resolves in one call', async () => {
+      mockGraphql.updateAssessmentComment.mockResolvedValue(
+        created({ id: 'c-q1', level: 'QUESTION', targetId: 'q-1', content: 'Fixed.' }),
+      );
+      mockGraphql.resolveAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-q1',
+          level: 'QUESTION',
+          targetId: 'q-1',
+          content: 'Fixed.',
+          resolvedAt: '2026-03-02T00:00:00.000Z',
+        }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        level: 'QUESTION',
+        targetId: 'q-1',
+        commentId: 'c-q1',
+        content: 'Fixed.',
+        resolved: true,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.updateAssessmentComment).toHaveBeenCalled();
+      expect(mockGraphql.resolveAssessmentComment).toHaveBeenCalled();
+      expect(result.data.message).toContain('updated and resolved');
+    });
+
+    it('replies and resolves the parent thread', async () => {
+      mockGraphql.createAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-reply',
+          level: 'SECTION',
+          targetId: 'sec-1',
+          parentCommentId: 'c-parent',
+          content: 'Done.',
+        }),
+      );
+      mockGraphql.resolveAssessmentComment.mockResolvedValue(
+        created({
+          id: 'c-parent',
+          level: 'SECTION',
+          targetId: 'sec-1',
+          resolvedAt: '2026-03-02T00:00:00.000Z',
+        }),
+      );
+
+      const result = (await writeTool().handler({
+        assessmentId: 'form-1',
+        content: 'Done.',
+        level: 'SECTION',
+        targetId: 'sec-1',
+        parentCommentId: 'c-parent',
+        resolved: true,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.createAssessmentComment).toHaveBeenCalled();
+      expect(mockGraphql.resolveAssessmentComment).toHaveBeenCalledWith({
+        level: 'SECTION',
+        commentId: 'c-parent',
+        isResolved: true,
+        targetId: 'sec-1',
+      });
+      expect(result.data.comment.id).toBe('c-reply');
+      expect(result.data.message).toContain('parent thread resolved');
+    });
+
+    it('rejects resolved without commentId or parentCommentId', async () => {
+      await expect(
+        writeTool().handler({
+          assessmentId: 'form-1',
+          level: 'FORM',
+          resolved: true,
+        }),
+      ).rejects.toThrow(/resolved requires commentId/);
+      expect(mockGraphql.resolveAssessmentComment).not.toHaveBeenCalled();
+    });
+
+    it('rejects commentId without content or resolved', async () => {
+      await expect(
+        writeTool().handler({
+          assessmentId: 'form-1',
+          level: 'FORM',
+          commentId: 'c-1',
+        }),
+      ).rejects.toThrow(/pass content to edit|resolved to close/);
     });
   });
 

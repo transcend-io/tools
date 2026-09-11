@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ConsentTriageType } from '../src/lib/cookieTriageTypes.js';
 import { getConsentPrompts } from '../src/prompts/index.js';
 
 const EXPECTED_PROMPT_NAMES = [
@@ -19,17 +20,24 @@ describe('Consent Prompts', () => {
     expect(triage).toBeDefined();
 
     const messages = await triage!.handler({
-      triage_type: 'cookies',
+      triage_type: ConsentTriageType.Cookies,
       batch_size: '5',
     });
 
     expect(messages).toHaveLength(2);
-    expect(messages[0]!.content.text).toContain('Triage cookies in batches of 5');
+    expect(messages[0]!.content.text).toContain('Triage cookies');
+    expect(messages[0]!.content.text).toContain('batch size 5');
     expect(messages[1]!.content.text).toContain('consent_get_inventory_stats');
+    expect(messages[1]!.content.text).toContain('consent_cookie_triage_review_app');
+    expect(messages[1]!.content.text).toContain(`"triageType": "${ConsentTriageType.Cookies}"`);
+    expect(messages[1]!.content.text).toContain('Do **not** pre-fetch');
     expect(messages[1]!.content.text).toContain('dataFlows.needReviewCount');
     expect(messages[1]!.content.text).toContain(
-      'consent_list_cookies { status: "NEEDS_REVIEW", first: 5',
+      'consent_list_cookies { status: "NEEDS_REVIEW", limit: 5',
     );
     expect(messages[1]!.content.text).not.toContain('consent_list_data_flows');
+    expect(messages[1]!.content.text).not.toContain(
+      `"triageType": "${ConsentTriageType.DataFlows}"`,
+    );
   });
 });

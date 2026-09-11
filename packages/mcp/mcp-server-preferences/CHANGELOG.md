@@ -1,5 +1,41 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.7.11
+
+### Patch Changes
+
+- @transcend-io/sdk@2.1.8
+
+## 0.7.10
+
+### Patch Changes
+
+- 9bc5cb7: Adds mergeRecordsOnConflict for preference upsert
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-base@2.3.1
+
+## 0.7.9
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+  - @transcend-io/sdk@2.1.7
+
+## 0.7.8
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
 ## 0.7.6
 
 ### Patch Changes

@@ -26,6 +26,25 @@ describe('parseToolEnvelope', () => {
     expect(result).toEqual({ data: undefined, error: 'No such silo' });
   });
 
+  it('includes code and details in the error message when present', () => {
+    const result = parseToolEnvelope(
+      textResult(
+        {
+          success: false,
+          error: 'Failed to fetch cookies',
+          code: 'API_ERROR',
+          details: { step: 'cookies', triageType: 'cookies' },
+        },
+        true,
+      ),
+    );
+
+    expect(result).toEqual({
+      data: undefined,
+      error: 'Failed to fetch cookies [API_ERROR] {"step":"cookies","triageType":"cookies"}',
+    });
+  });
+
   it('falls back to a generic message when a failure carries no error text', () => {
     const result = parseToolEnvelope(textResult({ success: false }));
 
@@ -85,5 +104,36 @@ describe('parseToolEnvelope', () => {
     const result = parseToolEnvelope(textResult(42));
 
     expect(result).toEqual({ data: undefined, error: undefined });
+  });
+
+  it('passes through createListResult pagination fields on success', () => {
+    const items = [{ name: '_ga' }];
+    const result = parseToolEnvelope<typeof items>(
+      textResult({
+        success: true,
+        data: items,
+        count: 1,
+        totalCount: 40,
+        hasNextPage: true,
+        timestamp: '2026-01-01',
+      }),
+    );
+
+    expect(result).toEqual({
+      data: items,
+      error: undefined,
+      totalCount: 40,
+      hasNextPage: true,
+    });
+  });
+
+  it('omits pagination fields when they are absent', () => {
+    const result = parseToolEnvelope<{ greeting: string }>(
+      textResult({ success: true, data: { greeting: 'hello' } }),
+    );
+
+    expect(result).toEqual({ data: { greeting: 'hello' }, error: undefined });
+    expect(result).not.toHaveProperty('totalCount');
+    expect(result).not.toHaveProperty('hasNextPage');
   });
 });
