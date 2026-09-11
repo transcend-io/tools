@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 2.3.1
+
+### Patch Changes
+
+- 9bc5cb7: Adds mergeRecordsOnConflict for preference upsert
+
 ## 2.3.0
 
 ### Minor Changes
