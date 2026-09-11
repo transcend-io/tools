@@ -181,6 +181,36 @@ describe('Inventory Tools', () => {
       );
     });
 
+    it('forwards sombraId when creating a customFunction silo', async () => {
+      const dataSilo = {
+        id: 'silo-cf',
+        title: 'CF Silo',
+        type: 'api' as const,
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        sombraId: 'sombra-1',
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+      };
+      mockGraphql.writeDataSilo.mockResolvedValue({ dataSilo, created: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
+
+      await tool.handler({
+        integrationName: 'customFunction',
+        title: 'CF Silo',
+        sombraId: 'sombra-1',
+      });
+
+      expect(mockGraphql.writeDataSilo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          integrationName: 'customFunction',
+          title: 'CF Silo',
+          sombraId: 'sombra-1',
+        }),
+      );
+    });
+
     it('zodSchema rejects when neither dataSiloId nor integrationName provided', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
@@ -215,6 +245,7 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: undefined,
         titles: undefined,
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -235,6 +266,7 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: 'ZEL8168',
         titles: ['Acme'],
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -255,6 +287,7 @@ describe('Inventory Tools', () => {
         offset: 100,
         text: undefined,
         titles: undefined,
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -265,6 +298,31 @@ describe('Inventory Tools', () => {
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+
+    it('forwards customSiloConnectionStrategy to list Custom Function silos', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+
+      await tool.handler({
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+        limit: 10,
+        offset: 0,
+      });
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+        titles: undefined,
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+      });
     });
   });
 
