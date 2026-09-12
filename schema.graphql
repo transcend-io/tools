@@ -1099,6 +1099,13 @@ enum SombraDataSubjectAuthMethod {
   noAuth
 }
 
+enum SombraReverseTunnelGatewayHealthStatus {
+  UNKNOWN
+  NOT_REGISTERED
+  UNHEALTHY
+  HEALTHY
+}
+
 enum PreflightRequestStatus {
   CANCELED
   ON_HOLD
@@ -1474,6 +1481,7 @@ enum ActionItemCode {
   DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL
   RULES_AUTOMATION_RULE_TERMINAL_FAILURE
   RULES_AUTOMATION_RULE_TERMINAL_FAILURE_ASSIGNED
+  CONSENT_SITE_TELEMETRY_STALE
 }
 
 enum ChatCompletionRole {
@@ -2936,18 +2944,30 @@ enum DownloadAndDecryptError {
   SINK_STALL_TIMEOUT
   SERVICE_WORKER_LOST
   SINK_BACKPRESSURE_TIMEOUT
+  SINK_BYTE_MISMATCH
+  SINK_CLOSE_UNCONFIRMED
   STREAMSAVER_INIT_FAILED
   DOWNLOAD_MANAGER_CANCELLED
+  DOWNLOAD_ABORTED_BY_NAVIGATION
   BROWSER_BLOCKED
   NETWORK_ERROR
   SAVE_DIALOG_CANCELLED
   SAVE_DIALOG_UNAVAILABLE
+  SAVE_DIALOG_TIMEOUT
+  LARGE_MOBILE_DOWNLOAD_DECLINED
   NATIVE_WRITER_FAILED
+  ARCHIVE_EXCEEDED_DECLARED_LENGTH
   OPFS_UNAVAILABLE
   OPFS_WRITE_FAILED
   WASM_UNAVAILABLE
   WASM_LOAD_FAILED
   UNKNOWN
+}
+
+enum DownloadDeliveryVerification {
+  OS_CONFIRMED
+  BROWSER_CONFIRMED
+  UNCONFIRMED
 }
 
 enum DownloadAndDecryptErrorClass {
@@ -2960,6 +2980,8 @@ enum DownloadAndDecryptErrorClass {
 }
 
 enum DownloadAndDecryptEventType {
+  DOWNLOAD_PAGE_VIEWED
+  DOWNLOAD_CLICKED
   INITIATED
   INITIALIZATION_SUCCEEDED
   DOWNLOAD_STARTED
@@ -3079,6 +3101,13 @@ enum RequestAttachmentSource {
 
 enum RequestAttachmentOrderField {
   createdAt
+  id
+}
+
+enum RequestDownloadAttemptOrderField {
+  createdAt
+  completedAt
+  attemptNumber
   id
 }
 
@@ -4357,6 +4386,7 @@ enum DsrIncomingRequestColumnName {
   id
   status
   isOpened
+  isDownloaded
   isArchived
   isSilent
   isTest
@@ -5224,6 +5254,7 @@ type Query {
   requestDataSiloDataPoints(first: Int, offset: Int = 0, last: Int, input: RequestDataSiloDataPointInput, id: ID!): RequestDataSiloDataPointsPayload!
   requestDataSilos(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RequestDataSiloFiltersInput!, orderBy: [RequestDataSiloOrder!]): RequestDataSilosPayload!
   requestDataSiloSummary(input: RequestDataSiloSummaryInput): RequestDataSiloSummaryResult!
+  requestDownloadAttempts(first: Int, last: Int, before: String, after: String, filterBy: RequestDownloadAttemptFiltersInput!, orderBy: [RequestDownloadAttemptOrder!]): RequestDownloadAttemptsPayload!
   requestEnrichers(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RequestEnrichersFiltersInput, orderBy: [RequestEnricherOrder!], input: RequestEnrichersInput!): RequestEnrichersPayload!
   requestFiles(first: Int, offset: Int = 0, last: Int, filterBy: RequestFileFiltersInput!, orderBy: [RequestFileOrder!], input: RequestFileResolverInput): RequestFilesPayload!
   requestFilesCountsOnly(filterBy: DownloadFileFiltersInput!): RequestFilesCountsOnlyPayload!
@@ -7409,6 +7440,7 @@ type AttributeDataSubCategoryResource implements AttributeResourceInterface {
   slug: String!
   regex: String
   isDefault: Boolean!
+  identifierId: ID
   description: String
   dataPointCount: Int!
   attributeValues: [AttributeValue!]!
@@ -7556,6 +7588,7 @@ type AttributeSubDataPointResource implements AttributeResourceInterface {
   encryption: ColumnEncryptionType
   subDataPointFQId: String!
   processingActivities: [ProcessingActivityPreview!]!
+  dataType: String
 }
 
 type AttributeValue {
@@ -8164,6 +8197,7 @@ type BulkUpdateWorkflowConfigsPayload {
 input BulkUpdateWorkflowConfigsInput {
   workflowConfigIds: [ID!]!
   workflowConfigVisibility: WorkflowConfigVisibility
+  allowLegacyApiSubmission: Boolean
 }
 
 type BundleTCFStack {
@@ -10945,6 +10979,7 @@ input CreateWorkflowInput {
   workflowConfigType: WorkflowConfigType
   purposeId: ID
   subjectId: ID
+  allowLegacyApiSubmission: Boolean
 }
 
 type CurrentDnsRecordsPayload {
@@ -11177,6 +11212,7 @@ interface DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
   description: String
   dataPointCount: Int!
 }
@@ -11333,6 +11369,7 @@ type DataInventoryCategory implements DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
   description: String
   dataPointCount: Int!
 }
@@ -12108,6 +12145,7 @@ type DataSubCategory implements DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean!
+  identifierId: ID
   description: String
   dataPointCount: Int!
   attributeValues: [AttributeValue!]!
@@ -12149,6 +12187,7 @@ type DataSubCategoryPreview {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
 }
 
 type DataSubject implements DataSubjectInterface {
@@ -13193,6 +13232,7 @@ input DownloadAndDecryptMetricsInput {
   msSinceLastSinkProgress: Float
   sinkCloseMs: Float
   swBodyClosed: Boolean
+  swBodyBytes: Float
   recentActivity: String
 }
 
@@ -14255,6 +14295,7 @@ type GlobalActionItemContext {
   dataSiloId: ID
   requestType: String
   latestAirgapVersion: String
+  consentSiteLastDiscoveredAt: String
   parentTitle: String
   pluginType: String
   aggregateCount: Int
@@ -17008,7 +17049,9 @@ type Request implements RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -17200,6 +17243,50 @@ type RequestDetails {
   details: String
 }
 
+type RequestDownloadAttempt {
+  id: ID!
+  downloadAttemptId: String!
+  startedAt: Date
+  completedAt: Date
+  attemptNumber: Int
+  outcome: RequestDownloadAttemptOutcome
+  deliveryVerification: DownloadDeliveryVerification
+  errorCode: DownloadAndDecryptError
+  errorClass: DownloadAndDecryptErrorClass
+  errorName: String
+  errorDetail: String
+  phase: DownloadAndDecryptPhase
+  sinkMode: DownloadSinkMode
+  sinkVariant: DownloadSinkVariant
+  deviceClass: DownloadDeviceClass
+  browserFamily: DownloadBrowserFamily
+  osFamily: DownloadOsFamily
+  clientBuildVersion: String
+  attemptElapsedMs: Float
+  totalSizeBytes: Float
+  totalNumFiles: Int
+  filesCompleted: Int
+  createdAt: Date!
+  updatedAt: Date!
+}
+
+input RequestDownloadAttemptFiltersInput {
+  requestId: ID!
+  ids: [ID!]
+}
+
+input RequestDownloadAttemptOrder {
+  field: RequestDownloadAttemptOrderField!
+  direction: OrderDirection!
+}
+
+type RequestDownloadAttemptsPayload {
+  clientMutationId: String
+  nodes: [RequestDownloadAttempt!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
 type RequestEmailBouncedPayload {
   clientMutationId: String
   done: Boolean!
@@ -17382,6 +17469,7 @@ input RequestFiltersInput {
   isClosed: Boolean
   isBounced: Boolean
   isOpened: Boolean
+  isDownloaded: Boolean
   origin: [RequestOrigin!]
   isTest: Boolean
   isSilent: Boolean
@@ -17464,7 +17552,9 @@ type RequestHistory implements RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -17612,7 +17702,9 @@ interface RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -18442,11 +18534,6 @@ input ScannedObjectHierarchyPathFiltersInput {
 input ScanPluginConfigInput {
   type: PluginType!
   configuration: String
-}
-
-type ScanRunId {
-  scanId: String!
-  startEpoch: String!
 }
 
 type SchemaDiscoveryPluginConfigurationSchema {
@@ -19371,6 +19458,26 @@ type SombraReplicaResourceTelemetry {
   uptimeSeconds: Float!
 }
 
+type SombraReverseTunnelGatewayHealth {
+  status: SombraReverseTunnelGatewayHealthStatus!
+  connectedUpstreams: Int!
+  reasons: [String!]!
+  replicas: [SombraReverseTunnelGatewayHealthReplica!]
+  telemetrySupported: Boolean
+  minimumTelemetryVersion: String
+}
+
+type SombraReverseTunnelGatewayHealthReplica {
+  hostname: String!
+  memoryRssBytes: Float
+  memoryLimitBytes: Float
+  memoryUtilizationPercent: Float
+  cpuPercent: Float
+  eventLoopLagP99Ms: Float
+  inflightRequests: Int
+  reportedAt: String
+}
+
 type SombraSession {
   profile: SombraProfile!
   coreIdentifier: SombraCoreIdentifier!
@@ -19485,6 +19592,7 @@ type SubDataPoint {
   encryption: ColumnEncryptionType
   subDataPointFQId: String!
   processingActivities: [ProcessingActivityPreview!]!
+  dataType: String
 }
 
 type SubDataPointClassification {
@@ -20233,7 +20341,6 @@ type UnstructuredSubDataPointRecommendation {
   dataSiloId: ID!
   scannedObjectPathId: ID
   scannedObjectId: ID
-  scanRunId: ScanRunId
   classifierVersion: Int
 }
 
@@ -22365,6 +22472,7 @@ input UpdateWorkflowConfigInput {
   postCompileStatus: PostCompileStatus
   attributeKeyIds: [ID!]
   internalName: String
+  allowLegacyApiSubmission: Boolean
 }
 
 type UploadedModuleMetadata {
@@ -22676,6 +22784,7 @@ type WorkflowConfig {
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String!
+  allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
 }
 
