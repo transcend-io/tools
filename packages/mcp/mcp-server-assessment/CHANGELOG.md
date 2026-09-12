@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-assessment
 
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+
 ## 2.1.5
 
 ### Patch Changes
