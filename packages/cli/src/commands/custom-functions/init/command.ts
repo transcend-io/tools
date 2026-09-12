@@ -1,13 +1,17 @@
 import { buildCommand } from '@stricli/core';
 
+import {
+  customFunctionDirectoryParameter,
+  customFunctionDryRunParameter,
+  customFunctionJsonParameter,
+  customFunctionManifestParameter,
+  customFunctionNoInteractiveParameter,
+  customFunctionYesParameter,
+} from '../constants.js';
+
 /** Flags accepted when initializing Custom Function authoring. */
 const customFunctionInitFlagParameters = {
-  manifest: {
-    kind: 'parsed',
-    parse: String,
-    brief: 'Path to transcend-functions.yml; defaults inside the target directory',
-    optional: true,
-  },
+  manifest: customFunctionManifestParameter,
   deno: {
     kind: 'boolean',
     brief: 'Create or merge target-scoped Deno configuration and check task',
@@ -28,26 +32,10 @@ const customFunctionInitFlagParameters = {
     brief: 'Generate credential-free GitHub Actions checks',
     optional: true,
   },
-  noInteractive: {
-    kind: 'boolean',
-    brief: 'Disable prompts and require every missing answer as a flag',
-    default: false,
-  },
-  dryRun: {
-    kind: 'boolean',
-    brief: 'Preview all changes without writing files',
-    default: false,
-  },
-  yes: {
-    kind: 'boolean',
-    brief: 'Skip only the final plan confirmation',
-    default: false,
-  },
-  json: {
-    kind: 'boolean',
-    brief: 'Emit a stable JSON result and imply non-interactive output',
-    default: false,
-  },
+  noInteractive: customFunctionNoInteractiveParameter,
+  dryRun: customFunctionDryRunParameter,
+  yes: customFunctionYesParameter,
+  json: customFunctionJsonParameter,
 } as const;
 
 export const initCommand = buildCommand({
@@ -59,15 +47,7 @@ export const initCommand = buildCommand({
     flags: customFunctionInitFlagParameters,
     positional: {
       kind: 'tuple',
-      parameters: [
-        {
-          brief: 'Custom Function project directory',
-          placeholder: 'directory',
-          parse: String,
-          optional: true,
-          default: 'transcend/custom-functions',
-        },
-      ],
+      parameters: [customFunctionDirectoryParameter],
     },
   },
   docs: {

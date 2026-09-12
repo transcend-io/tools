@@ -5,7 +5,8 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
   ['custom-functions', 'push'],
   [
     {
-      description: 'Push all custom functions defined in ./transcend-functions.yml',
+      description:
+        'Push all custom functions defined in transcend/custom-functions/transcend-functions.yml',
       flags: {
         auth: '$TRANSCEND_API_KEY',
       },
@@ -21,7 +22,7 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
       description: 'Use a manifest at a custom path with templated secrets',
       flags: {
         auth: '$TRANSCEND_API_KEY',
-        file: './transcend/functions.yml',
+        manifest: './transcend/functions.yml',
         variables: 'CRM_API_KEY:example-secret-value',
       },
     },
@@ -73,6 +74,8 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
 );
 
 export default `#### Manifest file
+
+By default, \`push\` reads \`transcend-functions.yml\` from the \`transcend/custom-functions\` project directory. Pass another project directory positionally, or use \`--manifest\` to select a specific manifest file. Use \`--json\` in automation to emit one structured result containing the manifest path, per-function outcomes, and aggregate counts.
 
 The manifest maps custom function names to source files in your repository:
 

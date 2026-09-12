@@ -2499,10 +2499,10 @@ FLAGS
      [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
      [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
      [--ci/--noCi]          Generate credential-free GitHub Actions checks
-     [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
-     [--dryRun]             Preview all changes without writing files                             [default = false]
+     [--noInteractive]      Disable prompts                                                       [default = false]
+     [--dryRun]             Preview changes without applying them                                 [default = false]
      [--yes]                Skip only the final plan confirmation                                 [default = false]
-     [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
+     [--json]               Emit stable JSON output and disable prompts                           [default = false]
   -h  --help                Print help information and exit
 
 ARGUMENTS
@@ -2549,13 +2549,13 @@ USAGE
 Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions triggered by a Workflow step and supporting data point resolvers, preflight checks, or both.
 
 FLAGS
-     [--manifest]       Path to an existing transcend-functions.yml
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
      [--name]           Customer-visible Custom Function display name
-     [--template]       Function type and generated handler shape                  [general|dsr-datapoint|dsr-enricher|dsr-both]
-     [--noInteractive]  Disable prompts and require every missing answer as a flag [default = false]
-     [--dryRun]         Preview all changes without writing files                  [default = false]
-     [--yes]            Skip only the final plan confirmation                      [default = false]
-     [--json]           Emit a stable JSON result and imply non-interactive output [default = false]
+     [--template]       Function type and generated handler shape                             [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--noInteractive]  Disable prompts                                                       [default = false]
+     [--dryRun]         Preview changes without applying them                                 [default = false]
+     [--yes]            Skip only the final plan confirmation                                 [default = false]
+     [--json]           Emit stable JSON output and disable prompts                           [default = false]
   -h  --help            Print help information and exit
 
 ARGUMENTS
@@ -2587,10 +2587,10 @@ Checks manifest semantics and published payload schemas, then uses Deno 2 withou
 
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
-     [--variables]      Comma-separated variables to template into the manifest               [default = ""]
-     [--fix]            Apply Deno formatting to manifest-referenced files                    [default = false]
-     [--noInteractive]  Disable the optional formatting confirmation                          [default = false]
-     [--json]           Emit a stable JSON result and imply non-interactive behavior          [default = false]
+     [--variables]      Comma-separated variables to template into the manifest, such as API_KEY:value [default = ""]
+     [--fix]            Apply Deno formatting to manifest-referenced files                             [default = false]
+     [--noInteractive]  Disable prompts                                                                [default = false]
+     [--json]           Emit stable JSON output and disable prompts                                    [default = false]
   -h  --help            Print help information and exit
 
 ARGUMENTS
@@ -2620,9 +2620,9 @@ Executes one self-contained manifest function against its configured test payloa
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
      [--function]       Exact Custom Function name or ID; prompts when omitted
-     [--variables]      Comma-separated manifest variables such as API_KEY:value              [default = ""]
-     [--noInteractive]  Disable function selection prompts                                    [default = false]
-     [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts              [default = false]
+     [--variables]      Comma-separated variables to template into the manifest, such as API_KEY:value [default = ""]
+     [--noInteractive]  Disable prompts                                                                [default = false]
+     [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts                       [default = false]
   -h  --help            Print help information and exit
 
 ARGUMENTS
@@ -2649,7 +2649,7 @@ Every `<<parameters.name>>` placeholder used by the selected function must be pr
 
 ```txt
 USAGE
-  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value]
+  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--manifest value] [--variables value] [--dryRun] [--json] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value] [<directory>]
   transcend custom-functions push --help
 
 Sync custom function source code from your repository to Transcend.
@@ -2675,18 +2675,24 @@ FLAGS
       --auth                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Map"
      [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                [default = https://api.transcend.io]
-     [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                                   [default = ./transcend-functions.yml]
-     [--variables]            Variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                                   [default = ""]
-     [--dryRun]               When true, report what would change without pushing anything                                                                                                                                                      [default = false]
+     [--manifest]             Path to transcend-functions.yml; defaults inside the target directory
+     [--variables]            Comma-separated variables to template into the manifest, such as API_KEY:value                                                                                                                                    [default = ""]
+     [--dryRun]               Preview changes without applying them                                                                                                                                                                             [default = false]
+     [--json]                 Emit stable JSON output and disable prompts                                                                                                                                                                       [default = false]
      [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                                            [default = true]
      [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                                              [default = false]
      [--skipTests]            Skip test runs entirely, pushing functions without executing their test-payload files. Tests also do not run on --dryRun (nothing is signed on dry runs).                                                         [default = false]
      [--updateManifest]       After pushing, write the assigned custom function IDs back into the manifest file so future pushes match by ID instead of by name. Comments and <<parameters.x>> placeholders are preserved.                      [default = false]
      [--sombraId]             Default Sombra gateway for functions whose manifest entry (or existing function) does not pin one. Each function is signed against the gateway it belongs to. Defaults to the primary Sombra of the organization.
   -h  --help                  Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
 ```
 
 #### Manifest file
+
+By default, `push` reads `transcend-functions.yml` from the `transcend/custom-functions` project directory. Pass another project directory positionally, or use `--manifest` to select a specific manifest file. Use `--json` in automation to emit one structured result containing the manifest path, per-function outcomes, and aggregate counts.
 
 The manifest maps custom function names to source files in your repository:
 
@@ -2788,7 +2794,7 @@ DSR functions have two entry points — the default export (`DATA_POINT`) and th
 
 #### Examples
 
-**Push all custom functions defined in ./transcend-functions.yml**
+**Push all custom functions defined in transcend/custom-functions/transcend-functions.yml**
 
 ```sh
 transcend custom-functions push --auth="$TRANSCEND_API_KEY"
@@ -2805,7 +2811,7 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
 ```sh
 transcend custom-functions push \
   --auth="$TRANSCEND_API_KEY" \
-  --file=./transcend/functions.yml \
+  --manifest=./transcend/functions.yml \
   --variables=CRM_API_KEY:example-secret-value
 ```
 
@@ -2849,7 +2855,7 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https
 
 ```txt
 USAGE
-  transcend custom-functions list (--auth value) [--transcendUrl value]
+  transcend custom-functions list (--auth value) [--transcendUrl value] [--json]
   transcend custom-functions list --help
 
 List all custom functions in the organization along with their lifecycle state, active version, and any pending draft version.
@@ -2857,8 +2863,11 @@ List all custom functions in the organization along with their lifecycle state, 
 FLAGS
       --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]          Emit stable JSON output and disable prompts                                                                                                                                                        [default = false]
   -h  --help           Print help information and exit
 ```
+
+Use `--json` in automation to emit safe structured metadata for every Custom Function. Signed code and context tokens are never included in the JSON output.
 
 ### `transcend inventory pull`
 
