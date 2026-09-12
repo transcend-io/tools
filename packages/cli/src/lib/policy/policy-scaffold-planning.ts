@@ -65,7 +65,7 @@ export interface PolicyInitPlanOptions {
  */
 export function buildPolicyLintCommand(state: PolicyProjectState): string {
   const directory = displayProjectPath(state.invocationDirectory, state.targetDirectory);
-  return `transcend policy lint --dir ${quoteShellArgument(directory)} --noInteractive`;
+  return `transcend policy lint ${quoteShellArgument(directory)} --noInteractive`;
 }
 
 /**

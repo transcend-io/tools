@@ -8,9 +8,11 @@ import {
 } from '../../../lib/cli/common-parameters.js';
 import { uuidParser } from '../../../lib/cli/parsers.js';
 import {
+  projectDryRunParameter,
+  projectJsonParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import {
   customFunctionDirectoryParameter,
-  customFunctionDryRunParameter,
-  customFunctionJsonParameter,
   customFunctionManifestParameter,
   customFunctionVariablesParameter,
 } from '../constants.js';
@@ -29,8 +31,8 @@ export const pushCommand = buildCommand({
       transcendUrl: createTranscendUrlParameter(),
       manifest: customFunctionManifestParameter,
       variables: customFunctionVariablesParameter,
-      dryRun: customFunctionDryRunParameter,
-      json: customFunctionJsonParameter,
+      dryRun: projectDryRunParameter,
+      json: projectJsonParameter,
       promote: {
         kind: 'boolean',
         brief:

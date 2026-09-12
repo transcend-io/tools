@@ -1,5 +1,7 @@
 import { buildCommand } from '@stricli/core';
 
+import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
 export const evalCommand = buildCommand({
   loader: async () => {
     const { _eval } = await import('./impl.js');
@@ -17,12 +19,10 @@ export const evalCommand = buildCommand({
         parse: String,
         brief: 'Path to a JSON envelope input file',
       },
-      bundle: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Optional local policy bundle directory',
-        optional: true,
-      },
+    },
+    positional: {
+      kind: 'tuple',
+      parameters: [policyDirectoryParameter],
     },
   },
   docs: {

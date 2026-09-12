@@ -1,11 +1,15 @@
-import path from 'node:path';
-
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
+import {
+  DEFAULT_POLICY_PROJECT_DIRECTORY,
+  resolvePolicyProjectDirectory,
+} from '../../../lib/policy/policy-project-discovery.js';
+import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
   buildPolicyBundleFormData,
@@ -22,8 +26,6 @@ import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } fr
 
 /** CLI flags for `transcend policy publish`. */
 export interface PublishCommandFlags {
-  /** Directory containing Rego policy files */
-  dir: string;
   /** Tenant-unique bundle name */
   'bundle-name': string;
   /** Transcend API key */
@@ -47,11 +49,11 @@ export interface PublishCommandFlags {
  *
  * @param this - CLI context
  * @param flags - Command flags
+ * @param directory - Policy project directory
  */
 export async function publish(
   this: LocalContext,
   {
-    dir,
     'bundle-name': bundleName,
     auth,
     'transcend-url': transcendUrl,
@@ -61,17 +63,24 @@ export async function publish(
     yes,
     debug = false,
   }: PublishCommandFlags,
+  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
 ): Promise<void> {
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
-  const resolvedDir = path.resolve(dir);
+  const commandLogger = selectCommandLogger(this.logger, json);
+  const resolvedDir = resolvePolicyProjectDirectory(this.process.cwd(), directory);
   const versionLabel = version ?? defaultPolicyVersionLabel(bundleName);
   const client = buildPolicyEngineClient(transcendUrl, auth);
+  const interactive = isInteractivePromptInvocation(
+    { json, noInteractive: false },
+    this.process.stdin.isTTY,
+    this.process.stderr.isTTY,
+  );
 
   let bundlePath: string | undefined;
   try {
-    this.logger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
+    commandLogger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
     bundlePath = await buildOpaBundleTarball(resolvedDir);
 
     const existingBundleId = await resolveBundleIdByName(client, bundleName);
@@ -79,7 +88,7 @@ export async function publish(
     let responseBody: CreatePolicyBundleResponse | CreatePolicyBundleVersionResponse;
 
     if (existingBundleId) {
-      this.logger.info(colors.green(`Uploading new version for bundle "${bundleName}"...`));
+      commandLogger.info(colors.green(`Uploading new version for bundle "${bundleName}"...`));
       const form = buildPolicyBundleFormData({
         bundlePath,
         version: versionLabel,
@@ -91,10 +100,10 @@ export async function publish(
           .json<CreatePolicyBundleVersionResponse>(),
       );
     } else {
-      if (!this.process.stdin.isTTY && !yes) {
+      if (!interactive && !yes) {
         this.logger.error(
           colors.red(
-            'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
+            'Cannot create a new bundle in non-interactive or JSON mode; pass --yes to confirm.',
           ),
         );
         this.process.exit(1);
@@ -102,19 +111,19 @@ export async function publish(
       }
 
       if (!yes) {
-        this.logger.warn(
+        commandLogger.warn(
           colors.yellow(`No policy bundle named "${bundleName}" exists for this organization.`),
         );
         const shouldCreate = await inquirerConfirmBoolean({
           message: `No policy bundle named "${bundleName}" exists. Create a new bundle and upload its first version?`,
         });
         if (!shouldCreate) {
-          this.logger.info(colors.yellow('Publish cancelled.'));
+          commandLogger.info(colors.yellow('Publish cancelled.'));
           return;
         }
       }
 
-      this.logger.info(
+      commandLogger.info(
         colors.green(`Creating bundle "${bundleName}" and uploading first version...`),
       );
       const createForm = buildPolicyBundleFormData({
@@ -138,13 +147,13 @@ export async function publish(
       renderTable: () => formatPolicyBundleVersionSummary(responseBody.version),
     });
 
-    this.logger.info(colors.green('Policy bundle version uploaded successfully.'));
+    commandLogger.info(colors.green('Policy bundle version uploaded successfully.'));
 
     const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
       version: responseBody.version.version,
       'bundle-name': bundleName,
     });
-    this.logger.info(
+    commandLogger.info(
       colors.yellow(
         `Publishing a policy does not activate it. To activate this version, run:\n  ${activateCommand}`,
       ),

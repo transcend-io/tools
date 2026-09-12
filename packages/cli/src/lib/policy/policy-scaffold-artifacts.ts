@@ -85,7 +85,7 @@ jobs:
           POLICY_DIRECTORY: ${JSON.stringify(options.targetDirectory)}
         run: >-
           transcend policy lint
-          --dir "$POLICY_DIRECTORY"
+          "$POLICY_DIRECTORY"
           --noInteractive
           --json
 `;

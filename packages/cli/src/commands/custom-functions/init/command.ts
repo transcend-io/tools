@@ -1,13 +1,12 @@
 import { buildCommand } from '@stricli/core';
 
 import {
-  customFunctionDirectoryParameter,
-  customFunctionDryRunParameter,
-  customFunctionJsonParameter,
-  customFunctionManifestParameter,
-  customFunctionNoInteractiveParameter,
-  customFunctionYesParameter,
-} from '../constants.js';
+  projectDryRunParameter,
+  projectJsonParameter,
+  projectNoInteractiveParameter,
+  projectYesParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import { customFunctionDirectoryParameter, customFunctionManifestParameter } from '../constants.js';
 
 /** Flags accepted when initializing Custom Function authoring. */
 const customFunctionInitFlagParameters = {
@@ -32,10 +31,10 @@ const customFunctionInitFlagParameters = {
     brief: 'Generate credential-free GitHub Actions checks',
     optional: true,
   },
-  noInteractive: customFunctionNoInteractiveParameter,
-  dryRun: customFunctionDryRunParameter,
-  yes: customFunctionYesParameter,
-  json: customFunctionJsonParameter,
+  noInteractive: projectNoInteractiveParameter,
+  dryRun: projectDryRunParameter,
+  yes: projectYesParameter,
+  json: projectJsonParameter,
 } as const;
 
 export const initCommand = buildCommand({

@@ -4147,12 +4147,12 @@ USAGE
 Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
+      --bundle-name       Tenant-unique policy bundle name
      [--version]          Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--dry-run]          Validate activation without flipping the active version                                                                                                                                            [default = false]
-     [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--dry-run]          Validate activation without flipping the active version                                                                                                                                             [default = false]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
 ```
@@ -4195,10 +4195,10 @@ USAGE
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
+      --bundle-name       Tenant-unique policy bundle name
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
 ```
@@ -4239,8 +4239,8 @@ FLAGS
      [--version]          Caller-supplied version label to download; defaults to the bundle's currently active version
      [--output]           Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--json]             Print version metadata and the presigned download URL as JSON without writing a file                                                                                                               [default = false]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]             Print version metadata and the presigned download URL as JSON without writing a file                                                                                                                [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
 ```
@@ -4289,16 +4289,18 @@ The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zi
 
 ```txt
 USAGE
-  transcend policy eval (--pkg value) (--input value) [--bundle value]
+  transcend policy eval (--pkg value) (--input value) [<directory>]
   transcend policy eval --help
 
 Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
-      --input    Path to a JSON envelope input file
-     [--bundle]  Optional local policy bundle directory
-  -h  --help     Print help information and exit
+     --pkg    OPA package or query to evaluate (e.g. data.transcend.decision)
+     --input  Path to a JSON envelope input file
+  -h --help   Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
 ```
 
 #### Examples
@@ -4306,7 +4308,13 @@ FLAGS
 **Evaluate a decision query with a local envelope**
 
 ```sh
-transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
+transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json
+```
+
+The default project is `transcend/policy`. Pass another project directory positionally:
+
+```sh
+transcend policy eval ./policies --pkg=data.transcend.decision --input=./fixtures/envelope.json
 ```
 
 ### `transcend policy init`
@@ -4323,9 +4331,9 @@ FLAGS
      [--skill/--noSkill]    Install the canonical Policy Engine coding-agent skill
      [--ci/--noCi]          Generate credential-free validation-only GitHub Actions
      [--noInteractive]      Disable prompts and enable optional setup only through explicit flags  [default = false]
-     [--dryRun]             Preview all changes without writing files                              [default = false]
+     [--dryRun]             Preview changes without applying them                                  [default = false]
      [--yes]                Skip only the final plan confirmation                                  [default = false]
-     [--json]               Emit one stable JSON result and imply non-interactive output           [default = false]
+     [--json]               Emit stable JSON output and disable prompts                            [default = false]
   -h  --help                Print help information and exit
 
 ARGUMENTS
@@ -4363,17 +4371,19 @@ Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and 
 
 ```txt
 USAGE
-  transcend policy lint [--dir value] [--fix] [--noInteractive] [--json]
+  transcend policy lint [--fix] [--noInteractive] [--json] [<directory>]
   transcend policy lint --help
 
 Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
 
 FLAGS
-     [--dir]            Directory containing the local policy project                  [default = transcend/policy]
-     [--fix]            Apply OPA formatting without running broad Regal fixes         [default = false]
-     [--noInteractive]  Disable the optional formatting confirmation                   [default = false]
-     [--json]           Emit one stable JSON result and imply non-interactive behavior [default = false]
+     [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation           [default = false]
+     [--json]           Emit stable JSON output and disable prompts            [default = false]
   -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
 ```
 
 #### Examples
@@ -4384,16 +4394,22 @@ FLAGS
 transcend policy lint
 ```
 
-**Verify and format a custom policy project**
+**Verify and format the default policy project**
 
 ```sh
-transcend policy lint --dir=./policies --fix
+transcend policy lint --fix
 ```
 
 **Run the verification gate in CI or an editor**
 
 ```sh
 transcend policy lint --noInteractive --json
+```
+
+To verify another project, pass its directory positionally:
+
+```sh
+transcend policy lint ./policies --fix
 ```
 
 ### `transcend policy bundles`
@@ -4407,10 +4423,10 @@ Lists policy bundles registered for the authenticated organization. Requires a T
 
 FLAGS
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]            Maximum number of bundles to return (1-100)                                                                                                                                                        [default = 50]
-     [--offset]           Number of records to skip before returning results                                                                                                                                                 [default = 0]
-     [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--limit]            Maximum number of bundles to return (1-100)                                                                                                                                                         [default = 50]
+     [--offset]           Number of records to skip before returning results                                                                                                                                                  [default = 0]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
 ```
@@ -4441,37 +4457,38 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug]
+  transcend policy publish (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] [<directory>]
   transcend policy publish --help
 
 Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
-      --dir               Directory containing manifest.json and Rego policy files
       --bundle-name       Tenant-unique policy bundle name
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
      [--version]          Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
      [--description]      Optional description for the uploaded version
-     [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
-     [--yes]              Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                             [default = false]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--yes]              Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                              [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
 ```
 
 #### Examples
 
-**Publish a local policy directory as the main bundle**
+**Publish the default local policy project as the main bundle**
 
 ```sh
-transcend policy publish --dir=./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish --bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Publish with an explicit version label and description**
 
 ```sh
 transcend policy publish \
-  --dir=./policies \
   --bundle-name=main \
   --auth="$TRANSCEND_API_KEY" \
   --version=2026-06-25 \
@@ -4481,17 +4498,19 @@ transcend policy publish \
 **Publish to the US-hosted Transcend API**
 
 ```sh
-transcend policy publish \
-  --dir=./policies \
-  --bundle-name=common \
-  --auth="$TRANSCEND_API_KEY" \
-  --transcend-url=https://api.us.transcend.io
+transcend policy publish --bundle-name=common --auth="$TRANSCEND_API_KEY" --transcend-url=https://api.us.transcend.io
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy publish --dir=./policies --bundle-name=main
+transcend policy publish --bundle-name=main
+```
+
+Pass another policy project directory positionally:
+
+```sh
+transcend policy publish ./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 Requires the **Manage Policy** scope on your API key.
@@ -4500,22 +4519,30 @@ Requires the **Manage Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy test (--dir value)
+  transcend policy test [<directory>]
   transcend policy test --help
 
 Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     --dir   Directory containing Rego policy files and tests
   -h --help  Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
 ```
 
 #### Examples
 
-**Run tests in a local policy directory**
+**Run tests in the default local policy project**
 
 ```sh
-transcend policy test --dir=./policies
+transcend policy test
+```
+
+**Run tests in another local policy project**
+
+```sh
+transcend policy test ./policies
 ```
 
 ### `transcend policy versions`
@@ -4530,10 +4557,10 @@ Resolves a bundle name to its UUID and lists uploaded versions. Requires a Trans
 FLAGS
       --bundle-name       Tenant-unique policy bundle name
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]            Maximum number of versions to return (1-100)                                                                                                                                                       [default = 50]
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--limit]            Maximum number of versions to return (1-100)                                                                                                                                                        [default = 50]
      [--after]            Opaque cursor from a previous response pageInfo.endCursor
-     [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
   -h  --help              Print help information and exit
 ```

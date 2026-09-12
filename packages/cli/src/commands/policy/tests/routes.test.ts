@@ -36,10 +36,55 @@ describe('policy routes', () => {
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Validates manifest roots and package coverage');
-    expect(output).toContain('--dir');
+    expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--fix');
     expect(output).toContain('--noInteractive');
     expect(output).toContain('--json');
+    expect(output).not.toContain('--dir');
   });
+
+  it.each(['test', 'eval', 'publish'])(
+    'uses the shared positional default project for policy %s',
+    async (command) => {
+      const context = buildContextForTest({
+        exitBehavior: 'record',
+        stdinIsTTY: false,
+      });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('[directory]');
+      expect(output).toContain('transcend/policy');
+      expect(output).not.toContain('--dir');
+      expect(output).not.toMatch(/--bundle(?:\s|=)/u);
+    },
+  );
+
+  it.each(['activate', 'bundles', 'deactivate', 'download', 'publish', 'versions'])(
+    'preserves the released backend URL flag for policy %s',
+    async (command) => {
+      const context = buildContextForTest({ exitBehavior: 'record' });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('--transcend-url');
+      expect(output).toContain('so --transcend-url may be omitted');
+      expect(output).not.toContain('so --transcendUrl may be omitted');
+    },
+  );
+
+  it.each(['activate', 'deactivate', 'download', 'publish', 'versions'])(
+    'preserves the released bundle name flag for policy %s',
+    async (command) => {
+      const context = buildContextForTest({ exitBehavior: 'record' });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('--bundle-name');
+    },
+  );
 });

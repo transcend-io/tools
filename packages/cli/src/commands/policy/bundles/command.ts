@@ -6,7 +6,10 @@ import {
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 import { parseLimitParam, parseOffsetParam } from '../helpers/index.js';
-import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
+import {
+  createPolicyDebugParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const bundlesCommand = buildCommand({
   loader: async () => {
@@ -18,7 +21,7 @@ export const bundlesCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       limit: {
         kind: 'parsed',
         parse: parseLimitParam,
@@ -31,11 +34,7 @@ export const bundlesCommand = buildCommand({
         brief: 'Number of records to skip before returning results',
         default: '0',
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      json: policyJsonParameter,
       debug: createPolicyDebugParameter(),
     },
   },

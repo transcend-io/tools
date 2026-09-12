@@ -43,8 +43,9 @@ import {
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
 import {
+  isInteractivePromptInvocation,
   PromptCancelledError,
-  type PromptChoice,
+  resolveSetupFeatures,
   ScaffoldPrompts,
 } from '../../../lib/scaffolding/prompts.js';
 
@@ -82,54 +83,6 @@ interface PolicyRuntimeProbe {
   tools: PolicyInitToolVersions;
   /** Missing or incompatible runtime guidance. */
   warnings: string[];
-}
-
-/**
- * Whether this invocation can ask questions.
- *
- * @param flags - Interaction flags
- * @param stdinIsTTY - Whether standard input is interactive
- * @param stderrIsTTY - Whether prompt output is interactive
- * @returns Whether prompts are enabled
- */
-function isInteractiveInvocation(
-  flags: Pick<PolicyInitFlags, 'json' | 'noInteractive'>,
-  stdinIsTTY: boolean | undefined,
-  stderrIsTTY: boolean | undefined,
-): boolean {
-  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
-}
-
-/**
- * Resolve setup from explicit flags or one default-selected checklist.
- *
- * @param prompts - Prompt adapters
- * @param flags - Setup flags
- * @param options - Interaction state
- * @returns Explicitly selected setup features
- */
-async function resolveFeatures(
-  prompts: ScaffoldPrompts,
-  flags: PolicyInitFlags,
-  options: {
-    /** Whether prompts are available. */
-    interactive: boolean;
-  },
-): Promise<PolicySetupFeatureType[]> {
-  const enabled: Readonly<Record<PolicySetupFeatureType, boolean | undefined>> = {
-    [PolicySetupFeature.Editor]: flags.editor,
-    [PolicySetupFeature.Skill]: flags.skill,
-    [PolicySetupFeature.Ci]: flags.ci,
-  };
-  if (!options.interactive) {
-    return ALL_SETUP_FEATURES.filter((feature) => enabled[feature] === true);
-  }
-  const choices: PromptChoice<PolicySetupFeatureType>[] = ALL_SETUP_FEATURES.map((feature) => ({
-    name: SETUP_LABELS[feature],
-    value: feature,
-    checked: enabled[feature] !== false,
-  }));
-  return prompts.checkbox('Choose repository setup:', choices);
 }
 
 /**
@@ -223,12 +176,21 @@ export async function init(
     const runtime = await probePolicyRuntimes(this, this.process.cwd(), runner);
     const state = discoverPolicyProject(this, directory);
     const prompts = new ScaffoldPrompts(this);
-    const interactive = isInteractiveInvocation(
+    const interactive = isInteractivePromptInvocation(
       flags,
       this.process.stdin.isTTY,
       this.process.stderr.isTTY,
     );
-    const features = await resolveFeatures(prompts, flags, { interactive });
+    const features = await resolveSetupFeatures(prompts, {
+      features: ALL_SETUP_FEATURES,
+      labels: SETUP_LABELS,
+      enabled: {
+        [PolicySetupFeature.Editor]: flags.editor,
+        [PolicySetupFeature.Skill]: flags.skill,
+        [PolicySetupFeature.Ci]: flags.ci,
+      },
+      interactive,
+    });
     const candidatePaths = getPolicyInitPlanningCandidatePaths(state, { features });
     const snapshots = collectPlanningSnapshots(this, state.projectRoot, candidatePaths);
 

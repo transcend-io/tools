@@ -64,11 +64,11 @@ test_allow if {
     await lint.call(
       context,
       {
-        dir: directory,
         fix: true,
         noInteractive: true,
         json: true,
       },
+      directory,
       runCapturedProcess,
     );
 

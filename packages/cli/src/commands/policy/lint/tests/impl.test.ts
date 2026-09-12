@@ -93,16 +93,11 @@ function buildRunner(
 /**
  * Build complete policy lint flags.
  *
- * @param directory - Policy directory
  * @param overrides - Flag overrides
  * @returns Complete flags
  */
-function buildFlags(
-  directory: string,
-  overrides: Partial<LintCommandFlags> = {},
-): LintCommandFlags {
+function buildFlags(overrides: Partial<LintCommandFlags> = {}): LintCommandFlags {
   return {
-    dir: directory,
     fix: false,
     noInteractive: true,
     json: true,
@@ -150,7 +145,7 @@ describe('policy lint', () => {
     const context = buildContextForTest({ cwd: tmpdir(), stdinIsTTY: false });
     const { runner, invocations } = buildRunner();
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     const result = JSON.parse(context.stdout);
     expect(result).toEqual({
@@ -194,7 +189,7 @@ describe('policy lint', () => {
     expect(context.process.exitCode).not.toBe(1);
   });
 
-  it('resolves a custom relative --dir from the invocation directory', async () => {
+  it('resolves a custom relative directory from the invocation directory', async () => {
     const directory = createPolicyProject();
     const context = buildContextForTest({
       cwd: dirname(directory),
@@ -202,7 +197,7 @@ describe('policy lint', () => {
     });
     const { runner } = buildRunner();
 
-    await lint.call(context, buildFlags(join('.', basename(directory))), runner);
+    await lint.call(context, buildFlags(), join('.', basename(directory)), runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'passed',
@@ -212,7 +207,7 @@ describe('policy lint', () => {
 
   it('fails formatting without prompting in JSON/noInteractive mode', async () => {
     const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: true });
+    const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: true });
     const { runner, invocations } = buildRunner({
       'opa fmt --list': {
         code: 0,
@@ -221,7 +216,7 @@ describe('policy lint', () => {
       },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
@@ -251,7 +246,7 @@ describe('policy lint', () => {
       },
     });
 
-    await lint.call(context, buildFlags(directory, { fix: true }), runner);
+    await lint.call(context, buildFlags({ fix: true }), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'passed',
@@ -271,7 +266,7 @@ describe('policy lint', () => {
 
   it('preserves interactive formatting with a diff and confirmation', async () => {
     const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: true });
+    const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: true });
     const { runner } = buildRunner({
       'opa fmt --list': {
         code: 0,
@@ -286,7 +281,7 @@ describe('policy lint', () => {
     });
     inquirerConfirmBooleanMock.mockResolvedValueOnce(true);
 
-    await lint.call(context, buildFlags(directory, { json: false, noInteractive: false }), runner);
+    await lint.call(context, buildFlags({ json: false, noInteractive: false }), directory, runner);
 
     expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
       message: 'Format the unformatted policy files listed above?',
@@ -295,6 +290,23 @@ describe('policy lint', () => {
     expect(context.stdout).toContain('PASS OPA formatting');
     expect(context.stderr).toContain('policy.rego');
     expect(context.stderr).toContain('formatted diff');
+  });
+
+  it('does not prompt when stderr is not interactive', async () => {
+    const directory = createPolicyProject();
+    const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: false });
+    const { runner } = buildRunner({
+      'opa fmt --list': {
+        code: 0,
+        stdout: `${join(directory, 'policy.rego')}\n`,
+        stderr: '',
+      },
+    });
+
+    await lint.call(context, buildFlags({ json: false, noInteractive: false }), directory, runner);
+
+    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+    expect(context.process.exitCode).toBe(1);
   });
 
   it('reports missing OPA and an incompatible Regal version with official guidance', async () => {
@@ -306,7 +318,7 @@ describe('policy lint', () => {
       'regal version': { code: 0, stdout: 'Version: 0.29.2\n', stderr: '' },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     const result = JSON.parse(context.stdout);
     expect(result).toMatchObject({
@@ -345,7 +357,7 @@ describe('policy lint', () => {
       'regal version': { code: 1, stdout: '', stderr: '', error: missingError },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     const result = JSON.parse(context.stdout);
     expect(result.diagnostics).toEqual([
@@ -370,7 +382,7 @@ describe('policy lint', () => {
     const context = buildContextForTest({ stdinIsTTY: false });
     const { runner } = buildRunner();
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
@@ -393,7 +405,7 @@ describe('policy lint', () => {
       'opa test': { code: 2, stdout: '', stderr: 'no tests were run' },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
@@ -418,7 +430,7 @@ describe('policy lint', () => {
       },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
@@ -442,7 +454,7 @@ describe('policy lint', () => {
       },
     });
 
-    await lint.call(context, buildFlags(directory), runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
