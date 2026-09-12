@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.27.0
+
+### Minor Changes
+
+- 76c05da: Add RequestDataSiloStatus.TranscendRateLimited (TRANSCEND_RATE_LIMITED) and RequestDataSiloStatus.VendorRateLimited (VENDOR_RATE_LIMITED) for DSR jobs deferred by Transcend's data silo rate limiter vs. rejected by the vendor's own rate limit (429 / API credits / quota).
+
 ## 5.26.0
 
 ### Minor Changes
