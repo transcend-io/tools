@@ -153,10 +153,6 @@ export enum ActionItemCode {
    */
   RequestAssignedToUser = 'REQUEST_ASSIGNED_TO_USER',
   /**
-   * business entity needing documentation
-   */
-  BusinessEntityNeedsDocumentation = 'BUSINESS_ENTITY_NEEDS_DOCUMENTATION',
-  /**
    * A database datapoint has queries that need approval
    */
   DataPointDatabaseQueryNeedsApproval = 'DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL',
