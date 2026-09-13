@@ -1,5 +1,25 @@
 # @transcend-io/cli
 
+## 11.0.0
+
+### Major Changes
+
+- 3bc8980: Remove the unused `BusinessEntityNeedsDocumentation` / `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` action item code. The product feature was already disabled and is being deleted; configs that still reference this value should drop it.
+
+  **Migration:** Remove any `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` entries from `transcend.yml` action-item configuration before upgrading.
+
+### Patch Changes
+
+- 8695da7: Add `ConsentSiteTelemetryStale` to the `ActionItemCode` enum so Consent Manager sites with stale telemetry can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+- 1f35e6f: Inventory pull for multi-Sombra organizations fetches `sombra-id` from the bulk data silos query instead of one extra request per silo.
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+- Updated dependencies [1f35e6f]
+  - @transcend-io/privacy-types@6.0.0
+  - @transcend-io/sdk@2.1.10
+  - @transcend-io/airgap.js-types@14.2.43
+  - @transcend-io/custom-function-types@0.2.0
+
 ## 10.29.3
 
 ### Patch Changes
