@@ -53,6 +53,7 @@
                   "COOKIE_NEEDS_REVIEW",
                   "COOKIE_ASSIGNED_FOR_REVIEW",
                   "CONSENT_MANAGER_VERSION_UPGRADE",
+                  "CONSENT_SITE_TELEMETRY_STALE",
                   "PLUGINS_WITH_ERRORS",
                   "ONBOARDING",
                   "REQUEST_ASSIGNED_TO_USER",
