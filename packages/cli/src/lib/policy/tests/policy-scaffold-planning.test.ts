@@ -9,7 +9,11 @@ import {
   buildPolicyLintCommand,
   getPolicyInitPlanningCandidatePaths,
 } from '../policy-scaffold-planning.js';
-import { generatePolicyStarterFiles } from '../policy-scaffold-templates.js';
+import {
+  generatePolicyStarterFiles,
+  POLICY_ENGINE_ROOT,
+  POLICY_STARTER_EXAMPLE_DIRECTORY,
+} from '../policy-scaffold-templates.js';
 
 /** Stable no-integration planner options. */
 const CORE_OPTIONS = { features: [], cliVersion: '10.27.4' } as const;
@@ -113,7 +117,7 @@ describe('buildPolicyInitPlan', () => {
     ).toBe(true);
     expect(first.nextSteps[0]).toBe("transcend policy lint 'transcend/policy' --noInteractive");
     expect(first.disposableExamplePath).toBe(
-      '/repo/transcend/policy/policy_engine/example/result.rego',
+      `/repo/transcend/policy/${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`,
     );
   });
 
@@ -124,7 +128,7 @@ describe('buildPolicyInitPlan', () => {
     // Then: It creates every starter file without deleting the empty directories.
     const state = {
       ...buildState('/repo'),
-      relativePaths: ['.regal', 'policy_engine', 'policy_engine/example'],
+      relativePaths: ['.regal', POLICY_ENGINE_ROOT, POLICY_STARTER_EXAMPLE_DIRECTORY],
     };
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
 

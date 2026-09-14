@@ -18,7 +18,11 @@ import type {
 } from '../../../../lib/cli/run-captured-process.js';
 import { OPA_INSTALL_URL, REGAL_INSTALL_URL } from '../../../../lib/policy/policy-runtime.js';
 import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model.js';
-import { generatePolicyStarterFiles } from '../../../../lib/policy/policy-scaffold-templates.js';
+import {
+  generatePolicyStarterFiles,
+  POLICY_ENGINE_ROOT,
+  POLICY_STARTER_EXAMPLE_DIRECTORY,
+} from '../../../../lib/policy/policy-scaffold-templates.js';
 import { POLICY_SKILL_NAME } from '../../../../lib/policy/policy-skill.js';
 import { PromptCancelledError, ScaffoldPrompts } from '../../../../lib/scaffolding/prompts.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
@@ -119,7 +123,7 @@ describe('policy init', () => {
       warnings: [],
       nextSteps: [
         "transcend policy lint 'transcend/policy' --noInteractive",
-        "Edit 'transcend/policy/policy_engine/example/result.rego'",
+        `Edit 'transcend/policy/${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego'`,
       ],
       features: [],
       aiHandoff: expect.stringContaining('policy document tree'),
@@ -142,7 +146,7 @@ describe('policy init', () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'transcend', 'policy');
     mkdirSync(join(target, '.regal'), { recursive: true });
-    mkdirSync(join(target, 'policy_engine', 'example'), { recursive: true });
+    mkdirSync(join(target, POLICY_ENGINE_ROOT, 'example'), { recursive: true });
     const context = buildContextForTest({
       cwd: root,
       env: { HOME: root },
@@ -159,7 +163,7 @@ describe('policy init', () => {
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
-          target: 'transcend/policy/policy_engine/example/result.rego',
+          target: `transcend/policy/${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`,
         }),
       ]),
     });
@@ -390,7 +394,7 @@ describe('policy init', () => {
     existing.forEach((contents, path) => {
       expect(readFileSync(path, 'utf8')).toBe(contents);
     });
-    expect(existsSync(join(target, 'policy_engine'))).toBe(false);
+    expect(existsSync(join(target, POLICY_ENGINE_ROOT))).toBe(false);
     const result = JSON.parse(context.stdout);
     expect(result.applied).toBe(false);
     expect(result.changes).toEqual([]);
@@ -405,7 +409,7 @@ describe('policy init', () => {
     expect(result.nextSteps).toEqual(["transcend policy lint 'policy' --noInteractive"]);
     expect(result.aiHandoff).toContain("Review the existing policy project in 'policy'");
     expect(result.aiHandoff).not.toContain('disposable example');
-    expect(result.aiHandoff).not.toContain('policy_engine/example/result.rego');
+    expect(result.aiHandoff).not.toContain(`${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`);
   });
 
   it('preserves customized editor, skill, and workflow artifacts on rerun', async () => {
@@ -470,7 +474,9 @@ describe('policy init', () => {
     expect(context.stdout).toContain('Policy project initialized.');
     const lines = context.stdout.split('\n');
     expect(lines).toContain("transcend policy lint 'transcend/policy' --noInteractive");
-    expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
+    expect(lines).toContain(
+      `Edit 'transcend/policy/${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego'`,
+    );
     const handoffHeading = lines.findIndex((line) =>
       line.includes('AI handoff — paste into your coding agent'),
     );

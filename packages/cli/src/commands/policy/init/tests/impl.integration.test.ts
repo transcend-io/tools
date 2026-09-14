@@ -16,7 +16,11 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
 import { POLICY_STARTER_REGAL_VERSION } from '../../../../lib/policy/policy-scaffold-artifacts.js';
 import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model.js';
-import { POLICY_STARTER_OPA_VERSION } from '../../../../lib/policy/policy-scaffold-templates.js';
+import {
+  POLICY_ENGINE_ROOT,
+  POLICY_STARTER_EXAMPLE_DIRECTORY,
+  POLICY_STARTER_OPA_VERSION,
+} from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { buildOpaBundleTarball } from '../../helpers/buildOpaBundleTarball.js';
 import { lint } from '../../lint/impl.js';
@@ -111,8 +115,10 @@ describe('policy init with pinned OPA and Regal', () => {
     expect(list.status, list.stderr).toBe(0);
     expect(list.stdout.trim().split('\n').sort()).toEqual([
       'manifest.json',
-      'policy_engine/example/result.rego',
+      `${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`,
     ]);
-    expect(readFileSync(join(policyDirectory, '.manifest'), 'utf8')).toContain('"policy_engine"');
+    expect(readFileSync(join(policyDirectory, '.manifest'), 'utf8')).toContain(
+      `"${POLICY_ENGINE_ROOT}"`,
+    );
   }, 60_000);
 });

@@ -1,4 +1,4 @@
-import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
+import { POLICY_ENGINE_ROOT, POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
 import { findDirectDataReferences, parseRegoPackageReference } from './rego-reference.js';
 
 /** Shape of the policy bundle `.manifest` accepted by Policy Engine. */
@@ -63,7 +63,7 @@ export function parsePolicyBundleManifest(contents: string | undefined): PolicyB
   const roots = (parsed as { roots?: unknown }).roots;
   if (!Array.isArray(roots) || roots.length === 0) {
     throw new Error(
-      `${POLICY_MANIFEST_FILENAME} must declare "roots" as a non-empty array of strings (e.g. {"roots":["policy_engine"]}).`,
+      `${POLICY_MANIFEST_FILENAME} must declare "roots" as a non-empty array of strings (e.g. {"roots":["${POLICY_ENGINE_ROOT}"]}).`,
     );
   }
   if (!roots.every((root) => typeof root === 'string' && root.length > 0)) {

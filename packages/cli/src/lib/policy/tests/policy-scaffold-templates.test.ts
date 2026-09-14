@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
   generatePolicyStarterFiles,
+  POLICY_ENGINE_ROOT,
   POLICY_GITIGNORE_TEMPLATE,
   POLICY_INPUT_EXAMPLE_TEMPLATE,
   POLICY_MANIFEST_TEMPLATE,
@@ -11,6 +12,7 @@ import {
   POLICY_REGAL_CONFIG_TEMPLATE,
   POLICY_RESULT_REGO_TEMPLATE,
   POLICY_RESULT_TEST_REGO_TEMPLATE,
+  POLICY_STARTER_EXAMPLE_DIRECTORY,
   POLICY_STARTER_OPA_VERSION,
 } from '../policy-scaffold-templates.js';
 
@@ -23,8 +25,8 @@ describe('policy starter templates', () => {
     expect(first.map(({ path }) => path)).toEqual([
       '.manifest',
       '.regal/config.yaml',
-      'policy_engine/example/result.rego',
-      'policy_engine/example/result_test.rego',
+      `${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`,
+      `${POLICY_STARTER_EXAMPLE_DIRECTORY}/result_test.rego`,
       'input.example.json',
       '.gitignore',
       'README.md',
@@ -56,23 +58,23 @@ describe('policy starter templates', () => {
     expect(JSON.parse(POLICY_MANIFEST_TEMPLATE)).toEqual({
       $schema: 'https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json',
       revision: '',
-      roots: ['policy_engine'],
+      roots: [POLICY_ENGINE_ROOT],
       rego_version: 1,
     });
     expect(
       validatePolicyBundleContents(POLICY_MANIFEST_TEMPLATE, [
         {
-          path: 'policy_engine/example/result.rego',
+          path: `${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`,
           contents: POLICY_RESULT_REGO_TEMPLATE,
         },
         {
-          path: 'policy_engine/example/result_test.rego',
+          path: `${POLICY_STARTER_EXAMPLE_DIRECTORY}/result_test.rego`,
           contents: POLICY_RESULT_TEST_REGO_TEMPLATE,
         },
       ]),
     ).toEqual({
-      manifest: { roots: ['policy_engine'] },
-      publishableRegoPaths: ['policy_engine/example/result.rego'],
+      manifest: { roots: [POLICY_ENGINE_ROOT] },
+      publishableRegoPaths: [`${POLICY_STARTER_EXAMPLE_DIRECTORY}/result.rego`],
     });
   });
 
@@ -84,7 +86,9 @@ describe('policy starter templates', () => {
     expect(POLICY_RESULT_REGO_TEMPLATE).toContain('"reason_code"');
     expect(POLICY_RESULT_REGO_TEMPLATE).not.toContain('myelin');
     expect(POLICY_RESULT_REGO_TEMPLATE).not.toContain('runtime');
-    expect(POLICY_RESULT_TEST_REGO_TEMPLATE).toContain('package policy_engine.example_test');
+    expect(POLICY_RESULT_TEST_REGO_TEMPLATE).toContain(
+      `package ${POLICY_ENGINE_ROOT}.example_test`,
+    );
     expect(POLICY_RESULT_TEST_REGO_TEMPLATE.match(/^test_/gmu)).toHaveLength(3);
   });
 

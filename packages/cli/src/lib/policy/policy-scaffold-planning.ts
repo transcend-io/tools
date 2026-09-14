@@ -30,7 +30,11 @@ import {
   type PolicyProjectState,
   type PolicySetupFeature as PolicySetupFeatureType,
 } from './policy-scaffold-model.js';
-import { generatePolicyStarterFiles, type PolicyStarterFile } from './policy-scaffold-templates.js';
+import {
+  generatePolicyStarterFiles,
+  POLICY_ENGINE_ROOT,
+  type PolicyStarterFile,
+} from './policy-scaffold-templates.js';
 import { POLICY_SKILL_FILES, POLICY_SKILL_NAME } from './policy-skill.js';
 
 /** Managed Policy Engine Agent Skill definition. */
@@ -213,7 +217,7 @@ export function buildPolicyInitPlan(
   const files = generatePolicyStarterFiles();
   const manifestPath = getPolicyManifestPath(state);
   const lintCommand = buildPolicyLintCommand(state);
-  const resultPath = join(state.targetDirectory, 'policy_engine', 'example', 'result.rego');
+  const resultPath = join(state.targetDirectory, POLICY_ENGINE_ROOT, 'example', 'result.rego');
   const plan: PolicyInitProjectPlan = {
     version: POLICY_INIT_RESULT_VERSION,
     command: 'init',
