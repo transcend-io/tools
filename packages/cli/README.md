@@ -30,6 +30,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend request preflight push-identifiers`](#transcend-request-preflight-push-identifiers)
   - [`transcend request cron pull-identifiers`](#transcend-request-cron-pull-identifiers)
   - [`transcend request cron mark-identifiers-completed`](#transcend-request-cron-mark-identifiers-completed)
+  - [`transcend drop upload`](#transcend-drop-upload)
   - [`transcend consent build-xdi-sync-endpoint`](#transcend-consent-build-xdi-sync-endpoint)
   - [`transcend consent generate-access-tokens`](#transcend-consent-generate-access-tokens)
   - [`transcend consent pull-consent-metrics`](#transcend-consent-pull-consent-metrics)
@@ -1693,6 +1694,30 @@ transcend request cron mark-identifiers-completed \
   --auth="$TRANSCEND_API_KEY" \
   --dataSiloId=70810f2e-cf90-43f6-9776-901a5950599f \
   --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend drop upload`
+
+```txt
+USAGE
+  transcend drop upload (--auth value) [--file value] (--dropRunId value) [--transcendUrl value] [--sombraAuth value] [--batchSize value] [--dryRun]
+  transcend drop upload --help
+
+Upload a California DROP File 2 (matched records) as erasure DSRs against a DROP run.
+
+File 2 has one row per matched (drop_record_id, drop_list_type). Rows sharing a person_key are collapsed into a single erasure request that carries all of that person's DROP record ids, so one person produces one workflow run (never one per matched record). Each request is anchored to --dropRunId so Transcend can report the resolution of every record back to CalPrivacy.
+
+status_override rows (records that report a CPPA status directly without a deletion) are skipped by this command and should be reconciled in the DROP dashboard.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Submit New Data Subject Request"
+     [--file]          Path to the DROP File 2 CSV of matched records to upload                                                                                                                                           [default = ./file2.csv]
+      --dropRunId      The DROP run id these matched records belong to (find it via `GET /drop/api/v1/runs` or the DROP dashboard). Every created DSR is anchored to this run for report-back.
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--sombraAuth]    The Sombra internal key, use for additional authentication when self-hosting Sombra
+     [--batchSize]     Number of grouped DSRs to submit per bulk request                                                                                                                                                  [default = 100]
+     [--dryRun]        When true, parse and group File 2 and print what would be submitted, without calling the API                                                                                                       [default = false]
+  -h  --help           Print help information and exit
 ```
 
 ### `transcend consent build-xdi-sync-endpoint`
