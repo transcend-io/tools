@@ -1,10 +1,7 @@
 import { Tabs } from '@transcend-io/mcp-ui-common';
 import { memo, useMemo } from 'react';
 
-import {
-  getPurposeLabel,
-  isCookieTriagePurposeCategory,
-} from '../../lib/resolvePrimaryCookiePurpose.ts';
+import { isCookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { useCookieTriageActions, useCookieTriageChrome } from './CookieTriageContext.tsx';
 
 /** Purpose category tabs with count badges and an active underline. */
@@ -18,7 +15,7 @@ export const PurposeTabs = memo(function PurposeTabs() {
         const tab = tabs.find((candidate) => candidate.id === purpose);
         return {
           id: purpose,
-          label: getPurposeLabel(purpose),
+          label: purpose,
           count: tab?.totalCount ?? 0,
           countBusy: tab?.countBusy === true,
         };
