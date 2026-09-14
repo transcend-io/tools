@@ -5,10 +5,8 @@ const examples = buildExamples<TestCommandFlags>(
   ['policy', 'test'],
   [
     {
-      description: 'Run tests in a local policy directory',
-      flags: {
-        dir: './policies',
-      },
+      description: 'Run tests in the default local policy project',
+      flags: {},
     },
   ],
 );
@@ -16,4 +14,10 @@ const examples = buildExamples<TestCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+**Run tests in another local policy project**
+
+\`\`\`sh
+transcend policy test ./policies
+\`\`\`
 `;

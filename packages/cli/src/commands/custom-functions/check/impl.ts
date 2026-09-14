@@ -6,7 +6,11 @@ import { formatMissingManifestMessage } from '../../../lib/custom-functions/miss
 import { resolveCustomFunctionProjectPaths } from '../../../lib/custom-functions/paths.js';
 import { discoverCustomFunctionManifests } from '../../../lib/custom-functions/project-discovery.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
-import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
+import {
+  isInteractivePromptInvocation,
+  PromptCancelledError,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 import { runCustomFunctionChecks } from './helpers.js';
 
 /** CLI flags for `transcend custom-functions check`. */
@@ -48,10 +52,11 @@ export async function check(
         discoveredManifestPaths: discoverCustomFunctionManifests(this, this.process.cwd()),
         command: 'check',
       });
-  const interactive =
-    !flags.json &&
-    !flags.noInteractive &&
-    Boolean(this.process.stdin.isTTY && this.process.stderr.isTTY);
+  const interactive = isInteractivePromptInvocation(
+    flags,
+    this.process.stdin.isTTY,
+    this.process.stderr.isTTY,
+  );
   const prompts = new ScaffoldPrompts(this);
   try {
     const result = await runCustomFunctionChecks(this, {

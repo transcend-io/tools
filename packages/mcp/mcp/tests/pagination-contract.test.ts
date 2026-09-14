@@ -15,8 +15,17 @@ const TEST_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-key' };
  * `preferences_query` pages a REST endpoint that caps a page at 50 rather than
  * the 100 every GraphQL list field allows, so it keeps the shared `limit` and
  * `cursor` names but not the shared bound.
+ *
+ * `consent_list_roc_records` mirrors a REST endpoint whose `limit` is a
+ * truncate (1–200, omit for full timeline) with no offset/cursor.
  */
-const NON_STANDARD_LIMIT_BOUND = new Set(['preferences_query']);
+const NON_STANDARD_LIMIT_BOUND = new Set(['preferences_query', 'consent_list_roc_records']);
+
+/**
+ * Tools whose upstream API exposes `limit` as a single-shot cap, not a page
+ * size with a continuation token.
+ */
+const LIMIT_WITHOUT_CONTINUATION = new Set(['consent_list_roc_records']);
 
 interface JsonSchema {
   properties?: Record<string, { type?: string; minimum?: number; maximum?: number }>;
@@ -54,6 +63,7 @@ describe('pagination contract', () => {
 
   it('pairs `limit` with a continuation parameter so every page is reachable', () => {
     const stranded = paginatedTools()
+      .filter(({ name }) => !LIMIT_WITHOUT_CONTINUATION.has(name))
       .filter(({ properties }) => !('offset' in properties) && !('cursor' in properties))
       .map(({ name }) => name);
 

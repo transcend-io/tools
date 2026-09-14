@@ -6,9 +6,24 @@ import {
   discoverProjectRepository,
 } from '../scaffolding/project-discovery.js';
 import type { PolicyProjectState } from './policy-scaffold-model.js';
+import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
 
 /** Default local policy project directory. */
 export const DEFAULT_POLICY_PROJECT_DIRECTORY = 'transcend/policy';
+
+/**
+ * Resolve a selected policy project relative to the invocation directory.
+ *
+ * @param invocationDirectory - CLI working directory
+ * @param directory - User-selected project directory
+ * @returns Absolute policy project directory
+ */
+export function resolvePolicyProjectDirectory(
+  invocationDirectory: string,
+  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
+): string {
+  return resolve(invocationDirectory, directory);
+}
 
 /**
  * Collect repository state required by the pure policy planner.
@@ -22,7 +37,7 @@ export function discoverPolicyProject(
   directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
 ): PolicyProjectState {
   const invocationDirectory = context.process.cwd();
-  const targetDirectory = resolve(invocationDirectory, directory);
+  const targetDirectory = resolvePolicyProjectDirectory(invocationDirectory, directory);
   if (
     context.fs.existsSync(targetDirectory) &&
     !context.fs.statSync(targetDirectory).isDirectory()
@@ -52,5 +67,5 @@ export function discoverPolicyProject(
  * @returns Absolute manifest path
  */
 export function getPolicyManifestPath(state: PolicyProjectState): string {
-  return join(state.targetDirectory, 'manifest.json');
+  return join(state.targetDirectory, POLICY_MANIFEST_FILENAME);
 }

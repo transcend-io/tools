@@ -1,6 +1,7 @@
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
@@ -42,8 +43,9 @@ export async function bundles(
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
+  const commandLogger = selectCommandLogger(this.logger, json);
 
-  this.logger.info(colors.green('Listing policy bundles...'));
+  commandLogger.info(colors.green('Listing policy bundles...'));
 
   const body = await policyEngineRequest(
     client

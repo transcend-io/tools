@@ -3,7 +3,7 @@ import { dirname, relative } from 'node:path';
 import { quoteShellArgument } from '../scaffolding/project-plan-output.js';
 
 /** Command that can be redirected to a discovered Custom Function project. */
-export type ManifestConsumerCommand = 'check' | 'new' | 'run';
+export type ManifestConsumerCommand = 'check' | 'new' | 'push' | 'run';
 
 /**
  * Format actionable guidance when a requested Custom Function manifest is absent.
