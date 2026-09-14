@@ -55,6 +55,15 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.MissingRequiredEmail]()).toBe(
       'At least one email must be provided before a request can be created when not in silent mode',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.InvalidRequestInput]()).toBe(
+      'Request input failed validation',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.InvalidIdentifierJwt]()).toBe(
+      'Signed identifier JWT failed verification',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DraftWorkflowConfig]()).toBe(
+      'Workflow is saved as a draft and cannot be used to submit requests.',
+    );
   });
 
   it('renders parameterized per-request messages', () => {
