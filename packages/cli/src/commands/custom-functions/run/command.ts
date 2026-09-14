@@ -1,5 +1,12 @@
 import { buildCommand } from '@stricli/core';
 
+import {
+  customFunctionDirectoryParameter,
+  customFunctionManifestParameter,
+  customFunctionNoInteractiveParameter,
+  customFunctionVariablesParameter,
+} from '../constants.js';
+
 export const runCommand = buildCommand({
   loader: async () => {
     const { run } = await import('./impl.js');
@@ -7,29 +14,15 @@ export const runCommand = buildCommand({
   },
   parameters: {
     flags: {
-      manifest: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Path to transcend-functions.yml; defaults inside the target directory',
-        optional: true,
-      },
+      manifest: customFunctionManifestParameter,
       function: {
         kind: 'parsed',
         parse: String,
         brief: 'Exact Custom Function name or ID; prompts when omitted',
         optional: true,
       },
-      variables: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Comma-separated manifest variables such as API_KEY:value',
-        default: '',
-      },
-      noInteractive: {
-        kind: 'boolean',
-        brief: 'Disable function selection prompts',
-        default: false,
-      },
+      variables: customFunctionVariablesParameter,
+      noInteractive: customFunctionNoInteractiveParameter,
       allowNetwork: {
         kind: 'boolean',
         brief: 'Permit real native fetch calls to manifest allowed-hosts',
@@ -38,15 +31,7 @@ export const runCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [
-        {
-          brief: 'Custom Function project directory',
-          placeholder: 'directory',
-          parse: String,
-          optional: true,
-          default: 'transcend/custom-functions',
-        },
-      ],
+      parameters: [customFunctionDirectoryParameter],
     },
   },
   docs: {
