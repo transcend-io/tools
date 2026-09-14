@@ -1,6 +1,6 @@
 ---
 name: transcend-policy-engine
-description: Sets up, authors, validates, tests, and publishes Transcend Policy Engine projects backed by OPA and Rego. Use for manifest.json roots, Rego v1 policy trees, Regal configuration, local policy inputs, Policy Engine CI, or transcend policy CLI commands.
+description: Sets up, authors, validates, tests, and publishes Transcend Policy Engine projects backed by OPA and Rego. Use for .manifest roots, Rego v1 policy trees, Regal configuration, local policy inputs, Policy Engine CI, or transcend policy CLI commands.
 compatibility: Requires OPA 1.x and Regal for local validation, plus the Transcend CLI.
 ---
 
@@ -10,12 +10,12 @@ Use the CLI for deterministic scaffolding and validation. Treat the generated ex
 
 ## Workflow
 
-1. Locate the policy directory and its `manifest.json`.
+1. Locate the policy directory and its `.manifest`.
 2. For initialization, editor support, tools, or CI, read [references/setup-tooling.md](references/setup-tooling.md).
 3. For package layout, document-tree design, decisions, and inputs, read [references/authoring.md](references/authoring.md).
 4. For tests, local inputs, linting, and evaluation, read [references/testing-debugging.md](references/testing-debugging.md).
 5. For bundle validation and publishing, read [references/publishing.md](references/publishing.md).
-6. Preserve repository conventions and run `transcend policy lint --dir <policy-directory> --noInteractive` before finishing.
+6. Preserve repository conventions and run `transcend policy lint <policy-directory> --noInteractive` before finishing.
 
 ## Documentation
 
@@ -28,4 +28,4 @@ Use the CLI for deterministic scaffolding and validation. Treat the generated ex
 - Do not invent an input shape, output contract, package tree, or deployment convention.
 - Keep decisions fail-closed and make result documents extensible.
 - Never commit credentials or a real local `input.json`.
-- Keep every publishable Rego package covered by a `manifest.json` root.
+- Keep every publishable Rego package covered by a `.manifest` root.

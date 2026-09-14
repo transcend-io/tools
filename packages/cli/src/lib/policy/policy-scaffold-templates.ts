@@ -11,9 +11,18 @@ export interface PolicyStarterFile {
   description: string;
 }
 
-/** Publishable Policy Engine bundle manifest. */
+/** OPA bundle manifest filename used for local authoring. */
+export const POLICY_MANIFEST_FILENAME = '.manifest';
+
+/** Upload archive entry name expected by the Policy Engine API. */
+export const POLICY_UPLOAD_MANIFEST_FILENAME = 'manifest.json';
+
+/** OPA bundle manifest for local authoring and Policy Engine publish. */
 export const POLICY_MANIFEST_TEMPLATE = `{
-  "roots": ["policy_engine"]
+  "$schema": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json",
+  "revision": "",
+  "roots": ["policy_engine"],
+  "rego_version": 1
 }
 `;
 
@@ -101,21 +110,21 @@ export const POLICY_README_TEMPLATE = `# Transcend Policy Project
 
 This directory is an OPA document tree that can be published to Transcend Policy Engine.
 
-The policy under \`policy_engine/example\` is disposable teaching material. Replace it with your intended package tree, input shape, and extensible result documents. Keep decisions fail-closed and cover every non-test package with \`manifest.json\`.
+The policy under \`policy_engine/example\` is disposable teaching material. Replace it with your intended package tree, input shape, and extensible result documents. Keep decisions fail-closed and cover every non-test package with \`.manifest\` roots.
 
 Validate formatting, strict Rego v1 compatibility, Regal lint, tests, and the publish contract:
 
 \`\`\`sh
-transcend policy lint --dir .
+transcend policy lint .
 \`\`\`
 `;
 
 /** Complete safe starter in deterministic plan order. */
 const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
   {
-    path: 'manifest.json',
+    path: POLICY_MANIFEST_FILENAME,
     contents: POLICY_MANIFEST_TEMPLATE,
-    description: 'Create the publishable Policy Engine manifest',
+    description: 'Create the OPA bundle .manifest',
   },
   {
     path: '.regal/config.yaml',

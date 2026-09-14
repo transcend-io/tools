@@ -7,10 +7,10 @@ import {
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataPoints, type DataPointWithSubDataPoint } from './fetchAllDataPoints.js';
 import { fetchAllDataSilos, type DataSiloAttributeValue } from './fetchAllDataSilos.js';
-import { DATA_SILO_SOMBRA, DATA_SILOS_ENRICHED } from './gqls/dataSilo.js';
+import { DATA_SILOS_ENRICHED } from './gqls/dataSilo.js';
 
 export interface DataSiloEnriched {
   /** ID of dataSilo */
@@ -186,28 +186,6 @@ export async function fetchEnrichedDataSilos(
     pageSize,
     gql: DATA_SILOS_ENRICHED,
     logger,
-  });
-
-  // `sombra` is only on singular `DataSilo`, not `DataSiloBulkPreview`.
-  await mapSeries(silos, async (silo) => {
-    const {
-      dataSilo: { sombra },
-    } = await makeGraphQLRequest<{
-      /** Singular data silo */
-      dataSilo: {
-        /** Data silo ID */
-        id: string;
-        /** Configured Sombra instance */
-        sombra?: {
-          /** Sombra instance ID */
-          id: string;
-        } | null;
-      };
-    }>(client, DATA_SILO_SOMBRA, {
-      variables: { id: silo.id },
-      logger,
-    });
-    silo.sombra = sombra;
   });
 
   if (!skipDatapoints) {

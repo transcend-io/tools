@@ -6,7 +6,11 @@ import {
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 import { parseLimitParam } from '../helpers/index.js';
-import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
+import {
+  createPolicyDebugParameter,
+  policyBundleNameParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const versionsCommand = buildCommand({
   loader: async () => {
@@ -15,15 +19,11 @@ export const versionsCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Tenant-unique policy bundle name',
-      },
+      'bundle-name': policyBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       limit: {
         kind: 'parsed',
         parse: parseLimitParam,
@@ -36,11 +36,7 @@ export const versionsCommand = buildCommand({
         brief: 'Opaque cursor from a previous response pageInfo.endCursor',
         optional: true,
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      json: policyJsonParameter,
       debug: createPolicyDebugParameter(),
     },
   },

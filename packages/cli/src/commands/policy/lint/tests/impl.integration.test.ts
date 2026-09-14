@@ -31,7 +31,7 @@ afterEach(() => {
 describe('policy lint with OPA and Regal', () => {
   it('rejects production policy that depends on a local test module', async () => {
     const directory = makePolicyDirectory();
-    writeFileSync(join(directory, 'manifest.json'), '{"roots":["policy_engine"]}\n');
+    writeFileSync(join(directory, '.manifest'), '{"roots":["policy_engine"]}\n');
     writeFileSync(join(directory, '.regal.yaml'), POLICY_REGAL_CONFIG_TEMPLATE);
     writeFileSync(
       join(directory, 'policy.rego'),
@@ -64,11 +64,11 @@ test_allow if {
     await lint.call(
       context,
       {
-        dir: directory,
         fix: true,
         noInteractive: true,
         json: true,
       },
+      directory,
       runCapturedProcess,
     );
 

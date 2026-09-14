@@ -21,7 +21,7 @@ describe('policy starter templates', () => {
 
     expect(second).toEqual(first);
     expect(first.map(({ path }) => path)).toEqual([
-      'manifest.json',
+      '.manifest',
       '.regal/config.yaml',
       'policy_engine/example/result.rego',
       'policy_engine/example/result_test.rego',
@@ -54,7 +54,10 @@ describe('policy starter templates', () => {
 
   it('creates a publishable document tree covered by the manifest root', () => {
     expect(JSON.parse(POLICY_MANIFEST_TEMPLATE)).toEqual({
+      $schema: 'https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json',
+      revision: '',
       roots: ['policy_engine'],
+      rego_version: 1,
     });
     expect(
       validatePolicyBundleContents(POLICY_MANIFEST_TEMPLATE, [
@@ -92,7 +95,7 @@ describe('policy starter templates', () => {
     expect(POLICY_INPUT_EXAMPLE_TEMPLATE).not.toMatch(/email|name|token|secret/iu);
     expect(POLICY_GITIGNORE_TEMPLATE).toBe('# Local policy evaluation input.\n/input.json\n');
     expect(POLICY_README_TEMPLATE).toContain('disposable teaching material');
-    expect(POLICY_README_TEMPLATE).toContain('transcend policy lint --dir .');
+    expect(POLICY_README_TEMPLATE).toContain('transcend policy lint .');
     expect(POLICY_README_TEMPLATE).not.toContain('mise.toml');
   });
 });

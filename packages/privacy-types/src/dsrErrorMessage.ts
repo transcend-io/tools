@@ -102,6 +102,9 @@ export type DsrErrorMessageMap = {
     input: SubjectTypeNotMatchingWorkflowMessageInput,
   ) => string;
   [DsrErrorCode.RegionNotInWorkflow]: (input: RegionNotInWorkflowMessageInput) => string;
+  [DsrErrorCode.InvalidRequestInput]: () => string;
+  [DsrErrorCode.InvalidIdentifierJwt]: () => string;
+  [DsrErrorCode.DraftWorkflowConfig]: () => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -202,4 +205,15 @@ export const DSR_ERROR_MESSAGE = {
   }: RegionNotInWorkflowMessageInput) =>
     `Region "${region}" is not eligible for this workflow. ` +
     `Supported regions: ${supportedRegions.join(', ')}.`,
+  /**
+   * Fallback canonical message for {@link DsrErrorCode.InvalidRequestInput}.
+   * Producers often pass through the original validation `ClientError` message,
+   * so the runtime message on the error entry may differ from this string.
+   * Downstream consumers must branch on `code` and display the returned
+   * `message` — never reconstruct it from `DSR_ERROR_MESSAGE`.
+   */
+  [DsrErrorCode.InvalidRequestInput]: () => 'Request input failed validation',
+  [DsrErrorCode.InvalidIdentifierJwt]: () => 'Signed identifier JWT failed verification',
+  [DsrErrorCode.DraftWorkflowConfig]: () =>
+    'Workflow is saved as a draft and cannot be used to submit requests.',
 } as const satisfies DsrErrorMessageMap;

@@ -1,6 +1,7 @@
+import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
 import { findDirectDataReferences, parseRegoPackageReference } from './rego-reference.js';
 
-/** Shape of the policy bundle `manifest.json` accepted by Policy Engine. */
+/** Shape of the policy bundle `.manifest` accepted by Policy Engine. */
 export interface PolicyBundleManifest {
   /** Roots of the bundle, such as `policy_engine/transcend`. */
   roots: string[];
@@ -42,7 +43,7 @@ export function isPublishableRegoFile(relativePath: string): boolean {
  */
 export function parsePolicyBundleManifest(contents: string | undefined): PolicyBundleManifest {
   if (contents === undefined) {
-    throw new Error('Policy bundle directory must contain a manifest.json file.');
+    throw new Error(`Policy bundle directory must contain a ${POLICY_MANIFEST_FILENAME} file.`);
   }
 
   let parsed: unknown;
@@ -50,23 +51,23 @@ export function parsePolicyBundleManifest(contents: string | undefined): PolicyB
     parsed = JSON.parse(contents);
   } catch (error) {
     throw new Error(
-      `manifest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `${POLICY_MANIFEST_FILENAME} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
   }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('manifest.json must contain a JSON object.');
+    throw new Error(`${POLICY_MANIFEST_FILENAME} must contain a JSON object.`);
   }
 
   const roots = (parsed as { roots?: unknown }).roots;
   if (!Array.isArray(roots) || roots.length === 0) {
     throw new Error(
-      'manifest.json must declare "roots" as a non-empty array of strings (e.g. {"roots":["policy_engine"]}).',
+      `${POLICY_MANIFEST_FILENAME} must declare "roots" as a non-empty array of strings (e.g. {"roots":["policy_engine"]}).`,
     );
   }
   if (!roots.every((root) => typeof root === 'string' && root.length > 0)) {
-    throw new Error('manifest.json "roots" must be an array of non-empty strings.');
+    throw new Error(`${POLICY_MANIFEST_FILENAME} "roots" must be an array of non-empty strings.`);
   }
   if (
     !roots.every((root) =>
@@ -74,7 +75,7 @@ export function parsePolicyBundleManifest(contents: string | undefined): PolicyB
     )
   ) {
     throw new Error(
-      'manifest.json "roots" must contain slash-separated Rego identifiers so Policy Engine can re-namespace them safely.',
+      `${POLICY_MANIFEST_FILENAME} "roots" must contain slash-separated Rego identifiers so Policy Engine can re-namespace them safely.`,
     );
   }
 
@@ -164,7 +165,7 @@ export function validatePolicyBundleContents(
   if (uncovered.length > 0) {
     throw new Error(
       [
-        'manifest.json "roots" do not cover all Rego packages in the bundle; ' +
+        `${POLICY_MANIFEST_FILENAME} "roots" do not cover all Rego packages in the bundle; ` +
           'uncovered packages will fail-closed at decide time. Either broaden "roots" or move the policy under a covered package:',
         ...uncovered,
       ].join('\n'),

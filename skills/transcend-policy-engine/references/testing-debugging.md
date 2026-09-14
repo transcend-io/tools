@@ -36,7 +36,7 @@ Keep a sanitized `input.example.json` in source control. Put realistic local dat
 ## Run the complete gate
 
 ```sh
-transcend policy lint --dir ./transcend/policy --noInteractive
+transcend policy lint ./transcend/policy --noInteractive
 ```
 
 Use `transcend policy lint --help` to inspect `--fix` and JSON output. The lint gate checks:
