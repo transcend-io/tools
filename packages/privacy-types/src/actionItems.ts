@@ -141,6 +141,10 @@ export enum ActionItemCode {
    */
   ConsentManagerVersionUpgrade = 'CONSENT_MANAGER_VERSION_UPGRADE',
   /**
+   * - A Consent Manager site has not reported telemetry recently
+   */
+  ConsentSiteTelemetryStale = 'CONSENT_SITE_TELEMETRY_STALE',
+  /**
    * - Lookup processes have errored out and are no longer indexing
    */
   PluginsWithErrors = 'PLUGINS_WITH_ERRORS',
@@ -152,10 +156,6 @@ export enum ActionItemCode {
    * request that has been assigned to a user
    */
   RequestAssignedToUser = 'REQUEST_ASSIGNED_TO_USER',
-  /**
-   * business entity needing documentation
-   */
-  BusinessEntityNeedsDocumentation = 'BUSINESS_ENTITY_NEEDS_DOCUMENTATION',
   /**
    * A database datapoint has queries that need approval
    */

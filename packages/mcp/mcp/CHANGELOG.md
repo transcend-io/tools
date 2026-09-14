@@ -1,5 +1,74 @@
 # @transcend-io/mcp
 
+## 1.2.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.0.10
+- @transcend-io/mcp-server-assessment@2.1.7
+- @transcend-io/mcp-server-consent@1.2.2
+- @transcend-io/mcp-server-discovery@1.0.10
+- @transcend-io/mcp-server-dsr@2.0.7
+- @transcend-io/mcp-server-inventory@1.0.10
+- @transcend-io/mcp-server-preferences@0.7.14
+- @transcend-io/mcp-server-workflows@1.0.10
+
+## 1.2.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.0.9
+- @transcend-io/mcp-server-assessment@2.1.6
+- @transcend-io/mcp-server-consent@1.2.1
+- @transcend-io/mcp-server-discovery@1.0.9
+- @transcend-io/mcp-server-dsr@2.0.6
+- @transcend-io/mcp-server-inventory@1.0.9
+- @transcend-io/mcp-server-preferences@0.7.13
+- @transcend-io/mcp-server-workflows@1.0.9
+
+## 1.2.0
+
+### Minor Changes
+
+- 13092af: Added consent_list_roc_records tool
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-consent@1.2.0
+  - @transcend-io/mcp-server-base@2.4.0
+  - @transcend-io/mcp-server-admin@1.0.8
+  - @transcend-io/mcp-server-assessment@2.1.5
+  - @transcend-io/mcp-server-discovery@1.0.8
+  - @transcend-io/mcp-server-docs@0.4.10
+  - @transcend-io/mcp-server-dsr@2.0.5
+  - @transcend-io/mcp-server-inventory@1.0.8
+  - @transcend-io/mcp-server-preferences@0.7.12
+  - @transcend-io/mcp-server-workflows@1.0.8
+
+## 1.1.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-consent@1.1.2
+- @transcend-io/mcp-server-preferences@0.7.11
+
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-preferences@0.7.10
+  - @transcend-io/mcp-server-base@2.3.1
+  - @transcend-io/mcp-server-admin@1.0.7
+  - @transcend-io/mcp-server-assessment@2.1.4
+  - @transcend-io/mcp-server-consent@1.1.1
+  - @transcend-io/mcp-server-discovery@1.0.7
+  - @transcend-io/mcp-server-docs@0.4.9
+  - @transcend-io/mcp-server-dsr@2.0.4
+  - @transcend-io/mcp-server-inventory@1.0.7
+  - @transcend-io/mcp-server-workflows@1.0.7
+
 ## 1.1.0
 
 ### Minor Changes

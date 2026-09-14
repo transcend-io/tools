@@ -7,7 +7,7 @@
 Before publishing:
 
 1. confirm the intended package and query paths with the consuming application;
-2. run `transcend policy lint --dir <policy-directory> --noInteractive`;
+2. run `transcend policy lint <policy-directory> --noInteractive`;
 3. review the generated bundle name, version, description, and target Transcend environment;
 4. keep API keys in the environment or the repository's approved secret store.
 

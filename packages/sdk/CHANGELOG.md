@@ -1,5 +1,30 @@
 # @transcend-io/sdk
 
+## 2.1.10
+
+### Patch Changes
+
+- 1f35e6f: Inventory pull for multi-Sombra organizations fetches `sombra-id` from the bulk data silos query instead of one extra request per silo.
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+  - @transcend-io/privacy-types@6.0.0
+  - @transcend-io/airgap.js-types@14.2.43
+
+## 2.1.9
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+  - @transcend-io/airgap.js-types@14.2.42
+
+## 2.1.8
+
+### Patch Changes
+
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+
 ## 2.1.7
 
 ### Patch Changes

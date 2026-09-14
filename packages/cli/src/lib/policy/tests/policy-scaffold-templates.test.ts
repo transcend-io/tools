@@ -92,7 +92,7 @@ describe('policy starter templates', () => {
     expect(POLICY_INPUT_EXAMPLE_TEMPLATE).not.toMatch(/email|name|token|secret/iu);
     expect(POLICY_GITIGNORE_TEMPLATE).toBe('# Local policy evaluation input.\n/input.json\n');
     expect(POLICY_README_TEMPLATE).toContain('disposable teaching material');
-    expect(POLICY_README_TEMPLATE).toContain('transcend policy lint --dir .');
+    expect(POLICY_README_TEMPLATE).toContain('transcend policy lint .');
     expect(POLICY_README_TEMPLATE).not.toContain('mise.toml');
   });
 });

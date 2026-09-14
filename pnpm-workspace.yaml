@@ -52,6 +52,8 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: csv-parse@7.0.2
+  - csv-parse@7.0.2
 
 onlyBuiltDependencies:
   - esbuild

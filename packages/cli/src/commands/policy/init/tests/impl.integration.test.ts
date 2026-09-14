@@ -80,11 +80,11 @@ describe('policy init with pinned OPA and Regal', () => {
     await lint.call(
       lintContext,
       {
-        dir: policyDirectory,
         fix: false,
         noInteractive: true,
         json: true,
       },
+      policyDirectory,
       runCapturedProcess,
     );
 
