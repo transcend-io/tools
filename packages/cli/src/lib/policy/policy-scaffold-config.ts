@@ -6,6 +6,7 @@ import {
   parseJsoncObject,
   type JsoncUpdate,
 } from '../scaffolding/jsonc.js';
+import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
 export const POLICY_VSCODE_EXTENSION = 'tsandall.opa';
@@ -150,6 +151,24 @@ function buildOpaWorkspaceRoot(repositoryRoot: string, targetDirectory: string):
 }
 
 /**
+ * Build a `files.associations` glob scoped to the policy project `.manifest`.
+ *
+ * Patterns that contain `/` are matched against the absolute file path, so a
+ * leading `**\/` prefix is required for a portable workspace-relative association.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param targetDirectory - Selected policy project directory
+ * @returns Association pattern key
+ */
+function buildPolicyManifestAssociationPattern(
+  repositoryRoot: string,
+  targetDirectory: string,
+): string {
+  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
+  return target === '.' ? POLICY_MANIFEST_FILENAME : `**/${target}/${POLICY_MANIFEST_FILENAME}`;
+}
+
+/**
  * Merge strict target-scoped OPA and Rego editor settings.
  *
  * Setting names match the authoritative `open-policy-agent/vscode-opa`
@@ -199,8 +218,15 @@ export function mergePolicyEditorSettings(
   );
 
   const associations = current['files.associations'];
+  const manifestAssociation = buildPolicyManifestAssociationPattern(
+    repositoryRoot,
+    targetDirectory,
+  );
   if (associations === undefined) {
-    updates.push({ path: ['files.associations'], value: { '.manifest': 'json' } });
+    updates.push({
+      path: ['files.associations'],
+      value: { [manifestAssociation]: 'json' },
+    });
   } else if (
     associations !== null &&
     typeof associations === 'object' &&
@@ -210,9 +236,9 @@ export function mergePolicyEditorSettings(
       current,
       [
         {
-          path: ['files.associations', '.manifest'],
+          path: ['files.associations', manifestAssociation],
           value: 'json',
-          label: 'files.associations.".manifest"',
+          label: `files.associations."${manifestAssociation}"`,
         },
       ],
       updates,

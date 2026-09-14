@@ -37,13 +37,29 @@ describe('Policy Engine VS Code setup', () => {
       'opa.bundleMode': true,
       'opa.formatter': 'opa-fmt-rego-v1',
       'files.associations': {
-        '.manifest': 'json',
+        "**/policies/customer's policy/.manifest": 'json',
       },
       '[rego]': {
         'editor.defaultFormatter': POLICY_VSCODE_EXTENSION,
         'editor.formatOnSave': true,
         'editor.insertSpaces': false,
         'editor.tabSize': 4,
+      },
+    });
+  });
+
+  it('scopes the .manifest association to the policy project path', () => {
+    const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy');
+    const rooted = mergePolicyEditorSettings(null, '/repo', '/repo');
+
+    expect(parse(nested.contents)).toMatchObject({
+      'files.associations': {
+        '**/transcend/policy/.manifest': 'json',
+      },
+    });
+    expect(parse(rooted.contents)).toMatchObject({
+      'files.associations': {
+        '.manifest': 'json',
       },
     });
   });
