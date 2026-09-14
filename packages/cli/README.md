@@ -4460,7 +4460,7 @@ USAGE
   transcend policy publish (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] [<directory>]
   transcend policy publish --help
 
-Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
+Packages `.manifest` and `.rego` policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
       --bundle-name       Tenant-unique policy bundle name
