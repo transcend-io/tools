@@ -8,7 +8,7 @@ OPA evaluates queries against one document tree:
 - `data` contains loaded policy packages and static data.
 - A Rego `package` determines where a module contributes documents below `data`.
 
-Choose package paths from the application's required query and ownership boundaries. Keep directory and package names aligned when practical, and cover every publishable package with a `manifest.json` root.
+Choose package paths from the application's required query and ownership boundaries. Keep directory and package names aligned when practical, and cover every publishable package with a `.manifest` root.
 
 Use Rego v1 explicitly:
 

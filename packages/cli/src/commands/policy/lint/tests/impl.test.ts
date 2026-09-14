@@ -115,7 +115,7 @@ function createPolicyProject(): string {
   temporaryDirectories.push(directory);
   mkdirSync(join(directory, '.regal'), { recursive: true });
   writeFileSync(join(directory, '.regal', 'config.yaml'), 'project:\n  roots:\n    - .\n');
-  writeFileSync(join(directory, 'manifest.json'), JSON.stringify({ roots: ['policy_engine'] }));
+  writeFileSync(join(directory, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
   writeFileSync(
     join(directory, 'policy.rego'),
     'package policy_engine\n\nimport rego.v1\n\ndefault allow := false\n',
@@ -378,7 +378,7 @@ describe('policy lint', () => {
 
   it('fails when manifest roots do not cover a publishable package', async () => {
     const directory = createPolicyProject();
-    writeFileSync(join(directory, 'manifest.json'), JSON.stringify({ roots: ['other'] }));
+    writeFileSync(join(directory, '.manifest'), JSON.stringify({ roots: ['other'] }));
     const context = buildContextForTest({ stdinIsTTY: false });
     const { runner } = buildRunner();
 
