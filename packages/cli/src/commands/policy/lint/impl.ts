@@ -36,6 +36,7 @@ import {
   unsupportedOpaVersionMessage,
   unsupportedRegalVersionMessage,
 } from '../../../lib/policy/policy-runtime.js';
+import { POLICY_MANIFEST_FILENAME } from '../../../lib/policy/policy-scaffold-templates.js';
 import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
 
 /** CLI flags for `transcend policy lint`. */
@@ -176,7 +177,7 @@ export async function lint(
       path.relative(this.process.cwd(), resolvedDir),
     );
   } else {
-    const manifestPath = path.join(resolvedDir, 'manifest.json');
+    const manifestPath = path.join(resolvedDir, POLICY_MANIFEST_FILENAME);
     try {
       validatePolicyBundleContents(
         this.fs.existsSync(manifestPath) ? this.fs.readFileSync(manifestPath, 'utf8') : undefined,

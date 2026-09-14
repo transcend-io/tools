@@ -6,6 +6,7 @@ import {
   discoverProjectRepository,
 } from '../scaffolding/project-discovery.js';
 import type { PolicyProjectState } from './policy-scaffold-model.js';
+import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
 
 /** Default local policy project directory. */
 export const DEFAULT_POLICY_PROJECT_DIRECTORY = 'transcend/policy';
@@ -66,5 +67,5 @@ export function discoverPolicyProject(
  * @returns Absolute manifest path
  */
 export function getPolicyManifestPath(state: PolicyProjectState): string {
-  return join(state.targetDirectory, 'manifest.json');
+  return join(state.targetDirectory, POLICY_MANIFEST_FILENAME);
 }
