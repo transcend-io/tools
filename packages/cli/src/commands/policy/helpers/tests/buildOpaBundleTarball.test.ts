@@ -5,6 +5,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { POLICY_ENGINE_ROOT } from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildOpaBundleTarball } from '../buildOpaBundleTarball.js';
 
 const runOPACaptureMock = vi.hoisted(() => vi.fn());
@@ -23,6 +24,18 @@ vi.mock('../assertOpaInstalled.js', () => ({
 vi.mock('../runOpa.js', () => ({
   runOPACapture: runOPACaptureMock,
 }));
+
+/**
+ * Write a publishable Rego module under {@link POLICY_ENGINE_ROOT}.
+ *
+ * @param dir - Bundle directory
+ * @param fileName - File name within the root package directory
+ * @param contents - Rego source
+ */
+function writeRootPackageRego(dir: string, fileName: string, contents: string): void {
+  fs.mkdirSync(path.join(dir, POLICY_ENGINE_ROOT), { recursive: true });
+  fs.writeFileSync(path.join(dir, POLICY_ENGINE_ROOT, fileName), contents);
+}
 
 describe('buildOpaBundleTarball', () => {
   let tempDir: string;
@@ -48,15 +61,19 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('creates a tarball with manifest.json and policy files only', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.mkdirSync(path.join(tempDir, 'policy_engine'));
     fs.writeFileSync(
-      path.join(tempDir, 'policy_engine', 'decision.rego'),
-      'package policy_engine\n\ndefault decision := "deny"\n',
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
     );
-    fs.writeFileSync(
-      path.join(tempDir, 'policy_engine', 'decision_test.rego'),
-      'package policy_engine\n\ntest_decision if { true }\n',
+    writeRootPackageRego(
+      tempDir,
+      'decision.rego',
+      `package ${POLICY_ENGINE_ROOT}\n\ndefault decision := "deny"\n`,
+    );
+    writeRootPackageRego(
+      tempDir,
+      'decision_test.rego',
+      `package ${POLICY_ENGINE_ROOT}_test\n\ntest_decision if { true }\n`,
     );
     fs.writeFileSync(path.join(tempDir, 'data.json'), '{}');
 
@@ -67,18 +84,21 @@ describe('buildOpaBundleTarball', () => {
     expect(listResult.status).toBe(0);
 
     const entries = listResult.stdout.trim().split('\n').sort();
-    expect(entries).toEqual(['manifest.json', 'policy_engine/decision.rego']);
-    expect(entries).not.toContain('policy_engine/decision_test.rego');
+    expect(entries).toEqual(['manifest.json', `${POLICY_ENGINE_ROOT}/decision.rego`]);
+    expect(entries).not.toContain(`${POLICY_ENGINE_ROOT}/decision_test.rego`);
     expect(entries).not.toContain('data.json');
     expect(entries).not.toContain('.manifest');
   });
 
   it('validates the bundle compiles with `opa build` before packaging', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.mkdirSync(path.join(tempDir, 'policy_engine'));
     fs.writeFileSync(
-      path.join(tempDir, 'policy_engine', 'decision.rego'),
-      'package policy_engine\n\ndefault decision := "deny"\n',
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    writeRootPackageRego(
+      tempDir,
+      'decision.rego',
+      `package ${POLICY_ENGINE_ROOT}\n\ndefault decision := "deny"\n`,
     );
 
     const outputPath = await buildOpaBundleTarball(tempDir);
@@ -99,12 +119,15 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws a clear error when `opa check` fails', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    fs.writeFileSync(
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
     runOPACaptureMock.mockResolvedValueOnce({
       code: 2,
       stdout: '',
-      stderr: 'policy.rego:3: rego parse error: unexpected assign token',
+      stderr: `${POLICY_ENGINE_ROOT}/policy.rego:3: rego parse error: unexpected assign token`,
     });
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
@@ -115,14 +138,17 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws a clear error when `opa build` fails to compile the bundle', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    fs.writeFileSync(
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
     runOPACaptureMock
       .mockResolvedValueOnce({ code: 0, stdout: '', stderr: '' }) // opa check
       .mockResolvedValueOnce({
         code: 1,
         stdout: '',
-        stderr: 'policy.rego:5: undefined function data.foo.bar',
+        stderr: `${POLICY_ENGINE_ROOT}/policy.rego:5: undefined function data.foo.bar`,
       }); // opa build
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
@@ -132,28 +158,31 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws when .manifest is missing', async () => {
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/\.manifest/i);
   });
 
   it('throws when no publishable rego files exist', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.writeFileSync(path.join(tempDir, 'policy_test.rego'), 'package policy_engine\n');
+    fs.writeFileSync(
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    writeRootPackageRego(tempDir, 'policy_test.rego', `package ${POLICY_ENGINE_ROOT}_test\n`);
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/at least one \.rego/i);
   });
 
   it('throws a clear error when .manifest is not valid JSON', async () => {
     fs.writeFileSync(path.join(tempDir, '.manifest'), '{ not valid json');
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/\.manifest is not valid JSON/i);
   });
 
   it('throws when .manifest roots is missing or empty', async () => {
     fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({}));
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
       /must declare "roots" as a non-empty array/i,
@@ -163,9 +192,9 @@ describe('buildOpaBundleTarball', () => {
   it('throws when .manifest roots contains non-string entries', async () => {
     fs.writeFileSync(
       path.join(tempDir, '.manifest'),
-      JSON.stringify({ roots: ['policy_engine', 42] }),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT, 42] }),
     );
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
       /"roots" must be an array of non-empty strings/i,
@@ -173,7 +202,10 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws when a Rego package is not covered by manifest roots', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
+    fs.writeFileSync(
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
     fs.writeFileSync(path.join(tempDir, 'other.rego'), 'package other.package\n');
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
@@ -182,11 +214,14 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('accepts nested Rego packages under a manifest root', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.mkdirSync(path.join(tempDir, 'policy_engine', 'transcend'), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, 'policy_engine', 'transcend', 'decision.rego'),
-      'package policy_engine.transcend\n\ndefault decision := "deny"\n',
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    fs.mkdirSync(path.join(tempDir, POLICY_ENGINE_ROOT, 'transcend'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tempDir, POLICY_ENGINE_ROOT, 'transcend', 'decision.rego'),
+      `package ${POLICY_ENGINE_ROOT}.transcend\n\ndefault decision := "deny"\n`,
     );
 
     const outputPath = await buildOpaBundleTarball(tempDir);
@@ -196,8 +231,11 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('reports the compressed size limit with human-readable units', async () => {
-    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
-    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    fs.writeFileSync(
+      path.join(tempDir, '.manifest'),
+      JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }),
+    );
+    writeRootPackageRego(tempDir, 'policy.rego', `package ${POLICY_ENGINE_ROOT}\n`);
 
     // Force the compressed-size check to trip with a 1-byte limit.
     constantsMock.MAX_BUNDLE_COMPRESSED_BYTES = 1;

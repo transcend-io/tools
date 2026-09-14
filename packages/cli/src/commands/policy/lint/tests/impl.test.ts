@@ -8,6 +8,7 @@ import type {
   CapturedProcessResult,
   CapturedProcessRunner,
 } from '../../../../lib/cli/run-captured-process.js';
+import { POLICY_ENGINE_ROOT } from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { lint, type LintCommandFlags } from '../impl.js';
 
@@ -114,15 +115,16 @@ function createPolicyProject(): string {
   const directory = mkdtempSync(join(tmpdir(), 'policy-lint-command-'));
   temporaryDirectories.push(directory);
   mkdirSync(join(directory, '.regal'), { recursive: true });
+  mkdirSync(join(directory, POLICY_ENGINE_ROOT), { recursive: true });
   writeFileSync(join(directory, '.regal', 'config.yaml'), 'project:\n  roots:\n    - .\n');
-  writeFileSync(join(directory, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
+  writeFileSync(join(directory, '.manifest'), JSON.stringify({ roots: [POLICY_ENGINE_ROOT] }));
   writeFileSync(
-    join(directory, 'policy.rego'),
-    'package policy_engine\n\nimport rego.v1\n\ndefault allow := false\n',
+    join(directory, POLICY_ENGINE_ROOT, 'policy.rego'),
+    `package ${POLICY_ENGINE_ROOT}\n\nimport rego.v1\n\ndefault allow := false\n`,
   );
   writeFileSync(
-    join(directory, 'policy_test.rego'),
-    'package policy_engine_test\n\nimport rego.v1\n\ntest_policy if { true }\n',
+    join(directory, POLICY_ENGINE_ROOT, 'policy_test.rego'),
+    `package ${POLICY_ENGINE_ROOT}_test\n\nimport rego.v1\n\ntest_policy if { true }\n`,
   );
   return directory;
 }
@@ -211,7 +213,7 @@ describe('policy lint', () => {
     const { runner, invocations } = buildRunner({
       'opa fmt --list': {
         code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
+        stdout: `${join(directory, POLICY_ENGINE_ROOT, 'policy.rego')}\n`,
         stderr: '',
       },
     });
@@ -220,7 +222,7 @@ describe('policy lint', () => {
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'failed',
-      unformattedFiles: ['policy.rego'],
+      unformattedFiles: [`${POLICY_ENGINE_ROOT}/policy.rego`],
       fixedFiles: [],
       diagnostics: [{ code: 'opa.format-required', severity: 'error' }],
     });
@@ -241,7 +243,7 @@ describe('policy lint', () => {
     const { runner, invocations } = buildRunner({
       'opa fmt --list': {
         code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
+        stdout: `${join(directory, POLICY_ENGINE_ROOT, 'policy.rego')}\n`,
         stderr: '',
       },
     });
@@ -251,8 +253,8 @@ describe('policy lint', () => {
     expect(JSON.parse(context.stdout)).toMatchObject({
       status: 'passed',
       fix: true,
-      unformattedFiles: ['policy.rego'],
-      fixedFiles: ['policy.rego'],
+      unformattedFiles: [`${POLICY_ENGINE_ROOT}/policy.rego`],
+      fixedFiles: [`${POLICY_ENGINE_ROOT}/policy.rego`],
       checks: expect.arrayContaining([{ name: 'format', status: 'passed' }]),
     });
     expect(invocations.map(({ command, args }) => [command, ...args])).toContainEqual([
@@ -270,7 +272,7 @@ describe('policy lint', () => {
     const { runner } = buildRunner({
       'opa fmt --list': {
         code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
+        stdout: `${join(directory, POLICY_ENGINE_ROOT, 'policy.rego')}\n`,
         stderr: '',
       },
       'opa fmt --diff': {
@@ -288,7 +290,7 @@ describe('policy lint', () => {
     });
     expect(context.stdout).toContain('Policy verification');
     expect(context.stdout).toContain('PASS OPA formatting');
-    expect(context.stderr).toContain('policy.rego');
+    expect(context.stderr).toContain(`${POLICY_ENGINE_ROOT}/policy.rego`);
     expect(context.stderr).toContain('formatted diff');
   });
 
@@ -298,7 +300,7 @@ describe('policy lint', () => {
     const { runner } = buildRunner({
       'opa fmt --list': {
         code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
+        stdout: `${join(directory, POLICY_ENGINE_ROOT, 'policy.rego')}\n`,
         stderr: '',
       },
     });
@@ -391,7 +393,10 @@ describe('policy lint', () => {
         expect.objectContaining({
           code: 'manifest.invalid',
           message: expect.stringMatching(
-            /roots" do not cover[\s\S]*policy\.rego \(package policy_engine\)/u,
+            new RegExp(
+              `roots" do not cover[\\s\\S]*${POLICY_ENGINE_ROOT}/policy\\.rego \\(package ${POLICY_ENGINE_ROOT}\\)`,
+              'u',
+            ),
           ),
         }),
       ],

@@ -1,11 +1,14 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
-import { POLICY_REGAL_CONFIG_TEMPLATE } from '../../../../lib/policy/policy-scaffold-templates.js';
+import {
+  POLICY_ENGINE_ROOT,
+  POLICY_REGAL_CONFIG_TEMPLATE,
+} from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { lint } from '../impl.js';
 
@@ -31,11 +34,15 @@ afterEach(() => {
 describe('policy lint with OPA and Regal', () => {
   it('rejects production policy that depends on a local test module', async () => {
     const directory = makePolicyDirectory();
-    writeFileSync(join(directory, '.manifest'), '{"roots":["policy_engine"]}\n');
+    mkdirSync(join(directory, POLICY_ENGINE_ROOT), { recursive: true });
+    writeFileSync(
+      join(directory, '.manifest'),
+      `${JSON.stringify({ roots: [POLICY_ENGINE_ROOT] })}\n`,
+    );
     writeFileSync(join(directory, '.regal.yaml'), POLICY_REGAL_CONFIG_TEMPLATE);
     writeFileSync(
-      join(directory, 'policy.rego'),
-      `package policy_engine
+      join(directory, POLICY_ENGINE_ROOT, 'policy.rego'),
+      `package ${POLICY_ENGINE_ROOT}
 
 import rego.v1
 
@@ -45,8 +52,8 @@ allow if {
 `,
     );
     writeFileSync(
-      join(directory, 'helper_test.rego'),
-      `package policy_engine
+      join(directory, POLICY_ENGINE_ROOT, 'helper_test.rego'),
+      `package ${POLICY_ENGINE_ROOT}
 
 import rego.v1
 
