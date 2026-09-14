@@ -78,46 +78,6 @@ export const COOKIE_TRIAGE_PURPOSE_ORDER: readonly CookieTriagePurposeCategory[]
   CookieTriagePurposeCategory.Custom,
 ];
 
-/** Human-readable labels for purpose category tabs */
-export const COOKIE_TRIAGE_PURPOSE_LABELS: Record<CookieTriagePurposeCategory, string> = {
-  [CookieTriagePurposeCategory.Essential]: 'Essential',
-  [CookieTriagePurposeCategory.Functional]: 'Functional',
-  [CookieTriagePurposeCategory.Advertising]: 'Advertising',
-  [CookieTriagePurposeCategory.Analytics]: 'Analytics',
-  [CookieTriagePurposeCategory.SaleOfInfo]: 'Sale of Info',
-  [CookieTriagePurposeCategory.Unknown]: 'Unknown',
-  [CookieTriagePurposeCategory.Custom]: 'Custom',
-};
-
-/**
- * Look up a purpose label via literal keys.
- *
- * Prefer this over `COOKIE_TRIAGE_PURPOSE_LABELS[purpose]` so
- * `noUncheckedIndexedAccess` does not widen the result to `string | undefined`.
- */
-export function getPurposeLabel(purpose: CookieTriagePurposeCategory): string {
-  switch (purpose) {
-    case CookieTriagePurposeCategory.Essential:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Essential];
-    case CookieTriagePurposeCategory.Functional:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Functional];
-    case CookieTriagePurposeCategory.Advertising:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Advertising];
-    case CookieTriagePurposeCategory.Analytics:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Analytics];
-    case CookieTriagePurposeCategory.SaleOfInfo:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.SaleOfInfo];
-    case CookieTriagePurposeCategory.Unknown:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Unknown];
-    case CookieTriagePurposeCategory.Custom:
-      return COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Custom];
-    default: {
-      const _exhaustive: never = purpose;
-      return _exhaustive;
-    }
-  }
-}
-
 /** Whether a string is one of the built-in triage purpose-tab slugs. */
 export function isCookieTriagePurposeCategory(value: string): value is CookieTriagePurposeCategory {
   return (COOKIE_TRIAGE_PURPOSE_ORDER as readonly string[]).includes(value);

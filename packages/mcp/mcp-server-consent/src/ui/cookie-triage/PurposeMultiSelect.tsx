@@ -1,11 +1,8 @@
 import { CheckboxMultiSelect, type CheckboxMultiSelectOption } from '@transcend-io/mcp-ui-common';
 import { memo, useCallback, useMemo } from 'react';
 
-import type { CookieTriagePurposeOption } from '../../lib/cookieTriageTypes.ts';
 import {
   CookieTriageDefaultPurpose,
-  getPurposeLabel,
-  isCookieTriagePurposeCategory,
   isUnknownCookiePurposeSlug,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { purposeBadgeClass } from './purposeBadgeClasses.ts';
@@ -26,8 +23,8 @@ interface PurposeMultiSelectProps {
   itemName: string;
   /** Currently assigned purpose slugs */
   selected: readonly string[];
-  /** Org purpose options from `consent_list_purposes` */
-  options: readonly CookieTriagePurposeOption[];
+  /** Org purpose slugs from `consent_list_purposes` */
+  options: readonly string[];
   /** Whether mutations are in flight for this row */
   disabled?: boolean;
   /** Persist the next purpose list */
@@ -62,33 +59,21 @@ export function purposeOptionExclusiveDisabledReason(
   return hasEssential ? ESSENTIAL_BLOCKS_OTHER_PURPOSES_TOOLTIP : undefined;
 }
 
-/** Resolve a display label for a purpose slug. */
-export function purposeSlugLabel(
-  slug: string,
-  options: readonly CookieTriagePurposeOption[],
-): string {
-  const fromOptions = options.find((option) => option.slug === slug)?.label;
-  if (fromOptions) {
-    return fromOptions;
-  }
-  return isCookieTriagePurposeCategory(slug) ? getPurposeLabel(slug) : slug;
-}
-
 /**
- * Merge org options with any assigned slugs missing from the catalog so the
+ * Merge org purpose slugs with any assigned slugs missing from the catalog so the
  * multi-select can still show and toggle them.
  *
  * Unknown is never offered as a selectable option.
  */
 export function mergePurposeSelectOptions(
-  options: readonly CookieTriagePurposeOption[],
+  options: readonly string[],
   selected: readonly string[],
-): CookieTriagePurposeOption[] {
-  const catalog = options.filter((option) => !isUnknownCookiePurposeSlug(option.slug));
-  const known = new Set(catalog.map((option) => option.slug));
-  const extras = selected
-    .filter((slug) => slug.length > 0 && !isUnknownCookiePurposeSlug(slug) && !known.has(slug))
-    .map((slug) => ({ slug, label: purposeSlugLabel(slug, catalog) }));
+): string[] {
+  const catalog = options.filter((slug) => !isUnknownCookiePurposeSlug(slug));
+  const known = new Set(catalog);
+  const extras = selected.filter(
+    (slug) => slug.length > 0 && !isUnknownCookiePurposeSlug(slug) && !known.has(slug),
+  );
   return extras.length === 0 ? [...catalog] : [...extras, ...catalog];
 }
 
@@ -97,14 +82,14 @@ export function mergePurposeSelectOptions(
  */
 export function orderSelectedPurposeSlugs(
   selected: readonly string[],
-  options: readonly CookieTriagePurposeOption[],
+  options: readonly string[],
 ): string[] {
   const selectedSet = new Set(selected);
   const ordered: string[] = [];
-  for (const option of options) {
-    if (selectedSet.has(option.slug)) {
-      ordered.push(option.slug);
-      selectedSet.delete(option.slug);
+  for (const slug of options) {
+    if (selectedSet.has(slug)) {
+      ordered.push(slug);
+      selectedSet.delete(slug);
     }
   }
   for (const slug of selected) {
@@ -135,14 +120,11 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
 
   const listOptions = useMemo<CheckboxMultiSelectOption[]>(
     () =>
-      selectOptions.map((option) => {
-        const exclusiveDisabledReason = purposeOptionExclusiveDisabledReason(
-          option.slug,
-          orderedSelected,
-        );
+      selectOptions.map((slug) => {
+        const exclusiveDisabledReason = purposeOptionExclusiveDisabledReason(slug, orderedSelected);
         return {
-          id: option.slug,
-          label: option.label,
+          id: slug,
+          label: slug,
           ...(exclusiveDisabledReason
             ? { disabled: true, disabledReason: exclusiveDisabledReason }
             : {}),
@@ -156,33 +138,30 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
     [onChange, selectOptions],
   );
 
-  const renderValue = useCallback(
-    (selectedIds: readonly string[]) => {
-      if (selectedIds.length === 0) {
-        return (
-          <span className="inline-flex h-6 items-center rounded-sm border border-card-line bg-card px-1.5 text-sm text-on-card-muted">
-            Select
-          </span>
-        );
-      }
-      return selectedIds.map((slug) => (
-        <span
-          key={slug}
-          className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(slug)}`}
-        >
-          {purposeSlugLabel(slug, selectOptions)}
+  const renderValue = useCallback((selectedIds: readonly string[]) => {
+    if (selectedIds.length === 0) {
+      return (
+        <span className="inline-flex h-6 items-center rounded-sm border border-card-line bg-card px-1.5 text-sm text-on-card-muted">
+          Select
         </span>
-      ));
-    },
-    [selectOptions],
-  );
+      );
+    }
+    return selectedIds.map((slug) => (
+      <span
+        key={slug}
+        className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(slug)}`}
+      >
+        {slug}
+      </span>
+    ));
+  }, []);
 
   const renderOption = useCallback(
     (option: CheckboxMultiSelectOption) => (
       <span
         className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(option.id)}`}
       >
-        {option.label}
+        {option.id}
       </span>
     ),
     [],
