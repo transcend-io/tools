@@ -37,7 +37,7 @@ export const CustomFunctionsUpsertSchema = z
     setActive: z
       .boolean()
       .optional()
-      .default(true)
+      .default(false)
       .describe('Activate GENERAL on create; ignored for DSR/updates'),
     promote: z
       .boolean()
