@@ -18,6 +18,43 @@ export const QueryPreferencesSchema = z.object({
 });
 export type QueryPreferencesInput = z.infer<typeof QueryPreferencesSchema>;
 
+/**
+ * Preference Store sometimes returns a non-null cursor that base64-decodes to a
+ * payload containing decryptionStatus ERROR even when there is no further page.
+ * Treat those as terminal so agents do not keep paging.
+ */
+export function isTerminalPreferenceQueryCursor(cursor: string): boolean {
+  try {
+    const decoded = Buffer.from(cursor, 'base64').toString('utf8');
+    return (
+      decoded.includes('"decryptionStatus":"ERROR"') ||
+      decoded.includes('"decryptionStatus": "ERROR"')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the query response indicates another page of results.
+ * Matches the REST client's effective limit clamping.
+ */
+export function hasPreferenceQueryNextPage(
+  nodes: unknown[],
+  cursor: string | undefined,
+  identifiersLength: number,
+  limit?: number,
+): boolean {
+  if (!cursor) {
+    return false;
+  }
+  const effectiveLimit = Math.max(1, Math.min(50, limit ?? identifiersLength));
+  if (nodes.length < effectiveLimit) {
+    return false;
+  }
+  return !isTerminalPreferenceQueryCursor(cursor);
+}
+
 export function createPreferencesQueryTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
@@ -36,10 +73,16 @@ export function createPreferencesQueryTool(clients: ToolClients) {
         cursor,
       });
 
+      const hasNextPage = hasPreferenceQueryNextPage(
+        result.nodes,
+        result.cursor,
+        identifiers.length,
+        limit,
+      );
+
       return createListResult(result.nodes, {
-        totalCount: result.nodes.length,
-        hasNextPage: Boolean(result.cursor),
-        cursor: result.cursor,
+        hasNextPage,
+        ...(hasNextPage && result.cursor ? { cursor: result.cursor } : {}),
       });
     },
   });

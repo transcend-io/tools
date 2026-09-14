@@ -90,7 +90,7 @@ export function HelloView() {
             onChange={(event) => setDraftName(event.target.value)}
           />
           <button
-            className="shrink-0 rounded-sm bg-brand px-3.5 py-1.5 text-sm font-medium text-content-inverse transition-colors hover:not-disabled:bg-brand-hovered active:not-disabled:bg-brand-pressed disabled:cursor-default disabled:opacity-60"
+            className="shrink-0 rounded-sm bg-brand px-3.5 py-1.5 text-sm font-medium text-on-fill transition-colors hover:not-disabled:bg-brand-hovered active:not-disabled:bg-brand-pressed disabled:cursor-default disabled:opacity-60"
             type="submit"
             disabled={isCallingTool}
           >

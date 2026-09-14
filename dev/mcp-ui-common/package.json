@@ -19,11 +19,21 @@
     "@transcend-io/type-utils": "workspace:*"
   },
   "devDependencies": {
+    "@modelcontextprotocol/ext-apps": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "react": "catalog:"
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/ext-apps": {
+      "optional": true
+    }
   }
 }

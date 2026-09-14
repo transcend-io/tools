@@ -111,21 +111,9 @@ export const DATA_SILOS_ENRICHED = gql`
         businessEntities {
           title
         }
-      }
-    }
-  }
-`;
-
-/**
- * Singular data silo fetch — `sombra` is available on `DataSilo` but not on
- * the `DataSiloBulkPreview` nodes returned by the paginated `dataSilos` query.
- */
-export const DATA_SILO_SOMBRA = gql`
-  query TranscendCliDataSiloSombra($id: String!) {
-    dataSilo(id: $id) {
-      id
-      sombra {
-        id
+        sombra {
+          id
+        }
       }
     }
   }

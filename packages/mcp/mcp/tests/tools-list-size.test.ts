@@ -1,4 +1,5 @@
 import {
+  isVisibleToModel,
   toolInputSchema,
   TranscendRestClient,
   type AuthCredentials,
@@ -20,12 +21,15 @@ const MAX_TOOL_DESCRIPTION_CHARS = 700;
 const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
 
 function listDescriptors(registry: ToolRegistry) {
-  return registry.getAllTools().map((tool) => ({
-    name: tool.name,
-    description: tool.description,
-    inputSchema: toolInputSchema(tool.zodSchema),
-    annotations: tool.annotations,
-  }));
+  return registry
+    .getAllTools()
+    .filter((tool) => isVisibleToModel(tool))
+    .map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: toolInputSchema(tool.zodSchema),
+      annotations: tool.annotations,
+    }));
 }
 
 describe('umbrella tools/list size', () => {
@@ -38,8 +42,8 @@ describe('umbrella tools/list size', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-    const oversized = registry
-      .getAllTools()
+    const modelTools = registry.getAllTools().filter((tool) => isVisibleToModel(tool));
+    const oversized = modelTools
       .filter((tool) => tool.description.length > MAX_TOOL_DESCRIPTION_CHARS)
       .map((tool) => `${tool.name} (${tool.description.length} chars)`);
     expect(
