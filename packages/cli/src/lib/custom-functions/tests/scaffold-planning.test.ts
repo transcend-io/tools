@@ -210,7 +210,7 @@ describe('buildAddFunctionPlan', () => {
     expect(commands).toHaveLength(3);
     expect(commands[0]).toContain("--manifest='custom-functions/functions.yml'");
     expect(commands[1]).toContain("--manifest='custom-functions/functions.yml'");
-    expect(commands[2]).toContain("--file='custom-functions/functions.yml'");
+    expect(commands[2]).toContain("--manifest='custom-functions/functions.yml'");
   });
 
   it('builds a deterministic manifest, source, and payload plan', () => {

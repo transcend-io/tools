@@ -324,7 +324,7 @@ export function buildPolicyLintTask(
     label: 'policy: lint',
     type: 'process',
     command: 'transcend',
-    args: ['policy', 'lint', '--dir', target, '--noInteractive'],
+    args: ['policy', 'lint', target, '--noInteractive'],
     group: {
       kind: 'test',
       isDefault: true,

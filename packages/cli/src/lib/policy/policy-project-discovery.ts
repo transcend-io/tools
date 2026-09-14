@@ -11,6 +11,20 @@ import type { PolicyProjectState } from './policy-scaffold-model.js';
 export const DEFAULT_POLICY_PROJECT_DIRECTORY = 'transcend/policy';
 
 /**
+ * Resolve a selected policy project relative to the invocation directory.
+ *
+ * @param invocationDirectory - CLI working directory
+ * @param directory - User-selected project directory
+ * @returns Absolute policy project directory
+ */
+export function resolvePolicyProjectDirectory(
+  invocationDirectory: string,
+  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
+): string {
+  return resolve(invocationDirectory, directory);
+}
+
+/**
  * Collect repository state required by the pure policy planner.
  *
  * @param context - CLI context
@@ -22,7 +36,7 @@ export function discoverPolicyProject(
   directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
 ): PolicyProjectState {
   const invocationDirectory = context.process.cwd();
-  const targetDirectory = resolve(invocationDirectory, directory);
+  const targetDirectory = resolvePolicyProjectDirectory(invocationDirectory, directory);
   if (
     context.fs.existsSync(targetDirectory) &&
     !context.fs.statSync(targetDirectory).isDirectory()

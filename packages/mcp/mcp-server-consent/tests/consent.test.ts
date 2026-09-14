@@ -1,4 +1,11 @@
-import { isCapabilityAwareTool, McpClientCapability } from '@transcend-io/mcp-server-base';
+import {
+  isCapabilityAwareTool,
+  McpClientCapability,
+  ErrorCode,
+  ToolError,
+  type RocQueryResponse,
+  type RocUserRecord,
+} from '@transcend-io/mcp-server-base';
 import {
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
@@ -12,6 +19,7 @@ import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { resetAirgapBundleIdCacheForTests } from '../src/resolveAirgapBundleId.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
+import { MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS } from '../src/tools/consent_list_roc_records.js';
 import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
 import { getConsentTools } from '../src/tools/index.js';
 import cookieTriageHtml from '../src/ui/generated/cookie-triage.html';
@@ -34,6 +42,7 @@ const EXPECTED_TOOL_NAMES = [
   'consent_update_data_flows',
   'consent_delete_data_flows',
   'consent_bulk_triage',
+  'consent_list_roc_records',
 ] as const;
 
 describe('Consent Tools', () => {
@@ -41,6 +50,9 @@ describe('Consent Tools', () => {
     makeRequest: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
+  };
+  let mockRest: {
+    listRocRecords: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -50,11 +62,14 @@ describe('Consent Tools', () => {
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
+    mockRest = {
+      listRocRecords: vi.fn(),
+    };
   });
 
   const getTools = () =>
     getConsentTools({
-      rest: {} as never,
+      rest: mockRest as never,
       graphql: mockGraphql as never,
       dashboardUrl: 'https://app.transcend.io',
     });
@@ -682,6 +697,121 @@ describe('Consent Tools', () => {
           totalRows: 1,
         },
       });
+    });
+  });
+
+  describe('consent_list_roc_records', () => {
+    const validInput = {
+      partition: 'bundle-1',
+      identifier: 'user@example.com',
+      identifierType: 'email',
+      includeRawRequest: false,
+    };
+
+    const getRocTool = () => getTools().find((t) => t.name === 'consent_list_roc_records')!;
+
+    const mockRocQueryResponse: RocQueryResponse = {
+      records: [
+        // The initial record has no previous state to diff against, which is why`changeFromPrevState` is optional.
+        {
+          preferencesAtCurrentTime: [
+            {
+              purpose: 'Marketing',
+              consent: false,
+              timestamp: '2026-01-01T00:00:00.000Z',
+              preferences: [],
+            },
+          ],
+        },
+        {
+          preferencesAtCurrentTime: [
+            {
+              purpose: 'Marketing',
+              consent: true,
+              timestamp: '2026-01-02T00:00:00.000Z',
+              preferences: [{ topic: 'EmailMarketing', choice: { booleanValue: true } }],
+            },
+          ],
+          changeFromPrevState: {
+            added: [],
+            removed: [],
+            updated: [
+              {
+                purpose: 'Marketing',
+                consent: true,
+                timestamp: '2026-01-02T00:00:00.000Z',
+                preferences: [{ topic: 'EmailMarketing', choice: { booleanValue: true } }],
+              },
+            ],
+          },
+        },
+      ],
+      containsInitialRecord: true,
+    };
+
+    it('forwards the identifier as a name/value pair and returns the timeline', async () => {
+      mockRest.listRocRecords.mockResolvedValue(mockRocQueryResponse);
+
+      const result = await getRocTool().handler({ ...validInput, limit: 50 });
+
+      expect(mockRest.listRocRecords).toHaveBeenCalledWith({
+        partition: 'bundle-1',
+        identifier: { name: 'email', value: 'user@example.com' },
+        limit: 50,
+        includeRawRequest: false,
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          records: mockRocQueryResponse.records,
+          containsInitialRecord: true,
+        },
+      });
+      // The initial record doesn't have a previous state to diff against, so it shouldn't have a diff.
+      const { records } = (result as { data: { records: RocUserRecord[] } }).data;
+      expect(records[0]).not.toHaveProperty('changeFromPrevState');
+    });
+
+    it('reports an empty timeline as found: false rather than an error', async () => {
+      const emptyRocQueryResponse: RocQueryResponse = { records: [], containsInitialRecord: false };
+      mockRest.listRocRecords.mockResolvedValue(emptyRocQueryResponse);
+
+      expect(await getRocTool().handler(validInput)).toMatchObject({
+        success: true,
+        data: { found: false },
+      });
+    });
+
+    it('names the Sombra minimum version on a 404, keeping the original error', async () => {
+      mockRest.listRocRecords.mockRejectedValue(
+        new ToolError(ErrorCode.NOT_FOUND, 'Resource not found (404): Not Found', false),
+      );
+
+      await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
+        code: ErrorCode.NOT_FOUND,
+        message: expect.stringContaining(MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS),
+      });
+      // A 404 can also mean a renamed path, so the cause must stay visible.
+      await expect(getRocTool().handler(validInput)).rejects.toThrow(/Resource not found \(404\)/);
+    });
+
+    it('passes through non-404 failures untouched', async () => {
+      mockRest.listRocRecords.mockRejectedValue(
+        new ToolError(ErrorCode.PERMISSION_ERROR, 'Authentication failed (403): denied', false),
+      );
+
+      await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
+        code: ErrorCode.PERMISSION_ERROR,
+        message: 'Authentication failed (403): denied',
+      });
+    });
+
+    it('rejects a limit outside the server-validated 1-200 range', () => {
+      const tool = getRocTool();
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 0 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 201 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 1.5 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse(validInput).success).toBe(true);
     });
   });
 });

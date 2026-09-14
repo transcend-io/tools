@@ -26,17 +26,20 @@ import {
   parseUnformattedPolicyFiles,
 } from '../../../lib/policy/policy-lint-output.js';
 import {
+  DEFAULT_POLICY_PROJECT_DIRECTORY,
+  resolvePolicyProjectDirectory,
+} from '../../../lib/policy/policy-project-discovery.js';
+import {
   OPA_MISSING_MESSAGE,
   parsePolicyToolVersion,
   REGAL_MISSING_MESSAGE,
   unsupportedOpaVersionMessage,
   unsupportedRegalVersionMessage,
 } from '../../../lib/policy/policy-runtime.js';
+import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
 
 /** CLI flags for `transcend policy lint`. */
 export interface LintCommandFlags {
-  /** Directory containing manifest.json, Rego policy files, and tests. */
-  dir: string;
   /** Apply OPA formatting. */
   fix: boolean;
   /** Disable the optional formatting confirmation. */
@@ -125,16 +128,18 @@ function renderResult(context: LocalContext, result: PolicyLintResult): void {
  *
  * @param this - CLI context
  * @param flags - Command flags
+ * @param directory - Policy project directory
  * @param runner - Captured subprocess runner
  */
 export async function lint(
   this: LocalContext,
-  { dir = 'transcend/policy', fix = false, noInteractive = false, json = false }: LintCommandFlags,
+  { fix = false, noInteractive = false, json = false }: LintCommandFlags,
+  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
   runner: CapturedProcessRunner = runCapturedProcess,
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  const resolvedDir = path.resolve(this.process.cwd(), dir);
+  const resolvedDir = resolvePolicyProjectDirectory(this.process.cwd(), directory);
   const checks: PolicyLintCheck[] = POLICY_LINT_CHECK_NAMES.map((name) => ({
     name,
     status: 'skipped',
@@ -255,7 +260,11 @@ export async function lint(
           setStatus('format', 'passed');
         } else {
           let shouldFormat = fix;
-          const interactive = !json && !noInteractive && Boolean(this.process.stdin.isTTY);
+          const interactive = isInteractivePromptInvocation(
+            { json, noInteractive },
+            this.process.stdin.isTTY,
+            this.process.stderr.isTTY,
+          );
           if (!json && !fix) {
             this.logger.error(colors.red('Policy files are not formatted:'));
             result.unformattedFiles.forEach((file) => {

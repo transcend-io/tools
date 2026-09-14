@@ -122,7 +122,7 @@ describe('Policy Engine VS Code setup', () => {
     expect(parsed.tasks[1]).toMatchObject({
       label: 'policy: lint',
       command: 'transcend',
-      args: ['policy', 'lint', '--dir', "policies/customer's policy", '--noInteractive'],
+      args: ['policy', 'lint', "policies/customer's policy", '--noInteractive'],
       group: { kind: 'test', isDefault: true },
     });
   });
