@@ -1,9 +1,6 @@
 import type { Got } from 'got';
 
-import {
-  policyEngineRequest,
-  throwPolicyEngineRequestError,
-} from './formatPolicyEngineRequestError.js';
+import { throwPolicyEngineRequestError } from './formatPolicyEngineRequestError.js';
 import type {
   GetPolicyBundleVersionResponse,
   PolicyBundle,
@@ -22,22 +19,36 @@ import type {
  * Lists policy bundles (mirrors `transcend policy bundles --json`).
  *
  * @param client - Policy Engine REST client
- * @param options - Pagination options
+ * @param options - Pagination and optional name filter
  * @returns Bundle list response
  */
 export async function listPolicyBundles(
   client: Got,
-  options: { limit?: number; offset?: number } = {},
+  options: {
+    /** Page size */
+    limit?: number;
+    /** Offset into the result set */
+    offset?: number;
+    /** When set, filter to this tenant-unique bundle name */
+    bundleName?: string;
+  } = {},
 ): Promise<PolicyBundleListResponse> {
   const limit = options.limit ?? 50;
   const offset = options.offset ?? 0;
-  return policyEngineRequest(
-    client
+  const searchParams: Record<string, string | number> = { limit, offset };
+  if (options.bundleName) {
+    searchParams['filter[bundleName]'] = options.bundleName;
+  }
+
+  try {
+    return await client
       .get('v1/policy-engine/policy-bundles', {
-        searchParams: { limit, offset },
+        searchParams,
       })
-      .json<PolicyBundleListResponse>(),
-  );
+      .json<PolicyBundleListResponse>();
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
 }
 
 /**
@@ -77,7 +88,14 @@ export async function getPolicyBundleById(
 export async function listPolicyBundleVersions(
   client: Got,
   bundleId: string,
-  options: { limit?: number; after?: string; version?: string } = {},
+  options: {
+    /** Page size */
+    limit?: number;
+    /** Cursor from a prior page */
+    after?: string;
+    /** When set, filter to this version label */
+    version?: string;
+  } = {},
 ): Promise<PolicyBundleVersionListResponse> {
   const limit = options.limit ?? 50;
   const searchParams: Record<string, string | number> = { limit };
@@ -88,13 +106,15 @@ export async function listPolicyBundleVersions(
     searchParams['filter[version]'] = options.version;
   }
 
-  return policyEngineRequest(
-    client
+  try {
+    return await client
       .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
         searchParams,
       })
-      .json<PolicyBundleVersionListResponse>(),
-  );
+      .json<PolicyBundleVersionListResponse>();
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
 }
 
 /**
@@ -108,9 +128,11 @@ export async function getPolicyBundleVersion(
   client: Got,
   versionId: string,
 ): Promise<GetPolicyBundleVersionResponse> {
-  return policyEngineRequest(
-    client
+  try {
+    return await client
       .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
-      .json<GetPolicyBundleVersionResponse>(),
-  );
+      .json<GetPolicyBundleVersionResponse>();
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
 }
