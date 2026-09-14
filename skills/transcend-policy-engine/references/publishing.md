@@ -2,7 +2,7 @@
 
 ## Validate the upload contract
 
-`manifest.json` declares the document-tree roots included in the Policy Engine bundle. Each non-test Rego package must equal a root or be nested below one. Test modules remain local and are excluded from the upload archive.
+`.manifest` declares the document-tree roots included in the Policy Engine bundle. Each non-test Rego package must equal a root or be nested below one. Test modules remain local and are excluded from the upload archive. Publishing packages `.manifest` as `manifest.json` in the upload tarball.
 
 Before publishing:
 

@@ -70,7 +70,7 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('default decision := "deny"');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('"reason_code": reason_code');
     expect(POLICY_AUTHORING_REFERENCE_MD.match(/^result :=/gmu)).toHaveLength(1);
-    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('manifest.json');
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('.manifest');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('Fail closed');
   });
 
@@ -85,7 +85,7 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('--fix');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.example.json');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.json');
-    expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('manifest.json');
+    expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('.manifest');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy publish --help');
   });

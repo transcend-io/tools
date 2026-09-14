@@ -113,8 +113,6 @@ describe('policy init with pinned OPA and Regal', () => {
       'manifest.json',
       'policy_engine/example/result.rego',
     ]);
-    expect(readFileSync(join(policyDirectory, 'manifest.json'), 'utf8')).toContain(
-      '"policy_engine"',
-    );
+    expect(readFileSync(join(policyDirectory, '.manifest'), 'utf8')).toContain('"policy_engine"');
   }, 60_000);
 });

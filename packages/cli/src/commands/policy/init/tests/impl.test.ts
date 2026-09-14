@@ -110,7 +110,7 @@ describe('policy init', () => {
       applied: true,
       dryRun: false,
       targetDirectory: target,
-      manifestPath: join(target, 'manifest.json'),
+      manifestPath: join(target, '.manifest'),
       changes: generatePolicyStarterFiles().map((file) => ({
         kind: 'create',
         target: `transcend/policy/${file.path}`,
@@ -128,7 +128,7 @@ describe('policy init', () => {
     expect(invocations).toEqual(['opa version', 'regal version']);
     expect(context.stderr).toBe('');
     expect(JSON.parse(context.stdout).aiHandoff).not.toContain('Ask your coding agent');
-    expect(existsSync(join(root, 'manifest.json'))).toBe(false);
+    expect(existsSync(join(root, '.manifest'))).toBe(false);
     expect(existsSync(join(root, '.vscode'))).toBe(false);
     expect(existsSync(join(root, '.agents'))).toBe(false);
     expect(existsSync(join(root, '.github'))).toBe(false);
@@ -203,7 +203,7 @@ describe('policy init', () => {
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
-          target: 'custom-policy/manifest.json',
+          target: 'custom-policy/.manifest',
         }),
       ]),
     });
@@ -374,7 +374,7 @@ describe('policy init', () => {
     mkdirSync(join(target, '.regal'), { recursive: true });
     mkdirSync(join(target, 'custom'), { recursive: true });
     const existing = new Map([
-      [join(target, 'manifest.json'), '{"roots":["custom"]}\n'],
+      [join(target, '.manifest'), '{"roots":["custom"]}\n'],
       [join(target, '.regal', 'config.yaml'), 'project:\n  roots:\n    - custom\n'],
       [join(target, 'README.md'), '# Existing guide\n'],
       [join(target, 'custom', 'allow.rego'), 'package custom\n\ndefault allow := false\n'],
@@ -396,7 +396,7 @@ describe('policy init', () => {
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('manifest.json'),
+        expect.stringContaining('.manifest'),
         expect.stringContaining('config.yaml'),
         expect.stringContaining('README.md'),
         expect.stringContaining('no starter files were added or overwritten'),
@@ -558,7 +558,7 @@ describe('policy init', () => {
     await expect(init.call(context, buildFlags(), target, buildRunner())).rejects.toThrow(
       'simulated policy write failure',
     );
-    expect(existsSync(join(target, 'manifest.json'))).toBe(false);
+    expect(existsSync(join(target, '.manifest'))).toBe(false);
     expect(existsSync(join(target, '.regal', 'config.yaml'))).toBe(false);
   });
 

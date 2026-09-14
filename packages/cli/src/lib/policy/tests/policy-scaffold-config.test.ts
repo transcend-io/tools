@@ -36,6 +36,9 @@ describe('Policy Engine VS Code setup', () => {
       'opa.strictMode': true,
       'opa.bundleMode': true,
       'opa.formatter': 'opa-fmt-rego-v1',
+      'files.associations': {
+        '.manifest': 'json',
+      },
       '[rego]': {
         'editor.defaultFormatter': POLICY_VSCODE_EXTENSION,
         'editor.formatOnSave': true,

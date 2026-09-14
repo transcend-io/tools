@@ -198,6 +198,30 @@ export function mergePolicyEditorSettings(
     warnings,
   );
 
+  const associations = current['files.associations'];
+  if (associations === undefined) {
+    updates.push({ path: ['files.associations'], value: { '.manifest': 'json' } });
+  } else if (
+    associations !== null &&
+    typeof associations === 'object' &&
+    !Array.isArray(associations)
+  ) {
+    collectSafeScalarUpdates(
+      current,
+      [
+        {
+          path: ['files.associations', '.manifest'],
+          value: 'json',
+          label: 'files.associations.".manifest"',
+        },
+      ],
+      updates,
+      warnings,
+    );
+  } else {
+    warnings.push('VS Code setting "files.associations" is customized and was left unchanged.');
+  }
+
   const regoSettings = current['[rego]'];
   if (regoSettings === undefined) {
     updates.push({
