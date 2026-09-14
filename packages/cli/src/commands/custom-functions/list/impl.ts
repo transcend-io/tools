@@ -3,6 +3,7 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildCustomFunctionListJsonResult } from '../../../lib/custom-functions/command-output.js';
 
@@ -32,10 +33,8 @@ export async function list(
   }
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKeyOrList as string);
-  const customFunctions = await fetchAllCustomFunctions(
-    client,
-    json ? {} : { logger: this.logger },
-  );
+  const commandLogger = selectCommandLogger(this.logger, json);
+  const customFunctions = await fetchAllCustomFunctions(client, { logger: commandLogger });
 
   if (json) {
     const result = buildCustomFunctionListJsonResult(customFunctions);

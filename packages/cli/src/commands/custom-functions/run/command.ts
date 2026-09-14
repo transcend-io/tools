@@ -1,9 +1,9 @@
 import { buildCommand } from '@stricli/core';
 
+import { projectNoInteractiveParameter } from '../../../lib/scaffolding/command-parameters.js';
 import {
   customFunctionDirectoryParameter,
   customFunctionManifestParameter,
-  customFunctionNoInteractiveParameter,
   customFunctionVariablesParameter,
 } from '../constants.js';
 
@@ -22,7 +22,7 @@ export const runCommand = buildCommand({
         optional: true,
       },
       variables: customFunctionVariablesParameter,
-      noInteractive: customFunctionNoInteractiveParameter,
+      noInteractive: projectNoInteractiveParameter,
       allowNetwork: {
         kind: 'boolean',
         brief: 'Permit real native fetch calls to manifest allowed-hosts',

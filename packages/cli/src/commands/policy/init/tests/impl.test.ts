@@ -118,7 +118,7 @@ describe('policy init', () => {
       })),
       warnings: [],
       nextSteps: [
-        "transcend policy lint --dir 'transcend/policy' --noInteractive",
+        "transcend policy lint 'transcend/policy' --noInteractive",
         "Edit 'transcend/policy/policy_engine/example/result.rego'",
       ],
       features: [],
@@ -353,7 +353,7 @@ describe('policy init', () => {
         args: string[];
       }[];
     };
-    expect(tasks.tasks[0]!.args).toEqual(['policy', 'lint', '--dir', directory, '--noInteractive']);
+    expect(tasks.tasks[0]!.args).toEqual(['policy', 'lint', directory, '--noInteractive']);
     const workflow = readFileSync(
       join(root, '.github', 'workflows', 'transcend-policy.yml'),
       'utf8',
@@ -361,7 +361,7 @@ describe('policy init', () => {
     expect(workflow).toContain(`POLICY_DIRECTORY: ${JSON.stringify(directory)}`);
     const result = JSON.parse(context.stdout);
     expect(result.nextSteps[0]).toBe(
-      "transcend policy lint --dir 'policies/customer'\\''s policy' --noInteractive",
+      "transcend policy lint 'policies/customer'\\''s policy' --noInteractive",
     );
     expect(result.aiHandoff).not.toContain('\n');
     expect(result.aiHandoff).toContain('adapt repository validation');
@@ -402,7 +402,7 @@ describe('policy init', () => {
         expect.stringContaining('no starter files were added or overwritten'),
       ]),
     );
-    expect(result.nextSteps).toEqual(["transcend policy lint --dir 'policy' --noInteractive"]);
+    expect(result.nextSteps).toEqual(["transcend policy lint 'policy' --noInteractive"]);
     expect(result.aiHandoff).toContain("Review the existing policy project in 'policy'");
     expect(result.aiHandoff).not.toContain('disposable example');
     expect(result.aiHandoff).not.toContain('policy_engine/example/result.rego');
@@ -469,7 +469,7 @@ describe('policy init', () => {
     expect(context.stdout).toContain('Changes');
     expect(context.stdout).toContain('Policy project initialized.');
     const lines = context.stdout.split('\n');
-    expect(lines).toContain("transcend policy lint --dir 'transcend/policy' --noInteractive");
+    expect(lines).toContain("transcend policy lint 'transcend/policy' --noInteractive");
     expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
     const handoffHeading = lines.findIndex((line) =>
       line.includes('AI handoff — paste into your coding agent'),

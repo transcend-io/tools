@@ -192,9 +192,10 @@ describe('download', () => {
     });
 
     expect(gotMock).not.toHaveBeenCalled();
-    expect(context.stdout).toContain(
-      '"downloadUrl": "https://s3.example.com/presigned-bundle.tar.gz"',
-    );
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      downloadUrl: 'https://s3.example.com/presigned-bundle.tar.gz',
+    });
+    expect(context.stdout).not.toContain('Fetching download URL');
   });
 
   it('throws a CLI-side error when the bundle name is unknown (before calling the monolith)', async () => {
