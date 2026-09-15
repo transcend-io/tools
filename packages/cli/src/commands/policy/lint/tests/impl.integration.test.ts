@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
-import { POLICY_REGAL_CONFIG_TEMPLATE } from '../../../../lib/policy/policy-scaffold-templates.js';
+import { POLICY_STARTER_OPA_VERSION } from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { lint } from '../impl.js';
 
@@ -32,7 +32,18 @@ describe('policy lint with OPA and Regal', () => {
   it('rejects production policy that depends on a local test module', async () => {
     const directory = makePolicyDirectory();
     writeFileSync(join(directory, '.manifest'), '{"roots":["policy_engine"]}\n');
-    writeFileSync(join(directory, '.regal.yaml'), POLICY_REGAL_CONFIG_TEMPLATE);
+    writeFileSync(
+      join(directory, '.regal.yaml'),
+      `capabilities:
+  from:
+    engine: opa
+    version: v${POLICY_STARTER_OPA_VERSION}
+project:
+  roots:
+    - policy_engine
+  rego-version: 1
+`,
+    );
     writeFileSync(
       join(directory, 'policy.rego'),
       `package policy_engine

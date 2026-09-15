@@ -28,9 +28,9 @@ export default `#### Examples
 
 ${examples}
 
-To verify another project, pass its directory positionally:
+With no directory argument, \`policy lint\` verifies every immediate child under the default workspace (\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to verify a single unit:
 
 \`\`\`sh
-transcend policy lint ./policies --fix
+transcend policy lint ./policies/example-bundle --fix
 \`\`\`
 `;

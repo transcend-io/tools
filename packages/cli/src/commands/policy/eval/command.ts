@@ -1,6 +1,6 @@
 import { buildCommand } from '@stricli/core';
 
-import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
 export const evalCommand = buildCommand({
   loader: async () => {
@@ -22,13 +22,14 @@ export const evalCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyBundleDirectoryParameter],
     },
   },
   docs: {
     brief: 'Evaluate one envelope against a local policy bundle',
     fullDescription:
-      'Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. ' +
+      'Wraps `opa eval` for local policy debugging against one bundle directory. ' +
+      'Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. ' +
       'No Transcend API key is needed.',
   },
 });

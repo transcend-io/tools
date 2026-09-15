@@ -90,8 +90,10 @@ describe('buildOpaBundleTarball', () => {
     const buildArgs = runOPACaptureMock.mock.calls[1][0] as string[];
     const buildOptions = runOPACaptureMock.mock.calls[1][1] as { cwd?: string };
     expect(checkArgs[0]).toBe('check');
+    expect(checkArgs).not.toContain('--v0-compatible');
     expect(buildArgs[0]).toBe('build');
-    expect(buildArgs).toContain('--v0-compatible');
+    expect(buildArgs).not.toContain('--v0-compatible');
+    expect(buildArgs).toContain('-b');
     expect(buildArgs).toContain('--ignore');
     expect(buildArgs[buildArgs.indexOf('--ignore') + 1]).toBe('*_test.rego');
     expect(buildArgs.at(-1)).toBe('.');

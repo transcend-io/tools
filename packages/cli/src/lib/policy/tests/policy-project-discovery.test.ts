@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,8 +7,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildContextForTest } from '../../tests/helpers/buildContextForTest.js';
 import {
   DEFAULT_POLICY_PROJECT_DIRECTORY,
+  discoverPolicyBundleDirectories,
   discoverPolicyProject,
 } from '../policy-project-discovery.js';
+import { POLICY_MANIFEST_FILENAME } from '../policy-scaffold-templates.js';
 
 const temporaryRoots: string[] = [];
 
@@ -69,5 +71,43 @@ describe('discoverPolicyProject', () => {
     expect(() =>
       discoverPolicyProject(buildContextForTest({ cwd: root }), DEFAULT_POLICY_PROJECT_DIRECTORY),
     ).toThrow('outside project root through a symlink');
+  });
+});
+
+describe('discoverPolicyBundleDirectories', () => {
+  it('returns the directory itself when it contains a .manifest', () => {
+    const root = makeTemporaryRoot();
+    writeFileSync(join(root, POLICY_MANIFEST_FILENAME), JSON.stringify({ roots: ['example'] }));
+
+    expect(discoverPolicyBundleDirectories(buildContextForTest({ cwd: root }), root)).toEqual([
+      root,
+    ]);
+  });
+
+  it('returns sorted child directories that contain a .manifest', () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, 'permissions-bundle'));
+    mkdirSync(join(root, 'payments'));
+    mkdirSync(join(root, 'not-a-bundle'));
+    writeFileSync(
+      join(root, 'permissions-bundle', POLICY_MANIFEST_FILENAME),
+      JSON.stringify({ roots: ['permissions'] }),
+    );
+    writeFileSync(
+      join(root, 'payments', POLICY_MANIFEST_FILENAME),
+      JSON.stringify({ roots: ['payments'] }),
+    );
+
+    expect(discoverPolicyBundleDirectories(buildContextForTest({ cwd: root }), root)).toEqual([
+      join(root, 'payments'),
+      join(root, 'permissions-bundle'),
+    ]);
+  });
+
+  it('returns an empty list for an empty workspace', () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.regal'), { recursive: true });
+
+    expect(discoverPolicyBundleDirectories(buildContextForTest({ cwd: root }), root)).toEqual([]);
   });
 });

@@ -13,12 +13,6 @@
  * accepted and needs to be told what to change.
  */
 
-/** No group or template given, so there is nowhere to create the form. */
-export const PREFILL_GROUP_REQUIRED = {
-  code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
-  retryable: false,
-} as const;
-
 /** No assignee of any kind given, so the form could not accept answers. */
 export const PREFILL_ASSIGNEE_REQUIRED = {
   code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
@@ -36,8 +30,14 @@ export const PREFILL_INTERNAL_ASSIGNEE_REQUIRED = {
   retryable: false,
 } as const;
 
-/** The form was built but some answers did not land, so it can be finished. */
+/**
+ * The form was built but some answers did not land, so it can be finished.
+ *
+ * Not retryable despite the call having failed: the form exists, so running
+ * assessments_prefill again builds a second one. A client that retries on the
+ * flag alone would duplicate the record it was trying to repair.
+ */
 export const PREFILL_INCOMPLETE = {
   code: 'ASSESSMENT_PREFILL_INCOMPLETE',
-  retryable: true,
+  retryable: false,
 } as const;

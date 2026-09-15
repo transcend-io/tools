@@ -1,6 +1,6 @@
 import { buildCommand } from '@stricli/core';
 
-import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyWorkspaceOrBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
 export const testCommand = buildCommand({
   loader: async () => {
@@ -11,13 +11,14 @@ export const testCommand = buildCommand({
     flags: {},
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyWorkspaceOrBundleDirectoryParameter],
     },
   },
   docs: {
-    brief: 'Run OPA tests against a local policy bundle',
+    brief: 'Run OPA tests against local policy bundles',
     fullDescription:
-      'Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. ' +
-      'No Transcend API key is needed.',
+      'Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b` for every ' +
+      'child directory that contains a `.manifest`. Pass one bundle path to test a single unit. ' +
+      'Requires the `opa` CLI on PATH. No Transcend API key is needed.',
   },
 });

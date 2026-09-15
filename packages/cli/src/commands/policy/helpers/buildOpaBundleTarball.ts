@@ -63,9 +63,11 @@ async function assertBundleCompiles(dir: string): Promise<void> {
   );
   try {
     // Run with `cwd` set to the bundle directory and pass `.` so `opa build`
-    // resolves the bundle root correctly. `*_test.rego` files are local-only.
+    // resolves the bundle root correctly. Bundle mode (`-b`) keeps local
+    // `input.json` / `input.example.json` fixtures from merging as data.
+    // `*_test.rego` files are local-only.
     const { code, stderr } = await runOPACapture(
-      ['build', '--v0-compatible', '--ignore', '*_test.rego', '-o', buildOutputPath, '.'],
+      ['build', '--ignore', '*_test.rego', '-b', '-o', buildOutputPath, '.'],
       { cwd: dir },
     );
     if (code !== 0) {
@@ -126,7 +128,6 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   const { code: checkCode, stderr: checkStderr } = await runOPACapture([
     'check',
     '--strict',
-    '--v0-compatible',
     resolvedDir,
   ]);
   if (checkCode !== 0) {
