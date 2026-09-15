@@ -1,5 +1,41 @@
 # @transcend-io/mcp
 
+## 1.3.0
+
+### Minor Changes
+
+- f5294d8: Add the Custom Functions MCP domain with list and get_code tools that unwrap signed source to plaintext without exposing JWTs.
+- 7d2ba42: Add custom_functions_test_run and optional upsert testPayloads so agents can execute stored or unsaved code and set successfulTestRun when tests pass. Save and promote do not require a passing test.
+- 8f8a9a0: Add custom_functions_upsert and custom_functions_promote_version: sign plaintext through Sombra, auto-resolve sombraId, auto-create a customFunction silo for DSR creates, and promote drafts.
+
+### Patch Changes
+
+- 31b74c6: Show purpose slugs (not custom titles) in the consent triage tabs and purpose dropdown.
+- f5294d8: Adds read tools for custom functions
+- 5fda809: Include Custom Functions in MCP guide docs sync.
+- 8f8a9a0: adds custom function upsert and promote tools
+- Updated dependencies [30ff243]
+- Updated dependencies [90e7d4f]
+- Updated dependencies [31b74c6]
+- Updated dependencies [f5294d8]
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [7d2ba42]
+- Updated dependencies [8f8a9a0]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+  - @transcend-io/mcp-server-assessment@2.1.8
+  - @transcend-io/mcp-server-consent@1.2.3
+  - @transcend-io/mcp-server-custom-functions@0.2.0
+  - @transcend-io/mcp-server-inventory@1.0.11
+  - @transcend-io/mcp-server-base@2.5.0
+  - @transcend-io/mcp-server-admin@1.0.11
+  - @transcend-io/mcp-server-discovery@1.0.11
+  - @transcend-io/mcp-server-docs@0.4.11
+  - @transcend-io/mcp-server-dsr@2.0.8
+  - @transcend-io/mcp-server-preferences@0.7.15
+  - @transcend-io/mcp-server-workflows@1.0.11
+
 ## 1.2.2
 
 ### Patch Changes
