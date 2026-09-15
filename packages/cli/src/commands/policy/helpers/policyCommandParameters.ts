@@ -6,7 +6,7 @@ import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-pro
  * The workspace holds shared Regal config, schemas, and one or more bundles.
  */
 export const policyWorkspaceDirectoryParameter = {
-  brief: 'Policy workspace directory (default: transcend/policy)',
+  brief: 'Policy workspace directory',
   placeholder: 'directory',
   parse: String,
   optional: true as const,
@@ -21,7 +21,7 @@ export const policyWorkspaceDirectoryParameter = {
  * Pass one bundle directory to target a single unit.
  */
 export const policyWorkspaceOrBundleDirectoryParameter = {
-  brief: 'Policy workspace or bundle directory (workspace default: every .manifest child)',
+  brief: 'Policy workspace or bundle directory (workspace runs every .manifest child)',
   placeholder: 'directory',
   parse: String,
   optional: true as const,

@@ -4340,7 +4340,7 @@ FLAGS
   -h  --help                Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy workspace directory (default: transcend/policy) [default = transcend/policy]
+  [directory]  Policy workspace directory [default = transcend/policy]
 ```
 
 #### Create an empty multi-bundle workspace
@@ -4386,7 +4386,7 @@ FLAGS
   -h  --help            Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy workspace or bundle directory (workspace default: every .manifest child) [default = transcend/policy]
+  [directory]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples
@@ -4434,7 +4434,7 @@ FLAGS
   -h  --help            Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy workspace directory (default: transcend/policy) [default = transcend/policy]
+  [directory]  Policy workspace directory [default = transcend/policy]
 ```
 
 #### Add a generic example bundle
@@ -4575,7 +4575,7 @@ FLAGS
   -h --help  Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy workspace or bundle directory (workspace default: every .manifest child) [default = transcend/policy]
+  [directory]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples
