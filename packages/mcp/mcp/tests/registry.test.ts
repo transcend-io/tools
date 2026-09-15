@@ -70,6 +70,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     // Experimental tools are defined but omitted from registration unless
@@ -92,6 +94,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     for (const tool of registry.getToolList()) {
@@ -109,6 +113,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     expect(registry.getTool('nonexistent_tool')).toBeUndefined();
@@ -121,6 +127,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     await expect(registry.executeTool('nonexistent_tool', {})).rejects.toThrow('Unknown tool');
