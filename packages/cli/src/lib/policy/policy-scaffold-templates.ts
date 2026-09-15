@@ -1,5 +1,10 @@
 import yaml from 'js-yaml';
 
+import permissionsPolicyInputSchema from '../../../schema/permissions-policy-input.json' with { type: 'json' };
+
+/** Published Permissions API OPA input schema `$id` (raw GitHub URL). */
+export const PERMISSIONS_POLICY_INPUT_SCHEMA_ID = permissionsPolicyInputSchema.$id;
+
 /** OPA version targeted by generated policy authoring configuration. */
 export const POLICY_STARTER_OPA_VERSION = '1.18.2';
 
@@ -545,25 +550,40 @@ test_allows_trusted_subject if {
  * @param root - Package root name
  * @returns Bundle files relative to the workspace
  */
+/**
+ * Serialize the published Permissions input schema for a local OPA schema path.
+ *
+ * OPA maps `schemas/{root}/input.json` → `schema.{root}.input`; the file is a
+ * copy of the published schema so type-checking works offline.
+ *
+ * @returns Schema file contents ending in a trailing newline
+ */
+export function buildPermissionsInputSchemaContents(): string {
+  return `${JSON.stringify(permissionsPolicyInputSchema, null, 2)}\n`;
+}
+
+/**
+ * Serialize the published Permissions input example for local evaluation.
+ *
+ * @returns Example input JSON ending in a trailing newline
+ */
+export function buildPermissionsInputExampleContents(): string {
+  const [example] = permissionsPolicyInputSchema.examples;
+  if (!example) {
+    throw new Error('permissions-policy-input.json must declare at least one example');
+  }
+  return `${JSON.stringify(example, null, 2)}\n`;
+}
+
+/**
+ * Generate bundle files for the permissions template.
+ *
+ * @param root - Package root name
+ * @returns Bundle files relative to the workspace
+ */
 export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[] {
   const bundle = buildBundleDirectoryName(root);
-  const inputExample = `{
-  "preferences": [
-    {
-      "name": "Analytics",
-      "choice": true,
-      "days_since_choice": 42
-    },
-    {
-      "name": "SaleOfInfo",
-      "choice": null
-    }
-  ],
-  "context": {
-    "region": "US-CA"
-  }
-}
-`;
+  const inputExample = buildPermissionsInputExampleContents();
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
@@ -572,66 +592,8 @@ export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[
     },
     {
       path: `schemas/${root}/input.json`,
-      contents: `{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://transcend.io/policy-schemas/${root}/input.json",
-  "title": "Permissions API policy input",
-  "description": "JSON document posted as \`{ input }\` to the OPA Data API at \`data/${root}/purposes\`.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["preferences", "context"],
-  "properties": {
-    "preferences": {
-      "type": "array",
-      "description": "Purpose preference rows from Preference Store for the current subject.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["name", "choice"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Purpose slug (for example Analytics or SaleOfInfo)."
-          },
-          "choice": {
-            "type": ["boolean", "null"],
-            "description": "true when opted in, false when opted out, or null when unset."
-          },
-          "days_since_choice": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "Whole days since the preference was last set. Omitted when no timestamp is available."
-          }
-        }
-      }
-    },
-    "context": {
-      "type": "object",
-      "description": "Caller-supplied context for the decision (for example region). Use an empty object when none is provided.",
-      "additionalProperties": true
-    }
-  },
-  "examples": [
-    {
-      "preferences": [
-        {
-          "name": "Analytics",
-          "choice": true,
-          "days_since_choice": 42
-        },
-        {
-          "name": "SaleOfInfo",
-          "choice": null
-        }
-      ],
-      "context": {
-        "region": "US-CA"
-      }
-    }
-  ]
-}
-`,
-      description: `Create the input JSON Schema for the ${root} bundle`,
+      contents: buildPermissionsInputSchemaContents(),
+      description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
     },
     {
       path: `${bundle}/${root}/config/config.rego`,
