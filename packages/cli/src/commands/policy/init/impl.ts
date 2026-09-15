@@ -208,10 +208,7 @@ export async function init(
         renderProjectPlan(plan, {
           cwd: this.process.cwd(),
           title: 'Policy initialization plan',
-          details: [
-            { label: 'Target', path: plan.targetDirectory },
-            { label: 'Manifest', path: plan.manifestPath },
-          ],
+          details: [{ label: 'Target', path: plan.targetDirectory }],
         }),
       );
     }
@@ -238,15 +235,8 @@ export async function init(
       projectPath: quoteShellArgument(
         displayProjectPath(this.process.cwd(), state.targetDirectory),
       ),
-      ...(plan.disposableExamplePath
-        ? {
-            examplePath: quoteShellArgument(
-              displayProjectPath(this.process.cwd(), plan.disposableExamplePath),
-            ),
-          }
-        : {}),
       hasSkill: setupAvailable && features.includes(PolicySetupFeature.Skill),
-      lintCommand: plan.nextSteps[0]!,
+      newCommand: plan.nextSteps[0]!,
     });
     const result = buildPolicyInitPlanResult(plan, {
       applied,

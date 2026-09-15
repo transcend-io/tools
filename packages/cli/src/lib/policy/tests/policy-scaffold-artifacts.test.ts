@@ -15,6 +15,18 @@ import {
 } from '../policy-scaffold-templates.js';
 
 describe('Policy Engine GitHub Actions workflow', () => {
+  it('emits a placeholder lint job when the workspace has no bundles yet', () => {
+    const workflow = generatePolicyGithubActionsWorkflow({
+      cliVersion: '11.0.0',
+      workspaceDirectory: 'transcend/policy',
+      bundleDirectories: [],
+    });
+
+    expect(workflow).toContain('No publishable bundles yet');
+    expect(workflow).not.toContain('POLICY_DIRECTORY');
+    expect(workflow).toContain('transcend/policy/**/.manifest');
+  });
+
   it('is pinned, least-privilege, credential-free, and validation-only', () => {
     const workflow = generatePolicyGithubActionsWorkflow({
       cliVersion: '10.27.4',

@@ -44,8 +44,8 @@ export const initCommand = buildCommand({
     },
   },
   docs: {
-    brief: 'Initialize a safe local policy project',
+    brief: 'Initialize an empty multi-bundle policy workspace',
     fullDescription:
-      'Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.',
+      'Probes OPA and Regal, previews one safe transactional plan, and creates an empty multi-bundle workspace with shared Regal config and README. Add bundles with `transcend policy new`. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.',
   },
 });

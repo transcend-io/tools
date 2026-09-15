@@ -6,10 +6,9 @@ import type { PlanningPathSnapshot } from '../../scaffolding/project-plan.js';
 import type { PolicyProjectState } from '../policy-scaffold-model.js';
 import {
   buildPolicyInitPlan,
-  buildPolicyLintCommand,
   getPolicyInitPlanningCandidatePaths,
 } from '../policy-scaffold-planning.js';
-import { generatePolicyStarterFiles } from '../policy-scaffold-templates.js';
+import { generatePolicyWorkspaceFiles } from '../policy-scaffold-templates.js';
 
 /** Stable no-integration planner options. */
 const CORE_OPTIONS = { features: [], cliVersion: '10.27.4' } as const;
@@ -48,13 +47,13 @@ function absentSnapshots(paths: readonly string[]): Record<string, PlanningPathS
 }
 
 /**
- * Model the exact starter after applying a fresh plan.
+ * Model the exact workspace after applying a fresh plan.
  *
  * @param state - Policy project state
- * @returns Starter snapshots and relative paths
+ * @returns Workspace snapshots and relative paths
  */
 function initializedState(state: PolicyProjectState): {
-  /** State containing exact starter paths. */
+  /** State containing exact workspace paths. */
   state: PolicyProjectState;
   /** File snapshots containing exact generated contents. */
   snapshots: Record<string, PlanningPathSnapshot>;
@@ -62,7 +61,7 @@ function initializedState(state: PolicyProjectState): {
   const snapshots = absentSnapshots(getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS));
   const relativePaths = new Set<string>();
   const relativeFilePaths: string[] = [];
-  generatePolicyStarterFiles().forEach((file) => {
+  generatePolicyWorkspaceFiles().forEach((file) => {
     const path = join(state.targetDirectory, file.path);
     snapshots[path] = {
       kind: 'file',
@@ -90,7 +89,7 @@ function initializedState(state: PolicyProjectState): {
 }
 
 describe('buildPolicyInitPlan', () => {
-  it('creates every starter file in one deterministic create-only plan', () => {
+  it('creates workspace files in one deterministic create-only plan', () => {
     const state = buildState('/repo');
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
     const input = { state, snapshots: absentSnapshots(paths) };
@@ -105,34 +104,26 @@ describe('buildPolicyInitPlan', () => {
     expect(first.directoryPreconditions).toEqual([
       { path: '/repo/transcend/policy', relativePaths: [] },
     ]);
-    expect(first.changes).toHaveLength(8);
+    expect(first.changes).toHaveLength(2);
     expect(
       first.changes.every(
         (change) => change.kind === 'file' && change.before === null && change.createOnly,
       ),
     ).toBe(true);
-    expect(first.nextSteps[0]).toBe(
-      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
-    );
-    expect(first.disposableExamplePath).toBe(
-      '/repo/transcend/policy/example-bundle/example/result/result.rego',
-    );
+    expect(first.nextSteps[0]).toBe('transcend policy new');
+    expect(first.disposableExamplePath).toBeUndefined();
   });
 
   it('initializes a target containing only empty directories', () => {
-    // Why: Git reverts can leave an empty directory tree behind.
-    // Given: A policy target with no authored or generated policy files.
-    // When: Initialization plans the core starter.
-    // Then: It creates every starter file without deleting the empty directories.
     const state = {
       ...buildState('/repo'),
-      relativePaths: ['.regal', 'example-bundle', 'example-bundle/example'],
+      relativePaths: ['.regal'],
     };
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
 
     const plan = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, CORE_OPTIONS);
 
-    expect(plan.changes).toHaveLength(8);
+    expect(plan.changes).toHaveLength(2);
     expect(plan.directoryPreconditions).toEqual([
       {
         path: '/repo/transcend/policy',
@@ -141,16 +132,14 @@ describe('buildPolicyInitPlan', () => {
     ]);
   });
 
-  it('is a clean no-op when rerun against its exact starter and local input', () => {
+  it('is a clean no-op when rerun against its exact workspace files', () => {
     const initial = initializedState(buildState('/repo'));
-    initial.state.relativePaths.push('example-bundle/input.json');
-    initial.state.relativeFilePaths.push('example-bundle/input.json');
 
     const plan = buildPolicyInitPlan(initial, CORE_OPTIONS);
 
     expect(plan.changes).toEqual([]);
     expect(plan.warnings).toEqual([]);
-    expect(plan.unchanged).toHaveLength(8);
+    expect(plan.unchanged).toHaveLength(2);
   });
 
   it('never fills in or overwrites a target containing custom or partial content', () => {
@@ -176,26 +165,19 @@ describe('buildPolicyInitPlan', () => {
     expect(plan.warnings).toContain(
       'Existing policy scaffold path was left unchanged: transcend/policy/README.md',
     );
-    expect(plan.warnings.at(-1)).toContain('no starter files were added or overwritten');
-    expect(plan.warnings.at(-1)).toContain(
-      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
-    );
-    expect(plan.nextSteps).toEqual([
-      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
-    ]);
+    expect(plan.warnings.at(-1)).toContain('no workspace files were added or overwritten');
+    expect(plan.warnings.at(-1)).toContain('transcend policy new');
+    expect(plan.nextSteps).toEqual(['transcend policy new']);
     expect(plan.disposableExamplePath).toBeUndefined();
   });
 
-  it('uses a portable quoted custom path in raw next steps', () => {
+  it('uses transcend policy new as the next step', () => {
     const state = buildState('/repo', join('/repo', 'policies with spaces'));
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
 
     const plan = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, CORE_OPTIONS);
 
-    expect(buildPolicyLintCommand(state)).toBe(
-      "transcend policy lint 'policies with spaces/example-bundle' --noInteractive",
-    );
-    expect(plan.nextSteps[0]).toBe(buildPolicyLintCommand(state));
+    expect(plan.nextSteps[0]).toBe('transcend policy new');
   });
 
   it('rejects destinations outside the approved project root', () => {

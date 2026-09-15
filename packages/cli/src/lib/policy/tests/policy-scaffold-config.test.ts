@@ -12,7 +12,7 @@ import {
 import { POLICY_STARTER_BUNDLE_DIRECTORY } from '../policy-scaffold-templates.js';
 
 describe('Policy Engine VS Code setup', () => {
-  it('merges authoritative OPA settings with comments and idempotence', () => {
+  it('merges authoritative OPA settings with comments and idempotence when bundleRoots provided', () => {
     const existing = `{
   // Keep this repository-wide preference.
   "files.trimTrailingWhitespace": true,
@@ -20,11 +20,14 @@ describe('Policy Engine VS Code setup', () => {
 }
 `;
 
-    const first = mergePolicyEditorSettings(existing, '/repo', "/repo/policies/customer's policy");
+    const first = mergePolicyEditorSettings(existing, '/repo', "/repo/policies/customer's policy", [
+      'example',
+    ]);
     const second = mergePolicyEditorSettings(
       first.contents,
       '/repo',
       "/repo/policies/customer's policy",
+      ['example'],
     );
 
     expect(first.warnings).toEqual([]);
@@ -62,9 +65,19 @@ describe('Policy Engine VS Code setup', () => {
     });
   });
 
+  it('omits opa.roots and json.schemas when no bundleRoots provided (init)', () => {
+    const result = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy');
+    const parsed = parse(result.contents) as Record<string, unknown>;
+
+    expect(parsed['opa.roots']).toBeUndefined();
+    expect(parsed['json.schemas']).toBeUndefined();
+    expect(parsed['opa.schema']).toBe('${workspaceFolder}/transcend/policy/schemas');
+    expect(parsed['opa.bundleMode']).toBe(true);
+  });
+
   it('scopes the .manifest association to nested bundles under the workspace', () => {
-    const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy');
-    const rooted = mergePolicyEditorSettings(null, '/repo', '/repo');
+    const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy', ['example']);
+    const rooted = mergePolicyEditorSettings(null, '/repo', '/repo', ['example']);
 
     expect(parse(nested.contents)).toMatchObject({
       'opa.roots': [`\${workspaceFolder}/transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`],
@@ -133,7 +146,7 @@ describe('Policy Engine VS Code setup', () => {
     expect(mergePolicyEditorExtensions(result.contents)).toEqual(result);
   });
 
-  it('adds a shell-safe starter-bundle default lint task and preserves custom tasks', () => {
+  it('adds per-bundle and aggregate lint tasks and preserves custom tasks', () => {
     const workspace = "/repo/policies/customer's policy";
     const result = mergePolicyEditorTasks(
       `{
@@ -144,6 +157,7 @@ describe('Policy Engine VS Code setup', () => {
 `,
       '/repo',
       workspace,
+      ['example'],
     );
     const parsed = parse(result.contents) as {
       /** VS Code tasks. */
@@ -152,12 +166,9 @@ describe('Policy Engine VS Code setup', () => {
 
     expect(result.warnings).toEqual([]);
     expect(result.contents).toContain('// Keep the repository build.');
-    expect(parsed.tasks).toEqual([
-      { label: 'build', type: 'shell', command: 'pnpm build' },
-      buildPolicyLintTask('/repo', workspace),
-    ]);
+    expect(parsed.tasks).toHaveLength(3);
     expect(parsed.tasks[1]).toMatchObject({
-      label: 'policy: lint',
+      label: 'policy: lint example',
       command: 'transcend',
       args: [
         'policy',
@@ -165,17 +176,52 @@ describe('Policy Engine VS Code setup', () => {
         `policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
         '--noInteractive',
       ],
+      group: { kind: 'test', isDefault: false },
+    });
+    expect(parsed.tasks[2]).toMatchObject({
+      label: 'policy: lint',
+      dependsOn: ['policy: lint example'],
       group: { kind: 'test', isDefault: true },
     });
   });
 
-  it('leaves a customized policy lint task untouched with a warning', () => {
-    const existing =
-      '{"version":"2.0.0","tasks":[{"label":"policy: lint","command":"./scripts/lint-policy"}]}\n';
-    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy');
+  it('skips task creation when no bundleRoots provided (init)', () => {
+    const result = mergePolicyEditorTasks(null, '/repo', '/repo/policy');
+    const parsed = parse(result.contents) as Record<string, unknown>;
 
-    expect(result.contents).toBe(existing);
-    expect(result.warnings).toEqual([expect.stringContaining('repository-specific customization')]);
+    expect(parsed.version).toBe('2.0.0');
+    expect(parsed.tasks).toBeUndefined();
+  });
+
+  it('updates managed policy lint tasks when bundle roots grow', () => {
+    const existing =
+      '{"version":"2.0.0","tasks":[{"label":"policy: lint","dependsOn":["policy: lint example"],"group":{"kind":"test","isDefault":true},"problemMatcher":[]}]}\n';
+    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', [
+      'example',
+      'permissions',
+    ]);
+    const parsed = parse(result.contents) as {
+      /** VS Code tasks. */
+      tasks: Record<string, unknown>[];
+    };
+
+    expect(result.warnings).toEqual([]);
+    expect(parsed.tasks.find((task) => task.label === 'policy: lint')).toMatchObject({
+      dependsOn: ['policy: lint example', 'policy: lint permissions'],
+      dependsOrder: 'sequence',
+    });
+  });
+
+  it('preserves non-managed custom tasks', () => {
+    const existing = '{"version":"2.0.0","tasks":[{"label":"build","command":"pnpm build"}]}\n';
+    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', ['example']);
+    const parsed = parse(result.contents) as {
+      /** VS Code tasks. */
+      tasks: Record<string, unknown>[];
+    };
+
+    expect(parsed.tasks.some((task) => task.label === 'build')).toBe(true);
+    expect(parsed.tasks.some((task) => task.label === 'policy: lint example')).toBe(true);
   });
 
   it('preserves malformed JSONC instead of replacing it', () => {

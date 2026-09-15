@@ -4,12 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
   generatePolicyStarterFiles,
+  generatePolicyWorkspaceFiles,
+  generatePolicyBundleFiles,
   POLICY_GITIGNORE_TEMPLATE,
   POLICY_INPUT_EXAMPLE_TEMPLATE,
   POLICY_INPUT_SCHEMA_TEMPLATE,
   POLICY_MANIFEST_TEMPLATE,
   POLICY_README_TEMPLATE,
   POLICY_REGAL_CONFIG_TEMPLATE,
+  POLICY_REGAL_CONFIG_EMPTY_TEMPLATE,
   POLICY_RESULT_REGO_TEMPLATE,
   POLICY_RESULT_TEST_REGO_TEMPLATE,
   POLICY_STARTER_BUNDLE_DIRECTORY,
@@ -105,10 +108,95 @@ describe('policy starter templates', () => {
     });
     expect(POLICY_INPUT_EXAMPLE_TEMPLATE).not.toMatch(/email|name|token|secret/iu);
     expect(POLICY_GITIGNORE_TEMPLATE).toContain('/input.json');
-    expect(POLICY_README_TEMPLATE).toContain('disposable');
-    expect(POLICY_README_TEMPLATE).toContain(
-      `transcend policy lint transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
-    );
+    expect(POLICY_README_TEMPLATE).toContain('policy new');
     expect(POLICY_README_TEMPLATE).not.toContain('mise.toml');
+  });
+});
+
+describe('policy workspace init files', () => {
+  it('generates only regal config and readme', () => {
+    const files = generatePolicyWorkspaceFiles();
+
+    expect(files.map(({ path }) => path)).toEqual(['.regal/config.yaml', 'README.md']);
+    expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
+  });
+
+  it('creates regal config with empty project roots', () => {
+    expect(yaml.load(POLICY_REGAL_CONFIG_EMPTY_TEMPLATE)).toEqual({
+      capabilities: {
+        from: {
+          engine: 'opa',
+          version: 'v1.13.1',
+        },
+      },
+      project: {
+        roots: [],
+        'rego-version': 1,
+      },
+    });
+  });
+});
+
+describe('policy bundle templates', () => {
+  it('generates a generic bundle with parameterized root', () => {
+    const files = generatePolicyBundleFiles('generic', 'myapp');
+
+    expect(files.map(({ path }) => path)).toEqual([
+      'myapp-bundle/.manifest',
+      'schemas/myapp/input.json',
+      'myapp-bundle/myapp/result/result.rego',
+      'myapp-bundle/myapp/result/result_test.rego',
+      'myapp-bundle/input.example.json',
+      'myapp-bundle/input.json',
+      'myapp-bundle/.gitignore',
+    ]);
+    expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
+    expect(JSON.parse(files[0]!.contents).roots).toEqual(['myapp']);
+    expect(files[2]!.contents).toContain('package myapp.result');
+    expect(files[3]!.contents).toContain('package myapp.result_test');
+    expect(files.find(({ path }) => path === 'myapp-bundle/input.json')?.contents).toBe(
+      files.find(({ path }) => path === 'myapp-bundle/input.example.json')?.contents,
+    );
+  });
+
+  it('generates a permissions bundle with all expected files', () => {
+    const files = generatePolicyBundleFiles('permissions', 'permissions');
+
+    const paths = files.map(({ path }) => path);
+    expect(paths).toContain('permissions-bundle/.manifest');
+    expect(paths).toContain('schemas/permissions/input.json');
+    expect(paths).toContain('permissions-bundle/permissions/config/config.rego');
+    expect(paths).toContain('permissions-bundle/permissions/config/data.json');
+    expect(paths).toContain('permissions-bundle/permissions/helpers/preference/preference.rego');
+    expect(paths).toContain(
+      'permissions-bundle/permissions/helpers/preference/preference_test.rego',
+    );
+    expect(paths).toContain('permissions-bundle/permissions/main.rego');
+    expect(paths).toContain('permissions-bundle/permissions/purposes/analytics/analytics.rego');
+    expect(paths).toContain(
+      'permissions-bundle/permissions/purposes/analytics/analytics_test.rego',
+    );
+    expect(paths).toContain('permissions-bundle/permissions/purposes/entrypoint.rego');
+    expect(paths).toContain('permissions-bundle/input.example.json');
+    expect(paths).toContain('permissions-bundle/input.json');
+    expect(paths).toContain('permissions-bundle/.gitignore');
+    expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
+    expect(files.find(({ path }) => path === 'permissions-bundle/input.json')?.contents).toBe(
+      files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
+    );
+  });
+
+  it('parameterizes the permissions bundle root correctly', () => {
+    const files = generatePolicyBundleFiles('permissions', 'consent');
+
+    const mainRego = files.find(({ path }) => path.endsWith('main.rego'));
+    expect(mainRego?.contents).toContain('package consent');
+    expect(mainRego?.path).toContain('consent-bundle/consent/main.rego');
+
+    const prefRego = files.find(
+      ({ path }) => path.includes('preference.rego') && !path.includes('_test'),
+    );
+    expect(prefRego?.contents).toContain('package consent.helpers.preference');
+    expect(prefRego?.contents).toContain('import data.consent.config');
   });
 });

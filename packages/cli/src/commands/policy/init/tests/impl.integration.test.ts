@@ -18,6 +18,7 @@ import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { buildOpaBundleTarball } from '../../helpers/buildOpaBundleTarball.js';
 import { lint } from '../../lint/impl.js';
+import { _new } from '../../new/impl.js';
 import { init, type PolicyInitFlags } from '../impl.js';
 
 const root = mkdtempSync(join(tmpdir(), 'policy-init-integration-'));
@@ -32,8 +33,8 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('policy init with pinned OPA and Regal', () => {
-  it('validates and packages the fully generated project', async () => {
+describe('policy init + new with pinned OPA and Regal', () => {
+  it('initializes workspace, adds a generic bundle, then validates and packages it', async () => {
     mkdirSync(join(root, '.git'), { recursive: true });
     writeFileSync(
       join(root, '.git', 'config'),
@@ -62,7 +63,6 @@ describe('policy init with pinned OPA and Regal', () => {
       features: Object.values(PolicySetupFeature),
       tools: {
         opa: expect.stringMatching(/^\d+\.\d+\.\d+/u),
-        regal: expect.stringMatching(/^\d+\.\d+\.\d+/u),
       },
     });
     expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
@@ -70,6 +70,23 @@ describe('policy init with pinned OPA and Regal', () => {
       true,
     );
     expect(existsSync(join(root, '.github', 'workflows', 'transcend-policy.yml'))).toBe(true);
+
+    const newContext = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+    await _new.call(newContext, {
+      name: 'example',
+      template: 'generic',
+      noInteractive: true,
+      dryRun: false,
+      yes: true,
+      json: true,
+    });
+
+    const newResult = JSON.parse(newContext.stdout);
+    expect(newResult.applied).toBe(true);
+    expect(newResult.root).toBe('example');
 
     const lintContext = buildContextForTest({
       cwd: root,

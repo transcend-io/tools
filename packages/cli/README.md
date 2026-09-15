@@ -67,6 +67,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy init`](#transcend-policy-init)
   - [`transcend policy lint`](#transcend-policy-lint)
+  - [`transcend policy new`](#transcend-policy-new)
   - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
   - [`transcend policy test`](#transcend-policy-test)
@@ -4324,7 +4325,7 @@ USAGE
   transcend policy init [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend policy init --help
 
-Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
+Probes OPA and Regal, previews one safe transactional plan, and creates an empty multi-bundle workspace with shared Regal config and README. Add bundles with `transcend policy new`. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
 
 FLAGS
      [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and lint task
@@ -4340,15 +4341,15 @@ ARGUMENTS
   [directory]  Policy project directory [default = transcend/policy]
 ```
 
-#### Create the safe default policy project
+#### Create an empty multi-bundle workspace
 
 ```sh
 transcend policy init
 ```
 
-This creates a multi-bundle Policy Engine workspace under `transcend/policy`: shared Regal config and input schemas at the workspace root, plus a disposable `example-bundle/` publish directory (`.manifest`, Rego tree, and local input fixtures). The example policy is teaching material, not an application contract. Initialization checks local OPA and Regal versions and prints official installation guidance when they are missing or incompatible; it never installs tools or creates runtime-manager configuration.
+This creates a multi-bundle Policy Engine workspace under `transcend/policy` with shared Regal config (`project.roots: []`) and a README. No bundles or Rego are created — add them with `transcend policy new`.
 
-The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, points `opa.roots` at the starter `{root}-bundle/` publish directory, wires input schemas, and configures a default `policy: lint` task with strict Rego v1 formatting.
+The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, configures strict Rego v1 formatting, and sets `opa.schema` to the workspace schemas directory.
 
 To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
 
@@ -4363,9 +4364,9 @@ transcend policy init ./policies --dryRun --json
 transcend policy init ./policies --editor --skill --ci --noInteractive --yes
 ```
 
-Non-interactive setup enables only the individual `--editor`, `--skill`, and `--ci` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings, including customized Rego, manifests, Regal configuration, README files, workflows, editor values and tasks, and managed skill content.
+Non-interactive setup enables only the individual `--editor`, `--skill`, and `--ci` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings.
 
-Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. It runs only `transcend policy lint --noInteractive --json`; it never publishes or adds Transcend API credentials. After successful initialization, copyable one-line next steps and an AI handoff prompt identify the disposable example, repository-specific CI adaptation, and the final lint gate.
+Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. After initialization, the next step is `transcend policy new` to add a bundle from a template.
 
 ### `transcend policy lint`
 
@@ -4411,6 +4412,48 @@ To verify another publish directory, pass it positionally:
 ```sh
 transcend policy lint ./policies/example-bundle --fix
 ```
+
+### `transcend policy new`
+
+```txt
+USAGE
+  transcend policy new [--name value] [--template generic|permissions] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend policy new --help
+
+Adds a publishable `{name}-bundle/` directory to an initialized policy workspace. Requires `.regal/config.yaml` (run `transcend policy init` first). Creates bundle files, merges the root into Regal config, and updates editor setup when present.
+
+FLAGS
+     [--name]           Package root name (used as {name}-bundle/ directory)
+     [--template]       Bundle template                                            [generic|permissions]
+     [--noInteractive]  Disable prompts and require explicit --name and --template [default = false]
+     [--dryRun]         Preview changes without applying them                      [default = false]
+     [--yes]            Skip only the final plan confirmation                      [default = false]
+     [--json]           Emit stable JSON output and disable prompts                [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
+```
+
+#### Add a generic example bundle
+
+```sh
+transcend policy new --template generic --name example --yes
+```
+
+#### Add a permissions bundle
+
+```sh
+transcend policy new --template permissions --name permissions --yes
+```
+
+#### Preview without writing
+
+```sh
+transcend policy new --template generic --name myapp --dryRun --json
+```
+
+Requires an initialized workspace (`transcend policy init` first).
 
 ### `transcend policy bundles`
 

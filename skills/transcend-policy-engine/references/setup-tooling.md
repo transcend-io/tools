@@ -6,13 +6,16 @@ Install the Transcend CLI **≥ 11**:
 
 ```sh
 npm install --global @transcend-io/cli@^11
-transcend policy --help   # should list init, lint [<directory>], …
+transcend policy --help   # should list init, new, lint [<directory>], …
 ```
 
 ## Initialize safely
 
 Run `transcend policy init --help` before choosing flags. The default target is
 `transcend/policy`.
+
+`policy init` creates an empty multi-bundle workspace — shared Regal config
+(`project.roots: []`) and a README. No bundles or Rego are created.
 
 Interactive initialization offers VS Code setup, this Agent Skill, and
 validation-only GitHub Actions. Non-interactive automation enables only
@@ -26,9 +29,23 @@ Use `--dryRun` to inspect the complete transactional plan. Existing policy
 files, manifests, Regal configuration, workflows, and customized managed
 artifacts are preserved.
 
-This template may already use multiple `{root}-bundle/` publish directories;
-adapt generated single-directory settings to list each bundle in `opa.roots`
-and CI.
+## Add bundles
+
+After initializing the workspace, add bundles with `transcend policy new`:
+
+```sh
+transcend policy new --template generic --name example --yes
+transcend policy new --template permissions --name permissions --yes
+```
+
+Templates available:
+
+- `generic` — A fail-closed teaching entrypoint (default root: `example`)
+- `permissions` — A Permission API starter with purpose preferences (default root: `permissions`)
+
+`policy new` creates the `{name}-bundle/` directory, its `.manifest`, Rego tree,
+input fixtures, and input schema. It also merges the root into Regal config and
+updates VS Code settings/tasks when `.vscode` is present.
 
 ## Required tools
 

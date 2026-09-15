@@ -14,7 +14,7 @@ describe('policy routes', () => {
     await run(app, ['policy', 'init', '--help'], context);
 
     const output = `${context.stdout}\n${context.stderr}`;
-    expect(output).toContain('creates a publishable fail-closed Rego v1 starter');
+    expect(output).toContain('creates an empty multi-bundle workspace');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--dryRun');
     expect(output).toContain('--yes');

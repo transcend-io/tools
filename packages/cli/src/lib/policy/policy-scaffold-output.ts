@@ -44,36 +44,21 @@ export interface PolicyInitPlanResult {
 /**
  * Build the compact policy implementation and CI handoff.
  *
- * @param options - Portable example path and lint command
+ * @param options - Portable project path and next step
  * @returns Raw one-line prompt
  */
 export function buildPolicyInitAiHandoff(options: {
   /** Display path to the policy project. */
   projectPath: string;
-  /** Display path to an exact disposable example. */
-  examplePath?: string;
   /** Whether the policy authoring skill was installed. */
   hasSkill: boolean;
-  /** Copyable lint command. */
-  lintCommand: string;
+  /** Copyable new-bundle command. */
+  newCommand: string;
 }): string {
-  if (!options.examplePath) {
-    const instruction = options.hasSkill
-      ? `Use the \`${POLICY_SKILL_NAME}\` skill to review`
-      : 'Review';
-    return (
-      `${instruction} the existing policy project in ${options.projectPath}, ` +
-      `align its document tree and input/output contract with the intended application, adapt ` +
-      `repository validation as needed, and rerun ${options.lintCommand}.`
-    );
-  }
-  const instruction = options.hasSkill
-    ? `Use the \`${POLICY_SKILL_NAME}\` skill to replace`
-    : 'Replace';
+  const instruction = options.hasSkill ? `Use the \`${POLICY_SKILL_NAME}\` skill and run` : 'Run';
   return (
-    `${instruction} the disposable example in ${options.examplePath} with ` +
-    `the intended policy document tree and input/output contract, adapt repository validation ` +
-    `to local conventions, and rerun ${options.lintCommand}.`
+    `${instruction} ${options.newCommand} to add a bundle from a template, ` +
+    `then adapt the policy document tree and input/output contract to the intended application.`
   );
 }
 

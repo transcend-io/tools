@@ -32,12 +32,10 @@ Cover at least:
 
 ## Use local inputs safely
 
-Keep a sanitized `input.example.json` in each publish directory. Put realistic
-local data in `input.json` there (gitignored). VS Code / Regal Evaluate look for
-a file named `input.json` beside the policy or in a parent directory.
-
-Do not put credentials, personal data, or production payloads in fixtures unless
-repository policy explicitly permits sanitized versions.
+Keep a sanitized `input.example.json` in each publish directory. `policy new`
+also writes a gitignored `input.json` beside it (same contents) so VS Code /
+Regal Evaluate work immediately. Customize `input.json` locally; keep
+`input.example.json` committed and free of credentials or personal data.
 
 ## Run the complete gate
 
