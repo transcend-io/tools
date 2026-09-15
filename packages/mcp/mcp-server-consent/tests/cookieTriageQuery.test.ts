@@ -11,13 +11,14 @@ import {
 } from '../src/lib/cookieTriageConfig.js';
 import {
   buildTriageBulkUpdateArgs,
-  buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriageNotesUpdateArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
   buildTriagePurposesUpdateArgs,
+  buildTriageRecentActiveCountArgs,
   buildTriageUpdateArgs,
+  deriveOverviewDormantTotal,
   dormantCutoffIso,
 } from '../src/lib/cookieTriageQuery.js';
 import { ConsentTriageType, CookieTriageDecision } from '../src/lib/cookieTriageTypes.js';
@@ -159,23 +160,45 @@ describe('purpose count args', () => {
 });
 
 describe('summary count args', () => {
-  it('requests a single-row NEEDS_REVIEW page for the pending total', () => {
-    expect(buildTriagePendingCountArgs()).toEqual({
+  it('requests a single-row NEEDS_REVIEW page for the cookie pending total', () => {
+    expect(buildTriagePendingCountArgs(ConsentTriageType.Cookies)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
     });
   });
 
-  it('filters dormant counts to lastDiscoveredAt before the 30-day cutoff', () => {
-    const now = Date.parse('2026-09-03T12:00:00.000Z');
-    expect(buildTriageDormantCountArgs(now)).toEqual({
+  it('includes showZeroActivity for data-flow pending totals', () => {
+    expect(buildTriagePendingCountArgs(ConsentTriageType.DataFlows)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
-      lastDiscoveredAtBefore: dormantCutoffIso(now),
+      showZeroActivity: true,
+    });
+  });
+
+  it('filters recent-active counts to lastDiscoveredAt after the 30-day cutoff', () => {
+    const now = Date.parse('2026-09-03T12:00:00.000Z');
+    expect(buildTriageRecentActiveCountArgs(ConsentTriageType.Cookies, now)).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
+      offset: 0,
+      lastDiscoveredAtAfter: dormantCutoffIso(now),
+    });
+    expect(buildTriageRecentActiveCountArgs(ConsentTriageType.DataFlows, now)).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
+      offset: 0,
+      showZeroActivity: true,
+      lastDiscoveredAtAfter: dormantCutoffIso(now),
     });
     expect(dormantCutoffIso(now)).toBe('2026-08-04T12:00:00.000Z');
+  });
+
+  it('derives overview dormant as pending minus recent-active', () => {
+    expect(deriveOverviewDormantTotal(100, 40)).toBe(60);
+    expect(deriveOverviewDormantTotal(10, 10)).toBe(0);
+    expect(deriveOverviewDormantTotal(5, 8)).toBe(0);
   });
 });
 

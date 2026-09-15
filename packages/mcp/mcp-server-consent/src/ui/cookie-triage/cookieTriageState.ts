@@ -79,8 +79,9 @@ export interface CookieTriageSessionState {
    */
   pendingTotal?: number;
   /**
-   * API totalCount for NEEDS_REVIEW items last seen before the dormant cutoff.
-   * Undefined until the count tool call succeeds.
+   * API-derived total for NEEDS_REVIEW items with no recent telemetry
+   * (Pending minus recent-active, including never-seen rows).
+   * Undefined until the summary count tool calls succeed.
    */
   dormantTotal?: number;
   /** Fetch status for overview pending/dormant totals */
@@ -91,7 +92,7 @@ export interface CookieTriageSessionState {
 export interface CookieTriageSummary {
   /** API totalCount for all NEEDS_REVIEW items */
   pendingCount: number;
-  /** API totalCount for NEEDS_REVIEW items last seen before the dormant cutoff */
+  /** API-derived dormant total (Pending minus recent-active) */
   dormantCount: number;
   /** Unique cookies/data flows with a user decision in this session */
   triagedCount: number;
