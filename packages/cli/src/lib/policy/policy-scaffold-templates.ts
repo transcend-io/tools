@@ -1,5 +1,5 @@
 /** OPA version targeted by generated policy authoring configuration. */
-export const POLICY_STARTER_OPA_VERSION = '1.13.1';
+export const POLICY_STARTER_OPA_VERSION = '1.18.2';
 
 /**
  * Package-path prefix for the disposable starter bundle.
@@ -234,7 +234,7 @@ const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
   {
     path: '.regal/config.yaml',
     contents: POLICY_REGAL_CONFIG_TEMPLATE,
-    description: 'Pin strict Rego v1 linting to OPA 1.13.1 capabilities',
+    description: `Pin strict Rego v1 linting to OPA ${POLICY_STARTER_OPA_VERSION} capabilities`,
   },
   {
     path: `schemas/${POLICY_STARTER_ROOT}/input.json`,
@@ -286,7 +286,7 @@ const POLICY_INIT_WORKSPACE_FILES: readonly PolicyStarterFile[] = [
   {
     path: '.regal/config.yaml',
     contents: POLICY_REGAL_CONFIG_EMPTY_TEMPLATE,
-    description: 'Pin strict Rego v1 linting to OPA 1.13.1 capabilities',
+    description: `Pin strict Rego v1 linting to OPA ${POLICY_STARTER_OPA_VERSION} capabilities`,
   },
   {
     path: 'README.md',

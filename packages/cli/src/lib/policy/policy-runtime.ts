@@ -6,8 +6,8 @@ export const SUPPORTED_OPA_MAJOR_VERSION = 1;
 /** Oldest Regal release with first-class OPA 1.0 support. */
 export const MINIMUM_REGAL_VERSION = '0.30.0';
 
-/** Oldest Regal release containing OPA 1.13.1 capabilities. */
-export const MINIMUM_POLICY_STARTER_REGAL_VERSION = '0.39.0';
+/** Oldest Regal release containing OPA 1.18.2 capabilities. */
+export const MINIMUM_POLICY_STARTER_REGAL_VERSION = '0.42.0';
 
 /** Official OPA installation instructions. */
 export const OPA_INSTALL_URL = 'https://www.openpolicyagent.org/docs#1-download-opa';

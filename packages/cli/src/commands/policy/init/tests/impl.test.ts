@@ -75,7 +75,7 @@ function buildRunner(
   return (command, args) => {
     invocations.push(`${command} ${args.join(' ')}`);
     if (command === 'opa') {
-      return Promise.resolve(overrides.opa ?? { ...SUCCESS, stdout: 'Version: 1.13.1\n' });
+      return Promise.resolve(overrides.opa ?? { ...SUCCESS, stdout: 'Version: 1.18.2\n' });
     }
     return Promise.resolve(overrides.regal ?? { ...SUCCESS, stdout: 'Version:       0.42.0\n' });
   };
@@ -120,7 +120,7 @@ describe('policy init', () => {
       nextSteps: ['transcend policy new'],
       features: [],
       aiHandoff: expect.stringContaining('transcend policy new'),
-      tools: { opa: '1.13.1', regal: '0.42.0' },
+      tools: { opa: '1.18.2', regal: '0.42.0' },
     });
     expect(invocations).toEqual(['opa version', 'regal version']);
     expect(context.stderr).toBe('');
@@ -538,7 +538,7 @@ describe('policy init', () => {
     expect(result.warnings).toEqual([
       expect.stringContaining(OPA_INSTALL_URL),
       expect.stringMatching(
-        new RegExp(`Regal 0\\.39\\.0[\\s\\S]*OPA 1\\.13\\.1[\\s\\S]*${REGAL_INSTALL_URL}`, 'u'),
+        new RegExp(`Regal 0\\.42\\.0[\\s\\S]*OPA 1\\.18\\.2[\\s\\S]*${REGAL_INSTALL_URL}`, 'u'),
       ),
     ]);
   });

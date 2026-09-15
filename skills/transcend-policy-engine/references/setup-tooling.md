@@ -53,8 +53,8 @@ updates VS Code settings/tasks when `.vscode` is present.
 - Use Regal for idiomatic Rego linting and editor language-server features.
 - Run `opa version` and `regal version` to confirm the active executables.
 
-The generated Regal configuration targets OPA 1.13.1 capabilities. Generated CI
-installs OPA 1.13.1 and Regal 0.42.0; local tools only need to satisfy the
+The generated Regal configuration targets OPA 1.18.2 capabilities. Generated CI
+installs OPA 1.18.2 and Regal 0.42.0; local tools only need to satisfy the
 compatible versions reported by `policy init` and `policy lint`. Follow their
 official installation links when a compatible tool is missing.
 

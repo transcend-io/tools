@@ -81,7 +81,7 @@ function buildRunner(
     return Promise.resolve(
       overrides[key] ??
         (key === 'opa version'
-          ? { code: 0, stdout: 'Version: 1.13.1\n', stderr: '' }
+          ? { code: 0, stdout: 'Version: 1.18.2\n', stderr: '' }
           : key === 'regal version'
             ? { code: 0, stdout: 'Version:       0.42.0\n', stderr: '' }
             : SUCCESS),
@@ -153,7 +153,7 @@ describe('policy lint', () => {
       status: 'passed',
       directory,
       fix: false,
-      tools: { opa: '1.13.1', regal: '0.42.0' },
+      tools: { opa: '1.18.2', regal: '0.42.0' },
       checks: [
         { name: 'manifest', status: 'passed' },
         { name: 'opa-version', status: 'passed' },

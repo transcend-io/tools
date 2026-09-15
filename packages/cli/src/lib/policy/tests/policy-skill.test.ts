@@ -52,7 +52,7 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('--editor');
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('--skill');
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('--ci');
-    expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('OPA 1.13.1');
+    expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('OPA 1.18.2');
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('Regal 0.42.0');
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).toContain('read-only and credential-free');
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).not.toContain('policy publish');

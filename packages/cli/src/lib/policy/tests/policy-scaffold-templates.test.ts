@@ -42,13 +42,13 @@ describe('policy starter templates', () => {
     expect(first.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
   });
 
-  it('pins strict Rego v1 authoring to OPA 1.13.1 without weakening lint rules', () => {
-    expect(POLICY_STARTER_OPA_VERSION).toBe('1.13.1');
+  it('pins strict Rego v1 authoring to OPA 1.18.2 without weakening lint rules', () => {
+    expect(POLICY_STARTER_OPA_VERSION).toBe('1.18.2');
     expect(yaml.load(POLICY_REGAL_CONFIG_TEMPLATE)).toEqual({
       capabilities: {
         from: {
           engine: 'opa',
-          version: 'v1.13.1',
+          version: 'v1.18.2',
         },
       },
       project: {
@@ -126,7 +126,7 @@ describe('policy workspace init files', () => {
       capabilities: {
         from: {
           engine: 'opa',
-          version: 'v1.13.1',
+          version: 'v1.18.2',
         },
       },
       project: {

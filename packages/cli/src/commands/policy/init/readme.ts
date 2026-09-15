@@ -23,5 +23,5 @@ transcend policy init ./policies --editor --skill --ci --noInteractive --yes
 
 Non-interactive setup enables only the individual \`--editor\`, \`--skill\`, and \`--ci\` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings.
 
-Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. After initialization, the next step is \`transcend policy new\` to add a bundle from a template.
+Generated CI pins OPA 1.18.2, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. After initialization, the next step is \`transcend policy new\` to add a bundle from a template.
 `;
