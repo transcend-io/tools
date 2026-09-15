@@ -2,13 +2,11 @@ import {
   COOKIE_TRIAGE_DORMANT_MS,
   COOKIE_TRIAGE_MIN_OCCURRENCES,
   CookieTriagePurposeCategory,
-  getPurposeLabel,
 } from '../../lib/cookieTriageConfig.ts';
 import {
   CookieTriageDecision,
   CookieTriageLoadStatus,
   type CookieTriageAnalysis,
-  type CookieTriagePurposeOption,
   type ConsentTriageType,
 } from '../../lib/cookieTriageTypes.ts';
 import {
@@ -19,7 +17,6 @@ import {
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { triageCopy } from './cookieTriageCopy.ts';
 
-export type { CookieTriagePurposeOption };
 export { COOKIE_TRIAGE_MIN_OCCURRENCES, CookieTriageDecision, CookieTriageLoadStatus };
 
 /** Live state for one cookie/data-flow row within a purpose category */
@@ -67,10 +64,10 @@ export interface CookieTriageSessionState {
   /** Purpose tab currently selected in the triage UI */
   selectedPurpose: CookieTriagePurposeCategory;
   /**
-   * Org tracking purposes for the per-row purpose select.
+   * Org tracking-purpose slugs for the per-row purpose select.
    * Seeded with known defaults; replaced when `consent_list_purposes` succeeds.
    */
-  purposeOptions: CookieTriagePurposeOption[];
+  purposeOptions: string[];
   /**
    * Whether `consent_list_purposes` has replaced the seeded default options.
    * The Custom tab stays visible until this is true and no custom slugs remain.
@@ -148,8 +145,8 @@ export type CookieTriageAction =
   | {
       /** Replace the purpose-select options from `consent_list_purposes` */
       type: 'setPurposeOptions';
-      /** Org purpose options for the select */
-      purposeOptions: CookieTriagePurposeOption[];
+      /** Org purpose slugs for the select */
+      purposeOptions: string[];
     }
   | {
       /** Select the active purpose tab */
@@ -332,21 +329,16 @@ export function getCategory(
   }
 }
 
-/** Known default purpose options used until `consent_list_purposes` loads. */
-export function defaultPurposeOptions(): CookieTriagePurposeOption[] {
-  return COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS.map((purpose) => ({
-    slug: purpose,
-    label: getPurposeLabel(purpose),
-  }));
+/** Known default purpose slugs used until `consent_list_purposes` loads. */
+export function defaultPurposeOptions(): string[] {
+  return [...COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS];
 }
 
 /** Non-default purpose slugs from the org purpose list (excludes Unknown). */
-export function selectCustomPurposeSlugs(
-  purposeOptions: readonly CookieTriagePurposeOption[],
-): string[] {
-  return purposeOptions
-    .map((option) => option.slug)
-    .filter((slug) => !isDefaultCookiePurposeSlug(slug) && !isUnknownCookiePurposeSlug(slug));
+export function selectCustomPurposeSlugs(purposeOptions: readonly string[]): string[] {
+  return purposeOptions.filter(
+    (slug) => !isDefaultCookiePurposeSlug(slug) && !isUnknownCookiePurposeSlug(slug),
+  );
 }
 
 /** Build an empty session with every purpose tab seeded. */

@@ -1,6 +1,9 @@
 /** Stable policy lint result schema version. */
 export const POLICY_LINT_RESULT_VERSION = 1;
 
+/** Stable multi-bundle lint result schema version. */
+export const POLICY_LINT_MULTI_RESULT_VERSION = 2;
+
 /** Status of the full gate or an individual verification. */
 export type PolicyLintStatus = 'passed' | 'failed' | 'skipped';
 
@@ -61,13 +64,13 @@ export interface PolicyLintTools {
   regal: string | null;
 }
 
-/** Stable result emitted by `transcend policy lint --json`. */
+/** Stable result emitted by `transcend policy lint --json` for one bundle. */
 export interface PolicyLintResult {
   /** Result schema version. */
   version: typeof POLICY_LINT_RESULT_VERSION;
   /** Overall verification outcome. */
   status: Exclude<PolicyLintStatus, 'skipped'>;
-  /** Absolute policy project directory. */
+  /** Absolute policy bundle directory. */
   directory: string;
   /** Whether formatting repair was explicitly requested. */
   fix: boolean;
@@ -81,4 +84,23 @@ export interface PolicyLintResult {
   fixedFiles: string[];
   /** Ordered verification diagnostics. */
   diagnostics: PolicyLintDiagnostic[];
+}
+
+/**
+ * Stable result when `transcend policy lint --json` verifies multiple bundles.
+ *
+ * Emitted only when the selected path is a workspace with more than one
+ * publishable `*-bundle/` directory.
+ */
+export interface PolicyLintMultiResult {
+  /** Result schema version. */
+  version: typeof POLICY_LINT_MULTI_RESULT_VERSION;
+  /** Overall verification outcome across all bundles. */
+  status: Exclude<PolicyLintStatus, 'skipped'>;
+  /** Absolute policy workspace directory that was searched. */
+  directory: string;
+  /** Whether formatting repair was explicitly requested. */
+  fix: boolean;
+  /** Per-bundle results in discovery order. */
+  results: PolicyLintResult[];
 }

@@ -9,25 +9,14 @@ import {
   mergePurposeSelectOptions,
   orderSelectedPurposeSlugs,
   purposeOptionExclusiveDisabledReason,
-  purposeSlugLabel,
 } from '../src/ui/cookie-triage/PurposeMultiSelect.js';
 
 describe('PurposeMultiSelect helpers', () => {
-  const options = [
-    { slug: 'Essential', label: 'Essential' },
-    { slug: 'Analytics', label: 'Analytics' },
-    { slug: 'CustomPurpose', label: 'Custom Purpose' },
-  ];
-
-  it('labels known and unknown purpose slugs', () => {
-    expect(purposeSlugLabel('Analytics', options)).toBe('Analytics');
-    expect(purposeSlugLabel('SaleOfInfo', options)).toBe('Sale of Info');
-    expect(purposeSlugLabel('Mystery', options)).toBe('Mystery');
-  });
+  const options = ['Essential', 'Analytics', 'CustomPurpose'];
 
   it('prepends assigned slugs missing from the catalog', () => {
     expect(mergePurposeSelectOptions(options, ['Mystery', 'Analytics'])).toEqual([
-      { slug: 'Mystery', label: 'Mystery' },
+      'Mystery',
       ...options,
     ]);
   });
@@ -35,7 +24,7 @@ describe('PurposeMultiSelect helpers', () => {
   it('never offers Unknown as a selectable option', () => {
     expect(
       mergePurposeSelectOptions(
-        [...options, { slug: CookieTriagePurposeCategory.Unknown, label: 'Unknown' }],
+        [...options, CookieTriagePurposeCategory.Unknown],
         [CookieTriagePurposeCategory.Unknown, CookieTriagePurposeCategory.Analytics],
       ),
     ).toEqual(options);

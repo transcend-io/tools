@@ -7,12 +7,10 @@ import {
 
 export {
   COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS,
-  COOKIE_TRIAGE_PURPOSE_LABELS,
   COOKIE_TRIAGE_PURPOSE_ORDER,
   COOKIE_TRIAGE_UNKNOWN_PURPOSE_SLUG,
   CookieTriageDefaultPurpose,
   CookieTriagePurposeCategory,
-  getPurposeLabel,
   isCookieTriagePurposeCategory,
 } from './cookieTriageConfig.js';
 
