@@ -60,9 +60,8 @@ export function buildTriageListArgs(
     offset,
     orderField: CookieOrderField.Occurrences,
     orderDirection: OrderDirection.Desc,
-    // Data-flow triage includes never-active rows; cookie triage keeps the
-    // default (omit) so NEEDS_REVIEW totals stay aligned with inventory stats.
-    ...(triageType === ConsentTriageType.DataFlows ? { showZeroActivity: true } : {}),
+    // Omit showZeroActivity so NEEDS_REVIEW matches the Consent Manager table
+    // (zero-activity / never-active rows stay hidden by default).
     ...purposeFilter,
   };
 }
@@ -87,9 +86,12 @@ export function buildTriagePurposeCountArgs(
 }
 
 /**
- * Count-only args for the full NEEDS_REVIEW backlog (`totalCount` is the overview Pending).
+ * Shared filters for overview Pending / recent-active count calls.
+ *
+ * Omits `showZeroActivity` so Pending matches the Consent Manager table and
+ * `consent_get_inventory_stats` (zero-activity rows stay hidden by default).
  */
-export function buildTriagePendingCountArgs(): Record<string, unknown> {
+function buildTriageSummaryBaseArgs(): Record<string, unknown> {
   return {
     status: ConsentTrackerStatus.NeedsReview,
     limit: 1,
@@ -98,15 +100,46 @@ export function buildTriagePendingCountArgs(): Record<string, unknown> {
 }
 
 /**
- * Count-only args for NEEDS_REVIEW items last seen before the dormant cutoff.
+ * Count-only args for the full NEEDS_REVIEW backlog (`totalCount` is the overview Pending).
+ *
+ * @param triageType - Cookie vs data-flow triage (filters are currently identical)
  */
-export function buildTriageDormantCountArgs(now = Date.now()): Record<string, unknown> {
+export function buildTriagePendingCountArgs(
+  triageType: ConsentTriageTypeValue,
+): Record<string, unknown> {
+  void triageType;
+  return buildTriageSummaryBaseArgs();
+}
+
+/**
+ * Count-only args for NEEDS_REVIEW items with telemetry after the dormant cutoff.
+ *
+ * Overview Dormant is derived as Pending − this total so never-seen rows
+ * (missing `lastDiscoveredAt`) match the UI dormant rule (no activity or
+ * last seen before the 30-day cutoff).
+ *
+ * @param triageType - Cookie vs data-flow triage (filters are currently identical)
+ * @param now - Reference time for the dormant cutoff
+ */
+export function buildTriageRecentActiveCountArgs(
+  triageType: ConsentTriageTypeValue,
+  now = Date.now(),
+): Record<string, unknown> {
+  void triageType;
   return {
-    status: ConsentTrackerStatus.NeedsReview,
-    limit: 1,
-    offset: 0,
-    lastDiscoveredAtBefore: dormantCutoffIso(now),
+    ...buildTriageSummaryBaseArgs(),
+    lastDiscoveredAtAfter: dormantCutoffIso(now),
   };
+}
+
+/**
+ * Overview Dormant from Pending minus recent-active (`lastDiscoveredAtAfter` cutoff).
+ */
+export function deriveOverviewDormantTotal(
+  pendingTotal: number,
+  recentActiveTotal: number,
+): number {
+  return Math.max(0, pendingTotal - recentActiveTotal);
 }
 
 /**
