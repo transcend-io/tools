@@ -148,15 +148,15 @@ function runPrePush(): number {
 
   const changedFiles = new Set<string>();
   for (const range of pushRanges) {
+    const diffRange = range.full
+      ? defaultNewBranchDiffRange(range.localSha)
+      : `${range.remoteSha}...${range.localSha}`;
     if (range.full) {
-      console.log(`New ref ${range.localRef} → running full test suite for safety.`);
-      return runTurbo(['run', 'test', 'test:root']);
+      console.log(
+        `New ref ${range.localRef} → scoping tests to changes vs ${diffRange.split('...')[0]}.`,
+      );
     }
-    for (const file of gitLines([
-      'diff',
-      '--name-only',
-      `${range.remoteSha}...${range.localSha}`,
-    ])) {
+    for (const file of gitLines(['diff', '--name-only', diffRange])) {
       changedFiles.add(file);
     }
   }
@@ -173,6 +173,25 @@ function runPrePush(): number {
   }
 
   return runScopedTests(analysis);
+}
+
+/**
+ * For brand-new branches (remote SHA all zeros), compare against the merge
+ * base with origin/main (or main) so we still scope to branch changes.
+ */
+function defaultNewBranchDiffRange(localSha: string): string {
+  for (const base of ['origin/main', 'main', 'origin/master', 'master']) {
+    const mergeBase = spawnSync('git', ['merge-base', base, localSha], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    if (mergeBase.status === 0) {
+      const sha = mergeBase.stdout.trim();
+      if (sha) return `${sha}...${localSha}`;
+    }
+  }
+  // Last resort: only the tip commit.
+  return `${localSha}^...${localSha}`;
 }
 
 function runScopedQuality(analysis: HookChangeAnalysis): number {
