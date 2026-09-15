@@ -61,6 +61,76 @@ const GetCustomFunctionCodeDoc = graphql(/* GraphQL */ `
   }
 `);
 
+const CreateCustomFunctionDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsCreate($input: CreateCustomFunctionInput!) {
+    createCustomFunction(input: $input) {
+      success
+      customFunction {
+        ...CustomFunctionsSummary
+      }
+    }
+  }
+`);
+
+const UpdateCustomFunctionDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsUpdate($input: UpdateStandaloneCustomFunctionInput!) {
+    updateStandaloneCustomFunction(input: $input) {
+      success
+      customFunction {
+        ...CustomFunctionsSummary
+      }
+    }
+  }
+`);
+
+const PromoteCustomFunctionVersionDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsPromote($input: PromoteCustomFunctionVersionInput!) {
+    promoteCustomFunctionVersion(input: $input) {
+      success
+      customFunction {
+        ...CustomFunctionsSummary
+      }
+      dependencyWarnings {
+        dependencyType
+        dependencyId
+        dependencyTitle
+        dependencyStatus
+        message
+      }
+    }
+  }
+`);
+
+const ListSombrasDoc = graphql(/* GraphQL */ `
+  query CustomFunctionsListSombras {
+    sombras {
+      id
+      title
+      customerUrl
+      isPrimarySombra
+    }
+  }
+`);
+
+const CreateCustomFunctionDataSiloDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsCreateDataSilo($input: [CreateDataSilosInput!]!) {
+    createDataSilos(input: $input) {
+      dataSilos {
+        id
+        title
+      }
+    }
+  }
+`);
+
+const DeleteDataSilosDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsDeleteDataSilos($input: DeleteDataSilosInput!) {
+    deleteDataSilos(input: $input) {
+      clientMutationId
+    }
+  }
+`);
+
 void CustomFunctionFields;
 
 export interface CustomFunctionVersionSummary {
@@ -115,6 +185,37 @@ export interface SignedCustomFunctionVersion {
   signedCodeJwt: string;
   /** Signed context JWT, for internal customer-ingress use only */
   signedCodeContextJwt: string;
+}
+
+export interface CustomFunctionDependencyWarning {
+  /** Type of dependent resource */
+  dependencyType: string;
+  /** ID of dependent resource */
+  dependencyId: string;
+  /** Display title of dependent resource */
+  dependencyTitle: string;
+  /** Lifecycle state of dependent resource */
+  dependencyStatus: string;
+  /** Actionable warning text */
+  message: string;
+}
+
+export interface CustomFunctionPromotionResult {
+  /** Promoted custom function */
+  customFunction: CustomFunctionSummary;
+  /** Dependency warnings produced during promotion */
+  dependencyWarnings: CustomFunctionDependencyWarning[];
+}
+
+export interface SombraSummary {
+  /** Sombra gateway ID */
+  id: string;
+  /** Display title */
+  title?: string;
+  /** Customer-ingress URL */
+  customerUrl: string;
+  /** Whether this is the organization's primary Sombra */
+  isPrimarySombra: boolean;
 }
 
 interface RawCustomFunctionVersion {
@@ -179,6 +280,12 @@ function mapCustomFunction(customFunction: RawCustomFunction): CustomFunctionSum
   };
 }
 
+/**
+ * Catalog integration name for DSR Custom Function data silos.
+ * Keep in lockstep with packages/sdk/src/custom-functions/customFunctionDataSilo.ts.
+ */
+const CUSTOM_FUNCTION_INTEGRATION_NAME = 'customFunction';
+
 export class CustomFunctionsMixin extends TranscendGraphQLBase {
   async listCustomFunctions(options: {
     /** Maximum results to return */
@@ -241,5 +348,103 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
       signedCodeJwt: node.signedCodeJwt,
       signedCodeContextJwt: node.signedCodeContextJwt,
     };
+  }
+
+  async createCustomFunction(input: {
+    /** Function type */
+    type: CustomFunctionType;
+    /** Linked data silo ID for DSR */
+    dataSiloId?: string;
+    /** Execution gateway ID for GENERAL */
+    sombraId?: string;
+    /** Display name */
+    name?: string;
+    /** Optional description */
+    description?: string;
+    /** Whether a GENERAL function is active immediately */
+    setActive?: boolean;
+    /** Signed code JWT */
+    signedCodeJwt: string;
+    /** Signed context JWT */
+    signedCodeContextJwt: string;
+    /** Whether the signed code already passed a test run */
+    successfulTestRun?: boolean;
+  }): Promise<CustomFunctionSummary> {
+    const data = await this.makeRequest(CreateCustomFunctionDoc, { input });
+    return mapCustomFunction(data.createCustomFunction.customFunction);
+  }
+
+  async updateCustomFunction(input: {
+    /** Custom function ID */
+    id: string;
+    /** Existing draft version ID to update */
+    versionId?: string;
+    /** New display name */
+    name?: string;
+    /** New description */
+    description?: string;
+    /** Signed code JWT */
+    signedCodeJwt?: string;
+    /** Signed context JWT */
+    signedCodeContextJwt?: string;
+    /** Whether the current version passed a test run */
+    successfulTestRun?: boolean;
+  }): Promise<CustomFunctionSummary> {
+    const data = await this.makeRequest(UpdateCustomFunctionDoc, { input });
+    return mapCustomFunction(data.updateStandaloneCustomFunction.customFunction);
+  }
+
+  async promoteCustomFunctionVersion(
+    customFunctionId: string,
+    versionId: string,
+  ): Promise<CustomFunctionPromotionResult> {
+    const data = await this.makeRequest(PromoteCustomFunctionVersionDoc, {
+      input: { customFunctionId, versionId },
+    });
+    return {
+      customFunction: mapCustomFunction(data.promoteCustomFunctionVersion.customFunction),
+      dependencyWarnings: data.promoteCustomFunctionVersion.dependencyWarnings,
+    };
+  }
+
+  async listSombras(): Promise<SombraSummary[]> {
+    const data = await this.makeRequest(ListSombrasDoc, {});
+    return data.sombras.map((sombra) => ({
+      id: sombra.id,
+      title: sombra.title ?? undefined,
+      customerUrl: sombra.customerUrl,
+      isPrimarySombra: sombra.isPrimarySombra,
+    }));
+  }
+
+  async createCustomFunctionDataSilo(input: {
+    /** Display title, conventionally the custom function name */
+    title: string;
+    /** Sombra gateway the DSR function will execute on */
+    sombraId: string;
+  }): Promise<{
+    /** Created data silo ID */
+    id: string;
+    /** Created data silo title */
+    title: string;
+  }> {
+    const data = await this.makeRequest(CreateCustomFunctionDataSiloDoc, {
+      input: [
+        {
+          name: CUSTOM_FUNCTION_INTEGRATION_NAME,
+          title: input.title,
+          sombraId: input.sombraId,
+        },
+      ],
+    });
+    const dataSilo = data.createDataSilos.dataSilos[0];
+    if (!dataSilo) {
+      throw new Error(`Failed to create a Custom Function data silo titled "${input.title}".`);
+    }
+    return { id: dataSilo.id, title: dataSilo.title };
+  }
+
+  async deleteDataSilo(dataSiloId: string): Promise<void> {
+    await this.makeRequest(DeleteDataSilosDoc, { input: { ids: [dataSiloId] } });
   }
 }
