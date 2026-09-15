@@ -70,7 +70,6 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
     expect(
@@ -83,7 +82,6 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: ['Loyalty'],
     });
     expect(
@@ -94,14 +92,16 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Unknown],
     });
   });
 
-  it('omits showZeroActivity for cookie triage list args', () => {
+  it('omits showZeroActivity so triage lists match the Consent Manager table', () => {
     expect(
       buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Advertising, 0),
+    ).not.toHaveProperty('showZeroActivity');
+    expect(
+      buildTriageListArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Analytics, 0),
     ).not.toHaveProperty('showZeroActivity');
   });
 
@@ -153,28 +153,26 @@ describe('purpose count args', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
   });
 });
 
 describe('summary count args', () => {
-  it('requests a single-row NEEDS_REVIEW page for the cookie pending total', () => {
+  it('requests a single-row NEEDS_REVIEW page for pending totals', () => {
     expect(buildTriagePendingCountArgs(ConsentTriageType.Cookies)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
     });
-  });
-
-  it('includes showZeroActivity for data-flow pending totals', () => {
     expect(buildTriagePendingCountArgs(ConsentTriageType.DataFlows)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
-      showZeroActivity: true,
     });
+    expect(buildTriagePendingCountArgs(ConsentTriageType.DataFlows)).not.toHaveProperty(
+      'showZeroActivity',
+    );
   });
 
   it('filters recent-active counts to lastDiscoveredAt after the 30-day cutoff', () => {
@@ -189,7 +187,6 @@ describe('summary count args', () => {
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
-      showZeroActivity: true,
       lastDiscoveredAtAfter: dormantCutoffIso(now),
     });
     expect(dormantCutoffIso(now)).toBe('2026-08-04T12:00:00.000Z');
