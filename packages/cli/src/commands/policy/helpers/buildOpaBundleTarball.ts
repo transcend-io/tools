@@ -4,11 +4,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
+import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import fg from 'fast-glob';
 
 import { validatePolicyBundleContents } from '../../../lib/policy/policy-bundle-manifest.js';
 import { POLICY_MANIFEST_FILENAME } from '../../../lib/policy/policy-scaffold-templates.js';
-import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '../constants.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
 import { runOPACapture } from './runOpa.js';
 
