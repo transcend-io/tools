@@ -4580,6 +4580,12 @@ transcend policy publish \
 transcend policy publish --bundle-name=common --auth="$TRANSCEND_API_KEY" --transcend-url=https://api.us.transcend.io
 ```
 
+**Publish the Permissions API bundle (fixed remote name)**
+
+```sh
+transcend policy publish --bundle-name=permissions --auth="$TRANSCEND_API_KEY"
+```
+
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
