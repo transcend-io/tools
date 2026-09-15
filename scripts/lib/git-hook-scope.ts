@@ -15,7 +15,9 @@ export type WorkspacePackage = {
 export const GLOBAL_INFRA_PATHS: ReadonlySet<string> = new Set([
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
-  'package.json',
+  // Root package.json is handled via manifestChanges (root checks / test:root),
+  // not a full monorepo rebuild — otherwise adding a root script always
+  // re-tests every package on first push.
   // turbo.json is intentionally omitted: Turborepo already hashes it into task
   // inputs. Listing it here forced full-monorepo hook runs for any pipeline tweak.
   'tsconfig.json',

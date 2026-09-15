@@ -1,1 +1,1 @@
-pnpm exec node ./scripts/run-git-hook.ts pre-commit
+NODE_NO_WARNINGS=1 node --experimental-strip-types ./scripts/run-git-hook.ts pre-commit

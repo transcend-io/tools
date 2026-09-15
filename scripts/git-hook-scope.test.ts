@@ -69,6 +69,13 @@ describe('git-hook-scope', () => {
       manifestChanges: false,
     });
 
+    expect(analyzeFiles(['package.json'], packages)).toEqual({
+      packageNames: [],
+      globalInfra: false,
+      rootScripts: false,
+      manifestChanges: true,
+    });
+
     expect(analyzeFiles(['packages/cli/package.json'], packages)).toEqual({
       packageNames: ['@transcend-io/cli'],
       globalInfra: false,

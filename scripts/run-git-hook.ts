@@ -267,12 +267,12 @@ function runScopedTests(analysis: HookChangeAnalysis): number {
     status = runTurbo(['run', 'test', ...testPackages.map((name) => `--filter=${name}`)]) || status;
   }
 
-  if (analysis.rootScripts) {
+  if (analysis.rootScripts || analysis.manifestChanges) {
     console.log('Running root tests (scripts/)');
     status = runTurbo(['run', 'test:root']) || status;
   }
 
-  if (testPackages.length === 0 && !analysis.rootScripts) {
+  if (testPackages.length === 0 && !analysis.rootScripts && !analysis.manifestChanges) {
     console.log('Push changes do not require package tests.');
   }
 
