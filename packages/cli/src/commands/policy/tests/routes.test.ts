@@ -15,6 +15,7 @@ describe('policy routes', () => {
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('creates an empty multi-bundle workspace');
+    expect(output).toContain('Policy workspace directory');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--dryRun');
     expect(output).toContain('--yes');
@@ -36,6 +37,7 @@ describe('policy routes', () => {
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Defaults to the policy workspace');
+    expect(output).toContain('Policy workspace or bundle directory');
     expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--fix');
@@ -54,10 +56,24 @@ describe('policy routes', () => {
     await run(app, ['policy', 'test', '--help'], context);
 
     const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('Policy workspace or bundle directory');
     expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).not.toContain('--dir');
     expect(output).not.toContain('example-bundle');
+  });
+
+  it('documents policy new against the workspace directory', async () => {
+    const context = buildContextForTest({
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['policy', 'new', '--help'], context);
+
+    const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('Policy workspace directory');
+    expect(output).toContain('transcend/policy');
   });
 
   it.each(['eval', 'publish'])(

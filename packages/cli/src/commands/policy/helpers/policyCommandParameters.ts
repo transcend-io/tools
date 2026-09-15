@@ -1,22 +1,32 @@
 import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-project-discovery.js';
-import { createProjectDirectoryParameter } from '../../../lib/scaffolding/command-parameters.js';
 
-/** Shared positional Policy workspace directory (`policy init` / `policy new`). */
-export const policyWorkspaceDirectoryParameter = createProjectDirectoryParameter({
-  projectName: 'Policy',
-  defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
-});
+/**
+ * Shared positional Policy workspace directory (`policy init` / `policy new`).
+ *
+ * The workspace holds shared Regal config, schemas, and one or more bundles.
+ */
+export const policyWorkspaceDirectoryParameter = {
+  brief: 'Policy workspace directory (default: transcend/policy)',
+  placeholder: 'directory',
+  parse: String,
+  optional: true as const,
+  default: DEFAULT_POLICY_PROJECT_DIRECTORY,
+} as const;
 
 /**
  * Positional directory for multi-bundle commands (`policy lint` / `policy test`).
  *
  * Defaults to the policy workspace. When that path has no `.manifest`, the
  * command discovers and runs against every immediate child that contains one.
+ * Pass one bundle directory to target a single unit.
  */
-export const policyWorkspaceOrBundleDirectoryParameter = createProjectDirectoryParameter({
-  projectName: 'Policy',
-  defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
-});
+export const policyWorkspaceOrBundleDirectoryParameter = {
+  brief: 'Policy workspace or bundle directory (workspace default: every .manifest child)',
+  placeholder: 'directory',
+  parse: String,
+  optional: true as const,
+  default: DEFAULT_POLICY_PROJECT_DIRECTORY,
+} as const;
 
 /**
  * Required positional directory for one-bundle commands (`policy eval` / `publish`).

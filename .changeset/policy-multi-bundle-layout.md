@@ -25,7 +25,7 @@ transcend policy new --template permissions --name permissions --yes
 
 `policy eval` and `policy publish` require an explicit bundle directory (one-bundle operations — no default path).
 
-Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0 capabilities).
+Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0 capabilities). Help text distinguishes the **workspace** directory (`init` / `new` / `lint` / `test`) from a **bundle** directory (`eval` / `publish`).
 
 ### Migration
 
