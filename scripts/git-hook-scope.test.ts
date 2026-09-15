@@ -46,6 +46,7 @@ describe('git-hook-scope', () => {
       globalInfra: false,
       rootScripts: true,
       manifestChanges: false,
+      rootScriptFiles: ['scripts/logger.ts'],
     });
 
     expect(analyzeFiles(['turbo.json'], packages)).toEqual({
@@ -53,6 +54,7 @@ describe('git-hook-scope', () => {
       globalInfra: false,
       rootScripts: false,
       manifestChanges: false,
+      rootScriptFiles: [],
     });
 
     expect(analyzeFiles(['pnpm-lock.yaml'], packages)).toEqual({
@@ -60,6 +62,7 @@ describe('git-hook-scope', () => {
       globalInfra: true,
       rootScripts: false,
       manifestChanges: false,
+      rootScriptFiles: [],
     });
 
     expect(analyzeFiles(['packages/cli/README.md'], packages)).toEqual({
@@ -67,6 +70,7 @@ describe('git-hook-scope', () => {
       globalInfra: false,
       rootScripts: false,
       manifestChanges: false,
+      rootScriptFiles: [],
     });
 
     expect(analyzeFiles(['package.json'], packages)).toEqual({
@@ -74,6 +78,7 @@ describe('git-hook-scope', () => {
       globalInfra: false,
       rootScripts: false,
       manifestChanges: true,
+      rootScriptFiles: [],
     });
 
     expect(analyzeFiles(['packages/cli/package.json'], packages)).toEqual({
@@ -81,6 +86,7 @@ describe('git-hook-scope', () => {
       globalInfra: false,
       rootScripts: false,
       manifestChanges: true,
+      rootScriptFiles: [],
     });
   });
 

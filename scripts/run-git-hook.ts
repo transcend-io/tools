@@ -30,6 +30,7 @@ import {
   analyzeFiles,
   buildDependentsIndex,
   expandWithDependents,
+  onlyHookRootScripts,
   type HookChangeAnalysis,
   type WorkspacePackage,
 } from './lib/git-hook-scope.ts';
@@ -267,12 +268,18 @@ function runScopedTests(analysis: HookChangeAnalysis): number {
     status = runTurbo(['run', 'test', ...testPackages.map((name) => `--filter=${name}`)]) || status;
   }
 
-  if (analysis.rootScripts || analysis.manifestChanges) {
-    console.log('Running root tests (scripts/)');
-    status = runTurbo(['run', 'test:root']) || status;
+  if (analysis.rootScripts) {
+    if (onlyHookRootScripts(analysis.rootScriptFiles)) {
+      console.log('Running targeted git-hook unit tests');
+      status =
+        runCommand('pnpm', ['exec', 'vitest', 'run', 'scripts/git-hook-scope.test.ts']) || status;
+    } else {
+      console.log('Running root tests (scripts/)');
+      status = runTurbo(['run', 'test:root']) || status;
+    }
   }
 
-  if (testPackages.length === 0 && !analysis.rootScripts && !analysis.manifestChanges) {
+  if (testPackages.length === 0 && !analysis.rootScripts) {
     console.log('Push changes do not require package tests.');
   }
 

@@ -61,6 +61,8 @@ export type HookChangeAnalysis = {
   rootScripts: boolean;
   /** package.json / workspace manifest changes */
   manifestChanges: boolean;
+  /** Repo-relative paths under scripts/ or .husky/ */
+  rootScriptFiles: string[];
 };
 
 export function isGlobalInfraPath(file: string): boolean {
@@ -102,6 +104,7 @@ export function analyzeFiles(
   workspacePackages: WorkspacePackage[],
 ): HookChangeAnalysis {
   const packageNames = new Set<string>();
+  const rootScriptFiles: string[] = [];
   let globalInfra = false;
   let rootScripts = false;
   let manifestChanges = false;
@@ -117,6 +120,7 @@ export function analyzeFiles(
       normalized.startsWith('.husky/')
     ) {
       rootScripts = true;
+      rootScriptFiles.push(normalized);
     }
     if (
       normalized === 'package.json' ||
@@ -136,7 +140,23 @@ export function analyzeFiles(
     globalInfra,
     rootScripts,
     manifestChanges,
+    rootScriptFiles: rootScriptFiles.sort(),
   };
+}
+
+/** Paths that only need the git-hook unit tests, not the full scripts/ suite. */
+export function isHookOnlyRootScript(file: string): boolean {
+  const normalized = file.replaceAll('\\', '/');
+  if (normalized.startsWith('.husky/')) return true;
+  return (
+    normalized === 'scripts/run-git-hook.ts' ||
+    normalized === 'scripts/lib/git-hook-scope.ts' ||
+    normalized === 'scripts/git-hook-scope.test.ts'
+  );
+}
+
+export function onlyHookRootScripts(files: string[]): boolean {
+  return files.length > 0 && files.every((file) => isHookOnlyRootScript(file));
 }
 
 /**
