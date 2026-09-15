@@ -4290,10 +4290,10 @@ The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zi
 
 ```txt
 USAGE
-  transcend policy eval (--pkg value) (--input value) [<directory>]
+  transcend policy eval (--pkg value) (--input value) <directory>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
      --pkg    OPA package or query to evaluate (e.g. data.transcend.decision)
@@ -4301,7 +4301,7 @@ FLAGS
   -h --help   Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy/example-bundle]
+  directory  Policy bundle directory containing a .manifest
 ```
 
 #### Examples
@@ -4312,10 +4312,12 @@ ARGUMENTS
 transcend policy eval --pkg=data.example.result --input=./fixtures/envelope.json
 ```
 
-The default publish directory is `transcend/policy/example-bundle`. Pass another `{root}-bundle/` directory positionally:
+Pass the bundle directory positionally (required — one bundle per invocation):
 
 ```sh
-transcend policy eval ./policies/example-bundle --pkg=data.example.result --input=./fixtures/envelope.json
+transcend policy eval transcend/policy/example-bundle \
+  --pkg=data.example.result \
+  --input=./fixtures/envelope.json
 ```
 
 ### `transcend policy init`
@@ -4338,7 +4340,7 @@ FLAGS
   -h  --help                Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy]
+  [directory]  Policy workspace directory (default: transcend/policy) [default = transcend/policy]
 ```
 
 #### Create an empty multi-bundle workspace
@@ -4375,7 +4377,7 @@ USAGE
   transcend policy lint [--fix] [--noInteractive] [--json] [<directory>]
   transcend policy lint --help
 
-Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and verifies every publishable child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
 
 FLAGS
      [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
@@ -4384,7 +4386,7 @@ FLAGS
   -h  --help            Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy/example-bundle]
+  [directory]  Policy workspace or bundle directory (workspace default: every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples
@@ -4407,7 +4409,7 @@ transcend policy lint --fix
 transcend policy lint --noInteractive --json
 ```
 
-To verify another publish directory, pass it positionally:
+With no directory argument, `policy lint` verifies every immediate child under the default workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a single unit:
 
 ```sh
 transcend policy lint ./policies/example-bundle --fix
@@ -4432,7 +4434,7 @@ FLAGS
   -h  --help            Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy]
+  [directory]  Policy workspace directory (default: transcend/policy) [default = transcend/policy]
 ```
 
 #### Add a generic example bundle
@@ -4500,10 +4502,10 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] [<directory>]
+  transcend policy publish (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] <directory>
   transcend policy publish --help
 
-Packages `.manifest` and `.rego` policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
+Packages `.manifest` and `.rego` policy files from one local bundle directory into a tarball and uploads it to Transcend. Requires an explicit directory containing a `.manifest`. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
       --bundle-name       Tenant-unique policy bundle name
@@ -4517,12 +4519,12 @@ FLAGS
   -h  --help              Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy/example-bundle]
+  directory  Policy bundle directory containing a .manifest
 ```
 
 #### Examples
 
-**Publish the default local policy project as the main bundle**
+**Publish a local policy bundle as the main bundle**
 
 ```sh
 transcend policy publish --bundle-name=main --auth="$TRANSCEND_API_KEY"
@@ -4550,10 +4552,12 @@ transcend policy publish --bundle-name=common --auth="$TRANSCEND_API_KEY" --tran
 transcend policy publish --bundle-name=main
 ```
 
-Pass another policy project directory positionally:
+Pass the bundle directory positionally (required — one bundle per invocation):
 
 ```sh
-transcend policy publish ./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/example-bundle \
+  --bundle-name=main \
+  --auth="$TRANSCEND_API_KEY"
 ```
 
 Requires the **Manage Policy** scope on your API key.
@@ -4565,13 +4569,13 @@ USAGE
   transcend policy test [<directory>]
   transcend policy test --help
 
-Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
   -h --help  Print help information and exit
 
 ARGUMENTS
-  [directory]  Policy project directory [default = transcend/policy/example-bundle]
+  [directory]  Policy workspace or bundle directory (workspace default: every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples

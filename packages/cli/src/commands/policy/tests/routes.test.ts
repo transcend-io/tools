@@ -38,6 +38,7 @@ describe('policy routes', () => {
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Defaults to the policy workspace');
     expect(output).toContain('Policy workspace or bundle directory');
+    expect(output).toContain('every .manifest child');
     expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--fix');
@@ -57,6 +58,7 @@ describe('policy routes', () => {
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Policy workspace or bundle directory');
+    expect(output).toContain('every .manifest child');
     expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).not.toContain('--dir');
