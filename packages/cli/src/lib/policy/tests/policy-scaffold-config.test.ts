@@ -2,7 +2,6 @@ import { parse } from 'jsonc-parser';
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildPolicyLintTask,
   CONFLICTING_POLICY_VSCODE_EXTENSION,
   mergePolicyEditorExtensions,
   mergePolicyEditorSettings,

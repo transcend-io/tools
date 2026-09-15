@@ -6,11 +6,7 @@ import {
   parseJsoncObject,
   type JsoncUpdate,
 } from '../scaffolding/jsonc.js';
-import {
-  POLICY_MANIFEST_FILENAME,
-  POLICY_STARTER_BUNDLE_DIRECTORY,
-  POLICY_STARTER_ROOT,
-} from './policy-scaffold-templates.js';
+import { POLICY_MANIFEST_FILENAME, POLICY_STARTER_ROOT } from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
 export const POLICY_VSCODE_EXTENSION = 'tsandall.opa';
