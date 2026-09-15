@@ -173,7 +173,8 @@ Hooks are **scoped to the files you are committing or pushing** (see
 - `pre-push`:
   - tests packages changed in the push range (plus dependents)
   - runs root `scripts/` tests when those files change
-  - falls back to the full test suite for new branches or global infra changes
+  - falls back to the full test suite for global infra changes
+  - for brand-new branches, scopes against the merge-base with `origin/main`
 
 We intentionally do **not** use Turbo `--affected` / `--filter=[HEAD]` for hooks: root
 `package.json` workspace dependencies on MCP servers make Turbo treat most shared-package
