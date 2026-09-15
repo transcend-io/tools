@@ -38,7 +38,17 @@ describe('policy test', () => {
     }
     const context = buildContextForTest({ cwd: tmpdir() });
 
-    await test.call(context, {}, workspace);
+    await test.call(
+      context,
+      {
+        format: 'pretty',
+        verbose: false,
+        coverage: false,
+        'var-values': false,
+        'exit-zero-on-skipped': false,
+      },
+      workspace,
+    );
 
     expect(assertOpaInstalledMock).toHaveBeenCalledOnce();
     expect(runOpaMock).toHaveBeenCalledTimes(2);
@@ -47,23 +57,87 @@ describe('policy test', () => {
       '--fail-on-empty',
       '-b',
       join(workspace, 'example-bundle'),
+      '--format',
+      'pretty',
     ]);
     expect(runOpaMock).toHaveBeenNthCalledWith(2, [
       'test',
       '--fail-on-empty',
       '-b',
       join(workspace, 'payments'),
+      '--format',
+      'pretty',
     ]);
   });
 
-  it('resolves a single bundle directory from the invocation directory', async () => {
+  it('forwards curated opa test flags for a single bundle', async () => {
     const bundle = mkdtempSync(join(tmpdir(), 'policy-test-bundle-'));
+    temporaryDirectories.push(bundle);
+    writeFileSync(join(bundle, '.manifest'), JSON.stringify({ roots: ['x'] }));
+    const schemas = mkdtempSync(join(tmpdir(), 'policy-test-schemas-'));
+    temporaryDirectories.push(schemas);
+    const context = buildContextForTest({ cwd: tmpdir() });
+
+    await test.call(
+      context,
+      {
+        format: 'json',
+        verbose: true,
+        run: 'test_allows',
+        coverage: true,
+        threshold: '80',
+        timeout: '10s',
+        'var-values': true,
+        explain: 'full',
+        schema: schemas,
+        'exit-zero-on-skipped': true,
+      },
+      bundle,
+    );
+
+    expect(runOpaMock).toHaveBeenCalledWith([
+      'test',
+      '--fail-on-empty',
+      '-b',
+      bundle,
+      '--format',
+      'json',
+      '--verbose',
+      '--run',
+      'test_allows',
+      '--coverage',
+      '--threshold',
+      '80',
+      '--timeout',
+      '10s',
+      '--var-values',
+      '--explain',
+      'full',
+      '--schema',
+      schemas,
+      '--exit-zero-on-skipped',
+    ]);
+  });
+
+  it('rejects --threshold without --coverage', async () => {
+    const bundle = mkdtempSync(join(tmpdir(), 'policy-test-threshold-'));
     temporaryDirectories.push(bundle);
     writeFileSync(join(bundle, '.manifest'), JSON.stringify({ roots: ['x'] }));
     const context = buildContextForTest({ cwd: tmpdir() });
 
-    await test.call(context, {}, bundle);
-
-    expect(runOpaMock).toHaveBeenCalledWith(['test', '--fail-on-empty', '-b', bundle]);
+    await expect(
+      test.call(
+        context,
+        {
+          format: 'pretty',
+          verbose: false,
+          coverage: false,
+          threshold: '80',
+          'var-values': false,
+          'exit-zero-on-skipped': false,
+        },
+        bundle,
+      ),
+    ).rejects.toThrow('--threshold requires --coverage.');
   });
 });

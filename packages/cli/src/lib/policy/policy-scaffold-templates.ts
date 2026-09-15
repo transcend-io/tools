@@ -286,7 +286,7 @@ transcend policy new --template generic # add a bundle from a template
 transcend policy lint --noInteractive
 transcend policy test
 transcend policy eval transcend/policy/example-bundle \\
-  --pkg data.example.result \\
+  --package data.example.result \\
   --input transcend/policy/example-bundle/input.json
 \`\`\`
 

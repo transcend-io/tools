@@ -65,9 +65,14 @@ deliberately instead of applying broad rewrites.
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
-  --pkg data.example.result \
+  --package data.example.result \
   --input transcend/policy/example-bundle/input.json
 ```
+
+Or pipe the envelope with `--stdin-input`. Use `transcend policy eval --help` for
+curated `opa eval` pass-through flags (format, explain, metrics, and similar).
+Exit-on-result flags like OPA `--fail` are not exposed — production Evaluate uses
+the Data API (policy deny is a successful evaluation).
 
 Or `opa eval -b … -i …` with the caller's query path. If the result differs from
 expectations, inspect package paths, imports, defaults, input field presence,
