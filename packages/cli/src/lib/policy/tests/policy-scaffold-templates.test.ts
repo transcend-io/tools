@@ -6,6 +6,7 @@ import {
   generatePolicyStarterFiles,
   generatePolicyWorkspaceFiles,
   generatePolicyBundleFiles,
+  mergePolicyRegalConfigRoots,
   POLICY_GITIGNORE_TEMPLATE,
   POLICY_INPUT_EXAMPLE_TEMPLATE,
   POLICY_INPUT_SCHEMA_TEMPLATE,
@@ -134,6 +135,58 @@ describe('policy workspace init files', () => {
         'rego-version': 1,
       },
     });
+  });
+
+  it('merges a root into Regal config without wiping custom keys', () => {
+    const existing = `capabilities:
+  from:
+    engine: opa
+    version: v1.18.2
+project:
+  roots:
+    - example
+  rego-version: 1
+rules:
+  idiomatic/custom-has-key:
+    level: ignore
+ignore:
+  files:
+    - "**/vendor/**"
+`;
+
+    const { contents, roots } = mergePolicyRegalConfigRoots(existing, 'permissions');
+    const parsed = yaml.load(contents) as Record<string, unknown>;
+
+    expect(roots).toEqual(['example', 'permissions']);
+    expect(parsed).toMatchObject({
+      capabilities: {
+        from: {
+          engine: 'opa',
+          version: 'v1.18.2',
+        },
+      },
+      project: {
+        roots: ['example', 'permissions'],
+        'rego-version': 1,
+      },
+      rules: {
+        'idiomatic/custom-has-key': {
+          level: 'ignore',
+        },
+      },
+      ignore: {
+        files: ['**/vendor/**'],
+      },
+    });
+  });
+
+  it('throws when project.roots is not an array of strings', () => {
+    const existing = `project:
+  roots: example
+`;
+    expect(() => mergePolicyRegalConfigRoots(existing, 'permissions')).toThrow(
+      /project\.roots must be an array of strings/,
+    );
   });
 });
 

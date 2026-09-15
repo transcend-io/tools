@@ -32,6 +32,7 @@ Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0
 - `policy init` no longer creates `example-bundle/` or any Rego — run `policy new` after init.
 - `policy lint` / `policy test` with no args cover all `.manifest` bundles under `transcend/policy`.
 - `policy new` still scaffolds directories as `{name}-bundle/`; that suffix is a layout convention, not a discovery requirement.
+- `policy new` merges the new root into existing `.regal/config.yaml` without wiping custom Regal settings; invalid `project.roots` fail instead of resetting.
 - `policy eval` and `policy publish` no longer default to `transcend/policy/example-bundle` — pass the bundle directory explicitly.
 - Upgrade local/CI OPA to 1.18.2 (and Regal to ≥ 0.42.0 for the generated capabilities pin).
 - If you already use a flat `transcend/policy` publish directory, move the Rego tree and `.manifest` into a child publish directory (or pass that path explicitly).

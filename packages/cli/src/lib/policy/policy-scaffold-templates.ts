@@ -1,3 +1,5 @@
+import yaml from 'js-yaml';
+
 /** OPA version targeted by generated policy authoring configuration. */
 export const POLICY_STARTER_OPA_VERSION = '1.18.2';
 
@@ -72,6 +74,100 @@ project:
 ${rootsSection}
   rego-version: 1
 `;
+}
+
+/**
+ * Merge one package-path root into an existing Regal config without wiping
+ * unrelated keys (custom rules, ignores, etc.).
+ *
+ * Comments and key order may be reformatted by the YAML serializer. Invalid
+ * `project.roots` shapes throw instead of silently dropping prior roots.
+ *
+ * @param existingContents - Current `.regal/config.yaml` contents
+ * @param rootToAdd - Package-path root to include
+ * @returns Updated file contents and the full roots list
+ */
+export function mergePolicyRegalConfigRoots(
+  existingContents: string,
+  rootToAdd: string,
+): { contents: string; roots: string[] } {
+  const trimmed = existingContents.trim();
+  if (trimmed.length === 0) {
+    const roots = [rootToAdd];
+    return { contents: buildPolicyRegalConfigTemplate(roots), roots };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(existingContents);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`.regal/config.yaml is not valid YAML: ${detail}`);
+  }
+
+  if (parsed === null || parsed === undefined) {
+    const roots = [rootToAdd];
+    return { contents: buildPolicyRegalConfigTemplate(roots), roots };
+  }
+  if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('.regal/config.yaml must be a YAML mapping at the top level.');
+  }
+
+  const config = { ...(parsed as Record<string, unknown>) };
+  const existingProject = config.project;
+  if (
+    existingProject !== undefined &&
+    existingProject !== null &&
+    (typeof existingProject !== 'object' || Array.isArray(existingProject))
+  ) {
+    throw new Error('.regal/config.yaml project must be a YAML mapping when present.');
+  }
+
+  const project: Record<string, unknown> = {
+    ...((existingProject as Record<string, unknown> | undefined) ?? {}),
+  };
+  const existingRoots = project.roots;
+  let roots: string[];
+  if (existingRoots === undefined) {
+    roots = [rootToAdd];
+  } else if (
+    Array.isArray(existingRoots) &&
+    existingRoots.every((root): root is string => typeof root === 'string')
+  ) {
+    roots = [...new Set([...existingRoots, rootToAdd])].sort((left, right) =>
+      left.localeCompare(right),
+    );
+  } else {
+    throw new Error(
+      '.regal/config.yaml project.roots must be an array of strings. ' +
+        'Fix the Regal config before running `transcend policy new`.',
+    );
+  }
+
+  project.roots = roots;
+  if (project['rego-version'] === undefined) {
+    project['rego-version'] = 1;
+  }
+  config.project = project;
+
+  if (config.capabilities === undefined) {
+    config.capabilities = {
+      from: {
+        engine: 'opa',
+        version: `v${POLICY_STARTER_OPA_VERSION}`,
+      },
+    };
+  }
+
+  const dumped = yaml.dump(config, {
+    lineWidth: -1,
+    noRefs: true,
+    sortKeys: false,
+  });
+  return {
+    contents: dumped.endsWith('\n') ? dumped : `${dumped}\n`,
+    roots,
+  };
 }
 
 /**

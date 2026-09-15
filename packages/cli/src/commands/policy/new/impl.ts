@@ -1,7 +1,6 @@
 import { join, relative, sep } from 'node:path';
 
 import colors from 'colors';
-import yaml from 'js-yaml';
 
 import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
@@ -20,8 +19,8 @@ import {
 } from '../../../lib/policy/policy-scaffold-config.js';
 import {
   buildBundleDirectoryName,
-  buildPolicyRegalConfigTemplate,
   generatePolicyBundleFiles,
+  mergePolicyRegalConfigRoots,
   POLICY_MANIFEST_FILENAME,
   POLICY_TEMPLATE_DEFAULT_ROOTS,
   POLICY_TEMPLATE_NAMES,
@@ -84,27 +83,6 @@ function validateRootName(value: string): true | string {
     return 'Root name cannot exceed 64 characters.';
   }
   return true;
-}
-
-/**
- * Read and parse the existing Regal config to discover current roots.
- *
- * @param context - CLI context
- * @param regalConfigPath - Absolute path to .regal/config.yaml
- * @returns Existing roots array
- */
-function readExistingRoots(context: LocalContext, regalConfigPath: string): string[] {
-  if (!context.fs.existsSync(regalConfigPath)) {
-    return [];
-  }
-  const contents = context.fs.readFileSync(regalConfigPath, 'utf8');
-  const parsed = yaml.load(contents) as Record<string, unknown> | undefined;
-  const project = parsed?.project as Record<string, unknown> | undefined;
-  const roots = project?.roots;
-  if (Array.isArray(roots) && roots.every((r) => typeof r === 'string')) {
-    return roots as string[];
-  }
-  return [];
 }
 
 /**
@@ -187,9 +165,11 @@ export async function _new(
     }
 
     const files = generatePolicyBundleFiles(template, name);
-    const existingRoots = readExistingRoots(this, regalConfigPath);
-    const allRoots = [...new Set([...existingRoots, name])].sort();
-    const updatedRegalConfig = buildPolicyRegalConfigTemplate(allRoots);
+    const existingRegalContents = this.fs.readFileSync(regalConfigPath, 'utf8');
+    const { contents: updatedRegalConfig, roots: allRoots } = mergePolicyRegalConfigRoots(
+      existingRegalContents,
+      name,
+    );
 
     const candidatePaths = [
       regalConfigPath,
