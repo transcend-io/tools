@@ -36,7 +36,7 @@ export const GLOBAL_INFRA_PATHS: ReadonlySet<string> = new Set([
   '.node-version',
 ]);
 
-export const GLOBAL_INFRA_PREFIXES: readonly string[] = ['types/', 'assets/', 'skills/'];
+export const GLOBAL_INFRA_PREFIXES: readonly string[] = ['types/', 'assets/'];
 
 /**
  * Package files that do not require typecheck / attw / package tests on their own.
