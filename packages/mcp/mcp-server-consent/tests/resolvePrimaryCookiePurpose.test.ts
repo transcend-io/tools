@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
 import {
-  COOKIE_TRIAGE_PURPOSE_LABELS,
   COOKIE_TRIAGE_PURPOSE_ORDER,
   isDefaultCookiePurposeSlug,
   isUnknownCookiePurposeSlug,
@@ -20,16 +19,6 @@ describe('COOKIE_TRIAGE_PURPOSE_ORDER', () => {
       CookieTriagePurposeCategory.Unknown,
       CookieTriagePurposeCategory.Custom,
     ]);
-  });
-});
-
-describe('COOKIE_TRIAGE_PURPOSE_LABELS', () => {
-  it('maps SaleOfInfo, Custom, and Unknown to app copy', () => {
-    expect(COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.SaleOfInfo]).toBe(
-      'Sale of Info',
-    );
-    expect(COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Custom]).toBe('Custom');
-    expect(COOKIE_TRIAGE_PURPOSE_LABELS[CookieTriagePurposeCategory.Unknown]).toBe('Unknown');
   });
 });
 

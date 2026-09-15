@@ -11,7 +11,7 @@ import {
   getPolicyInitPlanningCandidatePaths,
   type PolicyInitPlanOptions,
 } from '../policy-scaffold-planning.js';
-import { generatePolicyStarterFiles } from '../policy-scaffold-templates.js';
+import { generatePolicyWorkspaceFiles } from '../policy-scaffold-templates.js';
 import { POLICY_SKILL_FILES, POLICY_SKILL_NAME } from '../policy-skill.js';
 
 const CLI_VERSION = '10.27.4';
@@ -78,14 +78,14 @@ function snapshotsAfterPlan(
 }
 
 /**
- * Enumerate target-relative paths created by the core starter.
+ * Enumerate target-relative paths created by the workspace init.
  *
  * @param state - Policy state
  * @returns Relative files and directories
  */
-function starterRelativePaths(state: PolicyProjectState): string[] {
+function workspaceRelativePaths(state: PolicyProjectState): string[] {
   const paths = new Set<string>();
-  generatePolicyStarterFiles().forEach((file) => {
+  generatePolicyWorkspaceFiles().forEach((file) => {
     const path = join(state.targetDirectory, file.path);
     paths.add(relative(state.targetDirectory, path).split(sep).join('/'));
     let parent = dirname(path);
@@ -98,12 +98,12 @@ function starterRelativePaths(state: PolicyProjectState): string[] {
 }
 
 /**
- * Enumerate target-relative files created by the core starter.
+ * Enumerate target-relative files created by workspace init.
  *
- * @returns Relative starter files
+ * @returns Relative workspace files
  */
-function starterFilePaths(): string[] {
-  return generatePolicyStarterFiles()
+function workspaceFilePaths(): string[] {
+  return generatePolicyWorkspaceFiles()
     .map(({ path }) => path)
     .sort();
 }
@@ -131,7 +131,7 @@ describe('Policy Engine repository integration planning', () => {
       expect(paths).toContain(`/repo/.agents/skills/${POLICY_SKILL_NAME}/${path}`);
     });
     expect(plan.features).toEqual(options.features);
-    expect(plan.changes).toHaveLength(16);
+    expect(plan.changes).toHaveLength(11);
     expect(plan.warnings).toEqual([]);
   });
 
@@ -143,8 +143,8 @@ describe('Policy Engine repository integration planning', () => {
     };
     const paths = getPolicyInitPlanningCandidatePaths(state, options);
     const first = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, options);
-    state.relativePaths = starterRelativePaths(state);
-    state.relativeFilePaths = starterFilePaths();
+    state.relativePaths = workspaceRelativePaths(state);
+    state.relativeFilePaths = workspaceFilePaths();
 
     const second = buildPolicyInitPlan(
       { state, snapshots: snapshotsAfterPlan(paths, first) },
@@ -153,7 +153,7 @@ describe('Policy Engine repository integration planning', () => {
 
     expect(second.changes).toEqual([]);
     expect(second.warnings).toEqual([]);
-    expect(second.unchanged).toHaveLength(16);
+    expect(second.unchanged).toHaveLength(11);
   });
 
   it('uses one existing skill directory without inventing editor-specific copies', () => {
@@ -195,8 +195,8 @@ describe('Policy Engine repository integration planning', () => {
         'Use repository-specific policy guidance',
       ),
     };
-    state.relativePaths = starterRelativePaths(state);
-    state.relativeFilePaths = starterFilePaths();
+    state.relativePaths = workspaceRelativePaths(state);
+    state.relativeFilePaths = workspaceFilePaths();
 
     const plan = buildPolicyInitPlan({ state, snapshots }, options);
 
@@ -241,10 +241,5 @@ describe('Policy Engine repository integration planning', () => {
         expect.stringContaining('Existing GitHub Actions workflow was left unchanged'),
       ]),
     );
-    expect(
-      plan.changes.find((change) => change.path === settingsPath && change.kind === 'file'),
-    ).toMatchObject({
-      before: '{"opa.strictMode":false}\n',
-    });
   });
 });

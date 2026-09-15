@@ -371,6 +371,7 @@ const GetAssessmentDoc = graphql(/* GraphQL */ `
             index
             type
             subType
+            allowSelectOther
             description
             isRequired
             placeholder
@@ -1360,6 +1361,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
           index: q.index ?? undefined,
           type: q.type,
           subType: q.subType ?? undefined,
+          // Whether the question has a free-text box beside its options, which
+          // subType does not answer: a CUSTOM select with this false rejects a
+          // written value outright.
+          allowSelectOther: q.allowSelectOther ?? false,
           description: q.description ?? undefined,
           isRequired: q.isRequired ?? undefined,
           placeholder: q.placeholder ?? undefined,

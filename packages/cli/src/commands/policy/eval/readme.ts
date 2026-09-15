@@ -7,7 +7,7 @@ const examples = buildExamples<EvalCommandFlags>(
     {
       description: 'Evaluate a decision query with a local envelope',
       flags: {
-        pkg: 'data.transcend.decision',
+        pkg: 'data.example.result',
         input: './fixtures/envelope.json',
       },
     },
@@ -18,9 +18,11 @@ export default `#### Examples
 
 ${examples}
 
-The default project is \`transcend/policy\`. Pass another project directory positionally:
+Pass the bundle directory positionally (required — one bundle per invocation):
 
 \`\`\`sh
-transcend policy eval ./policies --pkg=data.transcend.decision --input=./fixtures/envelope.json
+transcend policy eval transcend/policy/example-bundle \\
+  --pkg=data.example.result \\
+  --input=./fixtures/envelope.json
 \`\`\`
 `;

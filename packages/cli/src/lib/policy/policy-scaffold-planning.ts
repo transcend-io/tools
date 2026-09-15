@@ -5,14 +5,13 @@ import {
   planManagedAgentSkill,
   type ManagedAgentSkillDefinition,
 } from '../scaffolding/agent-skill.js';
-import { displayProjectPath, quoteShellArgument } from '../scaffolding/project-plan-output.js';
+import { displayProjectPath } from '../scaffolding/project-plan-output.js';
 import {
   getPlanningPathSnapshot,
   getPlanningFileSnapshot,
   planFileChange,
   type PlanningPathSnapshot,
 } from '../scaffolding/project-plan.js';
-import { getPolicyManifestPath } from './policy-project-discovery.js';
 import {
   generatePolicyGithubActionsWorkflow,
   POLICY_CI_WORKFLOW_PATH,
@@ -30,7 +29,11 @@ import {
   type PolicyProjectState,
   type PolicySetupFeature as PolicySetupFeatureType,
 } from './policy-scaffold-model.js';
-import { generatePolicyStarterFiles, type PolicyStarterFile } from './policy-scaffold-templates.js';
+import {
+  generatePolicyWorkspaceFiles,
+  POLICY_STARTER_BUNDLE_DIRECTORY,
+  type PolicyStarterFile,
+} from './policy-scaffold-templates.js';
 import { POLICY_SKILL_FILES, POLICY_SKILL_NAME } from './policy-skill.js';
 
 /** Managed Policy Engine Agent Skill definition. */
@@ -58,17 +61,6 @@ export interface PolicyInitPlanOptions {
 }
 
 /**
- * Build the copyable policy lint command for one target.
- *
- * @param state - Discovered project state
- * @returns Raw one-line command
- */
-export function buildPolicyLintCommand(state: PolicyProjectState): string {
-  const directory = displayProjectPath(state.invocationDirectory, state.targetDirectory);
-  return `transcend policy lint ${quoteShellArgument(directory)} --noInteractive`;
-}
-
-/**
  * Enumerate all core starter paths that could be created.
  *
  * @param state - Policy project state
@@ -80,7 +72,7 @@ export function getPolicyInitPlanningCandidatePaths(
   options: Pick<PolicyInitPlanOptions, 'features'>,
 ): string[] {
   const paths = new Set(
-    generatePolicyStarterFiles().map(({ path }) => join(state.targetDirectory, path)),
+    generatePolicyWorkspaceFiles().map(({ path }) => join(state.targetDirectory, path)),
   );
   const selected = new Set(options.features);
   if (selected.has(PolicySetupFeature.Editor)) {
@@ -121,7 +113,7 @@ function assertContained(root: string, path: string): void {
  * @returns POSIX relative paths
  */
 function starterRelativePaths(files: readonly PolicyStarterFile[]): Set<string> {
-  const paths = new Set<string>(['input.json']);
+  const paths = new Set<string>([`${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`]);
   files.forEach(({ path }) => {
     paths.add(path);
     let parent = posix.dirname(path);
@@ -210,20 +202,19 @@ export function buildPolicyInitPlan(
   options: PolicyInitPlanOptions,
 ): PolicyInitProjectPlan {
   const { state } = input;
-  const files = generatePolicyStarterFiles();
-  const manifestPath = getPolicyManifestPath(state);
-  const lintCommand = buildPolicyLintCommand(state);
-  const resultPath = join(state.targetDirectory, 'policy_engine', 'example', 'result.rego');
+  const files = generatePolicyWorkspaceFiles();
+  const newCommand = 'transcend policy new';
   const plan: PolicyInitProjectPlan = {
     version: POLICY_INIT_RESULT_VERSION,
     command: 'init',
     rootDirectory: state.projectRoot,
     targetDirectory: state.targetDirectory,
-    manifestPath,
+    // Init creates a workspace only; bundles (and their .manifest) come from `policy new`.
+    manifestPath: state.targetDirectory,
     changes: [],
     unchanged: [],
     warnings: [],
-    nextSteps: [lintCommand],
+    nextSteps: [newCommand],
     features: [...options.features],
   };
 
@@ -231,9 +222,7 @@ export function buildPolicyInitPlan(
   assertContained(state.projectRoot, state.targetDirectory);
   candidatePaths.forEach((path) => assertContained(state.projectRoot, path));
 
-  let hasDisposableExample = false;
   if (state.relativeFilePaths.length === 0) {
-    hasDisposableExample = true;
     plan.directoryPreconditions = [
       {
         path: state.targetDirectory,
@@ -254,7 +243,7 @@ export function buildPolicyInitPlan(
       });
     });
   } else {
-    let allStarterFilesMatch = true;
+    let allWorkspaceFilesMatch = true;
     files.forEach((file) => {
       const path = join(state.targetDirectory, file.path);
       const snapshot = getPlanningPathSnapshot(input.snapshots, path);
@@ -262,7 +251,7 @@ export function buildPolicyInitPlan(
         plan.unchanged.push(path);
         return;
       }
-      allStarterFilesMatch = false;
+      allWorkspaceFilesMatch = false;
       if (snapshot.kind !== 'absent') {
         plan.unchanged.push(path);
         plan.warnings.push(
@@ -273,25 +262,18 @@ export function buildPolicyInitPlan(
         );
       }
     });
-    hasDisposableExample = allStarterFilesMatch;
 
     const allowedPaths = starterRelativePaths(files);
     const hasCustomPaths = state.relativeFilePaths.some((path) => !allowedPaths.has(path));
-    if (!allStarterFilesMatch || hasCustomPaths) {
+    if (!allWorkspaceFilesMatch || hasCustomPaths) {
       plan.warnings.push(
-        `Existing policy target contains custom or partial content, so no starter files were added or overwritten. ` +
+        `Existing policy target contains custom or partial content, so no workspace files were added or overwritten. ` +
           `Review ${displayProjectPath(
             state.invocationDirectory,
             state.targetDirectory,
-          )} manually, then run \`${lintCommand}\`.`,
+          )} manually, then run \`${newCommand}\`.`,
       );
     }
-  }
-  if (hasDisposableExample) {
-    plan.disposableExamplePath = resultPath;
-    plan.nextSteps.push(
-      `Edit ${quoteShellArgument(displayProjectPath(state.invocationDirectory, resultPath))}`,
-    );
   }
 
   const selected = new Set(options.features);
@@ -300,25 +282,36 @@ export function buildPolicyInitPlan(
     const settingsPath = join(root, '.vscode', 'settings.json');
     const extensionsPath = join(root, '.vscode', 'extensions.json');
     const tasksPath = join(root, '.vscode', 'tasks.json');
-    const editorArtifacts = [
+
+    type EditorMergeFn = (
+      contents: string | null,
+      repositoryRoot: string,
+      targetDirectory: string,
+    ) => PolicyEditorMergeResult;
+    const editorArtifacts: {
+      /** Absolute path. */
+      path: string;
+      /** Plan description. */
+      description: string;
+      /** Merge function. */
+      merge: EditorMergeFn;
+    }[] = [
       {
         path: settingsPath,
         description: 'Merge strict target-scoped OPA and Rego editor settings',
-        merge: mergePolicyEditorSettings,
+        merge: (contents, repositoryRoot, targetDirectory) =>
+          mergePolicyEditorSettings(contents, repositoryRoot, targetDirectory),
       },
       {
         path: extensionsPath,
         description: 'Recommend the OPA extension and discourage its syntax-only conflict',
-        merge: (
-          contents: string | null,
-          _repositoryRoot: string,
-          _targetDirectory: string,
-        ): PolicyEditorMergeResult => mergePolicyEditorExtensions(contents),
+        merge: (contents) => mergePolicyEditorExtensions(contents),
       },
       {
         path: tasksPath,
-        description: 'Add the default target-scoped policy lint task',
-        merge: mergePolicyEditorTasks,
+        description: 'Create the VS Code task configuration',
+        merge: (contents, repositoryRoot, targetDirectory) =>
+          mergePolicyEditorTasks(contents, repositoryRoot, targetDirectory),
       },
     ];
     editorArtifacts.forEach(({ path, description, merge }) => {
@@ -372,11 +365,12 @@ export function buildPolicyInitPlan(
       );
     } else {
       const workflowPath = join(state.repositoryRoot, POLICY_CI_WORKFLOW_PATH);
-      const target =
+      const workspaceDirectory =
         relative(state.repositoryRoot, state.targetDirectory).split(sep).join('/') || '.';
       const workflowContents = generatePolicyGithubActionsWorkflow({
         cliVersion: options.cliVersion,
-        targetDirectory: target,
+        workspaceDirectory,
+        bundleDirectories: [],
       });
       const workflowSnapshot = getPlanningPathSnapshot(input.snapshots, workflowPath);
       if (workflowSnapshot.kind === 'absent') {
@@ -397,7 +391,7 @@ export function buildPolicyInitPlan(
           `Existing GitHub Actions workflow was left unchanged: ${displayProjectPath(
             state.invocationDirectory,
             workflowPath,
-          )}. Adapt it manually to run \`${lintCommand}\`.`,
+          )}. Adapt it manually to validate each policy bundle.`,
         );
       }
     }

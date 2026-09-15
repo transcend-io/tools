@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import type { ConsentTriageType, CookieTriagePurposeOption } from '../../lib/cookieTriageTypes.ts';
+import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import type { AppliedSuggestionsByPurpose } from './cookieTriagePersist.ts';
 import type {
@@ -82,8 +82,8 @@ export interface CookieTriageMeta {
   triageType: ConsentTriageType;
   /** Admin dashboard base URL for deep links */
   dashboardUrl: string;
-  /** Org tracking purposes for the per-row purpose select */
-  purposeOptions: CookieTriagePurposeOption[];
+  /** Org tracking-purpose slugs for the per-row purpose select */
+  purposeOptions: string[];
 }
 
 /** Badge + load chrome for one purpose tab. */

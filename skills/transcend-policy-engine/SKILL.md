@@ -1,21 +1,32 @@
 ---
 name: transcend-policy-engine
 description: Sets up, authors, validates, tests, and publishes Transcend Policy Engine projects backed by OPA and Rego. Use for .manifest roots, Rego v1 policy trees, Regal configuration, local policy inputs, Policy Engine CI, or transcend policy CLI commands.
-compatibility: Requires OPA 1.x and Regal for local validation, plus the Transcend CLI.
+compatibility: Requires OPA 1.x, Regal, and Transcend CLI ≥ 11 for local validation.
 ---
 
 # Transcend Policy Engine
 
-Use the CLI for deterministic scaffolding and validation. Treat the generated example as disposable teaching material and derive the real policy contract from repository code and product requirements.
+Use the CLI for deterministic scaffolding and validation. Treat generated
+examples as disposable teaching material and derive the real policy contract
+from repository code and product requirements.
+
+Requires **Transcend CLI ≥ 11** (`transcend policy lint [<directory>]`, with
+`init` available).
 
 ## Workflow
 
-1. Locate the policy directory and its `.manifest`.
+1. Locate each publishable bundle directory (a directory with a `.manifest`;
+   `policy new` scaffolds these as `{root}-bundle/` with a `{root}/` package
+   tree inside).
 2. For initialization, editor support, tools, or CI, read [references/setup-tooling.md](references/setup-tooling.md).
 3. For package layout, document-tree design, decisions, and inputs, read [references/authoring.md](references/authoring.md).
 4. For tests, local inputs, linting, and evaluation, read [references/testing-debugging.md](references/testing-debugging.md).
 5. For bundle validation and publishing, read [references/publishing.md](references/publishing.md).
-6. Preserve repository conventions and run `transcend policy lint <policy-directory> --noInteractive` before finishing.
+6. Preserve repository conventions and finish with:
+
+```sh
+transcend policy lint --noInteractive
+```
 
 ## Documentation
 
@@ -29,3 +40,5 @@ Use the CLI for deterministic scaffolding and validation. Treat the generated ex
 - Keep decisions fail-closed and make result documents extensible.
 - Never commit credentials or a real local `input.json`.
 - Keep every publishable Rego package covered by a `.manifest` root.
+- One publish directory = one Policy Engine bundle; do not merge unrelated
+  products into a single `.manifest` unless they share activation and callers.
