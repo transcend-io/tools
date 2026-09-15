@@ -14,13 +14,15 @@ Scaffolded manifests may include optional OPA `metadata`:
 ```json
 "metadata": {
   "transcend.io": {
-    "template": "generic"
+    "template": "generic",
+    "templateVersion": "<@transcend-io/cli version>"
   }
 }
 ```
 
-`template` is an **authoring hint** (`generic` or `permissions`). Upload does
-not branch on it.
+`template` (`generic` or `permissions`) and `templateVersion` (the
+`@transcend-io/cli` version that generated the scaffold) are **authoring
+hints**. Upload does not branch on them.
 
 Before publishing:
 
