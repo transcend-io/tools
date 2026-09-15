@@ -1,6 +1,7 @@
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
+import { PERMISSIONS_POLICY_BUNDLE_NAME } from '../../../lib/policy/policy-scaffold-templates.js';
 import type { PublishCommandFlags } from './impl.js';
 
 const examples = buildExamples<PublishCommandFlags>(
@@ -33,7 +34,7 @@ const examples = buildExamples<PublishCommandFlags>(
     {
       description: 'Publish the Permissions API bundle (fixed remote name)',
       flags: {
-        'bundle-name': 'permissions',
+        'bundle-name': PERMISSIONS_POLICY_BUNDLE_NAME,
         auth: '$TRANSCEND_API_KEY',
       },
     },
