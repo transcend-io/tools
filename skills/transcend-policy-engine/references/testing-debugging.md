@@ -39,9 +39,12 @@ Regal Evaluate work immediately. Customize `input.json` locally; keep
 
 ## Run the complete gate
 
-Lint and test **each** publish directory (CLI ≥ 11 uses a positional directory):
+With no directory argument, `policy lint` verifies every immediate child under
+the workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle
+path to target a single unit. `policy test` still takes one publish directory:
 
 ```sh
+transcend policy lint --noInteractive
 transcend policy lint transcend/policy/example-bundle --noInteractive
 transcend policy test transcend/policy/example-bundle
 opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schemas
@@ -49,7 +52,8 @@ opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schema
 
 `policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
 gitignored `input.json` beside `input.example.json` does not cause a merge
-error. Prefer the CLI over raw directory-mode `opa test`.
+error. Prefer the CLI over raw directory-mode `opa test`. Strict OPA checks use
+Rego v1 (no `--v0-compatible`).
 
 Use `transcend policy lint --help` for formatter flags. Review Regal findings
 deliberately instead of applying broad rewrites.

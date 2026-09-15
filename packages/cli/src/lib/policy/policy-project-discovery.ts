@@ -46,6 +46,41 @@ export function getPolicyStarterBundleDirectory(workspaceDirectory: string): str
 }
 
 /**
+ * Resolve publishable bundle directories under a path.
+ *
+ * - If `directory` itself contains a `.manifest`, it is treated as one bundle.
+ * - Otherwise immediate child directories that contain a `.manifest` are
+ *   returned in sorted order (multi-bundle workspace). Folder names are not
+ *   required to end in `-bundle`; that suffix is only the `policy new`
+ *   scaffolding convention.
+ *
+ * @param context - Filesystem-bearing CLI context
+ * @param directory - Absolute workspace or bundle directory
+ * @returns Absolute bundle directories to lint / test
+ */
+export function discoverPolicyBundleDirectories(
+  context: Pick<LocalContext, 'fs'>,
+  directory: string,
+): string[] {
+  if (!context.fs.existsSync(directory) || !context.fs.statSync(directory).isDirectory()) {
+    return [];
+  }
+  const manifestAtRoot = join(directory, POLICY_MANIFEST_FILENAME);
+  if (context.fs.existsSync(manifestAtRoot) && context.fs.statSync(manifestAtRoot).isFile()) {
+    return [directory];
+  }
+  return context.fs
+    .readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(directory, entry.name))
+    .filter((bundleDirectory) => {
+      const manifestPath = join(bundleDirectory, POLICY_MANIFEST_FILENAME);
+      return context.fs.existsSync(manifestPath) && context.fs.statSync(manifestPath).isFile();
+    })
+    .sort((left, right) => left.localeCompare(right));
+}
+
+/**
  * Collect repository state required by the pure policy planner.
  *
  * @param context - CLI context

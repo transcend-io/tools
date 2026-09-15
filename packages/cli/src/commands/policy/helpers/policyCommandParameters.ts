@@ -10,10 +10,26 @@ export const policyWorkspaceDirectoryParameter = createProjectDirectoryParameter
   defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
 });
 
-/** Shared positional local Policy publish directory (lint / test / eval / publish). */
+/**
+ * Shared positional local Policy publish directory (test / eval / publish).
+ *
+ * Defaults to the generic starter bundle path; pass another `{root}-bundle/`
+ * explicitly when needed.
+ */
 export const policyDirectoryParameter = createProjectDirectoryParameter({
   projectName: 'Policy',
   defaultDirectory: DEFAULT_POLICY_BUNDLE_DIRECTORY,
+});
+
+/**
+ * Positional directory for `policy lint`.
+ *
+ * Defaults to the multi-bundle workspace. When that path has no `.manifest`,
+ * lint discovers and verifies every immediate child that contains a `.manifest`.
+ */
+export const policyLintDirectoryParameter = createProjectDirectoryParameter({
+  projectName: 'Policy',
+  defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
 });
 
 /** Shared logical Policy bundle name flag. */

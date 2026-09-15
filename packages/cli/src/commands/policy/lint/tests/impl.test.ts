@@ -171,7 +171,7 @@ describe('policy lint', () => {
       ['opa', 'version'],
       ['regal', 'version'],
       ['opa', 'fmt', '--list', directory],
-      ['opa', 'check', '--strict', '--v0-compatible', '--ignore', '*_test.rego', directory],
+      ['opa', 'check', '--strict', '--ignore', '*_test.rego', directory],
       [
         'regal',
         'lint',
@@ -474,5 +474,48 @@ describe('policy lint', () => {
       join(directory, '.regal', 'config.yaml'),
       directory,
     ]);
+  });
+
+  it('lints every child with a .manifest under a workspace directory', async () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'policy-lint-workspace-'));
+    temporaryDirectories.push(workspace);
+    mkdirSync(join(workspace, '.regal'), { recursive: true });
+    writeFileSync(join(workspace, '.regal', 'config.yaml'), 'project:\n  roots:\n    - example\n');
+
+    for (const name of ['example-bundle', 'payments'] as const) {
+      const bundle = join(workspace, name);
+      mkdirSync(bundle);
+      const root = name.replace(/-bundle$/u, '');
+      writeFileSync(join(bundle, '.manifest'), JSON.stringify({ roots: [root] }));
+      writeFileSync(
+        join(bundle, 'policy.rego'),
+        `package ${root}\n\nimport rego.v1\n\ndefault allow := false\n`,
+      );
+      writeFileSync(
+        join(bundle, 'policy_test.rego'),
+        `package ${root}_test\n\nimport rego.v1\n\ntest_policy if { true }\n`,
+      );
+    }
+
+    const context = buildContextForTest({ cwd: tmpdir(), stdinIsTTY: false });
+    const { runner, invocations } = buildRunner();
+
+    await lint.call(context, buildFlags(), workspace, runner);
+
+    const result = JSON.parse(context.stdout);
+    expect(result.version).toBe(2);
+    expect(result.status).toBe('passed');
+    expect(result.directory).toBe(workspace);
+    expect(result.results).toHaveLength(2);
+    expect(result.results.map((entry: { directory: string }) => entry.directory)).toEqual([
+      join(workspace, 'example-bundle'),
+      join(workspace, 'payments'),
+    ]);
+    expect(
+      invocations.filter(({ command, args }) => command === 'opa' && args[0] === 'check'),
+    ).toHaveLength(2);
+    expect(
+      invocations.filter(({ command, args }) => command === 'regal' && args[0] === 'lint'),
+    ).toHaveLength(2);
   });
 });

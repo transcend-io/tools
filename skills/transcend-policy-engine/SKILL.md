@@ -15,8 +15,9 @@ Requires **Transcend CLI ≥ 11** (`transcend policy lint [<directory>]`, with
 
 ## Workflow
 
-1. Locate each publishable bundle directory (this template uses `{root}-bundle/`
-   with a `.manifest` and a `{root}/` package tree inside).
+1. Locate each publishable bundle directory (a directory with a `.manifest`;
+   `policy new` scaffolds these as `{root}-bundle/` with a `{root}/` package
+   tree inside).
 2. For initialization, editor support, tools, or CI, read [references/setup-tooling.md](references/setup-tooling.md).
 3. For package layout, document-tree design, decisions, and inputs, read [references/authoring.md](references/authoring.md).
 4. For tests, local inputs, linting, and evaluation, read [references/testing-debugging.md](references/testing-debugging.md).
@@ -24,7 +25,7 @@ Requires **Transcend CLI ≥ 11** (`transcend policy lint [<directory>]`, with
 6. Preserve repository conventions and finish with:
 
 ```sh
-transcend policy lint <bundle-directory> --noInteractive
+transcend policy lint --noInteractive
 ```
 
 ## Documentation

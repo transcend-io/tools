@@ -71,10 +71,13 @@ Repository-level VS Code settings should include:
 Preserve custom settings and tasks when adapting generated editor files.
 
 Generated GitHub Actions CI is read-only and credential-free: it installs pinned
-tools and the pinned Transcend CLI, then runs `transcend policy lint`. For
-multiple bundles, lint each publish directory (matrix or sequential steps):
+tools and the pinned Transcend CLI, then runs `transcend policy lint` per
+publish directory (matrix when multiple bundles exist). Locally, bare
+`transcend policy lint` verifies every child under the workspace that contains
+a `.manifest`:
 
 ```sh
+transcend policy lint --noInteractive --json
 transcend policy lint transcend/policy/example-bundle --noInteractive --json
 ```
 

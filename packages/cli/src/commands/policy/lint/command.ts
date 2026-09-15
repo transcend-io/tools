@@ -4,7 +4,7 @@ import {
   projectJsonParameter,
   projectNoInteractiveParameter,
 } from '../../../lib/scaffolding/command-parameters.js';
-import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyLintDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
 export const lintCommand = buildCommand({
   loader: async () => {
@@ -26,12 +26,14 @@ export const lintCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyLintDirectoryParameter],
     },
   },
   docs: {
-    brief: 'Verify a local policy project with OPA and Regal',
+    brief: 'Verify local policy bundles with OPA and Regal',
     fullDescription:
+      'Defaults to the policy workspace (`transcend/policy`) and verifies every publishable ' +
+      'child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. ' +
       'Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, ' +
       'runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. ' +
       'No Transcend API key is needed.',

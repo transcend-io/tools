@@ -73,7 +73,7 @@ async function assertBundleCompiles(dir: string): Promise<void> {
     // `input.json` / `input.example.json` fixtures from merging as data.
     // `*_test.rego` files are local-only.
     const { code, stderr } = await runOPACapture(
-      ['build', '--v0-compatible', '--ignore', '*_test.rego', '-b', '-o', buildOutputPath, '.'],
+      ['build', '--ignore', '*_test.rego', '-b', '-o', buildOutputPath, '.'],
       { cwd: dir },
     );
     if (code !== 0) {
@@ -135,7 +135,6 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   const { code: checkCode, stderr: checkStderr } = await runOPACapture([
     'check',
     '--strict',
-    '--v0-compatible',
     resolvedDir,
   ]);
   if (checkCode !== 0) {
