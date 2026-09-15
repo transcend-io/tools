@@ -110,7 +110,7 @@ describe('policy init with pinned OPA and Regal', () => {
     const list = spawnSync('tar', ['-tzf', archive], { encoding: 'utf8' });
     expect(list.status, list.stderr).toBe(0);
     expect(list.stdout.trim().split('\n').sort()).toEqual([
-      'manifest.json',
+      '.manifest',
       'policy_engine/example/result.rego',
     ]);
     expect(readFileSync(join(policyDirectory, '.manifest'), 'utf8')).toContain('"policy_engine"');
