@@ -4309,13 +4309,13 @@ ARGUMENTS
 **Evaluate a decision query with a local envelope**
 
 ```sh
-transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json
+transcend policy eval --pkg=data.example.result --input=./fixtures/envelope.json
 ```
 
 The default publish directory is `transcend/policy/example-bundle`. Pass another `{root}-bundle/` directory positionally:
 
 ```sh
-transcend policy eval ./policies/example-bundle --pkg=data.transcend.decision --input=./fixtures/envelope.json
+transcend policy eval ./policies/example-bundle --pkg=data.example.result --input=./fixtures/envelope.json
 ```
 
 ### `transcend policy init`

@@ -47,13 +47,9 @@ transcend policy test transcend/policy/example-bundle
 opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schemas
 ```
 
-`policy lint` / `policy test` currently invoke directory-mode `opa test` (not
-`-b`). If both `input.json` and `input.example.json` are present, OPA can report
-`input.json: merge error`. CI only has the committed example file. Locally use:
-
-```sh
-opa test --fail-on-empty -b transcend/policy/example-bundle
-```
+`policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
+gitignored `input.json` beside `input.example.json` does not cause a merge
+error. Prefer the CLI over raw directory-mode `opa test`.
 
 Use `transcend policy lint --help` for formatter flags. Review Regal findings
 deliberately instead of applying broad rewrites.

@@ -198,9 +198,8 @@ transcend policy eval --pkg data.example.result \\
 \`\`\`
 
 \`policy new\` also writes a gitignored \`input.json\` (copy of \`input.example.json\`)
-for local Evaluate. If both are present, directory-mode \`opa test\` can hit a
-merge error — CI is fine (only the example is committed). Locally use
-\`opa test -b <bundle>\` until the CLI ignores fixtures.
+for local Evaluate. \`policy lint\` / \`policy test\` use bundle-mode \`opa test -b\`,
+so both files can coexist without a merge error.
 
 ## Layout
 

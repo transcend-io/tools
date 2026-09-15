@@ -22,7 +22,12 @@ describe('policy test', () => {
     await test.call(context, {});
 
     expect(assertOpaInstalledMock).toHaveBeenCalledOnce();
-    expect(runOpaMock).toHaveBeenCalledWith(['test', '/repo/transcend/policy/example-bundle']);
+    expect(runOpaMock).toHaveBeenCalledWith([
+      'test',
+      '--fail-on-empty',
+      '-b',
+      '/repo/transcend/policy/example-bundle',
+    ]);
   });
 
   it('resolves a positional directory from the invocation directory', async () => {
@@ -30,6 +35,6 @@ describe('policy test', () => {
 
     await test.call(context, {}, './policies');
 
-    expect(runOpaMock).toHaveBeenCalledWith(['test', '/repo/policies']);
+    expect(runOpaMock).toHaveBeenCalledWith(['test', '--fail-on-empty', '-b', '/repo/policies']);
   });
 });

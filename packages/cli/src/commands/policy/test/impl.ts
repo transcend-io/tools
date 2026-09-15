@@ -30,7 +30,7 @@ export async function test(
 
   this.logger.info(colors.green(`Running policy tests in ${resolvedDir}...`));
 
-  const exitCode = await runOpa(['test', resolvedDir]);
+  const exitCode = await runOpa(['test', '--fail-on-empty', '-b', resolvedDir]);
   if (exitCode !== 0) {
     this.process.exit(exitCode);
   }

@@ -181,7 +181,7 @@ describe('policy lint', () => {
         join(directory, '.regal', 'config.yaml'),
         directory,
       ],
-      ['opa', 'test', '--fail-on-empty', directory],
+      ['opa', 'test', '--fail-on-empty', '-b', directory],
     ]);
     expect(invocations.every(({ cwd }) => cwd === directory)).toBe(true);
     expect(context.stdout.trim().split('\n')).toHaveLength(1);

@@ -76,7 +76,7 @@ describe('Policy Engine Agent Skill', () => {
 
   it('covers tests, debugging, manifest coverage, lint, and publish flow', () => {
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('_test.rego');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('opa test --fail-on-empty');
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('opa test -b');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('example-bundle');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy eval');

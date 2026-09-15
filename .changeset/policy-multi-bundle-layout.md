@@ -17,7 +17,9 @@ transcend policy new --template generic --name example --yes
 transcend policy new --template permissions --name permissions --yes
 ```
 
-`policy new` merges the root into `.regal/config.yaml`, creates bundle files and input schemas, and updates VS Code settings and lint tasks when `.vscode` is present.
+`policy new` merges the root into `.regal/config.yaml`, creates bundle files, input schemas, and a gitignored local `input.json` (copy of the example). It also updates VS Code settings and lint tasks when `.vscode` is present.
+
+`policy lint` and `policy test` now run `opa test -b` (bundle mode) so local `input.json` next to `input.example.json` no longer causes a merge error.
 
 ### Migration
 

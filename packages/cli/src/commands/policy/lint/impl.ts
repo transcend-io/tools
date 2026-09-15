@@ -383,7 +383,7 @@ export async function lint(
     if (result.tools.opa) {
       const testResult = await runner(
         'opa',
-        ['test', '--fail-on-empty', resolvedDir],
+        ['test', '--fail-on-empty', '-b', resolvedDir],
         { cwd: resolvedDir },
         this,
       );
@@ -395,7 +395,7 @@ export async function lint(
           'opa.test',
           getPolicyProcessFailureMessage(
             testResult,
-            `opa test --fail-on-empty failed with exit code ${testResult.code}`,
+            `opa test --fail-on-empty -b failed with exit code ${testResult.code}`,
           ),
         );
       }

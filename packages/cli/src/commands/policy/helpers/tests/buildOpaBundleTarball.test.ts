@@ -92,6 +92,7 @@ describe('buildOpaBundleTarball', () => {
     expect(checkArgs[0]).toBe('check');
     expect(buildArgs[0]).toBe('build');
     expect(buildArgs).toContain('--v0-compatible');
+    expect(buildArgs).toContain('-b');
     expect(buildArgs).toContain('--ignore');
     expect(buildArgs[buildArgs.indexOf('--ignore') + 1]).toBe('*_test.rego');
     expect(buildArgs.at(-1)).toBe('.');

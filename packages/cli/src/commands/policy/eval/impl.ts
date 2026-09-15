@@ -12,7 +12,7 @@ import { assertOpaInstalled, runOpa } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy eval`. */
 export interface EvalCommandFlags {
-  /** OPA package/query to evaluate (e.g. `data.transcend.decision`) */
+  /** OPA package/query to evaluate (e.g. `data.example.result`) */
   pkg: string;
   /** Path to a JSON envelope input file */
   input: string;
