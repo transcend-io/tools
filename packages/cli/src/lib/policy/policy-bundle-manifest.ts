@@ -13,7 +13,7 @@ export interface PolicyBundleManifest {
   /**
    * Optional scaffold template from `metadata.transcend.io.template`.
    *
-   * Authoring hint only — upload does not branch on it. Permissions Evaluate
+   * Authoring hint only — upload does not branch on it. Permissions API
    * still keys off the remote bundle name `permissions`.
    */
   template?: PolicyTemplateName;

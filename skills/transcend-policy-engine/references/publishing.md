@@ -37,7 +37,7 @@ before creating the upload tarball.
 Upload uses one create/version path for every bundle. What makes a bundle
 “Permissions” is convention plus where Sombra queries it:
 
-- **Permissions Evaluate** always loads the fixed remote bundle name
+- **Permissions API** always loads the fixed remote bundle name
   `permissions`. Publish that starter with `--bundle-name=permissions`.
 - **Generic / decide** bundles use any other `--bundle-name` and the decide
   path.
@@ -53,7 +53,7 @@ does not block upload.
 transcend policy publish --bundle-name example --auth "$TRANSCEND_API_KEY" \
   transcend/policy/example-bundle
 
-# Permissions Evaluate path (fixed remote name)
+# Permissions API path (fixed remote name)
 transcend policy publish --bundle-name permissions --auth "$TRANSCEND_API_KEY" \
   transcend/policy/permissions-bundle
 ```

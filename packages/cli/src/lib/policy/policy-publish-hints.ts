@@ -37,7 +37,7 @@ function looksLikePermissionsBundle(input: PolicyPublishBundleNameHintInput): bo
 /**
  * Soft-warning when `--bundle-name` disagrees with Permissions conventions.
  *
- * Upload does not enforce bundle kinds. Permissions Evaluate only loads the
+ * Upload does not enforce bundle kinds. Permissions API only loads the
  * remote bundle named {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
  *
  * @param bundleName - Value of `--bundle-name`
@@ -54,7 +54,7 @@ export function formatPolicyPublishBundleNameHint(
   if (permissionsLocal && !permissionsRemote) {
     return (
       `This directory looks like a Permissions API policy, but --bundle-name is ` +
-      `"${bundleName}". Permissions Evaluate only loads the remote bundle named ` +
+      `"${bundleName}". Permissions API only loads the remote bundle named ` +
       `"${PERMISSIONS_POLICY_BUNDLE_NAME}". Upload still succeeds; pass ` +
       `--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} if that is the intended path.`
     );
@@ -62,9 +62,9 @@ export function formatPolicyPublishBundleNameHint(
 
   if (!permissionsLocal && permissionsRemote) {
     return (
-      `--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} reserves the Permissions Evaluate ` +
+      `--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} reserves the Permissions API ` +
       `path. Upload treats all bundles the same; only that fixed name is queried by ` +
-      `the Permissions API. Continue only if you intend this bundle for Permissions Evaluate.`
+      `the Permissions API. Continue only if you intend this bundle for the Permissions API.`
     );
   }
 

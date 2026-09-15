@@ -28,7 +28,7 @@ export interface PolicyStarterFile {
 export const POLICY_MANIFEST_FILENAME = '.manifest';
 
 /**
- * Remote bundle name reserved for Permissions Evaluate.
+ * Remote bundle name reserved for Permissions API.
  *
  * Upload treats every bundle the same; Sombra's Permissions API always queries
  * this fixed name (never taken from the request body).
@@ -48,7 +48,7 @@ export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
  * Build an OPA bundle manifest for a given root and scaffold template.
  *
  * `metadata.transcend.io.template` is an authoring hint only — Policy Engine
- * upload does not branch on it. Permissions Evaluate still keys off the remote
+ * upload does not branch on it. Permissions API still keys off the remote
  * bundle name {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
  *
  * @param root - Package root
@@ -345,7 +345,7 @@ bundle separately (\`transcend policy publish --bundle-name … <dir>\`).
 Upload does **not** distinguish bundle kinds. What makes a bundle “Permissions”
 is the remote name plus where Sombra queries it:
 
-- **Permissions Evaluate** always loads the fixed remote bundle name
+- **Permissions API** always loads the fixed remote bundle name
   \`${PERMISSIONS_POLICY_BUNDLE_NAME}\`. Publish that starter with
   \`--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
 - **Generic / decide** bundles use any other \`--bundle-name\` and the decide

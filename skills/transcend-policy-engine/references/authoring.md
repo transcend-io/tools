@@ -28,7 +28,7 @@ example-bundle/               # transcend policy publish … <dir>
 ```
 
 Permissions starters use the same layout. Upload does not branch on template
-metadata; Permissions Evaluate still loads only the remote bundle named
+metadata; Permissions API still loads only the remote bundle named
 `permissions` (publish with `--bundle-name=permissions`).
 
 OPA `.rego` placement follows the `package` line; `data.json` paths follow the

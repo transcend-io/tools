@@ -18,7 +18,7 @@ describe('formatPolicyPublishBundleNameHint', () => {
         template: 'generic',
         roots: ['example'],
       }),
-    ).toMatch(/reserves the Permissions Evaluate/);
+    ).toMatch(/reserves the Permissions API/);
   });
 
   it('falls back to roots when template metadata is absent', () => {
