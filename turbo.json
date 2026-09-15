@@ -13,7 +13,7 @@
     "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
-    "oxlint.json",
+    ".oxlintrc.json",
     ".oxfmtrc.jsonc",
     "codegen.ts",
     "schema.graphql",

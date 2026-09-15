@@ -42,11 +42,17 @@ See `/background-task` skill for the full worktree workflow.
 
 ## Pre-commit hooks
 
-This repo uses husky pre-commit and pre-push hooks that run formatting, linting, typechecking, and tests via turbo. **Always let hooks run** — do not use `--no-verify` unless explicitly asked.
+This repo uses husky pre-commit and pre-push hooks via `scripts/run-git-hook.ts`. They scope
+formatting/lint to staged files and typecheck/test/attw to changed packages (plus dependents
+where needed). Global infra edits still fall back to full checks. **Always let hooks run** —
+do not use `--no-verify` unless explicitly asked. Set `FORCE_FULL_HOOK_CHECKS=1` only when you
+intentionally want the full monorepo suite.
 
 ## Cursor sandbox permissions
 
-The pre-commit hook requires `npm pack` (for `attw` export checking) which is blocked by the default Cursor sandbox. When committing from Cursor, **always use `required_permissions: ["all"]`** on the Shell tool call:
+The pre-commit hook may run `npm pack` (for `attw` export checking) on changed packages, which
+is blocked by the default Cursor sandbox. When committing from Cursor, **always use
+`required_permissions: ["all"]`** on the Shell tool call:
 
 ```
 tools-git add -A && tools-git commit -m "message"
@@ -56,14 +62,15 @@ tools-git add -A && tools-git commit -m "message"
 ## Before committing
 
 1. **Run the formatter** before committing to avoid CI formatting failures:
-   ```
-   pnpm run format
-   ```
+ ```
+ pnpm run format
+ ```
 2. Stage the formatted files, then commit.
 
 ## Before pushing
 
-The pre-push hook runs full typechecking and tests. This takes ~10s. Let it run — if it fails, fix the issue before pushing.
+The pre-push hook runs tests for packages touched by the push (plus dependents). Let it run —
+if it fails, fix the issue before pushing.
 
 ## Build order
 

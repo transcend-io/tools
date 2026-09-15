@@ -160,8 +160,31 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
-- `pre-commit`: runs `pnpm quality:fix` and aborts if it updates tracked files
-- `pre-push`: runs `pnpm test`
+Hooks are **scoped to the files you are committing or pushing** (see
+[`scripts/run-git-hook.ts`](scripts/run-git-hook.ts)):
+
+- `pre-commit`:
+  - formats and lint-fixes **staged files only** (`oxfmt` / `oxlint --fix`)
+  - typechecks changed packages and their `package.json` dependents
+  - runs `attw` / `publint` only for packages that themselves changed
+  - falls back to full `quality:checks` when global infra changes (lockfile, `turbo.json`,
+    shared tsconfigs, etc.)
+  - aborts if auto-fixes update tracked files (stage and commit again)
+- `pre-push`:
+  - tests packages changed in the push range (plus dependents)
+  - runs root `scripts/` tests when those files change
+  - falls back to the full test suite for new branches or global infra changes
+
+We intentionally do **not** use Turbo `--affected` / `--filter=[HEAD]` for hooks: root
+`package.json` workspace dependencies on MCP servers make Turbo treat most shared-package
+edits as `RootInternalDepChanged`, which selects the entire monorepo.
+
+To force the old full-monorepo behavior for one run:
+
+```bash
+FORCE_FULL_HOOK_CHECKS=1 git commit ...
+FORCE_FULL_HOOK_CHECKS=1 git push ...
+```
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.
