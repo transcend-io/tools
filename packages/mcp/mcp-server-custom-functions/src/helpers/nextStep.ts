@@ -33,8 +33,8 @@ export function customFunctionNextStep(input: {
   switch (input.kind) {
     case 'created':
       return (
-        `Call custom_functions_test_run with { id: "${input.id}" } (omit code) to execute. ` +
-        'Pass testPayloads on upsert to persist successfulTestRun at save, matching the dashboard.'
+        `Optional: custom_functions_test_run { id: "${input.id}" } (omit code). ` +
+        'Testing is optional; save does not require it.'
       );
     case 'draft':
       return (
@@ -43,8 +43,8 @@ export function customFunctionNextStep(input: {
       );
     case 'promoted':
       return (
-        `Call custom_functions_test_run with { id: "${input.id}" } (omit code) to execute. ` +
-        'The tested badge is persisted on save (testPayloads or a draft upsert after a passing test).'
+        `Optional: custom_functions_test_run { id: "${input.id}" } (omit code). ` +
+        'Testing is optional; save does not require it.'
       );
     case 'storedTestPassed':
       return (
@@ -53,8 +53,8 @@ export function customFunctionNextStep(input: {
       );
     case 'storedTestNeedsSave':
       return (
-        'Execution passed. Persist the tested badge like the dashboard by upserting this code ' +
-        'as a draft, or pass testPayloads on the next save.'
+        'Execution passed. Upsert this code or pass testPayloads to set successfulTestRun; ' +
+        'save does not require it.'
       );
     case 'unsavedTestPassed':
       return input.id

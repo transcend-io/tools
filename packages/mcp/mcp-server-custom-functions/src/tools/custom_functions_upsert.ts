@@ -1,9 +1,24 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { CustomFunctionType } from '@transcend-io/privacy-types';
+import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
+import {
+  executeCustomFunctionTestRun,
+  type CustomFunctionTestRunView,
+} from '../helpers/customFunctionTestRun.js';
 import { customFunctionDashboardUrl, customFunctionNextStep } from '../helpers/nextStep.js';
 import { resolveSombraIdForCreate } from '../helpers/resolveSombraId.js';
+
+const TestPayloadSchema = z.object({
+  payload: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe('Optional JSON body; omit for type-specific defaults'),
+  payloadType: z
+    .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
+    .optional()
+    .describe('DSR only; defaults to DATA_POINT. Omit for GENERAL'),
+});
 
 export const CustomFunctionsUpsertSchema = z
   .object({
@@ -13,13 +28,11 @@ export const CustomFunctionsUpsertSchema = z
     dataSiloId: z
       .string()
       .optional()
-      .describe(
-        'Existing CUSTOM_FUNCTION silo for DSR create; omit to auto-create. Not webhook silos.',
-      ),
+      .describe('Existing CUSTOM_FUNCTION silo for DSR create; omit to auto-create'),
     sombraId: z
       .string()
       .optional()
-      .describe('Gateway ID; omit unless an error lists options. Never on DSR create.'),
+      .describe('Gateway ID; omit unless an error lists options. Never on DSR create'),
     name: z.string().optional().describe('Required on create; keep unique for list search'),
     description: z.string().optional().describe('Behavior description'),
     code: z
@@ -43,7 +56,13 @@ export const CustomFunctionsUpsertSchema = z
       .boolean()
       .optional()
       .default(false)
-      .describe('After update, promote draft (requires id); else use promote_version'),
+      .describe('After update, promote the draft to active. Default false'),
+    testPayloads: z
+      .array(TestPayloadSchema)
+      .optional()
+      .describe(
+        'Optional pre-save tests; sets successfulTestRun only if all pass. Never blocks save',
+      ),
   })
   .superRefine((input, context) => {
     if (!input.id && !input.name) {
@@ -77,9 +96,10 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_upsert',
     description:
-      'Create/update a Custom Function from TypeScript. Prefer omit sombraId/dataSiloId with a ' +
-      'unique name; DSR create without dataSiloId also creates a customFunction silo. Updates ' +
-      'write a draft (promote false by default).',
+      'Create or update a Custom Function from plaintext TypeScript. Save does not require a ' +
+      'passing test. On create, omit sombraId and dataSiloId unless an error requires them; ' +
+      'pass a unique name for list search. DSR create without dataSiloId also creates a ' +
+      'customFunction data silo. Updates write a draft.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
@@ -100,6 +120,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
       timeoutMs,
       setActive,
       promote,
+      testPayloads,
     }) => {
       let resolvedSombraId = sombraId;
       let resolvedDataSiloId = dataSiloId;
@@ -134,12 +155,52 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           },
         });
 
+        const testResults: (CustomFunctionTestRunView & {
+          /** DSR payload subtype when provided */
+          payloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
+        })[] = [];
+        if (testPayloads && testPayloads.length > 0) {
+          // Pre-save runs omit id (GraphQL rejects JWTs when id is set), so load
+          // silo/gateway from the stored row when the caller did not pass them.
+          if (
+            id &&
+            ((type === 'DSR' && !resolvedDataSiloId) || (type === 'GENERAL' && !resolvedSombraId))
+          ) {
+            const stored = await graphql.getSignedCustomFunctionVersion(id);
+            resolvedDataSiloId = resolvedDataSiloId ?? stored.customFunction.dataSiloId;
+            resolvedSombraId = resolvedSombraId ?? stored.customFunction.sombraId;
+            if (type === 'DSR' && !resolvedDataSiloId) {
+              throw new Error(
+                `Custom function ${id} has no linked data silo. Pass dataSiloId when using testPayloads.`,
+              );
+            }
+          }
+          for (const testPayload of testPayloads) {
+            const run = await executeCustomFunctionTestRun(graphql, clients.rest, {
+              type,
+              // Pre-save runs sign fresh code. GraphQL rejects JWTs when id is set.
+              signed,
+              payload: testPayload.payload,
+              payloadType: testPayload.payloadType,
+              sombraId: resolvedSombraId,
+              dataSiloId: resolvedDataSiloId,
+              markSuccessfulTestRun: false,
+            });
+            testResults.push({
+              ...run.result,
+              payloadType: testPayload.payloadType,
+            });
+          }
+        }
+
+        const successfulTestRun = testResults.length > 0 && testResults.every((run) => run.passed);
         const customFunction = id
           ? await graphql.updateCustomFunction({
               id,
               versionId,
               name,
               description,
+              ...(successfulTestRun ? { successfulTestRun: true } : {}),
               ...signed,
             })
           : await graphql.createCustomFunction({
@@ -150,6 +211,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               name,
               description,
               setActive: type === 'GENERAL' ? setActive : undefined,
+              ...(successfulTestRun ? { successfulTestRun: true } : {}),
               ...signed,
             });
 
@@ -182,6 +244,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           customFunction: result,
           versionLifecycleState: selectedVersion?.lifecycleState,
           dependencyWarnings,
+          testResults: testResults.length > 0 ? testResults : undefined,
           dashboardHint: `Review this function at ${customFunctionDashboardUrl(clients.dashboardUrl, result.id)}.`,
           nextStep,
         });

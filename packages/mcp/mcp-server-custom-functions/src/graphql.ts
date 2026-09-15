@@ -1,6 +1,7 @@
 import { TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
 import type {
   CustomFunctionLifecycleState,
+  CustomFunctionPayloadType,
   CustomFunctionType,
   CustomFunctionVersionLifecycleState,
 } from '@transcend-io/privacy-types';
@@ -9,6 +10,7 @@ import { graphql } from './__generated__/gql.js';
 
 export type {
   CustomFunctionLifecycleState,
+  CustomFunctionPayloadType,
   CustomFunctionType,
   CustomFunctionVersionLifecycleState,
 };
@@ -96,6 +98,27 @@ const PromoteCustomFunctionVersionDoc = graphql(/* GraphQL */ `
         dependencyTitle
         dependencyStatus
         message
+      }
+    }
+  }
+`);
+
+const RunCustomFunctionDoc = graphql(/* GraphQL */ `
+  mutation CustomFunctionsTestRun($input: RunCustomFunctionInput!) {
+    runCustomFunction(input: $input) {
+      result {
+        profile {
+          timeMs
+        }
+        logs {
+          message
+          file
+        }
+        error {
+          message
+          stack
+        }
+        exitCode
       }
     }
   }
@@ -205,6 +228,30 @@ export interface CustomFunctionPromotionResult {
   customFunction: CustomFunctionSummary;
   /** Dependency warnings produced during promotion */
   dependencyWarnings: CustomFunctionDependencyWarning[];
+}
+
+export interface CustomFunctionExecutionResult {
+  /** Process exit code */
+  exitCode: number;
+  /** Console output captured during execution */
+  logs: {
+    /** Log message */
+    message: string;
+    /** Source file */
+    file: string;
+  }[];
+  /** Customer execution error, when execution failed */
+  error?: {
+    /** Error message */
+    message: string;
+    /** Optional stack trace */
+    stack?: string;
+  };
+  /** Runtime profiling data */
+  profile: {
+    /** Total execution time in milliseconds */
+    timeMs: number;
+  };
 }
 
 export interface SombraSummary {
@@ -404,6 +451,48 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     return {
       customFunction: mapCustomFunction(data.promoteCustomFunctionVersion.customFunction),
       dependencyWarnings: data.promoteCustomFunctionVersion.dependencyWarnings,
+    };
+  }
+
+  async testRunCustomFunction(input: {
+    /** Function type */
+    type: CustomFunctionType;
+    /** Stored custom function ID; binds the run in Activity */
+    id?: string;
+    /** Gateway ID for GENERAL functions */
+    sombraId?: string;
+    /** Base64-encoded JSON payload */
+    payload: string;
+    /** Optional DSR payload subtype */
+    payloadType?: CustomFunctionPayloadType;
+    /** Signed code JWT; omit when executing a stored function by id */
+    signedCodeJwt?: string;
+    /** Signed context JWT; omit when executing a stored function by id */
+    signedCodeContextJwt?: string;
+  }): Promise<CustomFunctionExecutionResult> {
+    const { signedCodeJwt, signedCodeContextJwt, ...rest } = input;
+    const data = await this.makeRequest(RunCustomFunctionDoc, {
+      input: {
+        ...rest,
+        ...(signedCodeJwt !== undefined && signedCodeContextJwt !== undefined
+          ? { signedCodeJwt, signedCodeContextJwt }
+          : {}),
+        isCustomFunctionTestRun: true,
+      },
+    });
+    const error = data.runCustomFunction.result.error;
+    return {
+      exitCode: data.runCustomFunction.result.exitCode,
+      logs: data.runCustomFunction.result.logs,
+      error: error
+        ? {
+            message: error.message,
+            stack: error.stack ?? undefined,
+          }
+        : undefined,
+      profile: {
+        timeMs: data.runCustomFunction.result.profile.timeMs,
+      },
     };
   }
 

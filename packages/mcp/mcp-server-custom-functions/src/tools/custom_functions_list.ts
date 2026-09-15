@@ -25,8 +25,8 @@ export function createCustomFunctionsListTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_list',
     description:
-      'List Custom Functions (lifecycle, gateway, silo, versions, successfulTestRun). ' +
-      'Search with text; use results to decide whether upsert needs sombraId.',
+      'List Custom Functions (lifecycle, gateway, silo, versions). Search with text; check ' +
+      'results before upsert when choosing a silo or gateway.',
     category: 'Custom Functions',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
