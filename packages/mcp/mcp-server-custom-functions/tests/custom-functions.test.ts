@@ -407,7 +407,7 @@ describe('Custom Functions tools', () => {
       data: {
         passed: true,
         customFunction: { activeVersion: { successfulTestRun: false } },
-        nextStep: expect.stringContaining('testPayloads'),
+        nextStep: expect.stringContaining('does not require'),
       },
     });
   });
@@ -617,7 +617,7 @@ describe('Custom Functions tools', () => {
     });
   });
 
-  it('omits id when testPayloads gate an update so GraphQL accepts signed JWTs', async () => {
+  it('omits id when testPayloads run before an update so GraphQL accepts signed JWTs', async () => {
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: {
         id: 'cf-1',
@@ -648,7 +648,7 @@ describe('Custom Functions tools', () => {
       draftVersion: { id: 'version-2', successfulTestRun: true },
     });
 
-    // Omit dataSiloId on update — pre-persist runs must load it from the stored row.
+    // Omit dataSiloId on update — pre-save runs must load it from the stored row.
     await getTool('custom_functions_upsert').handler({
       id: 'cf-1',
       type: 'DSR',
@@ -673,12 +673,26 @@ describe('Custom Functions tools', () => {
     });
   });
 
-  it('rolls back a created DSR silo when upsert testPayloads fail', async () => {
+  it('still saves when upsert testPayloads fail', async () => {
     graphql.testRunCustomFunction.mockResolvedValue({
       exitCode: 1,
       logs: [],
       error: { message: 'boom' },
       profile: { timeMs: 1 },
+    });
+    graphql.createCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'DSR Example',
+      type: 'DSR',
+      lifecycleState: 'ACTIVE',
+      dataSiloId: 'silo-new',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
     });
 
     const result = await getTool('custom_functions_upsert').handler({
@@ -692,11 +706,21 @@ describe('Custom Functions tools', () => {
       testPayloads: [{ payload: {} }],
     });
 
-    expect(graphql.createCustomFunction).not.toHaveBeenCalled();
-    expect(graphql.deleteDataSilo).toHaveBeenCalledWith('silo-new');
+    expect(graphql.createCustomFunction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'DSR',
+        dataSiloId: 'silo-new',
+        ...SIGNED,
+      }),
+    );
+    expect(graphql.createCustomFunction.mock.calls[0]?.[0]).not.toHaveProperty('successfulTestRun');
+    expect(graphql.deleteDataSilo).not.toHaveBeenCalled();
     expect(result).toMatchObject({
-      success: false,
-      code: 'TEST_FAILED',
+      success: true,
+      data: {
+        testResults: [{ passed: false, exitCode: 1 }],
+        nextStep: expect.stringContaining('does not require'),
+      },
     });
   });
 
@@ -818,15 +842,13 @@ describe('pickSombraId', () => {
 });
 
 describe('customFunctionNextStep', () => {
-  it('points create at an id-only test_run', () => {
-    expect(customFunctionNextStep({ kind: 'created', id: 'cf-1' })).toContain(
-      'custom_functions_test_run',
-    );
+  it('tells the agent testing is optional after create', () => {
+    expect(customFunctionNextStep({ kind: 'created', id: 'cf-1' })).toContain('does not require');
   });
 
   it('tells the agent to save after an untested stored run', () => {
     expect(customFunctionNextStep({ kind: 'storedTestNeedsSave', id: 'cf-1' })).toContain(
-      'testPayloads',
+      'does not require',
     );
   });
 

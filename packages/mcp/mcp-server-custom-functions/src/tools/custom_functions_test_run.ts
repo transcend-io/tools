@@ -82,8 +82,8 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_test_run',
     description:
-      'Test Custom Function code (DSR or GENERAL). Pass { id } alone to run the saved version; ' +
-      'pass code for an unsaved trial. Responses include passed, exitCode, logs, error, and timeMs.',
+      'Test a Custom Function (saved or unsaved TypeScript). Pass { id } alone for the stored ' +
+      'version; pass code for a trial. DSR or GENERAL.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,

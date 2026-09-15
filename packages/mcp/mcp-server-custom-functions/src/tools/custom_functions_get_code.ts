@@ -16,8 +16,8 @@ export function createCustomFunctionsGetCodeTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_get_code',
     description:
-      'Load plaintext TypeScript and runtime context for editing. Returns ' +
-      'version.successfulTestRun. Sensitive: userDefinedEnv may include secrets.',
+      'Load plaintext TypeScript and runtime context for editing. Sensitive: userDefinedEnv may ' +
+      'include secrets.',
     category: 'Custom Functions',
     readOnly: true,
     requireSombra: true,

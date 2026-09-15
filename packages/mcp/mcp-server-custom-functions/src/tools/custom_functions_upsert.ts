@@ -60,7 +60,9 @@ export const CustomFunctionsUpsertSchema = z
     testPayloads: z
       .array(TestPayloadSchema)
       .optional()
-      .describe('Pre-persist tests; all must pass or the write is skipped'),
+      .describe(
+        'Optional pre-save tests; sets successfulTestRun only if all pass. Never blocks save',
+      ),
   })
   .superRefine((input, context) => {
     if (!input.id && !input.name) {
@@ -94,9 +96,10 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_upsert',
     description:
-      'Create or update a Custom Function from plaintext TypeScript. On create, omit sombraId ' +
-      'and dataSiloId unless an error requires them; pass a unique name for list search. DSR ' +
-      'create without dataSiloId also creates a customFunction data silo. Updates write a draft.',
+      'Create or update a Custom Function from plaintext TypeScript. Save does not require a ' +
+      'passing test. On create, omit sombraId and dataSiloId unless an error requires them; ' +
+      'pass a unique name for list search. DSR create without dataSiloId also creates a ' +
+      'customFunction data silo. Updates write a draft.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
@@ -157,7 +160,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           payloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
         })[] = [];
         if (testPayloads && testPayloads.length > 0) {
-          // Pre-persist runs omit id (GraphQL rejects JWTs when id is set), so load
+          // Pre-save runs omit id (GraphQL rejects JWTs when id is set), so load
           // silo/gateway from the stored row when the caller did not pass them.
           if (
             id &&
@@ -175,7 +178,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           for (const testPayload of testPayloads) {
             const run = await executeCustomFunctionTestRun(graphql, clients.rest, {
               type,
-              // Pre-persist gating signs fresh code. GraphQL rejects JWTs when id is set.
+              // Pre-save runs sign fresh code. GraphQL rejects JWTs when id is set.
               signed,
               payload: testPayload.payload,
               payloadType: testPayload.payloadType,
@@ -188,20 +191,6 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               payloadType: testPayload.payloadType,
             });
           }
-          if (testResults.some((run) => !run.passed)) {
-            if (createdDataSiloId) {
-              try {
-                await graphql.deleteDataSilo(createdDataSiloId);
-              } catch {
-                // Ignore rollback failures so the original test failure is surfaced.
-              }
-            }
-            return createToolResult(false, undefined, 'Custom function test run failed', {
-              code: 'TEST_FAILED',
-              retryable: false,
-              details: { testResults },
-            });
-          }
         }
 
         const successfulTestRun = testResults.length > 0 && testResults.every((run) => run.passed);
@@ -211,7 +200,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               versionId,
               name,
               description,
-              successfulTestRun: successfulTestRun || undefined,
+              ...(successfulTestRun ? { successfulTestRun: true } : {}),
               ...signed,
             })
           : await graphql.createCustomFunction({
@@ -222,7 +211,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               name,
               description,
               setActive: type === 'GENERAL' ? setActive : undefined,
-              successfulTestRun: successfulTestRun || undefined,
+              ...(successfulTestRun ? { successfulTestRun: true } : {}),
               ...signed,
             });
 

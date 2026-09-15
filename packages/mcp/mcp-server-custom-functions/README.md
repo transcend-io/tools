@@ -43,8 +43,8 @@ upsert (omit sombraId / dataSiloId, unique name)
 ```
 
 Successful responses include a `nextStep` string naming the following tool call. Or one-shot
-create-and-test with `custom_functions_upsert` `testPayloads` (pre-persist gating; Activity is
-not bound).
+create-and-test with `custom_functions_upsert` `testPayloads` (sets `successfulTestRun` if they
+pass; failed tests never block save; Activity is not bound).
 
 Creating a DSR function without `dataSiloId` also creates a `customFunction` data silo on the
 resolved Sombra gateway. Pass an existing Custom Function silo ID only when you already have one.
@@ -58,14 +58,14 @@ default export.
 `custom_functions_test_run` with `id` and no `code` executes the readable version (active, else
 latest draft). DSR stored runs bind Activity. GENERAL stored runs replay the saved JWT pair the
 same way the dashboard Test button sends a code source (GraphQL has no stored-id GENERAL path).
-`successfulTestRun` is persisted on **save**, matching the dashboard: pass `testPayloads` on
-upsert, or upsert a draft after a passing test. Testing an already-active version does not flip
-the badge. `type` is inferred from the stored function. Pass `code` to trial unsaved plaintext; DSR unsaved
-trials need `dataSiloId` from upsert. Combine `id` with `code` to trial unsaved edits without
-binding Activity. Omit `payload` unless you need a specific body. GENERAL payloads default
-to `{ "message": "hello world!" }` (the backend may add `coreIdentifier`). DSR uses a stub ACCESS
-payload and injects the silo id — do not hand-build `extras`. Responses include `passed`,
-`exitCode`, `logs`, `error`, and `timeMs`.
+Save and promote do **not** require a passing test. `successfulTestRun` is still set on save when
+tests pass: pass `testPayloads` on upsert, or upsert a draft after a passing test. Testing an
+already-active version does not flip the badge. `type` is inferred from the stored function.
+Pass `code` to trial unsaved plaintext; DSR unsaved trials need `dataSiloId` from upsert. Combine
+`id` with `code` to trial unsaved edits without binding Activity. Omit `payload` unless you need
+a specific body. GENERAL payloads default to `{ "message": "hello world!" }` (the backend may add
+`coreIdentifier`). DSR uses a stub ACCESS payload and injects the silo id — do not hand-build
+`extras`. Responses include `passed`, `exitCode`, `logs`, `error`, and `timeMs`.
 
 `custom_functions_get_code` is read-only but sensitive because its `userDefinedEnv` response may
 contain secrets. It returns `version.successfulTestRun`. The current API exposes the active
