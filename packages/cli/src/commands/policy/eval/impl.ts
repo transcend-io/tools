@@ -4,10 +4,7 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import {
-  DEFAULT_POLICY_BUNDLE_DIRECTORY,
-  resolvePolicyProjectDirectory,
-} from '../../../lib/policy/policy-project-discovery.js';
+import { resolvePolicyProjectDirectory } from '../../../lib/policy/policy-project-discovery.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy eval`. */
@@ -23,12 +20,12 @@ export interface EvalCommandFlags {
  *
  * @param this - CLI context
  * @param flags - Command flags
- * @param directory - Policy project directory
+ * @param directory - Policy bundle directory containing a `.manifest`
  */
 export async function _eval(
   this: LocalContext,
   { pkg, input }: EvalCommandFlags,
-  directory: string = DEFAULT_POLICY_BUNDLE_DIRECTORY,
+  directory: string,
 ): Promise<void> {
   doneInputValidation(this.process);
 

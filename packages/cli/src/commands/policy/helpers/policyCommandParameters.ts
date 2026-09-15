@@ -1,36 +1,33 @@
-import {
-  DEFAULT_POLICY_BUNDLE_DIRECTORY,
-  DEFAULT_POLICY_PROJECT_DIRECTORY,
-} from '../../../lib/policy/policy-project-discovery.js';
+import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-project-discovery.js';
 import { createProjectDirectoryParameter } from '../../../lib/scaffolding/command-parameters.js';
 
-/** Shared positional Policy workspace directory (`policy init`). */
+/** Shared positional Policy workspace directory (`policy init` / `policy new`). */
 export const policyWorkspaceDirectoryParameter = createProjectDirectoryParameter({
   projectName: 'Policy',
   defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
 });
 
 /**
- * Shared positional local Policy publish directory (test / eval / publish).
+ * Positional directory for multi-bundle commands (`policy lint` / `policy test`).
  *
- * Defaults to the generic starter bundle path; pass another `{root}-bundle/`
- * explicitly when needed.
+ * Defaults to the policy workspace. When that path has no `.manifest`, the
+ * command discovers and runs against every immediate child that contains one.
  */
-export const policyDirectoryParameter = createProjectDirectoryParameter({
-  projectName: 'Policy',
-  defaultDirectory: DEFAULT_POLICY_BUNDLE_DIRECTORY,
-});
-
-/**
- * Positional directory for `policy lint`.
- *
- * Defaults to the multi-bundle workspace. When that path has no `.manifest`,
- * lint discovers and verifies every immediate child that contains a `.manifest`.
- */
-export const policyLintDirectoryParameter = createProjectDirectoryParameter({
+export const policyWorkspaceOrBundleDirectoryParameter = createProjectDirectoryParameter({
   projectName: 'Policy',
   defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
 });
+
+/**
+ * Required positional directory for one-bundle commands (`policy eval` / `publish`).
+ *
+ * No default — callers must pass an explicit bundle directory with a `.manifest`.
+ */
+export const policyBundleDirectoryParameter = {
+  brief: 'Policy bundle directory containing a .manifest',
+  placeholder: 'directory',
+  parse: String,
+} as const;
 
 /** Shared logical Policy bundle name flag. */
 export const policyBundleNameParameter = {

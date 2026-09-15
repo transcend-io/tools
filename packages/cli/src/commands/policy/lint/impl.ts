@@ -171,7 +171,7 @@ function renderResult(context: LocalContext, result: PolicyLintResult, heading?:
  * @returns Completed verification result
  */
 async function lintBundle(
-  context: LocalContext,
+  this: LocalContext,
   { fix, noInteractive, json }: LintCommandFlags,
   resolvedDir: string,
   runner: CapturedProcessRunner,
@@ -204,12 +204,12 @@ async function lintBundle(
     });
   };
 
-  if (!context.fs.existsSync(resolvedDir) || !context.fs.statSync(resolvedDir).isDirectory()) {
+  if (!this.fs.existsSync(resolvedDir) || !this.fs.statSync(resolvedDir).isDirectory()) {
     setStatus('manifest', 'failed');
     addError(
       'project.directory',
       `Policy directory does not exist or is not a directory: ${resolvedDir}`,
-      path.relative(context.process.cwd(), resolvedDir),
+      path.relative(this.process.cwd(), resolvedDir),
     );
     result.status = 'failed';
     return result;
@@ -218,10 +218,8 @@ async function lintBundle(
   const manifestPath = path.join(resolvedDir, POLICY_MANIFEST_FILENAME);
   try {
     validatePolicyBundleContents(
-      context.fs.existsSync(manifestPath)
-        ? context.fs.readFileSync(manifestPath, 'utf8')
-        : undefined,
-      collectRegoFiles(context, resolvedDir),
+      this.fs.existsSync(manifestPath) ? this.fs.readFileSync(manifestPath, 'utf8') : undefined,
+      collectRegoFiles(this, resolvedDir),
     );
     setStatus('manifest', 'passed');
   } catch (error) {
@@ -229,11 +227,11 @@ async function lintBundle(
     addError(
       'manifest.invalid',
       error instanceof Error ? error.message : String(error),
-      path.relative(context.process.cwd(), manifestPath),
+      path.relative(this.process.cwd(), manifestPath),
     );
   }
 
-  const opaVersionResult = await runner('opa', ['version'], { cwd: resolvedDir }, context);
+  const opaVersionResult = await runner('opa', ['version'], { cwd: resolvedDir }, this);
   if (opaVersionResult.error?.code === 'ENOENT') {
     setStatus('opa-version', 'failed');
     addError('opa.missing', OPA_MISSING_MESSAGE);
@@ -256,7 +254,7 @@ async function lintBundle(
     }
   }
 
-  const regalVersionResult = await runner('regal', ['version'], { cwd: resolvedDir }, context);
+  const regalVersionResult = await runner('regal', ['version'], { cwd: resolvedDir }, this);
   if (regalVersionResult.error?.code === 'ENOENT') {
     setStatus('regal-version', 'failed');
     addError('regal.missing', REGAL_MISSING_MESSAGE);
@@ -284,7 +282,7 @@ async function lintBundle(
       'opa',
       ['fmt', '--list', resolvedDir],
       { cwd: resolvedDir },
-      context,
+      this,
     );
     if (formatResult.code !== 0) {
       setStatus('format', 'failed');
@@ -303,24 +301,24 @@ async function lintBundle(
         let shouldFormat = fix;
         const interactive = isInteractivePromptInvocation(
           { json, noInteractive },
-          context.process.stdin.isTTY,
-          context.process.stderr.isTTY,
+          this.process.stdin.isTTY,
+          this.process.stderr.isTTY,
         );
         if (!json && !fix) {
-          context.logger.error(colors.red('Policy files are not formatted:'));
+          this.logger.error(colors.red('Policy files are not formatted:'));
           result.unformattedFiles.forEach((file) => {
-            context.logger.error(colors.red(`  - ${file}`));
+            this.logger.error(colors.red(`  - ${file}`));
           });
           const diffResult = await runner(
             'opa',
             ['fmt', '--diff', resolvedDir],
             { cwd: resolvedDir },
-            context,
+            this,
           );
           const diff = diffResult.stdout.trim() || diffResult.stderr.trim();
           if (diff) {
-            context.logger.error('');
-            context.logger.error(diff);
+            this.logger.error('');
+            this.logger.error(diff);
           }
         }
         if (!fix && interactive) {
@@ -331,7 +329,7 @@ async function lintBundle(
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             if (/force closed|prompt.*cancel|user.*close|SIGINT/iu.test(message)) {
-              context.process.exit(130);
+              this.process.exit(130);
             }
             throw error;
           }
@@ -341,7 +339,7 @@ async function lintBundle(
             'opa',
             ['fmt', '--write', resolvedDir],
             { cwd: resolvedDir },
-            context,
+            this,
           );
           if (writeResult.code === 0) {
             result.fixedFiles = [...result.unformattedFiles];
@@ -370,7 +368,7 @@ async function lintBundle(
       'opa',
       ['check', '--strict', '--ignore', '*_test.rego', resolvedDir],
       { cwd: resolvedDir },
-      context,
+      this,
     );
     if (checkResult.code === 0) {
       setStatus('opa-check', 'passed');
@@ -387,7 +385,7 @@ async function lintBundle(
   }
 
   if (result.tools.regal) {
-    const regalConfig = resolveRegalConfigFile(context, resolvedDir);
+    const regalConfig = resolveRegalConfigFile(this, resolvedDir);
     const regalResult = await runner(
       'regal',
       [
@@ -398,7 +396,7 @@ async function lintBundle(
         resolvedDir,
       ],
       { cwd: resolvedDir },
-      context,
+      this,
     );
     if (regalResult.code === 0) {
       setStatus('regal-lint', 'passed');
@@ -419,7 +417,7 @@ async function lintBundle(
       'opa',
       ['test', '--fail-on-empty', '-b', resolvedDir],
       { cwd: resolvedDir },
-      context,
+      this,
     );
     if (testResult.code === 0) {
       setStatus('opa-test', 'passed');
@@ -529,7 +527,9 @@ export async function lint(
 
   const results: PolicyLintResult[] = [];
   for (const bundleDirectory of bundleDirectories) {
-    results.push(await lintBundle(this, { fix, noInteractive, json }, bundleDirectory, runner));
+    results.push(
+      await lintBundle.call(this, { fix, noInteractive, json }, bundleDirectory, runner),
+    );
   }
 
   const failed = results.some((result) => result.status === 'failed');

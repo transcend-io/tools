@@ -15,13 +15,6 @@ import {
 export const DEFAULT_POLICY_PROJECT_DIRECTORY = 'transcend/policy';
 
 /**
- * Default publishable bundle directory for lint / test / eval / publish.
- *
- * Init targets the workspace; these commands target a `{root}-bundle/` unit.
- */
-export const DEFAULT_POLICY_BUNDLE_DIRECTORY = `${DEFAULT_POLICY_PROJECT_DIRECTORY}/${POLICY_STARTER_BUNDLE_DIRECTORY}`;
-
-/**
  * Resolve a selected policy project relative to the invocation directory.
  *
  * @param invocationDirectory - CLI working directory

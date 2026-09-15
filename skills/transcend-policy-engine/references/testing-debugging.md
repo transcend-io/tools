@@ -39,12 +39,13 @@ Regal Evaluate work immediately. Customize `input.json` locally; keep
 
 ## Run the complete gate
 
-With no directory argument, `policy lint` verifies every immediate child under
-the workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle
-path to target a single unit. `policy test` still takes one publish directory:
+With no directory argument, `policy lint` and `policy test` verify every
+immediate child under the workspace (`transcend/policy`) that contains a
+`.manifest`. Pass one bundle path to target a single unit:
 
 ```sh
 transcend policy lint --noInteractive
+transcend policy test
 transcend policy lint transcend/policy/example-bundle --noInteractive
 transcend policy test transcend/policy/example-bundle
 opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schemas
@@ -60,10 +61,12 @@ deliberately instead of applying broad rewrites.
 
 ## Evaluate a query
 
+`policy eval` requires an explicit bundle directory:
+
 ```sh
-transcend policy eval --pkg data.example.result \
-  --input transcend/policy/example-bundle/input.json \
-  transcend/policy/example-bundle
+transcend policy eval transcend/policy/example-bundle \
+  --pkg data.example.result \
+  --input transcend/policy/example-bundle/input.json
 ```
 
 Or `opa eval -b … -i …` with the caller's query path. If the result differs from

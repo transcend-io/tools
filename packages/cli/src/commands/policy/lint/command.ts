@@ -4,7 +4,7 @@ import {
   projectJsonParameter,
   projectNoInteractiveParameter,
 } from '../../../lib/scaffolding/command-parameters.js';
-import { policyLintDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyWorkspaceOrBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
 export const lintCommand = buildCommand({
   loader: async () => {
@@ -26,7 +26,7 @@ export const lintCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyLintDirectoryParameter],
+      parameters: [policyWorkspaceOrBundleDirectoryParameter],
     },
   },
   docs: {

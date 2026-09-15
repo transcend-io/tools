@@ -21,12 +21,14 @@ transcend policy new --template permissions --name permissions --yes
 
 `policy lint` and `policy test` now run `opa test -b` (bundle mode) so local `input.json` next to `input.example.json` no longer causes a merge error.
 
-`policy lint` defaults to the workspace (`transcend/policy`) and verifies **every** immediate child that contains a `.manifest`. Pass one bundle path to verify a single unit. Strict OPA checks use Rego v1 (no `--v0-compatible`).
+`policy lint` and `policy test` default to the workspace (`transcend/policy`) and run against **every** immediate child that contains a `.manifest`. Pass one bundle path to target a single unit. Strict OPA checks use Rego v1 (no `--v0-compatible`).
+
+`policy eval` and `policy publish` require an explicit bundle directory (one-bundle operations — no default path).
 
 ### Migration
 
 - `policy init` no longer creates `example-bundle/` or any Rego — run `policy new` after init.
-- `policy lint` with no args lints all `.manifest` bundles under `transcend/policy` (not only `example-bundle`).
-- `policy new` still scaffolds directories as `{name}-bundle/`; that suffix is a layout convention, not a lint discovery requirement.
-- `policy test`, `eval`, and `publish` still default to `transcend/policy/example-bundle`.
+- `policy lint` / `policy test` with no args cover all `.manifest` bundles under `transcend/policy`.
+- `policy new` still scaffolds directories as `{name}-bundle/`; that suffix is a layout convention, not a discovery requirement.
+- `policy eval` and `policy publish` no longer default to `transcend/policy/example-bundle` — pass the bundle directory explicitly.
 - If you already use a flat `transcend/policy` publish directory, move the Rego tree and `.manifest` into a child publish directory (or pass that path explicitly).

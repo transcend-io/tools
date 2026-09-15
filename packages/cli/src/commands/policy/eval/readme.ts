@@ -18,9 +18,11 @@ export default `#### Examples
 
 ${examples}
 
-The default publish directory is \`transcend/policy/example-bundle\`. Pass another \`{root}-bundle/\` directory positionally:
+Pass the bundle directory positionally (required — one bundle per invocation):
 
 \`\`\`sh
-transcend policy eval ./policies/example-bundle --pkg=data.example.result --input=./fixtures/envelope.json
+transcend policy eval transcend/policy/example-bundle \\
+  --pkg=data.example.result \\
+  --input=./fixtures/envelope.json
 \`\`\`
 `;

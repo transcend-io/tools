@@ -5,10 +5,7 @@ import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
-import {
-  DEFAULT_POLICY_BUNDLE_DIRECTORY,
-  resolvePolicyProjectDirectory,
-} from '../../../lib/policy/policy-project-discovery.js';
+import { resolvePolicyProjectDirectory } from '../../../lib/policy/policy-project-discovery.js';
 import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
@@ -49,7 +46,7 @@ export interface PublishCommandFlags {
  *
  * @param this - CLI context
  * @param flags - Command flags
- * @param directory - Policy project directory
+ * @param directory - Policy bundle directory containing a `.manifest`
  */
 export async function publish(
   this: LocalContext,
@@ -63,7 +60,7 @@ export async function publish(
     yes,
     debug = false,
   }: PublishCommandFlags,
-  directory: string = DEFAULT_POLICY_BUNDLE_DIRECTORY,
+  directory: string,
 ): Promise<void> {
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
