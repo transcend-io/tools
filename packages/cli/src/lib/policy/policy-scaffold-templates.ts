@@ -24,11 +24,8 @@ export interface PolicyStarterFile {
   description: string;
 }
 
-/** OPA bundle manifest filename used for local authoring. */
+/** OPA bundle manifest filename used for local authoring and upload. */
 export const POLICY_MANIFEST_FILENAME = '.manifest';
-
-/** Upload archive entry name expected by the Policy Engine API. */
-export const POLICY_UPLOAD_MANIFEST_FILENAME = 'manifest.json';
 
 /**
  * Build an OPA bundle manifest for a given root.

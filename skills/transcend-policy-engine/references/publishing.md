@@ -4,8 +4,9 @@
 
 `.manifest` declares the document-tree roots included in the Policy Engine
 bundle. Each non-test Rego package must equal a root or be nested below one.
-Test modules remain local and are excluded from the upload archive. Publishing
-packages `.manifest` as `manifest.json` in the upload tarball.
+Test modules remain local and are excluded from the upload archive. The
+`.manifest` filename is used end to end — on disk, in the upload tarball, and
+in the served combined bundle.
 
 In this template, the publish directory is `{root}-bundle/` (the folder that
 contains `.manifest`), not the inner `{root}/` package tree alone.
