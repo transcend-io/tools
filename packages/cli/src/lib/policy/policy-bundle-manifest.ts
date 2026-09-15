@@ -1,10 +1,22 @@
-import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
+import {
+  POLICY_MANIFEST_FILENAME,
+  POLICY_MANIFEST_TRANSCEND_METADATA_KEY,
+  POLICY_TEMPLATE_NAMES,
+  type PolicyTemplateName,
+} from './policy-scaffold-templates.js';
 import { findDirectDataReferences, parseRegoPackageReference } from './rego-reference.js';
 
 /** Shape of the policy bundle `.manifest` accepted by Policy Engine. */
 export interface PolicyBundleManifest {
   /** Roots of the bundle, such as `policy_engine/transcend`. */
   roots: string[];
+  /**
+   * Optional scaffold template from `metadata.transcend.io.template`.
+   *
+   * Authoring hint only — upload does not branch on it. Permissions Evaluate
+   * still keys off the remote bundle name `permissions`.
+   */
+  template?: PolicyTemplateName;
 }
 
 /** In-memory Rego file used to validate a policy bundle. */
@@ -79,7 +91,36 @@ export function parsePolicyBundleManifest(contents: string | undefined): PolicyB
     );
   }
 
-  return { roots };
+  const template = parseOptionalManifestTemplate(parsed);
+
+  return template === undefined ? { roots } : { roots, template };
+}
+
+/**
+ * Read an optional `metadata.transcend.io.template` authoring hint.
+ *
+ * Invalid or unknown values are ignored so upload validation stays focused on
+ * roots and Rego coverage.
+ *
+ * @param parsed - Parsed `.manifest` object
+ * @returns Known template name, or undefined
+ */
+function parseOptionalManifestTemplate(parsed: object): PolicyTemplateName | undefined {
+  const metadata = (parsed as { metadata?: unknown }).metadata;
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return undefined;
+  }
+  const transcend = (metadata as Record<string, unknown>)[POLICY_MANIFEST_TRANSCEND_METADATA_KEY];
+  if (!transcend || typeof transcend !== 'object' || Array.isArray(transcend)) {
+    return undefined;
+  }
+  const template = (transcend as { template?: unknown }).template;
+  if (typeof template !== 'string') {
+    return undefined;
+  }
+  return POLICY_TEMPLATE_NAMES.includes(template as PolicyTemplateName)
+    ? (template as PolicyTemplateName)
+    : undefined;
 }
 
 /**

@@ -28,23 +28,53 @@ export interface PolicyStarterFile {
 export const POLICY_MANIFEST_FILENAME = '.manifest';
 
 /**
- * Build an OPA bundle manifest for a given root.
+ * Remote bundle name reserved for Permissions Evaluate.
+ *
+ * Upload treats every bundle the same; Sombra's Permissions API always queries
+ * this fixed name (never taken from the request body).
+ */
+export const PERMISSIONS_POLICY_BUNDLE_NAME = 'permissions';
+
+/** OPA `.manifest` `metadata` key for Transcend authoring hints. */
+export const POLICY_MANIFEST_TRANSCEND_METADATA_KEY = 'transcend.io';
+
+/** Supported policy bundle template names. */
+export const POLICY_TEMPLATE_NAMES = ['generic', 'permissions'] as const;
+
+/** A supported policy bundle template name. */
+export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
+
+/**
+ * Build an OPA bundle manifest for a given root and scaffold template.
+ *
+ * `metadata.transcend.io.template` is an authoring hint only — Policy Engine
+ * upload does not branch on it. Permissions Evaluate still keys off the remote
+ * bundle name {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
  *
  * @param root - Package root
+ * @param template - Scaffold template that produced this bundle
  * @returns Manifest JSON
  */
-export function buildPolicyManifestTemplate(root: string): string {
+export function buildPolicyManifestTemplate(
+  root: string,
+  template: PolicyTemplateName = 'generic',
+): string {
   return `{
   "$schema": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json",
   "revision": "",
   "roots": ["${root}"],
-  "rego_version": 1
+  "rego_version": 1,
+  "metadata": {
+    "${POLICY_MANIFEST_TRANSCEND_METADATA_KEY}": {
+      "template": "${template}"
+    }
+  }
 }
 `;
 }
 
 /** OPA bundle manifest for the disposable starter publish directory. */
-export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(POLICY_STARTER_ROOT);
+export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(POLICY_STARTER_ROOT, 'generic');
 
 /**
  * Build workspace-level Regal configuration for given roots.
@@ -309,6 +339,21 @@ transcend/policy/
 
 Replace or delete example bundles when you have a real policy. Publish each
 bundle separately (\`transcend policy publish --bundle-name … <dir>\`).
+
+## Bundle names and Permissions
+
+Upload does **not** distinguish bundle kinds. What makes a bundle “Permissions”
+is the remote name plus where Sombra queries it:
+
+- **Permissions Evaluate** always loads the fixed remote bundle name
+  \`${PERMISSIONS_POLICY_BUNDLE_NAME}\`. Publish that starter with
+  \`--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
+- **Generic / decide** bundles use any other \`--bundle-name\` and the decide
+  path.
+
+Scaffolded \`.manifest\` files may include \`metadata.transcend.io.template\`
+(\`generic\` or \`permissions\`) as an authoring hint. Upload ignores it;
+\`policy publish\` may warn when the hint and \`--bundle-name\` disagree.
 `;
 
 /** Workspace-relative path to the disposable example entrypoint. */
@@ -401,12 +446,6 @@ export function generatePolicyWorkspaceFiles(): PolicyStarterFile[] {
 // Policy bundle templates (used by `policy new`)
 // ---------------------------------------------------------------------------
 
-/** Supported policy bundle template names. */
-export const POLICY_TEMPLATE_NAMES = ['generic', 'permissions'] as const;
-
-/** A supported policy bundle template name. */
-export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
-
 /** Interactive labels for each policy template. */
 export const POLICY_TEMPLATE_PROMPT_LABELS: Record<PolicyTemplateName, string> = {
   generic: 'Generic example',
@@ -416,7 +455,7 @@ export const POLICY_TEMPLATE_PROMPT_LABELS: Record<PolicyTemplateName, string> =
 /** Default root names for each template. */
 export const POLICY_TEMPLATE_DEFAULT_ROOTS: Record<PolicyTemplateName, string> = {
   generic: 'example',
-  permissions: 'permissions',
+  permissions: PERMISSIONS_POLICY_BUNDLE_NAME,
 };
 
 /**
@@ -440,7 +479,7 @@ export function generateGenericBundleFiles(root: string): PolicyStarterFile[] {
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root),
+      contents: buildPolicyManifestTemplate(root, 'generic'),
       description: 'Create the OPA bundle .manifest',
     },
     {
@@ -574,7 +613,7 @@ export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root),
+      contents: buildPolicyManifestTemplate(root, 'permissions'),
       description: 'Create the OPA bundle .manifest',
     },
     {

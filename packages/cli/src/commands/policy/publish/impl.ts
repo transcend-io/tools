@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
@@ -5,7 +7,10 @@ import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
+import { parsePolicyBundleManifest } from '../../../lib/policy/policy-bundle-manifest.js';
 import { resolvePolicyProjectDirectory } from '../../../lib/policy/policy-project-discovery.js';
+import { formatPolicyPublishBundleNameHint } from '../../../lib/policy/policy-publish-hints.js';
+import { POLICY_MANIFEST_FILENAME } from '../../../lib/policy/policy-scaffold-templates.js';
 import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
@@ -79,6 +84,17 @@ export async function publish(
   try {
     commandLogger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
     bundlePath = await buildOpaBundleTarball(resolvedDir);
+
+    try {
+      const manifestPath = join(resolvedDir, POLICY_MANIFEST_FILENAME);
+      const manifest = parsePolicyBundleManifest(this.fs.readFileSync(manifestPath, 'utf8'));
+      const bundleNameHint = formatPolicyPublishBundleNameHint(bundleName, manifest);
+      if (bundleNameHint) {
+        commandLogger.warn(colors.yellow(bundleNameHint));
+      }
+    } catch {
+      // Best-effort authoring hint; tarball build already validated the manifest.
+    }
 
     const existingBundleId = await resolveBundleIdByName(client, bundleName);
 

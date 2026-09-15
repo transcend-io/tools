@@ -31,6 +31,13 @@ const examples = buildExamples<PublishCommandFlags>(
       },
     },
     {
+      description: 'Publish the Permissions Evaluate bundle (fixed remote name)',
+      flags: {
+        'bundle-name': 'permissions',
+        auth: '$TRANSCEND_API_KEY',
+      },
+    },
+    {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
         'bundle-name': 'main',

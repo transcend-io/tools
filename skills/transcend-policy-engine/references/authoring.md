@@ -20,12 +20,16 @@ be `{root}/` without doubling names:
 
 ```
 example-bundle/               # transcend policy publish … <dir>
-  .manifest                   # roots: ["example"]
+  .manifest                   # roots + optional metadata.transcend.io.template
   example/
     result/…                  # package example.result
   input.example.json
   input.json                  # gitignored; VS Code / Regal Evaluate
 ```
+
+Permissions starters use the same layout. Upload does not branch on template
+metadata; Permissions Evaluate still loads only the remote bundle named
+`permissions` (publish with `--bundle-name=permissions`).
 
 OPA `.rego` placement follows the `package` line; `data.json` paths follow the
 filesystem and must sit under the manifest root prefix on disk.
