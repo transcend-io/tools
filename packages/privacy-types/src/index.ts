@@ -29,6 +29,7 @@ export * from './largeLanguageModels.js';
 export * from './macroregion.js';
 export * from './objects.js';
 export * from './oneTrust/index.js';
+export * from './permissionsPolicyInput.js';
 export * from './preferences.js';
 export * from './policy.js';
 export * from './processingActivity.js';
