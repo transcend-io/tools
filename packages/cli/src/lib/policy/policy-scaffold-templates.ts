@@ -1,5 +1,10 @@
 import yaml from 'js-yaml';
 
+import permissionsPolicyInputSchema from '../../../schema/permissions-policy-input.json' with { type: 'json' };
+
+/** Published Permissions API OPA input schema `$id` (raw GitHub URL). */
+export const PERMISSIONS_POLICY_INPUT_SCHEMA_ID = permissionsPolicyInputSchema.$id;
+
 /** OPA version targeted by generated policy authoring configuration. */
 export const POLICY_STARTER_OPA_VERSION = '1.18.2';
 
@@ -545,32 +550,40 @@ test_allows_trusted_subject if {
  * @param root - Package root name
  * @returns Bundle files relative to the workspace
  */
+/**
+ * Serialize the published Permissions input schema for a local OPA schema path.
+ *
+ * OPA maps `schemas/{root}/input.json` → `schema.{root}.input`; the file is a
+ * copy of the published schema so type-checking works offline.
+ *
+ * @returns Schema file contents ending in a trailing newline
+ */
+export function buildPermissionsInputSchemaContents(): string {
+  return `${JSON.stringify(permissionsPolicyInputSchema, null, 2)}\n`;
+}
+
+/**
+ * Serialize the published Permissions input example for local evaluation.
+ *
+ * @returns Example input JSON ending in a trailing newline
+ */
+export function buildPermissionsInputExampleContents(): string {
+  const [example] = permissionsPolicyInputSchema.examples;
+  if (!example) {
+    throw new Error('permissions-policy-input.json must declare at least one example');
+  }
+  return `${JSON.stringify(example, null, 2)}\n`;
+}
+
+/**
+ * Generate bundle files for the permissions template.
+ *
+ * @param root - Package root name
+ * @returns Bundle files relative to the workspace
+ */
 export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[] {
   const bundle = buildBundleDirectoryName(root);
-  const inputExample = `{
-  "request_id": "req-1",
-  "preferences": [
-    {
-      "name": "marketing",
-      "choice": true,
-      "days_since_choice": 45
-    },
-    {
-      "name": "analytics",
-      "choice": false,
-      "days_since_choice": 12
-    },
-    {
-      "name": "product_updates",
-      "choice": true
-    }
-  ],
-  "context": {
-    "region": "US",
-    "surface": "web"
-  }
-}
-`;
+  const inputExample = buildPermissionsInputExampleContents();
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
@@ -579,52 +592,8 @@ export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[
     },
     {
       path: `schemas/${root}/input.json`,
-      contents: `{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://transcend.io/policy-schemas/${root}/input.json",
-  "title": "Permissions policy input",
-  "description": "Envelope Sombra injects for the Permissions / default-consent path.",
-  "type": "object",
-  "additionalProperties": true,
-  "properties": {
-    "request_id": {
-      "type": "string",
-      "description": "Optional caller id; not required by V0 decision rules."
-    },
-    "preferences": {
-      "type": "array",
-      "description": "One entry per purpose with an explicit choice (Sombra dedupes by purpose).",
-      "items": {
-        "type": "object",
-        "additionalProperties": true,
-        "required": ["name"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Purpose name (e.g. analytics, marketing)."
-          },
-          "choice": {
-            "description": "Boolean opt-in/out; null or omitted means undecided.",
-            "type": ["boolean", "null"]
-          },
-          "days_since_choice": {
-            "type": "number",
-            "minimum": 0,
-            "description": "Accepted on input; ignored by V0 rules."
-          }
-        }
-      }
-    },
-    "context": {
-      "type": "object",
-      "additionalProperties": true,
-      "description": "Optional caller context; forwarded verbatim, unread by V0 rules."
-    }
-  }
-}
-`,
-      description: `Create the input JSON Schema for the ${root} bundle`,
+      contents: buildPermissionsInputSchemaContents(),
+      description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
     },
     {
       path: `${bundle}/${root}/config/config.rego`,
@@ -643,10 +612,10 @@ import rego.v1
       contents: `{
   "default_consent_allowed": true,
   "purposes": [
-    "analytics",
-    "marketing",
-    "personalization",
-    "research"
+    "Analytics",
+    "SaleOfInfo",
+    "Marketing",
+    "Personalization"
   ],
   "default_consent": {}
 }
@@ -660,7 +629,7 @@ import rego.v1
 # description: |
 #   Resolves the subject's recorded choice for one purpose from the OPA
 #   \`input.preferences\` array Sombra injects (one \`{name, choice,
-#   days_since_choice?}\` entry per purpose with an explicit choice).
+#   days_since_choice?}\` entry per purpose; \`choice\` may be null when unset).
 package ${root}.helpers.preference
 
 import rego.v1
@@ -724,18 +693,18 @@ test_treats_an_absent_preferences_array_as_no_recorded_choices if {
 \tfixture := {}
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("marketing") with input as fixture
+\tpreference.undecided("Marketing") with input as fixture
 }
 
 test_accepts_an_empty_preferences_array if {
 \tfixture := given([])
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("marketing") with input as fixture
+\tpreference.undecided("Marketing") with input as fixture
 }
 
 test_reports_a_non_array_preferences_as_unavailable if {
-\tnot preference.source_available with input as {"preferences": {"marketing": true}}
+\tnot preference.source_available with input as {"preferences": {"Marketing": true}}
 }
 
 test_reports_entries_without_a_usable_name_as_unavailable if {
@@ -746,61 +715,61 @@ test_reports_entries_without_a_usable_name_as_unavailable if {
 
 test_distinguishes_enabled_and_disabled_choices if {
 \tfixture := given([
-\t\t{"name": "marketing", "choice": true},
-\t\t{"name": "analytics", "choice": false},
+\t\t{"name": "Marketing", "choice": true},
+\t\t{"name": "Analytics", "choice": false},
 \t])
 
-\tpreference.enabled("marketing") with input as fixture
-\tpreference.disabled("analytics") with input as fixture
-\tpreference.decided("marketing") with input as fixture
-\tpreference.decided("analytics") with input as fixture
-\tnot preference.undecided("marketing") with input as fixture
+\tpreference.enabled("Marketing") with input as fixture
+\tpreference.disabled("Analytics") with input as fixture
+\tpreference.decided("Marketing") with input as fixture
+\tpreference.decided("Analytics") with input as fixture
+\tnot preference.undecided("Marketing") with input as fixture
 }
 
 test_treats_a_null_choice_as_undecided if {
-\tfixture := given([{"name": "marketing", "choice": null}])
+\tfixture := given([{"name": "Marketing", "choice": null}])
 
-\tpreference.undecided("marketing") with input as fixture
-\tnot preference.decided("marketing") with input as fixture
+\tpreference.undecided("Marketing") with input as fixture
+\tnot preference.decided("Marketing") with input as fixture
 }
 
 test_treats_an_absent_choice_key_as_undecided if {
-\tfixture := given([{"name": "marketing", "channel": "email"}])
+\tfixture := given([{"name": "Marketing", "channel": "email"}])
 
-\tpreference.undecided("marketing") with input as fixture
+\tpreference.undecided("Marketing") with input as fixture
 }
 
 test_treats_a_non_boolean_choice_as_undecided if {
-\tfixture := given([{"name": "personalization", "choice": "Daily"}])
+\tfixture := given([{"name": "Personalization", "choice": "Daily"}])
 
-\tpreference.undecided("personalization") with input as fixture
-\tnot preference.decided("personalization") with input as fixture
+\tpreference.undecided("Personalization") with input as fixture
+\tnot preference.decided("Personalization") with input as fixture
 }
 
 # Sombra dedupes by purpose before sending; last-wins keeps the bundle correct
 # against hand-crafted input that names the same purpose twice.
 test_last_wins_on_duplicate_entries if {
 \tfixture := given([
-\t\t{"name": "research", "choice": true},
-\t\t{"name": "research", "choice": false},
+\t\t{"name": "SaleOfInfo", "choice": true},
+\t\t{"name": "SaleOfInfo", "choice": false},
 \t])
 
-\tpreference.disabled("research") with input as fixture
-\tnot preference.enabled("research") with input as fixture
+\tpreference.disabled("SaleOfInfo") with input as fixture
+\tnot preference.enabled("SaleOfInfo") with input as fixture
 }
 
 # Extra fields on an entry (evidence, days_since_choice, channel) are ignored
 # rather than treated as a choice.
 test_ignores_fields_beyond_the_recorded_choice if {
 \tfixture := given([{
-\t\t"name": "marketing",
+\t\t"name": "Marketing",
 \t\t"choice": true,
 \t\t"evidence": "consent_banner",
 \t\t"days_since_choice": 45,
 \t\t"channel": "email",
 \t}])
 
-\tpreference.enabled("marketing") with input as fixture
+\tpreference.enabled("Marketing") with input as fixture
 }
 `,
       description: 'Create preference resolution tests',
@@ -824,9 +793,9 @@ import rego.v1
     {
       path: `${bundle}/${root}/purposes/analytics/analytics.rego`,
       contents: `# METADATA
-# title: analytics purpose decision
+# title: Analytics purpose decision
 # description: |
-#   The analytics purpose's verdict as a \`result\` document
+#   The Analytics purpose's verdict as a \`result\` document
 #   (\`data.${root}.purposes.analytics.result\`).
 package ${root}.purposes.analytics
 
@@ -843,28 +812,28 @@ result := {
 \t"decision": "allow",
 \t"reason_code": "explicit_allow",
 } if {
-\tpreference.enabled("analytics")
+\tpreference.enabled("Analytics")
 }
 
 result := {
 \t"decision": "deny",
 \t"reason_code": "explicit_deny",
 } if {
-\tpreference.disabled("analytics")
+\tpreference.disabled("Analytics")
 }
 
 result := {
 \t"decision": "allow",
 \t"reason_code": "default_allow",
 } if {
-\tpreference.undecided("analytics")
+\tpreference.undecided("Analytics")
 }
 `,
       description: 'Create the analytics purpose decision rule',
     },
     {
       path: `${bundle}/${root}/purposes/analytics/analytics_test.rego`,
-      contents: `# Policy outcomes for the analytics purpose (the queried document).
+      contents: `# Policy outcomes for the Analytics purpose (the queried document).
 package ${root}.purposes.analytics_test
 
 import rego.v1
@@ -874,7 +843,7 @@ import data.${root}.purposes.analytics
 given(preferences) := {"preferences": preferences}
 
 test_explicit_allow if {
-\tresult := analytics.result with input as given([{"name": "analytics", "choice": true}])
+\tresult := analytics.result with input as given([{"name": "Analytics", "choice": true}])
 \tresult == {
 \t\t"decision": "allow",
 \t\t"reason_code": "explicit_allow",
@@ -882,7 +851,7 @@ test_explicit_allow if {
 }
 
 test_explicit_deny if {
-\tresult := analytics.result with input as given([{"name": "analytics", "choice": false}])
+\tresult := analytics.result with input as given([{"name": "Analytics", "choice": false}])
 \tresult == {
 \t\t"decision": "deny",
 \t\t"reason_code": "explicit_deny",
@@ -906,7 +875,7 @@ test_missing_preferences_resolves_to_default_allow if {
 }
 
 test_non_boolean_choice_falls_back_to_default_allow if {
-\tresult := analytics.result with input as given([{"name": "analytics", "choice": "yes"}])
+\tresult := analytics.result with input as given([{"name": "Analytics", "choice": "yes"}])
 \tresult == {
 \t\t"decision": "allow",
 \t\t"reason_code": "default_allow",
@@ -916,7 +885,7 @@ test_non_boolean_choice_falls_back_to_default_allow if {
 test_malformed_preferences_are_treated_as_undecided if {
 \t# source_available is false, so enabled/disabled never fire; undecided still
 \t# holds for configured purposes (not enabled and not disabled).
-\tresult := analytics.result with input as {"preferences": {"analytics": true}}
+\tresult := analytics.result with input as {"preferences": {"Analytics": true}}
 \tresult == {
 \t\t"decision": "allow",
 \t\t"reason_code": "default_allow",

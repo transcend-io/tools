@@ -1,12 +1,16 @@
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
+import permissionsPolicyInputSchema from '../../../../schema/permissions-policy-input.json' with { type: 'json' };
 import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
+  buildPermissionsInputExampleContents,
+  buildPermissionsInputSchemaContents,
   generatePolicyStarterFiles,
   generatePolicyWorkspaceFiles,
   generatePolicyBundleFiles,
   mergePolicyRegalConfigRoots,
+  PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
   POLICY_GITIGNORE_TEMPLATE,
   POLICY_INPUT_EXAMPLE_TEMPLATE,
   POLICY_INPUT_SCHEMA_TEMPLATE,
@@ -237,6 +241,16 @@ describe('policy bundle templates', () => {
     expect(files.find(({ path }) => path === 'permissions-bundle/input.json')?.contents).toBe(
       files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
     );
+    expect(files.find(({ path }) => path === 'schemas/permissions/input.json')?.contents).toBe(
+      buildPermissionsInputSchemaContents(),
+    );
+    expect(JSON.parse(buildPermissionsInputSchemaContents()).$id).toBe(
+      PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+    );
+    expect(JSON.parse(buildPermissionsInputSchemaContents())).toEqual(permissionsPolicyInputSchema);
+    expect(
+      files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
+    ).toBe(buildPermissionsInputExampleContents());
   });
 
   it('parameterizes the permissions bundle root correctly', () => {
