@@ -54,6 +54,8 @@ minimumReleaseAgeExclude:
   - '@transcend-io/*'
   # Renovate security update: csv-parse@7.0.2
   - csv-parse@7.0.2
+  # Renovate security update: pnpm@10.34.5
+  - pnpm@10.34.5
 
 onlyBuiltDependencies:
   - esbuild
