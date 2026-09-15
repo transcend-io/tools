@@ -8,9 +8,17 @@ import {
   resolvePolicyProjectDirectory,
 } from '../../../lib/policy/policy-project-discovery.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
+import type { PolicyTestFormat } from './command.js';
 
 /** CLI flags for `transcend policy test`. */
-export type TestCommandFlags = Record<string, never>;
+export interface TestCommandFlags {
+  /** `opa test --format` value. */
+  format: PolicyTestFormat;
+  /** `opa test --verbose`. */
+  verbose: boolean;
+  /** Optional `opa test --run` regex. */
+  run?: string;
+}
 
 /**
  * Run OPA tests against local policy bundles.
@@ -25,7 +33,7 @@ export type TestCommandFlags = Record<string, never>;
  */
 export async function test(
   this: LocalContext,
-  _flags: TestCommandFlags,
+  { format, verbose, run }: TestCommandFlags,
   directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
 ): Promise<void> {
   doneInputValidation(this.process);
@@ -46,7 +54,16 @@ export async function test(
 
   for (const bundleDirectory of bundleDirectories) {
     this.logger.info(colors.green(`Running policy tests in ${bundleDirectory}...`));
-    const exitCode = await runOpa(['test', '--fail-on-empty', '-b', bundleDirectory]);
+    const exitCode = await runOpa([
+      'test',
+      '--fail-on-empty',
+      '-b',
+      bundleDirectory,
+      '--format',
+      format,
+      ...(verbose ? ['--verbose'] : []),
+      ...(run ? ['--run', run] : []),
+    ]);
     if (exitCode !== 0) {
       this.process.exit(exitCode);
     }

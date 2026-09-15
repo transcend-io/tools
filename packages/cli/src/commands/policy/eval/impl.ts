@@ -6,13 +6,20 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { resolvePolicyProjectDirectory } from '../../../lib/policy/policy-project-discovery.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
+import type { PolicyEvalExplainMode, PolicyEvalFormat } from './command.js';
 
 /** CLI flags for `transcend policy eval`. */
 export interface EvalCommandFlags {
-  /** OPA package/query to evaluate (e.g. `data.example.result`) */
-  pkg: string;
-  /** Path to a JSON envelope input file */
+  /** OPA query to evaluate (e.g. `data.example.result`). */
+  package: string;
+  /** Path to a JSON envelope input file. */
   input: string;
+  /** `opa eval --format` value. */
+  format: PolicyEvalFormat;
+  /** Optional `opa eval --schema` path. */
+  schema?: string;
+  /** Optional `opa eval --explain` mode. */
+  explain?: PolicyEvalExplainMode;
 }
 
 /**
@@ -24,7 +31,7 @@ export interface EvalCommandFlags {
  */
 export async function _eval(
   this: LocalContext,
-  { pkg, input }: EvalCommandFlags,
+  { package: query, input, format, schema, explain }: EvalCommandFlags,
   directory: string,
 ): Promise<void> {
   doneInputValidation(this.process);
@@ -37,10 +44,25 @@ export async function _eval(
   }
 
   const bundlePath = resolvePolicyProjectDirectory(this.process.cwd(), directory);
-  const args = ['eval', '--format', 'pretty', '--input', inputPath, '-b', bundlePath];
-  args.push(pkg);
+  const schemaPath = schema ? path.resolve(this.process.cwd(), schema) : undefined;
+  if (schemaPath && !this.fs.existsSync(schemaPath)) {
+    throw new Error(`Schema path not found: ${schemaPath}`);
+  }
 
-  this.logger.info(colors.green(`Evaluating ${pkg} with input ${inputPath}...`));
+  const args = [
+    'eval',
+    '--format',
+    format,
+    '--input',
+    inputPath,
+    '-b',
+    bundlePath,
+    ...(schemaPath ? ['--schema', schemaPath] : []),
+    ...(explain && explain !== 'off' ? ['--explain', explain] : []),
+    query,
+  ];
+
+  this.logger.info(colors.green(`Evaluating ${query} with input ${inputPath}...`));
 
   const exitCode = await runOpa(args);
   if (exitCode !== 0) {

@@ -7,8 +7,17 @@ const examples = buildExamples<EvalCommandFlags>(
     {
       description: 'Evaluate a decision query with a local envelope',
       flags: {
-        pkg: 'data.example.result',
+        package: 'data.example.result',
         input: './fixtures/envelope.json',
+      },
+    },
+    {
+      description: 'Emit JSON and attach workspace schemas',
+      flags: {
+        package: 'data.example.result',
+        input: './fixtures/envelope.json',
+        format: 'json',
+        schema: 'transcend/policy/schemas',
       },
     },
   ],
@@ -22,7 +31,7 @@ Pass the bundle directory positionally (required — one bundle per invocation):
 
 \`\`\`sh
 transcend policy eval transcend/policy/example-bundle \\
-  --pkg=data.example.result \\
+  --package=data.example.result \\
   --input=./fixtures/envelope.json
 \`\`\`
 `;

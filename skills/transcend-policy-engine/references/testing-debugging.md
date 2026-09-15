@@ -65,7 +65,7 @@ deliberately instead of applying broad rewrites.
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
-  --pkg data.example.result \
+  --package data.example.result \
   --input transcend/policy/example-bundle/input.json
 ```
 

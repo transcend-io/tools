@@ -5,8 +5,16 @@ const examples = buildExamples<TestCommandFlags>(
   ['policy', 'test'],
   [
     {
-      description: 'Run tests in the default local policy project',
+      description: 'Run tests for every bundle under the default workspace',
       flags: {},
+    },
+    {
+      description: 'Filter tests and emit JSON',
+      flags: {
+        format: 'json',
+        run: 'test_allows',
+        verbose: true,
+      },
     },
   ],
 );
@@ -15,9 +23,9 @@ export default `#### Examples
 
 ${examples}
 
-**Run tests in another local policy project**
+Pass one bundle directory to test a single unit:
 
 \`\`\`sh
-transcend policy test ./policies
+transcend policy test transcend/policy/example-bundle
 \`\`\`
 `;

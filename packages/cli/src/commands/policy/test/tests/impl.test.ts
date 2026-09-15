@@ -38,7 +38,7 @@ describe('policy test', () => {
     }
     const context = buildContextForTest({ cwd: tmpdir() });
 
-    await test.call(context, {}, workspace);
+    await test.call(context, { format: 'pretty', verbose: false }, workspace);
 
     expect(assertOpaInstalledMock).toHaveBeenCalledOnce();
     expect(runOpaMock).toHaveBeenCalledTimes(2);
@@ -47,23 +47,37 @@ describe('policy test', () => {
       '--fail-on-empty',
       '-b',
       join(workspace, 'example-bundle'),
+      '--format',
+      'pretty',
     ]);
     expect(runOpaMock).toHaveBeenNthCalledWith(2, [
       'test',
       '--fail-on-empty',
       '-b',
       join(workspace, 'payments'),
+      '--format',
+      'pretty',
     ]);
   });
 
-  it('resolves a single bundle directory from the invocation directory', async () => {
+  it('forwards curated opa test flags for a single bundle', async () => {
     const bundle = mkdtempSync(join(tmpdir(), 'policy-test-bundle-'));
     temporaryDirectories.push(bundle);
     writeFileSync(join(bundle, '.manifest'), JSON.stringify({ roots: ['x'] }));
     const context = buildContextForTest({ cwd: tmpdir() });
 
-    await test.call(context, {}, bundle);
+    await test.call(context, { format: 'json', verbose: true, run: 'test_allows' }, bundle);
 
-    expect(runOpaMock).toHaveBeenCalledWith(['test', '--fail-on-empty', '-b', bundle]);
+    expect(runOpaMock).toHaveBeenCalledWith([
+      'test',
+      '--fail-on-empty',
+      '-b',
+      bundle,
+      '--format',
+      'json',
+      '--verbose',
+      '--run',
+      'test_allows',
+    ]);
   });
 });

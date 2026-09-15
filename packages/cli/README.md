@@ -4290,15 +4290,18 @@ The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zi
 
 ```txt
 USAGE
-  transcend policy eval (--pkg value) (--input value) <directory>
+  transcend policy eval (--package value) (--input value) [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] <directory>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging against one bundle directory. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`). Pass-through flags cover format, schema, and explain; exit-on-result flags like `--fail` are omitted until Policy Engine evaluation semantics are aligned. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     --pkg    OPA package or query to evaluate (e.g. data.transcend.decision)
-     --input  Path to a JSON envelope input file
-  -h --help   Print help information and exit
+      --package   OPA query to evaluate (e.g. data.example.result)
+      --input     Path to a JSON envelope input file
+     [--format]   opa eval --format                                [pretty|json|values|bindings|source|raw|discard, default = pretty]
+     [--schema]   opa eval --schema (file or directory)
+     [--explain]  opa eval --explain                               [off|full|notes|fails|debug]
+  -h  --help      Print help information and exit
 
 ARGUMENTS
   directory  Policy bundle directory containing a .manifest
@@ -4309,14 +4312,24 @@ ARGUMENTS
 **Evaluate a decision query with a local envelope**
 
 ```sh
-transcend policy eval --pkg=data.example.result --input=./fixtures/envelope.json
+transcend policy eval --package=data.example.result --input=./fixtures/envelope.json
+```
+
+**Emit JSON and attach workspace schemas**
+
+```sh
+transcend policy eval \
+  --package=data.example.result \
+  --input=./fixtures/envelope.json \
+  --format=json \
+  --schema=transcend/policy/schemas
 ```
 
 Pass the bundle directory positionally (required — one bundle per invocation):
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
-  --pkg=data.example.result \
+  --package=data.example.result \
   --input=./fixtures/envelope.json
 ```
 
@@ -4566,13 +4579,16 @@ Requires the **Manage Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy test [<directory>]
+  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [<directory>]
   transcend policy test --help
 
-Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, and run; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-  -h --help  Print help information and exit
+     [--format]   opa test --format               [pretty|json|gobench, default = pretty]
+     [--verbose]  opa test --verbose              [default = false]
+     [--run]      opa test --run (regex filter)
+  -h  --help      Print help information and exit
 
 ARGUMENTS
   [directory]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
@@ -4580,16 +4596,22 @@ ARGUMENTS
 
 #### Examples
 
-**Run tests in the default local policy project**
+**Run tests for every bundle under the default workspace**
 
 ```sh
 transcend policy test
 ```
 
-**Run tests in another local policy project**
+**Filter tests and emit JSON**
 
 ```sh
-transcend policy test ./policies
+transcend policy test --format=json --run=test_allows --verbose
+```
+
+Pass one bundle directory to test a single unit:
+
+```sh
+transcend policy test transcend/policy/example-bundle
 ```
 
 ### `transcend policy versions`
