@@ -2,20 +2,21 @@
 
 ## Write executable tests
 
-Place tests next to the package they exercise and suffix test modules with `_test.rego`. A separate `_test` package makes the production API and test helpers easy to distinguish:
+Place tests next to the package they exercise and suffix test modules with
+`_test.rego`. A separate `_test` package makes the production API and test
+helpers easy to distinguish. Keep the `_test` package under the same manifest
+root (for example `example.result_test`, not a sibling root), so bundle-mode
+loads accept it.
 
 ```rego
-package policy_engine.example_test
+package example.result_test
 
-import data.policy_engine.example
+import data.example.result
 import rego.v1
 
 test_denies_missing_input if {
-	result := example.result with input as {}
-	result == {
-		"decision": "deny",
-		"reason_code": "untrusted_or_invalid_input",
-	}
+	result.decision == "deny" with input as {}
+	result.reason_code == "untrusted_or_invalid_input" with input as {}
 }
 ```
 
@@ -27,29 +28,47 @@ Cover at least:
 - important result fields and reason codes;
 - interactions between packages when one policy reads another document.
 
-`transcend policy lint` invokes `opa test --fail-on-empty`, so an empty suite fails validation.
+`transcend policy lint` requires a non-empty test suite.
 
 ## Use local inputs safely
 
-Keep a sanitized `input.example.json` in source control. Put realistic local data in the target-local `input.json`, which the generated `.gitignore` excludes. Do not put credentials, personal data, or production payloads in fixtures unless repository policy explicitly permits sanitized versions.
+Keep a sanitized `input.example.json` in each publish directory. `policy new`
+also writes a gitignored `input.json` beside it (same contents) so VS Code /
+Regal Evaluate work immediately. Customize `input.json` locally; keep
+`input.example.json` committed and free of credentials or personal data.
 
 ## Run the complete gate
 
+With no directory argument, `policy lint` and `policy test` verify every
+immediate child under the workspace (`transcend/policy`) that contains a
+`.manifest`. Pass one bundle path to target a single unit:
+
 ```sh
-transcend policy lint ./transcend/policy --noInteractive
+transcend policy lint --noInteractive
+transcend policy test
+transcend policy lint transcend/policy/example-bundle --noInteractive
+transcend policy test transcend/policy/example-bundle
+opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schemas
 ```
 
-Use `transcend policy lint --help` to inspect `--fix` and JSON output. The lint gate checks:
+`policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
+gitignored `input.json` beside `input.example.json` does not cause a merge
+error. Prefer the CLI over raw directory-mode `opa test`. Strict OPA checks use
+Rego v1 (no `--v0-compatible`).
 
-- manifest shape and package-root coverage;
-- compatible OPA and Regal versions;
-- OPA formatting;
-- a strict production-only OPA check that excludes local test modules;
-- Regal lint with warnings treated as failures;
-- non-empty OPA tests.
-
-Use `--fix` only for OPA formatting. Review Regal findings deliberately instead of applying broad rewrites.
+Use `transcend policy lint --help` for formatter flags. Review Regal findings
+deliberately instead of applying broad rewrites.
 
 ## Evaluate a query
 
-Use `transcend policy eval --help` to construct a local query with a sanitized input file and optional bundle directory. Evaluate the exact query used by the caller. If the result differs from expectations, inspect package paths, imports, defaults, input field presence, and the selected bundle root before changing policy logic.
+`policy eval` requires an explicit bundle directory:
+
+```sh
+transcend policy eval transcend/policy/example-bundle \
+  --pkg data.example.result \
+  --input transcend/policy/example-bundle/input.json
+```
+
+Or `opa eval -b … -i …` with the caller's query path. If the result differs from
+expectations, inspect package paths, imports, defaults, input field presence,
+and the selected bundle directory before changing policy logic.

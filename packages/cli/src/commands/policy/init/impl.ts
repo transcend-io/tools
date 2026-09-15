@@ -35,6 +35,7 @@ import {
   buildPolicyInitPlan,
   getPolicyInitPlanningCandidatePaths,
 } from '../../../lib/policy/policy-scaffold-planning.js';
+import { POLICY_STARTER_OPA_VERSION } from '../../../lib/policy/policy-scaffold-templates.js';
 import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 import {
@@ -143,7 +144,7 @@ async function probePolicyRuntimes(
     const unsupported = unsupportedRegalVersionMessage(
       output,
       MINIMUM_POLICY_STARTER_REGAL_VERSION,
-      'the generated OPA 1.13.1 capabilities configuration',
+      `the generated OPA ${POLICY_STARTER_OPA_VERSION} capabilities configuration`,
     );
     if (regalResult.code !== 0) {
       warnings.push(unsupported ?? failedVersionProbeMessage('Regal', regalResult));
@@ -208,10 +209,7 @@ export async function init(
         renderProjectPlan(plan, {
           cwd: this.process.cwd(),
           title: 'Policy initialization plan',
-          details: [
-            { label: 'Target', path: plan.targetDirectory },
-            { label: 'Manifest', path: plan.manifestPath },
-          ],
+          details: [{ label: 'Target', path: plan.targetDirectory }],
         }),
       );
     }
@@ -238,15 +236,8 @@ export async function init(
       projectPath: quoteShellArgument(
         displayProjectPath(this.process.cwd(), state.targetDirectory),
       ),
-      ...(plan.disposableExamplePath
-        ? {
-            examplePath: quoteShellArgument(
-              displayProjectPath(this.process.cwd(), plan.disposableExamplePath),
-            ),
-          }
-        : {}),
       hasSkill: setupAvailable && features.includes(PolicySetupFeature.Skill),
-      lintCommand: plan.nextSteps[0]!,
+      newCommand: plan.nextSteps[0]!,
     });
     const result = buildPolicyInitPlanResult(plan, {
       applied,

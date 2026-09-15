@@ -1498,20 +1498,12 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('resolves templateId to assessmentGroupId when assessmentGroupId not provided', async () => {
-      const mockGroup = {
-        id: 'grp-from-template',
-        assessmentFormTemplate: { id: 'tpl-1' },
-      };
-      mockGraphql.listAssessmentGroups.mockResolvedValue({
-        nodes: [mockGroup],
-        totalCount: 1,
-        pageInfo: { hasNextPage: false },
-      });
-
+    it('creates in the named group without looking any group up', async () => {
+      // The group is where the form lives, so it is taken as given rather than
+      // inferred from a template, which could only ever name one group.
       const mockAssessment = {
         id: 'assess-2',
-        title: 'From Template',
+        title: 'In A Group',
         status: 'DRAFT',
       };
       mockGraphql.createAssessment.mockResolvedValue(mockAssessment);
@@ -1520,8 +1512,8 @@ describe('Assessment Tools', () => {
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
       const result = await tool.handler({
-        title: 'From Template',
-        templateId: 'tpl-1',
+        title: 'In A Group',
+        assessmentGroupId: 'grp-1',
       });
 
       expect(result).toMatchObject({
@@ -1530,12 +1522,23 @@ describe('Assessment Tools', () => {
           assessment: expect.objectContaining(mockAssessment),
         }),
       });
-      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith({ first: 100 });
+      expect(mockGraphql.listAssessmentGroups).not.toHaveBeenCalled();
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
-        title: 'From Template',
-        assessmentGroupId: 'grp-from-template',
+        title: 'In A Group',
+        assessmentGroupId: 'grp-1',
         assigneeIds: undefined,
       });
+    });
+
+    it('rejects a create with no group', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'assessments_create')!;
+
+      const result = tool.zodSchema.safeParse({ title: 'No Group' });
+
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['assessmentGroupId']);
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
 
     it('throws when client throws', async () => {
@@ -1727,21 +1730,17 @@ describe('Assessment Tools', () => {
       expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
-    it('returns error when neither templateId nor assessmentGroupId provided', async () => {
+    it('rejects a prefill with no group', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         title: 'Prefill Test',
         answers: { Q1: 'A1' },
       });
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('templateId or assessmentGroupId'),
-        code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
-        retryable: false,
-      });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['assessmentGroupId']);
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
 
@@ -1893,7 +1892,8 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: false,
         code: 'ASSESSMENT_PREFILL_INCOMPLETE',
-        retryable: true,
+        // The form exists, so retrying this call builds a second one.
+        retryable: false,
         details: {
           assessmentId: 'assess-incomplete',
           answersApplied: 0,
@@ -1910,9 +1910,54 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
-    it('keeps both halves of a multi-select where only some values match an option', async () => {
-      // Writing just the matched ids dropped the rest and still reported the
-      // question answered, so a value the option list did not cover vanished.
+    it('joins values matching no option into one written-in answer', async () => {
+      // The question has one free-text box however many values miss, so sending
+      // them separately was rejected and took the matched options down with it.
+      const form = {
+        id: 'assess-other',
+        title: 'Other Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Which categories?',
+                referenceId: 'ref-1',
+                type: 'MULTI_SELECT',
+                allowSelectOther: true,
+                answerOptions: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+                selectedAnswers: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Other Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': ['Usage data', 'Location data', 'Device data'] },
+      } as never);
+
+      // Semicolons, because the values themselves may contain commas.
+      expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
+        assessmentQuestionId: 'q1',
+        assessmentAnswerIds: ['opt-1'],
+        assessmentAnswerValues: [{ value: 'Location data; Device data', isUserCreated: true }],
+      });
+      // Nothing was lost, so nothing is handed back to repair.
+      expect(result).toMatchObject({ success: true });
+    });
+
+    it('hands back values a question that takes no written-in answer cannot hold', async () => {
       const form = {
         id: 'assess-mixed',
         title: 'Mixed Assessment',
@@ -1939,18 +1984,40 @@ describe('Assessment Tools', () => {
       mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
 
       const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
-      await tool.handler({
+      const result = await tool.handler({
         title: 'Mixed Assessment',
         assessmentGroupId: 'grp-1',
         assigneeIds: ['user-1'],
-        answers: { 'ref-1': ['Usage data', 'Location data'] },
+        answers: { 'ref-1': ['Usage data', 'Location data', 'Device data'] },
       } as never);
 
+      // Without allowSelectOther the API refuses a written value outright, so
+      // only the options go, and the rest are reported rather than attempted.
       expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
         assessmentQuestionId: 'q1',
         assessmentAnswerIds: ['opt-1'],
-        assessmentAnswerValues: [{ value: 'Location data', isUserCreated: true }],
       });
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        details: {
+          missedOptionValues: [
+            {
+              question: 'Which categories?',
+              // Ids travel with the titles because the remedy addresses the
+              // question and its options by id, not by the referenceId the
+              // answers were keyed by.
+              questionId: 'q1',
+              values: ['Location data', 'Device data'],
+              options: [{ id: 'opt-1', value: 'Usage data' }],
+            },
+          ],
+        },
+      });
+      expect((result as any).error).toContain('2 values matched no answer option');
+      // The keys all matched, so key advice would send the caller hunting for a
+      // problem it does not have.
+      expect((result as any).error).not.toContain('Keys must match');
     });
 
     it('matches answers keyed by the referenceId taken from the template export', async () => {

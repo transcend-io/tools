@@ -10,11 +10,10 @@ import {
 } from '@transcend-io/mcp-ui-common';
 import { memo, useMemo, useState } from 'react';
 
-import { COOKIE_TRIAGE_UI_PAGE_SIZE } from '../../lib/cookieTriageConfig.ts';
 import {
-  getPurposeLabel,
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
   type CookieTriagePurposeCategory,
-} from '../../lib/resolvePrimaryCookiePurpose.ts';
+} from '../../lib/cookieTriageConfig.ts';
 import { CookieTable } from './CookieTable.tsx';
 import {
   useAppliedSuggestionNames,
@@ -74,7 +73,6 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
             ? { mode: 'apply' as const, label: applyLabel }
             : undefined;
 
-  const label = getPurposeLabel(purpose);
   const isLoading = category.loadStatus === CookieTriageLoadStatus.Loading;
   const isInitialLoading = isLoading && category.cookies.length === 0;
   const isLoadingMore = isLoading && category.cookies.length > 0;
@@ -127,7 +125,7 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
               id={`cookie-triage-group-${purpose}`}
               className="text-heading-sm font-semibold text-on-card"
             >
-              {label}
+              {purpose}
             </h2>
             <span className="text-sm text-on-card-subtle">
               {category.totalCount.toLocaleString('en-US')} {plural}

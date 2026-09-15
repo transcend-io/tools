@@ -42,14 +42,6 @@ export const CookieTriageLoadStatus = makeEnum({
 export type CookieTriageLoadStatus =
   (typeof CookieTriageLoadStatus)[keyof typeof CookieTriageLoadStatus];
 
-/** One selectable tracking purpose from `consent_list_purposes`. */
-export interface CookieTriagePurposeOption {
-  /** Purpose slug written to `trackingPurposes` / `trackingTypes` */
-  slug: string;
-  /** Human-readable label for the purpose select */
-  label: string;
-}
-
 /** Cookie or data-flow item shown in the triage view */
 export interface CookieTriageAnalysis {
   /** Cookie name or data-flow value (upsert / row key) */

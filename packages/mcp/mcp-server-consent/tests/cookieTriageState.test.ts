@@ -82,7 +82,7 @@ describe('createEmptySession', () => {
 
     expect(state.triageType).toBe(ConsentTriageType.Cookies);
     expect(state.selectedPurpose).toBe(CookieTriagePurposeCategory.Essential);
-    expect(state.purposeOptions.map((option) => option.slug)).toEqual([
+    expect(state.purposeOptions).toEqual([
       CookieTriagePurposeCategory.Essential,
       CookieTriagePurposeCategory.Functional,
       CookieTriagePurposeCategory.Advertising,
@@ -702,15 +702,9 @@ describe('cookieTriageReducer', () => {
     let state = createEmptySession(ConsentTriageType.Cookies);
     state = cookieTriageReducer(state, {
       type: 'setPurposeOptions',
-      purposeOptions: [
-        { slug: CookieTriagePurposeCategory.Essential, label: 'Essential' },
-        { slug: 'CustomPurpose', label: 'Custom Purpose' },
-      ],
+      purposeOptions: [CookieTriagePurposeCategory.Essential, 'CustomPurpose'],
     });
-    expect(state.purposeOptions).toEqual([
-      { slug: CookieTriagePurposeCategory.Essential, label: 'Essential' },
-      { slug: 'CustomPurpose', label: 'Custom Purpose' },
-    ]);
+    expect(state.purposeOptions).toEqual([CookieTriagePurposeCategory.Essential, 'CustomPurpose']);
     expect(state.purposeOptionsLoaded).toBe(true);
     expect(selectPurposes(state)).toContain(CookieTriagePurposeCategory.Custom);
   });
@@ -723,7 +717,7 @@ describe('cookieTriageReducer', () => {
     });
     state = cookieTriageReducer(state, {
       type: 'setPurposeOptions',
-      purposeOptions: [{ slug: CookieTriagePurposeCategory.Essential, label: 'Essential' }],
+      purposeOptions: [CookieTriagePurposeCategory.Essential],
     });
 
     expect(selectPurposes(state)).not.toContain(CookieTriagePurposeCategory.Custom);

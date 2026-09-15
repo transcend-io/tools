@@ -7,8 +7,8 @@ import {
 } from '../../../lib/cli/common-parameters.js';
 import {
   createPolicyDebugParameter,
+  policyBundleDirectoryParameter,
   policyBundleNameParameter,
-  policyDirectoryParameter,
   policyJsonParameter,
 } from '../helpers/policyCommandParameters.js';
 
@@ -46,13 +46,14 @@ export const publishCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyBundleDirectoryParameter],
     },
   },
   docs: {
     brief: 'Build and upload a new policy bundle version',
     fullDescription:
-      'Packages `.manifest` and `.rego` policy files from a local directory into a tarball and uploads it to Transcend. ' +
+      'Packages `.manifest` and `.rego` policy files from one local bundle directory into a tarball and uploads it to Transcend. ' +
+      'Requires an explicit directory containing a `.manifest`. ' +
       'Creates the bundle on first upload, then appends immutable versions. ' +
       'Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.',
   },

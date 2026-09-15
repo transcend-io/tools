@@ -18,31 +18,7 @@ describe('policy eval', () => {
     vi.clearAllMocks();
   });
 
-  it('defaults to the shared local policy project', async () => {
-    const context = buildContextForTest({
-      cwd: '/repo',
-      fs: { ...fs, existsSync: vi.fn(() => true) },
-    });
-
-    await _eval.call(context, {
-      pkg: 'data.transcend.decision',
-      input: './input.json',
-    });
-
-    expect(assertOpaInstalledMock).toHaveBeenCalledOnce();
-    expect(runOpaMock).toHaveBeenCalledWith([
-      'eval',
-      '--format',
-      'pretty',
-      '--input',
-      '/repo/input.json',
-      '-b',
-      '/repo/transcend/policy',
-      'data.transcend.decision',
-    ]);
-  });
-
-  it('resolves a positional directory from the invocation directory', async () => {
+  it('requires an explicit bundle directory', async () => {
     const context = buildContextForTest({
       cwd: '/repo',
       fs: { ...fs, existsSync: vi.fn(() => true) },
@@ -54,9 +30,19 @@ describe('policy eval', () => {
         pkg: 'data.transcend.decision',
         input: './input.json',
       },
-      './policies',
+      'transcend/policy/payments',
     );
 
-    expect(runOpaMock).toHaveBeenCalledWith(expect.arrayContaining(['-b', '/repo/policies']));
+    expect(assertOpaInstalledMock).toHaveBeenCalledOnce();
+    expect(runOpaMock).toHaveBeenCalledWith([
+      'eval',
+      '--format',
+      'pretty',
+      '--input',
+      '/repo/input.json',
+      '-b',
+      '/repo/transcend/policy/payments',
+      'data.transcend.decision',
+    ]);
   });
 });

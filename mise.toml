@@ -13,8 +13,8 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 
 [tools]
 deno = "2.4.5"
-opa = "1.17.1"
-regal = "0.39.0"
+opa = "1.18.2"
+regal = "0.42.0"
 shellcheck = "0.11.0"
 
 [tasks.bootstrap]

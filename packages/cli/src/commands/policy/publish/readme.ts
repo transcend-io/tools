@@ -7,7 +7,7 @@ const examples = buildExamples<PublishCommandFlags>(
   ['policy', 'publish'],
   [
     {
-      description: 'Publish the default local policy project as the main bundle',
+      description: 'Publish a local policy bundle as the main bundle',
       flags: {
         'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
@@ -43,10 +43,12 @@ export default `#### Examples
 
 ${examples}
 
-Pass another policy project directory positionally:
+Pass the bundle directory positionally (required — one bundle per invocation):
 
 \`\`\`sh
-transcend policy publish ./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/example-bundle \\
+  --bundle-name=main \\
+  --auth="$TRANSCEND_API_KEY"
 \`\`\`
 
 Requires the **${TRANSCEND_SCOPES[ScopeName.ManagePolicyEngineBundles].title}** scope on your API key.
