@@ -40,6 +40,29 @@ import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 /** Progress for a failure that landed before any answer was attempted. */
 const NOT_STARTED = { answersApplied: 0, totalQuestions: 0 };
 
+/**
+ * A count with its noun agreeing, e.g. "1 value" or "3 values".
+ *
+ * Every message here counts something, and spelling the agreement out at each
+ * one buried the sentences in conditionals.
+ */
+function count(n: number, noun: string, plural = `${noun}s`): string {
+  return `${n} ${n === 1 ? noun : plural}`;
+}
+
+/** How a select question ended up, told in the order the caller cares about. */
+function describeSelectOutcome(
+  matchedCount: number,
+  missedValues: string[],
+  joined: boolean,
+): string {
+  if (missedValues.length === 0) return 'answered';
+  const missed = count(missedValues.length, 'value');
+  if (joined) return `answered, with ${missed} joined into one written-in answer`;
+  const reached = matchedCount > 0 ? 'partly answered' : 'not answered';
+  return `${reached}: ${missed} matched no answer option and the question takes no written-in answer`;
+}
+
 function failWithFormId(
   assessmentId: string,
   title: string,
@@ -80,8 +103,12 @@ export const PrefillSchema = z.object({
       'Map of answers keyed by question title or referenceId, both of which come from ' +
         'assessments_export_template on the template you are creating from. Prefer referenceId; ' +
         'it survives rewording. A string for text and single-select, an array for multi-select. ' +
-        'A select value matching an option text selects it, and anything else is kept as a ' +
-        'custom answer, so do not drop a value the options do not cover.',
+        'Select values are matched against the question answerOptions, so copy those exactly where ' +
+        'they fit. A question holds at most one written-in answer, so values matching no option are ' +
+        'joined into a single one and are stored together rather than separately selectable. ' +
+        'Where a question allows no written-in answer they are not stored at all and come back under ' +
+        'missedOptionValues. Prefilling never edits the shared template. ' +
+        'Keep SHORT_ANSWER_TEXT under 255 characters.',
     ),
   assigneeIds: z
     .array(z.string())
@@ -199,13 +226,38 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         });
       }
 
-      const results: { question: string; status: string; answer?: string }[] = [];
+      // `answer` echoes what a text question was sent. A select reports what
+      // the form now holds instead, because the two differ: values the options
+      // do not cover share one field, so replaying the request would describe
+      // selections that are not there.
+      const results: {
+        question: string;
+        questionId: string;
+        status: string;
+        answer?: string;
+        selected?: string[];
+        other?: string;
+      }[] = [];
       let answersApplied = 0;
       let answersSkipped = 0;
+      // Counted on the compact response as well as the detailed one: merging
+      // several values into one field changes what the form says, and counts
+      // that read 20/20 with nothing skipped would otherwise hide it.
+      let answersJoined = 0;
       // Keys are matched against the form, not the other way round, so a key
       // that matches nothing is never visited. Recording the ones that hit
       // leaves the misses to be reported instead of dropped in silence.
       const matchedAnswerKeys = new Set<string>();
+      // Select values the question does not offer, held with the choices it
+      // does. Carries the ids as well as the titles because the remedy is a
+      // call to assessments_answer_question, which addresses a question and
+      // its options by id, and the caller keyed its answers by referenceId.
+      const missedOptionValues: {
+        question: string;
+        questionId: string;
+        values: string[];
+        options: { id: string; value: string }[];
+      }[] = [];
 
       for (const section of fullForm.sections as AssessmentSection[]) {
         if (!section.questions) continue;
@@ -222,6 +274,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           if (!answerKey) {
             results.push({
               question: question.title || question.id,
+              questionId: question.id,
               status: 'skipped',
             });
             answersSkipped++;
@@ -232,6 +285,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           if (answerValue === undefined) {
             results.push({
               question: question.title || question.id,
+              questionId: question.id,
               status: 'skipped',
             });
             answersSkipped++;
@@ -244,7 +298,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
             if (qType === 'SINGLE_SELECT' || qType === 'MULTI_SELECT') {
               const answerValues = Array.isArray(answerValue) ? answerValue : [answerValue];
               const matchedIds: string[] = [];
-              const customValues: string[] = [];
+              const missedValues: string[] = [];
 
               for (const val of answerValues) {
                 const matchedOption = (question.answerOptions || []).find(
@@ -253,28 +307,52 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
                 if (matchedOption) {
                   matchedIds.push(matchedOption.id);
                 } else {
-                  customValues.push(val);
+                  missedValues.push(val);
                 }
               }
 
-              // Sent together so a multi-select that half matches keeps both
-              // halves. Writing only the matches dropped the rest while still
-              // reporting the question answered.
-              await graphql.selectAssessmentQuestionAnswers({
-                assessmentQuestionId: question.id,
-                ...(matchedIds.length > 0 && { assessmentAnswerIds: matchedIds }),
-                ...(customValues.length > 0 && {
-                  assessmentAnswerValues: customValues.map((v) => ({
-                    value: v,
-                    isUserCreated: true,
+              // The question has one free-text box however many values miss its
+              // options, so they go in together. Sent as separate values the
+              // write was rejected outright, which also discarded the options
+              // that had matched and left the question blank.
+              //
+              // Semicolons because the values themselves contain commas, which
+              // would blur where one ends and the next begins in a shared box.
+              const canHoldMissed = Boolean(question.allowSelectOther) && missedValues.length > 0;
+              const otherValue = canHoldMissed ? missedValues.join('; ') : undefined;
+
+              if (matchedIds.length > 0 || otherValue) {
+                await graphql.selectAssessmentQuestionAnswers({
+                  assessmentQuestionId: question.id,
+                  ...(matchedIds.length > 0 && { assessmentAnswerIds: matchedIds }),
+                  ...(otherValue && {
+                    assessmentAnswerValues: [{ value: otherValue, isUserCreated: true }],
+                  }),
+                });
+                answersApplied++;
+              }
+              // Only a question with nowhere to put them loses these, so only
+              // that case is worth handing back.
+              if (missedValues.length > 0 && !canHoldMissed) {
+                missedOptionValues.push({
+                  question: question.title || question.id,
+                  questionId: question.id,
+                  values: missedValues,
+                  options: (question.answerOptions || []).map((opt) => ({
+                    id: opt.id,
+                    value: opt.value,
                   })),
-                }),
-              });
-              answersApplied++;
+                });
+              }
+              if (canHoldMissed) answersJoined++;
               results.push({
                 question: question.title || question.id,
-                status: customValues.length > 0 ? 'answered (custom value)' : 'answered',
-                answer: answerValues.join(', '),
+                questionId: question.id,
+                status: describeSelectOutcome(matchedIds.length, missedValues, canHoldMissed),
+                selected: matchedIds.map(
+                  (id) => (question.answerOptions || []).find((opt) => opt.id === id)?.value ?? id,
+                ),
+                ...(otherValue && { other: otherValue }),
               });
             } else {
               const textValue = Array.isArray(answerValue) ? answerValue.join('\n') : answerValue;
@@ -285,6 +363,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
               answersApplied++;
               results.push({
                 question: question.title || question.id,
+                questionId: question.id,
                 status: 'answered',
                 answer: textValue.length > 100 ? textValue.substring(0, 100) + '...' : textValue,
               });
@@ -292,6 +371,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           } catch (err) {
             results.push({
               question: question.title || question.id,
+              questionId: question.id,
               status: `error: ${err instanceof Error ? err.message : String(err)}`,
             });
           }
@@ -315,24 +395,47 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       // which on a compliance record is often the correct thing to do. Only an
       // answer that was given and did not land is a failure: either the write
       // was rejected, or the key named a question the form does not have.
-      if (failedResults.length > 0 || unmatchedAnswerKeys.length > 0) {
-        const causes = [
-          failedResults.length > 0
-            ? `${failedResults.length} answer${failedResults.length === 1 ? ' was' : 's were'} rejected`
-            : '',
-          unmatchedAnswerKeys.length > 0
-            ? `${unmatchedAnswerKeys.length} answer key${
-                unmatchedAnswerKeys.length === 1 ? '' : 's'
-              } matched no question on the form`
-            : '',
-        ].filter(Boolean);
+      if (
+        failedResults.length > 0 ||
+        unmatchedAnswerKeys.length > 0 ||
+        missedOptionValues.length > 0
+      ) {
+        const missedValueCount = missedOptionValues.reduce((sum, m) => sum + m.values.length, 0);
+        const causes: string[] = [];
+        // Advice for a problem the caller does not have sends it looking in the
+        // wrong place, so each cause and its remedy speak only when it happened.
+        const sentences: string[] = [];
+
+        if (failedResults.length > 0) {
+          causes.push(`${count(failedResults.length, 'answer')} rejected`);
+        }
+        if (unmatchedAnswerKeys.length > 0) {
+          causes.push(`${count(unmatchedAnswerKeys.length, 'answer key')} matched no question`);
+          sentences.push(
+            'Keys must match a question title or referenceId from assessments_export_template.',
+          );
+        }
+        if (missedValueCount > 0) {
+          causes.push(`${count(missedValueCount, 'value')} matched no answer option`);
+          sentences.push(
+            'Those values matched no option on a question that takes no written-in answer, so they were ' +
+              'left out while the options that did match were saved. missedOptionValues gives each ' +
+              'questionId, what missed, and the options it does accept, with their ids. ' +
+              'assessments_answer_question replaces a selection, so send the option ids to keep.',
+          );
+        }
+        sentences.push(
+          'The form exists, so finish it with assessments_answer_question and then ' +
+            'assessments_submit_response; calling assessments_prefill again would create a second form.',
+        );
+
         return createToolResult(
           false,
           undefined,
-          `Assessment "${title}" was created and assigned, but ${causes.join(' and ')}. ` +
-            'Keys must match a question title or referenceId from assessments_export_template. ' +
-            'The form exists, so finish it with assessments_answer_question and then ' +
-            'assessments_submit_response; calling assessments_prefill again would create a second form.',
+          [
+            `Assessment "${title}" was created and assigned, but ${causes.join(', and ')}.`,
+            ...sentences,
+          ].join(' '),
           {
             ...PREFILL_INCOMPLETE,
             details: {
@@ -341,6 +444,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
               answersApplied,
               totalQuestions: results.length,
               unmatchedAnswerKeys,
+              missedOptionValues,
               unansweredQuestions: unansweredQuestions ?? [],
               errors: failedResults.map(({ question, status }) => ({ question, status })),
             },
@@ -373,12 +477,30 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         }
       }
 
+      const summary = [
+        `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers.`,
+        'Assigned before prefilling.',
+      ];
+      if (answersJoined > 0) {
+        summary.push(
+          `On ${count(answersJoined, 'question')}, values matching no answer option were joined into ` +
+            'one written-in answer, so they are stored together rather than separately selectable.',
+        );
+      }
+      if (unansweredQuestions?.length) {
+        summary.push(
+          `${count(unansweredQuestions.length, 'question')} left unanswered: no answer was supplied.`,
+        );
+      }
+      summary.push(submitResult ? 'Submitted for review.' : 'Ready for manual submission.');
+
       return createToolResult(true, {
         assessmentId,
         ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),
         title,
         answersApplied,
         answersSkipped,
+        ...(answersJoined > 0 && { answersJoined }),
         totalQuestions: results.length,
         // Named so a caller can tell a form it deliberately left partly blank
         // from one it believes it filled, which the counts alone do not say.
@@ -389,13 +511,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           message: 'Assignees updated before prefilling',
         },
         submittedForReview: !!submitResult,
-        message:
-          `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers. ` +
-          'Assigned before prefilling. ' +
-          (unansweredQuestions?.length
-            ? `${unansweredQuestions.length} questions were left unanswered because no answer was supplied for them. `
-            : '') +
-          (submitResult ? 'Submitted for review.' : 'Ready for manual submission.'),
+        message: summary.join(' '),
       });
     },
   });
