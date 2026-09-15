@@ -13,13 +13,27 @@ export interface EvalCommandFlags {
   /** OPA query to evaluate (e.g. `data.example.result`). */
   package: string;
   /** Path to a JSON envelope input file. */
-  input: string;
+  input?: string;
+  /** Read the input document from stdin (`opa eval --stdin-input`). */
+  'stdin-input': boolean;
   /** `opa eval --format` value. */
   format: PolicyEvalFormat;
   /** Optional `opa eval --schema` path. */
   schema?: string;
   /** Optional `opa eval --explain` mode. */
   explain?: PolicyEvalExplainMode;
+  /** `opa eval --metrics`. */
+  metrics: boolean;
+  /** `opa eval --instrument`. */
+  instrument: boolean;
+  /** `opa eval --profile`. */
+  profile: boolean;
+  /** Optional `opa eval --timeout` duration. */
+  timeout?: string;
+  /** `opa eval --var-values`. */
+  'var-values': boolean;
+  /** `opa eval --show-builtin-errors`. */
+  'show-builtin-errors': boolean;
 }
 
 /**
@@ -31,16 +45,45 @@ export interface EvalCommandFlags {
  */
 export async function _eval(
   this: LocalContext,
-  { package: query, input, format, schema, explain }: EvalCommandFlags,
+  {
+    package: query,
+    input,
+    'stdin-input': stdinInput,
+    format,
+    schema,
+    explain,
+    metrics,
+    instrument,
+    profile,
+    timeout,
+    'var-values': varValues,
+    'show-builtin-errors': showBuiltinErrors,
+  }: EvalCommandFlags,
   directory: string,
 ): Promise<void> {
   doneInputValidation(this.process);
 
   assertOpaInstalled();
 
-  const inputPath = path.resolve(this.process.cwd(), input);
-  if (!this.fs.existsSync(inputPath)) {
-    throw new Error(`Input file not found: ${inputPath}`);
+  if (stdinInput && input) {
+    throw new Error('Pass either --input or --stdin-input, not both.');
+  }
+  if (!stdinInput && !input) {
+    throw new Error('Provide an input document with --input <path> or --stdin-input.');
+  }
+
+  let inputArgs: string[];
+  let inputLabel: string;
+  if (stdinInput) {
+    inputArgs = ['--stdin-input'];
+    inputLabel = 'stdin';
+  } else {
+    const inputPath = path.resolve(this.process.cwd(), input!);
+    if (!this.fs.existsSync(inputPath)) {
+      throw new Error(`Input file not found: ${inputPath}`);
+    }
+    inputArgs = ['--input', inputPath];
+    inputLabel = inputPath;
   }
 
   const bundlePath = resolvePolicyProjectDirectory(this.process.cwd(), directory);
@@ -53,16 +96,21 @@ export async function _eval(
     'eval',
     '--format',
     format,
-    '--input',
-    inputPath,
+    ...inputArgs,
     '-b',
     bundlePath,
     ...(schemaPath ? ['--schema', schemaPath] : []),
     ...(explain && explain !== 'off' ? ['--explain', explain] : []),
+    ...(metrics ? ['--metrics'] : []),
+    ...(instrument ? ['--instrument'] : []),
+    ...(profile ? ['--profile'] : []),
+    ...(timeout ? ['--timeout', timeout] : []),
+    ...(varValues ? ['--var-values'] : []),
+    ...(showBuiltinErrors ? ['--show-builtin-errors'] : []),
     query,
   ];
 
-  this.logger.info(colors.green(`Evaluating ${query} with input ${inputPath}...`));
+  this.logger.info(colors.green(`Evaluating ${query} with input ${inputLabel}...`));
 
   const exitCode = await runOpa(args);
   if (exitCode !== 0) {

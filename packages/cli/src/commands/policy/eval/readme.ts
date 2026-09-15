@@ -20,6 +20,13 @@ const examples = buildExamples<EvalCommandFlags>(
         schema: 'transcend/policy/schemas',
       },
     },
+    {
+      description: 'Pipe an envelope on stdin',
+      flags: {
+        package: 'data.example.result',
+        'stdin-input': true,
+      },
+    },
   ],
 );
 
@@ -33,5 +40,13 @@ Pass the bundle directory positionally (required — one bundle per invocation):
 transcend policy eval transcend/policy/example-bundle \\
   --package=data.example.result \\
   --input=./fixtures/envelope.json
+\`\`\`
+
+Or pipe the envelope:
+
+\`\`\`sh
+cat ./fixtures/envelope.json | transcend policy eval transcend/policy/example-bundle \\
+  --package=data.example.result \\
+  --stdin-input
 \`\`\`
 `;

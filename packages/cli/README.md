@@ -4290,18 +4290,25 @@ The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zi
 
 ```txt
 USAGE
-  transcend policy eval (--package value) (--input value) [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] <directory>
+  transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <directory>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`). Pass-through flags cover format, schema, and explain; exit-on-result flags like `--fail` are omitted until Policy Engine evaluation semantics are aligned. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-      --package   OPA query to evaluate (e.g. data.example.result)
-      --input     Path to a JSON envelope input file
-     [--format]   opa eval --format                                [pretty|json|values|bindings|source|raw|discard, default = pretty]
-     [--schema]   opa eval --schema (file or directory)
-     [--explain]  opa eval --explain                               [off|full|notes|fails|debug]
-  -h  --help      Print help information and exit
+      --package               OPA query to evaluate (e.g. data.example.result)
+     [--input]                Path to a JSON envelope input file (mutually exclusive with --stdin-input)
+     [--stdin-input]          opa eval --stdin-input (read input document from stdin)                    [default = false]
+     [--format]               opa eval --format                                                          [pretty|json|values|bindings|source|raw|discard, default = pretty]
+     [--schema]               opa eval --schema (file or directory)
+     [--explain]              opa eval --explain                                                         [off|full|notes|fails|debug]
+     [--metrics]              opa eval --metrics                                                         [default = false]
+     [--instrument]           opa eval --instrument (implies --metrics)                                  [default = false]
+     [--profile]              opa eval --profile                                                         [default = false]
+     [--timeout]              opa eval --timeout (e.g. 5s)
+     [--var-values]           opa eval --var-values (with --explain)                                     [default = false]
+     [--show-builtin-errors]  opa eval --show-builtin-errors                                             [default = false]
+  -h  --help                  Print help information and exit
 
 ARGUMENTS
   directory  Policy bundle directory containing a .manifest
@@ -4325,12 +4332,26 @@ transcend policy eval \
   --schema=transcend/policy/schemas
 ```
 
+**Pipe an envelope on stdin**
+
+```sh
+transcend policy eval --package=data.example.result --stdin-input
+```
+
 Pass the bundle directory positionally (required — one bundle per invocation):
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
   --package=data.example.result \
   --input=./fixtures/envelope.json
+```
+
+Or pipe the envelope:
+
+```sh
+cat ./fixtures/envelope.json | transcend policy eval transcend/policy/example-bundle \
+  --package=data.example.result \
+  --stdin-input
 ```
 
 ### `transcend policy init`
@@ -4579,16 +4600,23 @@ Requires the **Manage Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [<directory>]
+  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [--coverage] [--threshold value] [--timeout value] [--var-values] [--explain fails|full|notes|debug] [--schema value] [--exit-zero-on-skipped] [<directory>]
   transcend policy test --help
 
-Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, and run; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, run, coverage, threshold, timeout, var-values, explain, schema, and exit-zero-on-skipped; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     [--format]   opa test --format               [pretty|json|gobench, default = pretty]
-     [--verbose]  opa test --verbose              [default = false]
-     [--run]      opa test --run (regex filter)
-  -h  --help      Print help information and exit
+     [--format]                opa test --format                                      [pretty|json|gobench, default = pretty]
+     [--verbose]               opa test --verbose                                     [default = false]
+     [--run]                   opa test --run (regex filter)
+     [--coverage]              opa test --coverage                                    [default = false]
+     [--threshold]             opa test --threshold (coverage %, requires --coverage)
+     [--timeout]               opa test --timeout (e.g. 5s)
+     [--var-values]            opa test --var-values                                  [default = false]
+     [--explain]               opa test --explain                                     [fails|full|notes|debug]
+     [--schema]                opa test --schema (file or directory)
+     [--exit-zero-on-skipped]  opa test --exit-zero-on-skipped                        [default = false]
+  -h  --help                   Print help information and exit
 
 ARGUMENTS
   [directory]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
@@ -4606,6 +4634,12 @@ transcend policy test
 
 ```sh
 transcend policy test --format=json --run=test_allows --verbose
+```
+
+**Fail CI when coverage is below a threshold**
+
+```sh
+transcend policy test --coverage --threshold=80
 ```
 
 Pass one bundle directory to test a single unit:

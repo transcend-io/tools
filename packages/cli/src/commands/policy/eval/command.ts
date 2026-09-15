@@ -37,7 +37,13 @@ export const evalCommand = buildCommand({
       input: {
         kind: 'parsed',
         parse: String,
-        brief: 'Path to a JSON envelope input file',
+        brief: 'Path to a JSON envelope input file (mutually exclusive with --stdin-input)',
+        optional: true,
+      },
+      'stdin-input': {
+        kind: 'boolean',
+        brief: 'opa eval --stdin-input (read input document from stdin)',
+        default: false,
       },
       format: {
         kind: 'enum',
@@ -57,6 +63,37 @@ export const evalCommand = buildCommand({
         brief: 'opa eval --explain',
         optional: true,
       },
+      metrics: {
+        kind: 'boolean',
+        brief: 'opa eval --metrics',
+        default: false,
+      },
+      instrument: {
+        kind: 'boolean',
+        brief: 'opa eval --instrument (implies --metrics)',
+        default: false,
+      },
+      profile: {
+        kind: 'boolean',
+        brief: 'opa eval --profile',
+        default: false,
+      },
+      timeout: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'opa eval --timeout (e.g. 5s)',
+        optional: true,
+      },
+      'var-values': {
+        kind: 'boolean',
+        brief: 'opa eval --var-values (with --explain)',
+        default: false,
+      },
+      'show-builtin-errors': {
+        kind: 'boolean',
+        brief: 'opa eval --show-builtin-errors',
+        default: false,
+      },
     },
     positional: {
       kind: 'tuple',
@@ -67,9 +104,11 @@ export const evalCommand = buildCommand({
     brief: 'Evaluate one envelope against a local policy bundle',
     fullDescription:
       'Wraps `opa eval` for local policy debugging against one bundle directory. ' +
-      'Always loads the directory as a bundle (`-b`). Pass-through flags cover format, schema, and explain; ' +
-      'exit-on-result flags like `--fail` are omitted until Policy Engine evaluation semantics are aligned. ' +
-      'Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. ' +
+      'Always loads the directory as a bundle (`-b`). Provide input via `--input` or `--stdin-input` (exactly one). ' +
+      'Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and ' +
+      'show-builtin-errors. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API ' +
+      '(policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not ' +
+      'Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. ' +
       'No Transcend API key is needed.',
   },
 });

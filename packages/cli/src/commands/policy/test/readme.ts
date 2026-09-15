@@ -16,6 +16,13 @@ const examples = buildExamples<TestCommandFlags>(
         verbose: true,
       },
     },
+    {
+      description: 'Fail CI when coverage is below a threshold',
+      flags: {
+        coverage: true,
+        threshold: '80',
+      },
+    },
   ],
 );
 

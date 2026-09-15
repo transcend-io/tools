@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
@@ -8,7 +10,7 @@ import {
   resolvePolicyProjectDirectory,
 } from '../../../lib/policy/policy-project-discovery.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
-import type { PolicyTestFormat } from './command.js';
+import type { PolicyTestExplainMode, PolicyTestFormat } from './command.js';
 
 /** CLI flags for `transcend policy test`. */
 export interface TestCommandFlags {
@@ -18,6 +20,20 @@ export interface TestCommandFlags {
   verbose: boolean;
   /** Optional `opa test --run` regex. */
   run?: string;
+  /** `opa test --coverage`. */
+  coverage: boolean;
+  /** Optional `opa test --threshold` coverage percent. */
+  threshold?: string;
+  /** Optional `opa test --timeout` duration. */
+  timeout?: string;
+  /** `opa test --var-values`. */
+  'var-values': boolean;
+  /** Optional `opa test --explain` mode. */
+  explain?: PolicyTestExplainMode;
+  /** Optional `opa test --schema` path. */
+  schema?: string;
+  /** `opa test --exit-zero-on-skipped`. */
+  'exit-zero-on-skipped': boolean;
 }
 
 /**
@@ -33,7 +49,18 @@ export interface TestCommandFlags {
  */
 export async function test(
   this: LocalContext,
-  { format, verbose, run }: TestCommandFlags,
+  {
+    format,
+    verbose,
+    run,
+    coverage,
+    threshold,
+    timeout,
+    'var-values': varValues,
+    explain,
+    schema,
+    'exit-zero-on-skipped': exitZeroOnSkipped,
+  }: TestCommandFlags,
   directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
 ): Promise<void> {
   doneInputValidation(this.process);
@@ -42,6 +69,21 @@ export async function test(
   const resolvedDir = resolvePolicyProjectDirectory(this.process.cwd(), directory);
   if (!this.fs.existsSync(resolvedDir) || !this.fs.statSync(resolvedDir).isDirectory()) {
     throw new Error(`Policy directory does not exist or is not a directory: ${resolvedDir}`);
+  }
+
+  if (threshold !== undefined && !coverage) {
+    throw new Error('--threshold requires --coverage.');
+  }
+  if (threshold !== undefined) {
+    const parsed = Number(threshold);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      throw new Error(`--threshold must be a number between 0 and 100, got: ${threshold}`);
+    }
+  }
+
+  const schemaPath = schema ? path.resolve(this.process.cwd(), schema) : undefined;
+  if (schemaPath && !this.fs.existsSync(schemaPath)) {
+    throw new Error(`Schema path not found: ${schemaPath}`);
   }
 
   const bundleDirectories = discoverPolicyBundleDirectories(this, resolvedDir);
@@ -63,6 +105,13 @@ export async function test(
       format,
       ...(verbose ? ['--verbose'] : []),
       ...(run ? ['--run', run] : []),
+      ...(coverage ? ['--coverage'] : []),
+      ...(threshold !== undefined ? ['--threshold', threshold] : []),
+      ...(timeout ? ['--timeout', timeout] : []),
+      ...(varValues ? ['--var-values'] : []),
+      ...(explain ? ['--explain', explain] : []),
+      ...(schemaPath ? ['--schema', schemaPath] : []),
+      ...(exitZeroOnSkipped ? ['--exit-zero-on-skipped'] : []),
     ]);
     if (exitCode !== 0) {
       this.process.exit(exitCode);

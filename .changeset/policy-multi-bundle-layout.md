@@ -25,7 +25,7 @@ transcend policy new --template permissions --name permissions --yes
 
 `policy eval` and `policy publish` require an explicit bundle directory (one-bundle operations — no default path).
 
-`policy eval` uses `--package` for the OPA query (renamed from `--pkg`) and forwards curated `opa eval` options (`--format`, `--schema`, `--explain`). Exit-on-result flags like OPA’s `--fail` are not exposed yet. `policy test` forwards `--format`, `--verbose`, and `--run` while keeping `-b` and `--fail-on-empty` owned by the CLI.
+`policy eval` uses `--package` for the OPA query (renamed from `--pkg`) and forwards curated `opa eval` options (`--format`, `--schema`, `--explain`, `--stdin-input`, `--metrics`, `--instrument`, `--profile`, `--timeout`, `--var-values`, `--show-builtin-errors`). Exit-on-result flags like OPA’s `--fail` are not exposed — production Evaluate uses the Data API (deny is a successful evaluation). `policy test` forwards `--format`, `--verbose`, `--run`, `--coverage`, `--threshold`, `--timeout`, `--var-values`, `--explain`, `--schema`, and `--exit-zero-on-skipped` while keeping `-b` and `--fail-on-empty` owned by the CLI.
 
 Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0 capabilities). Help text distinguishes the **workspace** directory (`init` / `new` / `lint` / `test`) from a **bundle** directory (`eval` / `publish`).
 
