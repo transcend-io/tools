@@ -1,5 +1,11 @@
 import { buildCommand } from '@stricli/core';
 
+import {
+  projectJsonParameter,
+  projectNoInteractiveParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
+import { policyWorkspaceOrBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
 export const lintCommand = buildCommand({
   loader: async () => {
     const { lint } = await import('./impl.js');
@@ -7,32 +13,27 @@ export const lintCommand = buildCommand({
   },
   parameters: {
     flags: {
-      dir: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Directory containing the local policy project',
-        default: 'transcend/policy',
-      },
       fix: {
         kind: 'boolean',
         brief: 'Apply OPA formatting without running broad Regal fixes',
         default: false,
       },
       noInteractive: {
-        kind: 'boolean',
+        ...projectNoInteractiveParameter,
         brief: 'Disable the optional formatting confirmation',
-        default: false,
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Emit one stable JSON result and imply non-interactive behavior',
-        default: false,
-      },
+      json: projectJsonParameter,
+    },
+    positional: {
+      kind: 'tuple',
+      parameters: [policyWorkspaceOrBundleDirectoryParameter],
     },
   },
   docs: {
-    brief: 'Verify a local policy project with OPA and Regal',
+    brief: 'Verify local policy bundles with OPA and Regal',
     fullDescription:
+      'Defaults to the policy workspace (`transcend/policy`) and verifies every publishable ' +
+      'child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. ' +
       'Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, ' +
       'runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. ' +
       'No Transcend API key is needed.',

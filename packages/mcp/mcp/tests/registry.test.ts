@@ -7,6 +7,7 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -32,6 +33,7 @@ const mockClients: ToolClients = {
 const allTools = [
   ...getDSRTools(mockClients),
   ...getConsentTools(mockClients),
+  ...getCustomFunctionsTools(mockClients),
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
@@ -72,13 +74,17 @@ describe('ToolRegistry', () => {
       auth: TEST_AUTH,
     });
 
-    expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
+    // Experimental tools are defined but omitted from registration unless
+    // TRANSCEND_MCP_EXPERIMENTAL=1 (unset in this test).
+    const experimental = allTools.filter((tool) => tool.experimental).length;
+    const expectedRegistered = EXPECTED_UMBRELLA_TOOL_COUNT - experimental;
+    expect(registry.getToolCount()).toBe(expectedRegistered);
 
     // Registering a tool and describing it to an embedder differ: gated tools and
     // tools with visibility omitting `model` stay callable but are withheld from the list.
     const hidden = registry.getAllTools().filter((tool) => !isVisibleToModel(tool)).length;
     const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated - hidden);
+    expect(registry.getToolList()).toHaveLength(expectedRegistered - gated - hidden);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {

@@ -9,9 +9,8 @@ const examples = buildExamples<LintCommandFlags>(
       flags: {},
     },
     {
-      description: 'Verify and format a custom policy project',
+      description: 'Verify and format the default policy project',
       flags: {
-        dir: './policies',
         fix: true,
       },
     },
@@ -28,4 +27,10 @@ const examples = buildExamples<LintCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+With no directory argument, \`policy lint\` verifies every immediate child under the default workspace (\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to verify a single unit:
+
+\`\`\`sh
+transcend policy lint ./policies/example-bundle --fix
+\`\`\`
 `;

@@ -6,6 +6,7 @@ import {
   parseJsoncObject,
   type JsoncUpdate,
 } from '../scaffolding/jsonc.js';
+import { POLICY_MANIFEST_FILENAME, POLICY_STARTER_ROOT } from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
 export const POLICY_VSCODE_EXTENSION = 'tsandall.opa';
@@ -138,32 +139,132 @@ function collectSafeScalarUpdates(
 }
 
 /**
- * Build the workspace-relative OPA bundle root.
+ * Build a `${workspaceFolder}/…` path for a repository-relative POSIX path.
  *
- * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param repositoryRelativePath - Path relative to the repository root
  * @returns VS Code workspace path
  */
-function buildOpaWorkspaceRoot(repositoryRoot: string, targetDirectory: string): string {
-  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
-  return target === '.' ? '${workspaceFolder}' : `\${workspaceFolder}/${target}`;
+function buildWorkspaceFolderPath(repositoryRelativePath: string): string {
+  return repositoryRelativePath === '.'
+    ? '${workspaceFolder}'
+    : `\${workspaceFolder}/${repositoryRelativePath}`;
 }
 
 /**
- * Merge strict target-scoped OPA and Rego editor settings.
+ * Repository-relative POSIX path from the root that owns `.vscode`.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param absolutePath - Absolute path below the repository
+ * @returns POSIX repository-relative path
+ */
+function repositoryRelativePosix(repositoryRoot: string, absolutePath: string): string {
+  return relative(repositoryRoot, absolutePath).split(sep).join('/') || '.';
+}
+
+/**
+ * Build the workspace-relative OPA publish root for a bundle.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @param root - Package root name
+ * @returns VS Code workspace path
+ */
+function buildOpaBundleRoot(
+  repositoryRoot: string,
+  workspaceDirectory: string,
+  root: string = POLICY_STARTER_ROOT,
+): string {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundleDir = `${root}-bundle`;
+  const bundle = workspace === '.' ? bundleDir : `${workspace}/${bundleDir}`;
+  return buildWorkspaceFolderPath(bundle);
+}
+
+/**
+ * Build the workspace-relative schemas directory path.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @returns VS Code workspace path
+ */
+function buildOpaSchemaDirectory(repositoryRoot: string, workspaceDirectory: string): string {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const schemas = workspace === '.' ? 'schemas' : `${workspace}/schemas`;
+  return buildWorkspaceFolderPath(schemas);
+}
+
+/**
+ * Build a `files.associations` glob for every `.manifest` under the workspace.
+ *
+ * Patterns that contain `/` are matched against the absolute file path, so a
+ * leading `**\/` prefix is required for a portable workspace-relative association.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @returns Association pattern key
+ */
+function buildPolicyManifestAssociationPattern(
+  repositoryRoot: string,
+  workspaceDirectory: string,
+): string {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  return workspace === '.'
+    ? `**/${POLICY_MANIFEST_FILENAME}`
+    : `**/${workspace}/**/${POLICY_MANIFEST_FILENAME}`;
+}
+
+/**
+ * Build `json.schemas` fileMatch globs for a bundle's input documents.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @param root - Package root name
+ * @returns Absolute-style fileMatch paths and schema URL
+ */
+function buildBundleInputJsonSchema(
+  repositoryRoot: string,
+  workspaceDirectory: string,
+  root: string = POLICY_STARTER_ROOT,
+): {
+  /** VS Code fileMatch globs (leading slash = workspace-relative). */
+  fileMatch: string[];
+  /** Relative URL to the input schema. */
+  url: string;
+} {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundleDir = `${root}-bundle`;
+  const bundlePrefix = workspace === '.' ? `/${bundleDir}` : `/${workspace}/${bundleDir}`;
+  const schemaUrl =
+    workspace === '.'
+      ? `./schemas/${root}/input.json`
+      : `./${workspace}/schemas/${root}/input.json`;
+  return {
+    fileMatch: [`${bundlePrefix}/input.json`, `${bundlePrefix}/input.example.json`],
+    url: schemaUrl,
+  };
+}
+
+/**
+ * Merge strict workspace-scoped OPA and Rego editor settings.
  *
  * Setting names match the authoritative `open-policy-agent/vscode-opa`
  * extension metadata. Existing conflicting values are preserved and reported.
  *
+ * When `bundleRoots` is provided, `opa.roots` and `json.schemas` are populated
+ * for those bundles. When omitted (init without bundles), `opa.roots` and
+ * `json.schemas` are left empty or unset.
+ *
  * @param contents - Existing `.vscode/settings.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @param bundleRoots - Bundle roots to add to `opa.roots` and `json.schemas`
  * @returns Merged settings and conflict warnings
  */
 export function mergePolicyEditorSettings(
   contents: string | null,
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
+  bundleRoots?: readonly string[],
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy settings');
   if ('warning' in parsed) {
@@ -173,22 +274,31 @@ export function mergePolicyEditorSettings(
   const updates: JsoncUpdate[] = [];
   const warnings: string[] = [];
 
-  const roots = current['opa.roots'];
-  const desiredRoot = buildOpaWorkspaceRoot(repositoryRoot, targetDirectory);
-  if (roots === undefined) {
-    updates.push({ path: ['opa.roots'], value: [desiredRoot] });
-  } else if (Array.isArray(roots) && roots.every((value) => typeof value === 'string')) {
-    const merged = mergeStringArray(roots, [desiredRoot]);
-    if (!configurationValuesEqual(merged, roots)) {
-      updates.push({ path: ['opa.roots'], value: merged });
+  if (bundleRoots && bundleRoots.length > 0) {
+    const roots = current['opa.roots'];
+    const desiredRoots = bundleRoots.map((root) =>
+      buildOpaBundleRoot(repositoryRoot, workspaceDirectory, root),
+    );
+    if (roots === undefined) {
+      updates.push({ path: ['opa.roots'], value: desiredRoots });
+    } else if (Array.isArray(roots) && roots.every((value) => typeof value === 'string')) {
+      const merged = mergeStringArray(roots, desiredRoots);
+      if (!configurationValuesEqual(merged, roots)) {
+        updates.push({ path: ['opa.roots'], value: merged });
+      }
+    } else {
+      warnings.push('VS Code setting "opa.roots" is customized and was left unchanged.');
     }
-  } else {
-    warnings.push('VS Code setting "opa.roots" is customized and was left unchanged.');
   }
 
   collectSafeScalarUpdates(
     current,
     [
+      {
+        path: ['opa.schema'],
+        value: buildOpaSchemaDirectory(repositoryRoot, workspaceDirectory),
+        label: 'opa.schema',
+      },
       { path: ['opa.checkOnSave'], value: true, label: 'opa.checkOnSave' },
       { path: ['opa.strictMode'], value: true, label: 'opa.strictMode' },
       { path: ['opa.bundleMode'], value: true, label: 'opa.bundleMode' },
@@ -197,6 +307,80 @@ export function mergePolicyEditorSettings(
     updates,
     warnings,
   );
+
+  const associations = current['files.associations'];
+  const manifestAssociation = buildPolicyManifestAssociationPattern(
+    repositoryRoot,
+    workspaceDirectory,
+  );
+  if (associations === undefined) {
+    updates.push({
+      path: ['files.associations'],
+      value: { [manifestAssociation]: 'json' },
+    });
+  } else if (
+    associations !== null &&
+    typeof associations === 'object' &&
+    !Array.isArray(associations)
+  ) {
+    collectSafeScalarUpdates(
+      current,
+      [
+        {
+          path: ['files.associations', manifestAssociation],
+          value: 'json',
+          label: `files.associations."${manifestAssociation}"`,
+        },
+      ],
+      updates,
+      warnings,
+    );
+  } else {
+    warnings.push('VS Code setting "files.associations" is customized and was left unchanged.');
+  }
+
+  if (bundleRoots && bundleRoots.length > 0) {
+    const desiredJsonSchemas = bundleRoots.map((root) =>
+      buildBundleInputJsonSchema(repositoryRoot, workspaceDirectory, root),
+    );
+    const jsonSchemas = current['json.schemas'];
+    if (jsonSchemas === undefined) {
+      updates.push({ path: ['json.schemas'], value: desiredJsonSchemas });
+    } else if (Array.isArray(jsonSchemas)) {
+      let merged = [...jsonSchemas];
+      desiredJsonSchemas.forEach((desired) => {
+        const hasMatch = merged.some(
+          (entry) =>
+            entry !== null &&
+            typeof entry === 'object' &&
+            !Array.isArray(entry) &&
+            configurationValuesEqual(entry, desired),
+        );
+        if (!hasMatch) {
+          const conflicting = merged.find(
+            (entry) =>
+              entry !== null &&
+              typeof entry === 'object' &&
+              !Array.isArray(entry) &&
+              typeof (entry as Record<string, unknown>).url === 'string' &&
+              (entry as Record<string, unknown>).url === desired.url,
+          );
+          if (conflicting === undefined) {
+            merged = [...merged, desired];
+          } else {
+            warnings.push(
+              `VS Code setting "json.schemas" has a repository-specific entry for the ${(desired as Record<string, unknown>).url as string} schema and was left unchanged.`,
+            );
+          }
+        }
+      });
+      if (!configurationValuesEqual(merged, jsonSchemas)) {
+        updates.push({ path: ['json.schemas'], value: merged });
+      }
+    } else {
+      warnings.push('VS Code setting "json.schemas" is customized and was left unchanged.');
+    }
+  }
 
   const regoSettings = current['[rego]'];
   if (regoSettings === undefined) {
@@ -309,22 +493,45 @@ export function mergePolicyEditorExtensions(contents: string | null): PolicyEdit
 }
 
 /**
- * Build the generated target-scoped VS Code lint task.
+ * Build a VS Code lint task for one bundle.
  *
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @param root - Package root name
  * @returns VS Code task object
  */
 export function buildPolicyLintTask(
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
+  root: string = POLICY_STARTER_ROOT,
 ): Record<string, unknown> {
-  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundleDir = `${root}-bundle`;
+  const bundle = workspace === '.' ? bundleDir : `${workspace}/${bundleDir}`;
   return {
-    label: 'policy: lint',
+    label: `policy: lint ${root}`,
     type: 'process',
     command: 'transcend',
-    args: ['policy', 'lint', '--dir', target, '--noInteractive'],
+    args: ['policy', 'lint', bundle, '--noInteractive'],
+    group: {
+      kind: 'test',
+      isDefault: false,
+    },
+    problemMatcher: [],
+  };
+}
+
+/**
+ * Build the aggregate "policy: lint" task (runs all bundles).
+ *
+ * @param roots - All bundle root names
+ * @returns VS Code task object
+ */
+export function buildPolicyAggregateLintTask(roots: readonly string[]): Record<string, unknown> {
+  return {
+    label: 'policy: lint',
+    dependsOn: roots.map((root) => `policy: lint ${root}`),
+    dependsOrder: 'sequence',
     group: {
       kind: 'test',
       isDefault: true,
@@ -334,17 +541,23 @@ export function buildPolicyLintTask(
 }
 
 /**
- * Merge the default policy lint task while preserving custom tasks.
+ * Merge policy lint tasks while preserving custom tasks.
+ *
+ * When `bundleRoots` is provided, creates per-bundle tasks and an aggregate.
+ * Managed `policy: lint*` tasks are updated in place as roots grow. When
+ * omitted, skips task creation (init without bundles).
  *
  * @param contents - Existing `.vscode/tasks.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @param bundleRoots - Bundle roots to generate tasks for
  * @returns Merged task configuration and warnings
  */
 export function mergePolicyEditorTasks(
   contents: string | null,
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
+  bundleRoots?: readonly string[],
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy tasks');
   if ('warning' in parsed) {
@@ -360,24 +573,49 @@ export function mergePolicyEditorTasks(
     warnings.push('VS Code task schema version is customized and was left unchanged.');
   }
 
-  const desiredTask = buildPolicyLintTask(repositoryRoot, targetDirectory);
+  if (!bundleRoots || bundleRoots.length === 0) {
+    return applyEditorUpdates(contents, updates, 'VS Code policy tasks', warnings);
+  }
+
+  const desiredPerBundleTasks = bundleRoots.map((root) =>
+    buildPolicyLintTask(repositoryRoot, workspaceDirectory, root),
+  );
+  const desiredAggregateTask = buildPolicyAggregateLintTask(bundleRoots);
+  const desiredTasks = [...desiredPerBundleTasks, desiredAggregateTask];
+  const managedLabels = new Set(desiredTasks.map((task) => task.label as string));
   const tasks = current.tasks;
   if (tasks === undefined) {
-    updates.push({ path: ['tasks'], value: [desiredTask] });
+    updates.push({ path: ['tasks'], value: desiredTasks });
   } else if (Array.isArray(tasks)) {
-    const matchingTask = tasks.find(
-      (task) =>
-        task !== null &&
-        typeof task === 'object' &&
-        !Array.isArray(task) &&
-        (task as Record<string, unknown>).label === 'policy: lint',
-    );
-    if (matchingTask === undefined) {
-      updates.push({ path: ['tasks'], value: [...tasks, desiredTask] });
-    } else if (!configurationValuesEqual(matchingTask, desiredTask)) {
-      warnings.push(
-        'VS Code task "policy: lint" has repository-specific customization and was left unchanged.',
+    let merged = [...tasks];
+    let changed = false;
+    desiredTasks.forEach((desired) => {
+      const label = desired.label as string;
+      const matchingIndex = merged.findIndex(
+        (task) =>
+          task !== null &&
+          typeof task === 'object' &&
+          !Array.isArray(task) &&
+          (task as Record<string, unknown>).label === label,
       );
+      if (matchingIndex === -1) {
+        merged = [...merged, desired];
+        changed = true;
+        return;
+      }
+      if (!configurationValuesEqual(merged[matchingIndex], desired)) {
+        if (managedLabels.has(label)) {
+          merged = merged.map((task, index) => (index === matchingIndex ? desired : task));
+          changed = true;
+        } else {
+          warnings.push(
+            `VS Code task "${label}" has repository-specific customization and was left unchanged.`,
+          );
+        }
+      }
+    });
+    if (changed) {
+      updates.push({ path: ['tasks'], value: merged });
     }
   } else {
     warnings.push('VS Code tasks use an unknown shape and were left unchanged.');

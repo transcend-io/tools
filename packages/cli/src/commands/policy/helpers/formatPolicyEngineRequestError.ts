@@ -43,7 +43,7 @@ Fix:
 
 const PAYLOAD_TOO_LARGE_MESSAGE = `Policy bundle upload is too large (413 Payload Too Large).
 
-Uploaded bundles must be at most 5 KiB compressed and 50 KiB decompressed gzip tarballs containing only manifest.json and .rego files.
+Uploaded bundles must be at most 5 KiB compressed and 50 KiB decompressed gzip tarballs containing only .manifest and .rego files.
 
 Fix:
 - Remove unnecessary files from the bundle directory before publishing

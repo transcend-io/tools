@@ -145,6 +145,19 @@ export const RequestDataSiloStatus = makeEnum({
   ...QueueStatus,
   /** The request not processed due to some exception */
   SkippedDueToException: 'SKIPPED_DUE_TO_EXCEPTION',
+  /**
+   * Deferred by Transcend's data silo rate limiter (the integration's
+   * configured request-rate budget was exhausted). The job is still eligible
+   * for processing and will be retried once `scheduledAt` passes.
+   */
+  TranscendRateLimited: 'TRANSCEND_RATE_LIMITED',
+  /**
+   * The vendor API rejected the work with its own rate limit (HTTP 429,
+   * exhausted API credits, or quota). The job is still eligible for
+   * processing and will be retried once `scheduledAt` passes, honoring the
+   * vendor's retry-after when provided.
+   */
+  VendorRateLimited: 'VENDOR_RATE_LIMITED',
 });
 
 /**

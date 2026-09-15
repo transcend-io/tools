@@ -14,7 +14,8 @@ describe('policy routes', () => {
     await run(app, ['policy', 'init', '--help'], context);
 
     const output = `${context.stdout}\n${context.stderr}`;
-    expect(output).toContain('creates a publishable fail-closed Rego v1 starter');
+    expect(output).toContain('creates an empty multi-bundle workspace');
+    expect(output).toContain('Policy workspace directory');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--dryRun');
     expect(output).toContain('--yes');
@@ -26,7 +27,7 @@ describe('policy routes', () => {
     expect(output).not.toContain('--preset');
   });
 
-  it('documents policy lint as the verification gate with its literal default path', async () => {
+  it('documents policy lint as the verification gate with its workspace default', async () => {
     const context = buildContextForTest({
       exitBehavior: 'record',
       stdinIsTTY: false,
@@ -35,11 +36,91 @@ describe('policy routes', () => {
     await run(app, ['policy', 'lint', '--help'], context);
 
     const output = `${context.stdout}\n${context.stderr}`;
-    expect(output).toContain('Validates manifest roots and package coverage');
-    expect(output).toContain('--dir');
+    expect(output).toContain('Defaults to the policy workspace');
+    expect(output).toContain('Policy workspace or bundle directory');
+    expect(output).toContain('every .manifest child');
+    expect(output).toContain('[directory]');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--fix');
     expect(output).toContain('--noInteractive');
     expect(output).toContain('--json');
+    expect(output).not.toContain('--dir');
+    expect(output).not.toContain('example-bundle');
   });
+
+  it('documents policy test with the same workspace default as lint', async () => {
+    const context = buildContextForTest({
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['policy', 'test', '--help'], context);
+
+    const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('Policy workspace or bundle directory');
+    expect(output).toContain('every .manifest child');
+    expect(output).toContain('[directory]');
+    expect(output).toContain('transcend/policy');
+    expect(output).not.toContain('--dir');
+    expect(output).not.toContain('example-bundle');
+  });
+
+  it('documents policy new against the workspace directory', async () => {
+    const context = buildContextForTest({
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['policy', 'new', '--help'], context);
+
+    const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('Policy workspace directory');
+    expect(output).toContain('transcend/policy');
+  });
+
+  it.each(['eval', 'publish'])(
+    'requires an explicit bundle directory for policy %s',
+    async (command) => {
+      const context = buildContextForTest({
+        exitBehavior: 'record',
+        stdinIsTTY: false,
+      });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('<directory>');
+      expect(output).toContain('Policy bundle directory containing a .manifest');
+      expect(output).not.toContain('[directory]');
+      expect(output).not.toContain('example-bundle');
+      expect(output).not.toContain('--dir');
+      expect(output).not.toMatch(/--bundle(?:\s|=)/u);
+    },
+  );
+
+  it.each(['activate', 'bundles', 'deactivate', 'download', 'publish', 'versions'])(
+    'preserves the released backend URL flag for policy %s',
+    async (command) => {
+      const context = buildContextForTest({ exitBehavior: 'record' });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('--transcend-url');
+      expect(output).toContain('so --transcend-url may be omitted');
+      expect(output).not.toContain('so --transcendUrl may be omitted');
+    },
+  );
+
+  it.each(['activate', 'deactivate', 'download', 'publish', 'versions'])(
+    'preserves the released bundle name flag for policy %s',
+    async (command) => {
+      const context = buildContextForTest({ exitBehavior: 'record' });
+
+      await run(app, ['policy', command, '--help'], context);
+
+      const output = `${context.stdout}\n${context.stderr}`;
+      expect(output).toContain('--bundle-name');
+    },
+  );
 });
