@@ -26,12 +26,12 @@ describe('policyCliOperations', () => {
       }),
     });
 
-    await expect(listPolicyBundles({ get } as never, { bundleName: 'main', limit: 1 })).resolves.toEqual(
-      {
-        nodes: [sampleBundle],
-        totalCount: 1,
-      },
-    );
+    await expect(
+      listPolicyBundles({ get } as never, { bundleName: 'main', limit: 1 }),
+    ).resolves.toEqual({
+      nodes: [sampleBundle],
+      totalCount: 1,
+    });
     expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
       searchParams: { 'filter[bundleName]': 'main', limit: 1, offset: 0 },
     });
