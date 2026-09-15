@@ -64,6 +64,84 @@ url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.gz"
 checksum = "sha256:57f71ab3652e797d84acddc79c81cc9ff1c6ddb2a1974cdb83f00fee9bff4c73"
 url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 
+[[tools.opa]]
+version = "1.17.1"
+backend = "aqua:open-policy-agent/opa"
+
+[tools.opa."platforms.linux-arm64"]
+checksum = "sha256:2733c6cb81ce26b5b0d42efc3f55860ce0e3470e7077d795d4b219a54052db74"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_linux_arm64_static"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637890"
+
+[tools.opa."platforms.linux-arm64-musl"]
+checksum = "sha256:2733c6cb81ce26b5b0d42efc3f55860ce0e3470e7077d795d4b219a54052db74"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_linux_arm64_static"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637890"
+
+[tools.opa."platforms.linux-x64"]
+checksum = "sha256:3d4bb88482958d990351ec5d2f7558509992776bc473bc1b78d86d76cb993ca3"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_linux_amd64_static"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637876"
+
+[tools.opa."platforms.linux-x64-musl"]
+checksum = "sha256:3d4bb88482958d990351ec5d2f7558509992776bc473bc1b78d86d76cb993ca3"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_linux_amd64_static"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637876"
+
+[tools.opa."platforms.macos-arm64"]
+checksum = "sha256:9d43153a802b5befd3f1c4f76b301d135aaf8e2153a4de921a9426e0ccc00eb8"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_darwin_arm64_static"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637843"
+
+[tools.opa."platforms.macos-x64"]
+checksum = "sha256:a94988f2a8eecad499e9f3c287074802c90b7f05a6c6e7e33742a0a538186282"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_darwin_amd64"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637844"
+
+[tools.opa."platforms.windows-x64"]
+checksum = "sha256:459ad6f8fc9da7a9fb569cc364255517ea820e7c05a222763b752ce921b16a55"
+url = "https://github.com/open-policy-agent/opa/releases/download/v1.17.1/opa_windows_amd64.exe"
+url_api = "https://api.github.com/repos/open-policy-agent/opa/releases/assets/441637899"
+
+[[tools.regal]]
+version = "0.39.0"
+backend = "aqua:open-policy-agent/regal"
+
+[tools.regal."platforms.linux-arm64"]
+checksum = "sha256:866d59c579b9c4b32bb4564a802ad3d0076df9972e2e1d6690a103b146252a8a"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Linux_arm64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007725"
+
+[tools.regal."platforms.linux-arm64-musl"]
+checksum = "sha256:866d59c579b9c4b32bb4564a802ad3d0076df9972e2e1d6690a103b146252a8a"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Linux_arm64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007725"
+
+[tools.regal."platforms.linux-x64"]
+checksum = "sha256:b4fd48ae33a85dc59352b32c34aaea104605d25a43680454f987682751595db9"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Linux_x86_64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007732"
+
+[tools.regal."platforms.linux-x64-musl"]
+checksum = "sha256:b4fd48ae33a85dc59352b32c34aaea104605d25a43680454f987682751595db9"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Linux_x86_64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007732"
+
+[tools.regal."platforms.macos-arm64"]
+checksum = "sha256:540fed5769036765a7639b38f71e849bb14ff5556d10d29350a3581e40dd5a3b"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Darwin_arm64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007724"
+
+[tools.regal."platforms.macos-x64"]
+checksum = "sha256:6d08c41203d092bb2b5d23e677fc6343fa7229648e0ecf65cea39d40330d4d99"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Darwin_x86_64"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007727"
+
+[tools.regal."platforms.windows-x64"]
+checksum = "sha256:9283f29d8cfa97ed1f835aa8e08c93aaa98cbfd25a5aa51505581454b52536ef"
+url = "https://github.com/open-policy-agent/regal/releases/download/v0.39.0/regal_Windows_x86_64.exe"
+url_api = "https://api.github.com/repos/open-policy-agent/regal/releases/assets/363007726"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"

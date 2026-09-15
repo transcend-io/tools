@@ -110,7 +110,7 @@ describe('policy init', () => {
       applied: true,
       dryRun: false,
       targetDirectory: target,
-      manifestPath: join(target, 'manifest.json'),
+      manifestPath: join(target, '.manifest'),
       changes: generatePolicyStarterFiles().map((file) => ({
         kind: 'create',
         target: `transcend/policy/${file.path}`,
@@ -118,7 +118,7 @@ describe('policy init', () => {
       })),
       warnings: [],
       nextSteps: [
-        "transcend policy lint --dir 'transcend/policy' --noInteractive",
+        "transcend policy lint 'transcend/policy' --noInteractive",
         "Edit 'transcend/policy/policy_engine/example/result.rego'",
       ],
       features: [],
@@ -128,7 +128,7 @@ describe('policy init', () => {
     expect(invocations).toEqual(['opa version', 'regal version']);
     expect(context.stderr).toBe('');
     expect(JSON.parse(context.stdout).aiHandoff).not.toContain('Ask your coding agent');
-    expect(existsSync(join(root, 'manifest.json'))).toBe(false);
+    expect(existsSync(join(root, '.manifest'))).toBe(false);
     expect(existsSync(join(root, '.vscode'))).toBe(false);
     expect(existsSync(join(root, '.agents'))).toBe(false);
     expect(existsSync(join(root, '.github'))).toBe(false);
@@ -203,7 +203,7 @@ describe('policy init', () => {
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
-          target: 'custom-policy/manifest.json',
+          target: 'custom-policy/.manifest',
         }),
       ]),
     });
@@ -353,7 +353,7 @@ describe('policy init', () => {
         args: string[];
       }[];
     };
-    expect(tasks.tasks[0]!.args).toEqual(['policy', 'lint', '--dir', directory, '--noInteractive']);
+    expect(tasks.tasks[0]!.args).toEqual(['policy', 'lint', directory, '--noInteractive']);
     const workflow = readFileSync(
       join(root, '.github', 'workflows', 'transcend-policy.yml'),
       'utf8',
@@ -361,7 +361,7 @@ describe('policy init', () => {
     expect(workflow).toContain(`POLICY_DIRECTORY: ${JSON.stringify(directory)}`);
     const result = JSON.parse(context.stdout);
     expect(result.nextSteps[0]).toBe(
-      "transcend policy lint --dir 'policies/customer'\\''s policy' --noInteractive",
+      "transcend policy lint 'policies/customer'\\''s policy' --noInteractive",
     );
     expect(result.aiHandoff).not.toContain('\n');
     expect(result.aiHandoff).toContain('adapt repository validation');
@@ -374,7 +374,7 @@ describe('policy init', () => {
     mkdirSync(join(target, '.regal'), { recursive: true });
     mkdirSync(join(target, 'custom'), { recursive: true });
     const existing = new Map([
-      [join(target, 'manifest.json'), '{"roots":["custom"]}\n'],
+      [join(target, '.manifest'), '{"roots":["custom"]}\n'],
       [join(target, '.regal', 'config.yaml'), 'project:\n  roots:\n    - custom\n'],
       [join(target, 'README.md'), '# Existing guide\n'],
       [join(target, 'custom', 'allow.rego'), 'package custom\n\ndefault allow := false\n'],
@@ -396,13 +396,13 @@ describe('policy init', () => {
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('manifest.json'),
+        expect.stringContaining('.manifest'),
         expect.stringContaining('config.yaml'),
         expect.stringContaining('README.md'),
         expect.stringContaining('no starter files were added or overwritten'),
       ]),
     );
-    expect(result.nextSteps).toEqual(["transcend policy lint --dir 'policy' --noInteractive"]);
+    expect(result.nextSteps).toEqual(["transcend policy lint 'policy' --noInteractive"]);
     expect(result.aiHandoff).toContain("Review the existing policy project in 'policy'");
     expect(result.aiHandoff).not.toContain('disposable example');
     expect(result.aiHandoff).not.toContain('policy_engine/example/result.rego');
@@ -469,7 +469,7 @@ describe('policy init', () => {
     expect(context.stdout).toContain('Changes');
     expect(context.stdout).toContain('Policy project initialized.');
     const lines = context.stdout.split('\n');
-    expect(lines).toContain("transcend policy lint --dir 'transcend/policy' --noInteractive");
+    expect(lines).toContain("transcend policy lint 'transcend/policy' --noInteractive");
     expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
     const handoffHeading = lines.findIndex((line) =>
       line.includes('AI handoff — paste into your coding agent'),
@@ -558,7 +558,7 @@ describe('policy init', () => {
     await expect(init.call(context, buildFlags(), target, buildRunner())).rejects.toThrow(
       'simulated policy write failure',
     );
-    expect(existsSync(join(target, 'manifest.json'))).toBe(false);
+    expect(existsSync(join(target, '.manifest'))).toBe(false);
     expect(existsSync(join(target, '.regal', 'config.yaml'))).toBe(false);
   });
 

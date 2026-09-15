@@ -5,7 +5,12 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
-import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
+import {
+  createPolicyDebugParameter,
+  policyBundleNameParameter,
+  policyDirectoryParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const publishCommand = buildCommand({
   loader: async () => {
@@ -14,20 +19,11 @@ export const publishCommand = buildCommand({
   },
   parameters: {
     flags: {
-      dir: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Directory containing manifest.json and Rego policy files',
-      },
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Tenant-unique policy bundle name',
-      },
+      'bundle-name': policyBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ManagePolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       version: {
         kind: 'parsed',
         parse: String,
@@ -40,11 +36,7 @@ export const publishCommand = buildCommand({
         brief: 'Optional description for the uploaded version',
         optional: true,
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      json: policyJsonParameter,
       yes: {
         kind: 'boolean',
         brief: 'Skip the "create new bundle" confirmation (for CI/non-interactive use)',
@@ -52,11 +44,15 @@ export const publishCommand = buildCommand({
       },
       debug: createPolicyDebugParameter(),
     },
+    positional: {
+      kind: 'tuple',
+      parameters: [policyDirectoryParameter],
+    },
   },
   docs: {
     brief: 'Build and upload a new policy bundle version',
     fullDescription:
-      'Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. ' +
+      'Packages `.manifest` and `.rego` policy files from a local directory into a tarball and uploads it to Transcend. ' +
       'Creates the bundle on first upload, then appends immutable versions. ' +
       'Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.',
   },

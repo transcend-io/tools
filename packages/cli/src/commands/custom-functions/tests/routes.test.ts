@@ -47,4 +47,32 @@ describe('custom-functions routes', () => {
     expect(output).toContain('run');
     expect(output).toContain('Run Custom Function fixtures in a local Deno simulator');
   });
+
+  it('uses the shared project and JSON flags for push', async () => {
+    const context = buildContextForTest({
+      cwd: makeTemporaryRoot(),
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['custom-functions', 'push', '--help'], context);
+
+    const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('[<directory>]');
+    expect(output).toContain('--manifest');
+    expect(output).toContain('--json');
+    expect(output).not.toContain('--file');
+  });
+
+  it('supports JSON output for list', async () => {
+    const context = buildContextForTest({
+      cwd: makeTemporaryRoot(),
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['custom-functions', 'list', '--help'], context);
+
+    expect(`${context.stdout}\n${context.stderr}`).toContain('--json');
+  });
 });

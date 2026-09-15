@@ -35,7 +35,7 @@ const allTools = [
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
 
 describe('MCP Tool Annotations', () => {
-  it('registers all umbrella tools (deduped like ToolRegistry)', () => {
+  it('defines all umbrella tools across domain packages', () => {
     expect(allTools.length).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
   });
 
@@ -82,6 +82,8 @@ describe('MCP Tool Annotations', () => {
       'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
+      'consent_delete_cookies',
+      'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
       'dsr_cancel',

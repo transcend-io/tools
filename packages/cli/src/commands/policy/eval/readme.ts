@@ -9,7 +9,6 @@ const examples = buildExamples<EvalCommandFlags>(
       flags: {
         pkg: 'data.transcend.decision',
         input: './fixtures/envelope.json',
-        bundle: './policies',
       },
     },
   ],
@@ -18,4 +17,10 @@ const examples = buildExamples<EvalCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+The default project is \`transcend/policy\`. Pass another project directory positionally:
+
+\`\`\`sh
+transcend policy eval ./policies --pkg=data.transcend.decision --input=./fixtures/envelope.json
+\`\`\`
 `;

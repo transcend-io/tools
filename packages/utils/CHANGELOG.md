@@ -1,5 +1,11 @@
 # @transcend-io/utils
 
+## 0.2.2
+
+### Patch Changes
+
+- c4f1a55: Upgrade csv-parse to patch CVE
+
 ## 0.2.1
 
 ### Patch Changes

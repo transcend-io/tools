@@ -10,6 +10,7 @@ import {
   ProgressBar,
   ProgressTone,
   Spinner,
+  ViewConnectionError,
 } from '@transcend-io/mcp-ui-common';
 
 /** Tracker triage counts returned for cookies or data flows. */
@@ -38,9 +39,6 @@ interface InventoryStatsData {
  * cards into letterboxes.
  */
 const PANEL = 'mx-auto flex w-full max-w-view flex-col gap-4 rounded-lg bg-card-sunken px-4 py-4';
-const CARD = 'mx-auto w-full max-w-view rounded-lg bg-surface-raised px-6 py-5 shadow-sm';
-const TITLE = 'mb-1 text-heading-md font-semibold text-content';
-const SUBTITLE = 'text-sm text-content-muted';
 
 /** Sum of live + needs-review + junk, treating missing fields as zero. */
 function totalOf(stats: TrackerStats | undefined): number {
@@ -110,12 +108,7 @@ export function InventoryStatsView() {
   });
 
   if (connectionError) {
-    return (
-      <section className={`${CARD} border-l-4 border-l-danger`} role="alert">
-        <h1 className={TITLE}>Could not reach the host</h1>
-        <p className={SUBTITLE}>{connectionError.message}</p>
-      </section>
-    );
+    return <ViewConnectionError message={connectionError.message} />;
   }
 
   if (toolError !== undefined && data === undefined) {
