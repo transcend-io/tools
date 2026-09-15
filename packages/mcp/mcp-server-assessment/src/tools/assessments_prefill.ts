@@ -11,13 +11,11 @@ import {
 
 import {
   PREFILL_ASSIGNEE_REQUIRED,
-  PREFILL_GROUP_REQUIRED,
   PREFILL_INCOMPLETE,
   PREFILL_INTERNAL_ASSIGNEE_REQUIRED,
 } from '../errors.js';
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
-import { resolveTemplateToGroupId } from './_helpers.js';
 
 /**
  * Re-raise a failure from after the form was created, naming the form.
@@ -69,18 +67,12 @@ function failWithFormId(
 
 export const PrefillSchema = z.object({
   title: z.string().describe('Title for the new assessment form'),
-  templateId: z
-    .string()
-    .optional()
-    .describe(
-      'Fallback for when no group is known. Lands the form in whichever group happens to be ' +
-        'first among those built from this template, so never use it when the user named a group.',
-    ),
   assessmentGroupId: z
     .string()
-    .optional()
     .describe(
-      'Group to create the form in (preferred). Resolve by name with `assessments_list_groups`.',
+      'Group to create the form in. Find it by name with assessments_list_groups. If no group ' +
+        'is built from the template you want, create one with assessments_create_group rather ' +
+        'than guessing at an existing group.',
     ),
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
@@ -141,27 +133,12 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       answers,
       title,
       assessmentGroupId,
-      templateId,
       assigneeIds,
       assigneeEmails,
       reviewerIds,
       includeDetails,
       submitForReview,
     }) => {
-      let resolvedAssessmentGroupId = assessmentGroupId;
-      if (!resolvedAssessmentGroupId && templateId) {
-        const resolved = await resolveTemplateToGroupId(graphql, templateId);
-        if ('error' in resolved) return resolved.error;
-        resolvedAssessmentGroupId = resolved.groupId;
-      }
-      if (!resolvedAssessmentGroupId) {
-        return createToolResult(
-          false,
-          undefined,
-          'Either templateId or assessmentGroupId is required. Resolve a group by name with assessments_list_groups.',
-          PREFILL_GROUP_REQUIRED,
-        );
-      }
       if (!assigneeIds?.length && !assigneeEmails?.length) {
         return createToolResult(
           false,
@@ -184,7 +161,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
 
       const assessment = await graphql.createAssessment({
         title,
-        assessmentGroupId: resolvedAssessmentGroupId,
+        assessmentGroupId,
         assigneeIds,
       });
       const assessmentId = assessment.id;
