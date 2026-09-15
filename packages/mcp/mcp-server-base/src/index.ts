@@ -49,7 +49,12 @@ export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { derivePageInfo } from './clients/graphql/pagination.js';
 export { TranscendRestClient } from './clients/rest-client.js';
-export type { TranscendRestClientOptions } from './clients/rest-client.js';
+export type {
+  CustomFunctionCodeContext,
+  CustomFunctionSource,
+  SignedCustomFunction,
+  TranscendRestClientOptions,
+} from './clients/rest-client.js';
 
 export {
   DEFAULT_DASHBOARD_URL,

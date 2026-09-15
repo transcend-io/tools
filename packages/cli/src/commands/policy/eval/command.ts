@@ -1,6 +1,26 @@
 import { buildCommand } from '@stricli/core';
 
-import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
+
+/** Output formats supported by `opa eval --format`. */
+export const POLICY_EVAL_FORMATS = [
+  'pretty',
+  'json',
+  'values',
+  'bindings',
+  'source',
+  'raw',
+  'discard',
+] as const;
+
+/** One `opa eval --format` value. */
+export type PolicyEvalFormat = (typeof POLICY_EVAL_FORMATS)[number];
+
+/** Explanation modes supported by `opa eval --explain`. */
+export const POLICY_EVAL_EXPLAIN_MODES = ['off', 'full', 'notes', 'fails', 'debug'] as const;
+
+/** One `opa eval --explain` value. */
+export type PolicyEvalExplainMode = (typeof POLICY_EVAL_EXPLAIN_MODES)[number];
 
 export const evalCommand = buildCommand({
   loader: async () => {
@@ -9,26 +29,86 @@ export const evalCommand = buildCommand({
   },
   parameters: {
     flags: {
-      pkg: {
+      package: {
         kind: 'parsed',
         parse: String,
-        brief: 'OPA package or query to evaluate (e.g. data.transcend.decision)',
+        brief: 'OPA query to evaluate (e.g. data.example.result)',
       },
       input: {
         kind: 'parsed',
         parse: String,
-        brief: 'Path to a JSON envelope input file',
+        brief: 'Path to a JSON envelope input file (mutually exclusive with --stdin-input)',
+        optional: true,
+      },
+      'stdin-input': {
+        kind: 'boolean',
+        brief: 'opa eval --stdin-input (read input document from stdin)',
+        default: false,
+      },
+      format: {
+        kind: 'enum',
+        values: POLICY_EVAL_FORMATS,
+        brief: 'opa eval --format',
+        default: 'pretty',
+      },
+      schema: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'opa eval --schema (file or directory)',
+        optional: true,
+      },
+      explain: {
+        kind: 'enum',
+        values: POLICY_EVAL_EXPLAIN_MODES,
+        brief: 'opa eval --explain',
+        optional: true,
+      },
+      metrics: {
+        kind: 'boolean',
+        brief: 'opa eval --metrics',
+        default: false,
+      },
+      instrument: {
+        kind: 'boolean',
+        brief: 'opa eval --instrument (implies --metrics)',
+        default: false,
+      },
+      profile: {
+        kind: 'boolean',
+        brief: 'opa eval --profile',
+        default: false,
+      },
+      timeout: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'opa eval --timeout (e.g. 5s)',
+        optional: true,
+      },
+      'var-values': {
+        kind: 'boolean',
+        brief: 'opa eval --var-values (with --explain)',
+        default: false,
+      },
+      'show-builtin-errors': {
+        kind: 'boolean',
+        brief: 'opa eval --show-builtin-errors',
+        default: false,
       },
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyBundleDirectoryParameter],
     },
   },
   docs: {
     brief: 'Evaluate one envelope against a local policy bundle',
     fullDescription:
-      'Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. ' +
+      'Wraps `opa eval` for local policy debugging against one bundle directory. ' +
+      'Always loads the directory as a bundle (`-b`). Provide input via `--input` or `--stdin-input` (exactly one). ' +
+      'Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and ' +
+      'show-builtin-errors. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API ' +
+      '(policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not ' +
+      'Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. ' +
       'No Transcend API key is needed.',
   },
 });

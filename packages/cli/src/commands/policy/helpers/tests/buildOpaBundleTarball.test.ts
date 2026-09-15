@@ -58,7 +58,7 @@ describe('buildOpaBundleTarball', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('creates a tarball with manifest.json and policy files only', async () => {
+  it('creates a tarball with .manifest and policy files only', async () => {
     fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.mkdirSync(path.join(tempDir, 'policy_engine'));
     fs.writeFileSync(
@@ -78,10 +78,10 @@ describe('buildOpaBundleTarball', () => {
     expect(listResult.status).toBe(0);
 
     const entries = listResult.stdout.trim().split('\n').sort();
-    expect(entries).toEqual(['manifest.json', 'policy_engine/decision.rego']);
+    expect(entries).toEqual(['.manifest', 'policy_engine/decision.rego']);
     expect(entries).not.toContain('policy_engine/decision_test.rego');
     expect(entries).not.toContain('data.json');
-    expect(entries).not.toContain('.manifest');
+    expect(entries).not.toContain('manifest.json');
   });
 
   it('validates the bundle compiles with `opa build` before packaging', async () => {
@@ -101,8 +101,10 @@ describe('buildOpaBundleTarball', () => {
     const buildArgs = runOPACaptureMock.mock.calls[1][0] as string[];
     const buildOptions = runOPACaptureMock.mock.calls[1][1] as { cwd?: string };
     expect(checkArgs[0]).toBe('check');
+    expect(checkArgs).not.toContain('--v0-compatible');
     expect(buildArgs[0]).toBe('build');
-    expect(buildArgs).toContain('--v0-compatible');
+    expect(buildArgs).not.toContain('--v0-compatible');
+    expect(buildArgs).toContain('-b');
     expect(buildArgs).toContain('--ignore');
     expect(buildArgs[buildArgs.indexOf('--ignore') + 1]).toBe('*_test.rego');
     expect(buildArgs.at(-1)).toBe('.');

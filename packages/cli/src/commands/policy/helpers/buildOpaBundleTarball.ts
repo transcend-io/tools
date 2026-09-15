@@ -8,10 +8,7 @@ import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@tra
 import fg from 'fast-glob';
 
 import { validatePolicyBundleContents } from '../../../lib/policy/policy-bundle-manifest.js';
-import {
-  POLICY_MANIFEST_FILENAME,
-  POLICY_UPLOAD_MANIFEST_FILENAME,
-} from '../../../lib/policy/policy-scaffold-templates.js';
+import { POLICY_MANIFEST_FILENAME } from '../../../lib/policy/policy-scaffold-templates.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
 import { runOPACapture } from './runOpa.js';
 
@@ -19,8 +16,6 @@ import { runOPACapture } from './runOpa.js';
 interface PolicyBundleArchiveContents {
   /** Relative paths to include in the upload tarball (manifest first, then rego) */
   entries: string[];
-  /** Absolute path of the on-disk `.manifest` to copy into the archive as `manifest.json` */
-  onDiskManifestPath: string;
 }
 
 /**
@@ -47,15 +42,14 @@ function collectPolicyBundleArchiveEntries(dir: string): PolicyBundleArchiveCont
   );
 
   return {
-    entries: [POLICY_UPLOAD_MANIFEST_FILENAME, ...publishableRegoPaths],
-    onDiskManifestPath,
+    entries: [POLICY_MANIFEST_FILENAME, ...publishableRegoPaths],
   };
 }
 
 /**
  * Verifies that a policy directory compiles end-to-end with `opa build`.
  *
- * The compiled output is discarded — the server receives the `manifest.json` +
+ * The compiled output is discarded — the server receives the `.manifest` +
  * `.rego` archive produced by {@link buildOpaBundleTarball}, not the OPA bundle
  * — but a successful build guarantees the policies compile and link, surfacing
  * errors (syntax, missing imports, undefined references, etc.) before upload.
@@ -69,9 +63,11 @@ async function assertBundleCompiles(dir: string): Promise<void> {
   );
   try {
     // Run with `cwd` set to the bundle directory and pass `.` so `opa build`
-    // resolves the bundle root correctly. `*_test.rego` files are local-only.
+    // resolves the bundle root correctly. Bundle mode (`-b`) keeps local
+    // `input.json` / `input.example.json` fixtures from merging as data.
+    // `*_test.rego` files are local-only.
     const { code, stderr } = await runOPACapture(
-      ['build', '--v0-compatible', '--ignore', '*_test.rego', '-o', buildOutputPath, '.'],
+      ['build', '--ignore', '*_test.rego', '-b', '-o', buildOutputPath, '.'],
       { cwd: dir },
     );
     if (code !== 0) {
@@ -105,10 +101,10 @@ function formatBytes(bytes: number): string {
 /**
  * Builds a gzip-compressed policy bundle tarball for upload to Transcend.
  *
- * The Policy Engine API expects a plain archive containing `manifest.json` and
- * one or more `.rego` files. Local projects author an OPA `.manifest`; this
- * helper renames it to `manifest.json` in the upload archive. Before packaging,
- * the manifest is validated (shape + root coverage) and the bundle is validated
+ * The Policy Engine API expects a plain archive containing `.manifest` and
+ * one or more `.rego` files. Local projects author an OPA `.manifest` and it
+ * is uploaded directly — no rename at pack time. Before packaging, the
+ * manifest is validated (shape + root coverage) and the bundle is validated
  * with `opa check` (strict Rego linting) and `opa build` (full compilation) so
  * failures surface client-side rather than after upload.
  *
@@ -126,14 +122,12 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   // Validate the manifest shape and that roots cover every Rego package before
   // invoking OPA, so invalid manifests surface a clear error instead of an
   // opaque `opa build failed with exit code 1`.
-  const { entries: archiveEntries, onDiskManifestPath } =
-    collectPolicyBundleArchiveEntries(resolvedDir);
+  const { entries: archiveEntries } = collectPolicyBundleArchiveEntries(resolvedDir);
 
   // Match the Rego v1 validation the Policy Engine API runs on upload.
   const { code: checkCode, stderr: checkStderr } = await runOPACapture([
     'check',
     '--strict',
-    '--v0-compatible',
     resolvedDir,
   ]);
   if (checkCode !== 0) {
@@ -147,27 +141,14 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
     os.tmpdir(),
     `transcend-policy-bundle-${Date.now()}-${Math.random().toString(36).slice(2)}.tar.gz`,
   );
-  const stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'transcend-policy-bundle-stage-'));
-
-  try {
-    fs.copyFileSync(onDiskManifestPath, path.join(stagingDir, POLICY_UPLOAD_MANIFEST_FILENAME));
-    for (const relativePath of archiveEntries.slice(1)) {
-      const destination = path.join(stagingDir, relativePath);
-      fs.mkdirSync(path.dirname(destination), { recursive: true });
-      fs.copyFileSync(path.join(resolvedDir, relativePath), destination);
-    }
-
-    const tarResult = spawnSync('tar', ['-czf', outputPath, '-C', stagingDir, ...archiveEntries], {
-      env: { ...process.env, COPYFILE_DISABLE: '1' },
-      encoding: 'utf8',
-    });
-    if (tarResult.status !== 0) {
-      throw new Error(
-        `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
-      );
-    }
-  } finally {
-    fs.rmSync(stagingDir, { recursive: true, force: true });
+  const tarResult = spawnSync('tar', ['-czf', outputPath, '-C', resolvedDir, ...archiveEntries], {
+    env: { ...process.env, COPYFILE_DISABLE: '1' },
+    encoding: 'utf8',
+  });
+  if (tarResult.status !== 0) {
+    throw new Error(
+      `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
+    );
   }
 
   const compressedBytes = fs.readFileSync(outputPath);
