@@ -37,7 +37,7 @@ describe('policy eval', () => {
       '--input',
       '/repo/input.json',
       '-b',
-      '/repo/transcend/policy',
+      '/repo/transcend/policy/example-bundle',
       'data.transcend.decision',
     ]);
   });

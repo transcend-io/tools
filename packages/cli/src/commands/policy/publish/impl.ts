@@ -6,7 +6,7 @@ import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
 import {
-  DEFAULT_POLICY_PROJECT_DIRECTORY,
+  DEFAULT_POLICY_BUNDLE_DIRECTORY,
   resolvePolicyProjectDirectory,
 } from '../../../lib/policy/policy-project-discovery.js';
 import { isInteractivePromptInvocation } from '../../../lib/scaffolding/prompts.js';
@@ -63,7 +63,7 @@ export async function publish(
     yes,
     debug = false,
   }: PublishCommandFlags,
-  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
+  directory: string = DEFAULT_POLICY_BUNDLE_DIRECTORY,
 ): Promise<void> {
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);

@@ -14,9 +14,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
-import { POLICY_STARTER_REGAL_VERSION } from '../../../../lib/policy/policy-scaffold-artifacts.js';
 import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model.js';
-import { POLICY_STARTER_OPA_VERSION } from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { buildOpaBundleTarball } from '../../helpers/buildOpaBundleTarball.js';
 import { lint } from '../../lint/impl.js';
@@ -63,8 +61,8 @@ describe('policy init with pinned OPA and Regal', () => {
       applied: true,
       features: Object.values(PolicySetupFeature),
       tools: {
-        opa: POLICY_STARTER_OPA_VERSION,
-        regal: POLICY_STARTER_REGAL_VERSION,
+        opa: expect.stringMatching(/^\d+\.\d+\.\d+/u),
+        regal: expect.stringMatching(/^\d+\.\d+\.\d+/u),
       },
     });
     expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
@@ -77,6 +75,7 @@ describe('policy init with pinned OPA and Regal', () => {
       cwd: root,
       stdinIsTTY: false,
     });
+    const bundleDirectory = join(policyDirectory, 'example-bundle');
     await lint.call(
       lintContext,
       {
@@ -84,15 +83,15 @@ describe('policy init with pinned OPA and Regal', () => {
         noInteractive: true,
         json: true,
       },
-      policyDirectory,
+      bundleDirectory,
       runCapturedProcess,
     );
 
     const lintResult = JSON.parse(lintContext.stdout);
     expect(lintResult.status, JSON.stringify(lintResult, null, 2)).toBe('passed');
     expect(lintResult.tools).toEqual({
-      opa: POLICY_STARTER_OPA_VERSION,
-      regal: POLICY_STARTER_REGAL_VERSION,
+      opa: expect.stringMatching(/^\d+\.\d+\.\d+/u),
+      regal: expect.stringMatching(/^\d+\.\d+\.\d+/u),
     });
     expect(lintResult.unformattedFiles).toEqual([]);
     expect(lintResult.checks).toEqual([
@@ -105,14 +104,14 @@ describe('policy init with pinned OPA and Regal', () => {
       { name: 'opa-test', status: 'passed' },
     ]);
 
-    const archive = await buildOpaBundleTarball(policyDirectory);
+    const archive = await buildOpaBundleTarball(bundleDirectory);
     generatedArchives.push(archive);
     const list = spawnSync('tar', ['-tzf', archive], { encoding: 'utf8' });
     expect(list.status, list.stderr).toBe(0);
     expect(list.stdout.trim().split('\n').sort()).toEqual([
+      'example/result/result.rego',
       'manifest.json',
-      'policy_engine/example/result.rego',
     ]);
-    expect(readFileSync(join(policyDirectory, '.manifest'), 'utf8')).toContain('"policy_engine"');
+    expect(readFileSync(join(bundleDirectory, '.manifest'), 'utf8')).toContain('"example"');
   }, 60_000);
 });

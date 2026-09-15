@@ -12,7 +12,10 @@ import {
   planFileChange,
   type PlanningPathSnapshot,
 } from '../scaffolding/project-plan.js';
-import { getPolicyManifestPath } from './policy-project-discovery.js';
+import {
+  getPolicyManifestPath,
+  getPolicyStarterBundleDirectory,
+} from './policy-project-discovery.js';
 import {
   generatePolicyGithubActionsWorkflow,
   POLICY_CI_WORKFLOW_PATH,
@@ -30,7 +33,12 @@ import {
   type PolicyProjectState,
   type PolicySetupFeature as PolicySetupFeatureType,
 } from './policy-scaffold-model.js';
-import { generatePolicyStarterFiles, type PolicyStarterFile } from './policy-scaffold-templates.js';
+import {
+  generatePolicyStarterFiles,
+  POLICY_STARTER_BUNDLE_DIRECTORY,
+  POLICY_STARTER_RESULT_REGO_PATH,
+  type PolicyStarterFile,
+} from './policy-scaffold-templates.js';
 import { POLICY_SKILL_FILES, POLICY_SKILL_NAME } from './policy-skill.js';
 
 /** Managed Policy Engine Agent Skill definition. */
@@ -58,13 +66,16 @@ export interface PolicyInitPlanOptions {
 }
 
 /**
- * Build the copyable policy lint command for one target.
+ * Build the copyable policy lint command for the starter publish directory.
  *
  * @param state - Discovered project state
  * @returns Raw one-line command
  */
 export function buildPolicyLintCommand(state: PolicyProjectState): string {
-  const directory = displayProjectPath(state.invocationDirectory, state.targetDirectory);
+  const directory = displayProjectPath(
+    state.invocationDirectory,
+    getPolicyStarterBundleDirectory(state.targetDirectory),
+  );
   return `transcend policy lint ${quoteShellArgument(directory)} --noInteractive`;
 }
 
@@ -121,7 +132,7 @@ function assertContained(root: string, path: string): void {
  * @returns POSIX relative paths
  */
 function starterRelativePaths(files: readonly PolicyStarterFile[]): Set<string> {
-  const paths = new Set<string>(['input.json']);
+  const paths = new Set<string>([`${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`]);
   files.forEach(({ path }) => {
     paths.add(path);
     let parent = posix.dirname(path);
@@ -213,7 +224,7 @@ export function buildPolicyInitPlan(
   const files = generatePolicyStarterFiles();
   const manifestPath = getPolicyManifestPath(state);
   const lintCommand = buildPolicyLintCommand(state);
-  const resultPath = join(state.targetDirectory, 'policy_engine', 'example', 'result.rego');
+  const resultPath = join(state.targetDirectory, POLICY_STARTER_RESULT_REGO_PATH);
   const plan: PolicyInitProjectPlan = {
     version: POLICY_INIT_RESULT_VERSION,
     command: 'init',
@@ -372,11 +383,11 @@ export function buildPolicyInitPlan(
       );
     } else {
       const workflowPath = join(state.repositoryRoot, POLICY_CI_WORKFLOW_PATH);
-      const target =
+      const workspaceDirectory =
         relative(state.repositoryRoot, state.targetDirectory).split(sep).join('/') || '.';
       const workflowContents = generatePolicyGithubActionsWorkflow({
         cliVersion: options.cliVersion,
-        targetDirectory: target,
+        workspaceDirectory,
       });
       const workflowSnapshot = getPlanningPathSnapshot(input.snapshots, workflowPath);
       if (workflowSnapshot.kind === 'absent') {

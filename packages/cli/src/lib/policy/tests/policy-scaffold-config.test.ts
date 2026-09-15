@@ -9,6 +9,7 @@ import {
   mergePolicyEditorTasks,
   POLICY_VSCODE_EXTENSION,
 } from '../policy-scaffold-config.js';
+import { POLICY_STARTER_BUNDLE_DIRECTORY } from '../policy-scaffold-templates.js';
 
 describe('Policy Engine VS Code setup', () => {
   it('merges authoritative OPA settings with comments and idempotence', () => {
@@ -31,14 +32,27 @@ describe('Policy Engine VS Code setup', () => {
     expect(first.contents).toContain('// Keep this repository-wide preference.');
     expect(parse(first.contents)).toEqual({
       'files.trimTrailingWhitespace': true,
-      'opa.roots': ['${workspaceFolder}/shared', "${workspaceFolder}/policies/customer's policy"],
+      'opa.roots': [
+        '${workspaceFolder}/shared',
+        `\${workspaceFolder}/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
+      ],
+      'opa.schema': "${workspaceFolder}/policies/customer's policy/schemas",
       'opa.checkOnSave': true,
       'opa.strictMode': true,
       'opa.bundleMode': true,
       'opa.formatter': 'opa-fmt-rego-v1',
       'files.associations': {
-        "**/policies/customer's policy/.manifest": 'json',
+        "**/policies/customer's policy/**/.manifest": 'json',
       },
+      'json.schemas': [
+        {
+          fileMatch: [
+            `/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`,
+            `/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.example.json`,
+          ],
+          url: "./policies/customer's policy/schemas/example/input.json",
+        },
+      ],
       '[rego]': {
         'editor.defaultFormatter': POLICY_VSCODE_EXTENSION,
         'editor.formatOnSave': true,
@@ -48,18 +62,22 @@ describe('Policy Engine VS Code setup', () => {
     });
   });
 
-  it('scopes the .manifest association to the policy project path', () => {
+  it('scopes the .manifest association to nested bundles under the workspace', () => {
     const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy');
     const rooted = mergePolicyEditorSettings(null, '/repo', '/repo');
 
     expect(parse(nested.contents)).toMatchObject({
+      'opa.roots': [`\${workspaceFolder}/transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`],
+      'opa.schema': '${workspaceFolder}/transcend/policy/schemas',
       'files.associations': {
-        '**/transcend/policy/.manifest': 'json',
+        '**/transcend/policy/**/.manifest': 'json',
       },
     });
     expect(parse(rooted.contents)).toMatchObject({
+      'opa.roots': [`\${workspaceFolder}/${POLICY_STARTER_BUNDLE_DIRECTORY}`],
+      'opa.schema': '${workspaceFolder}/schemas',
       'files.associations': {
-        '.manifest': 'json',
+        '**/.manifest': 'json',
       },
     });
   });
@@ -115,8 +133,8 @@ describe('Policy Engine VS Code setup', () => {
     expect(mergePolicyEditorExtensions(result.contents)).toEqual(result);
   });
 
-  it('adds a shell-safe target-scoped default lint task and preserves custom tasks', () => {
-    const target = "/repo/policies/customer's policy";
+  it('adds a shell-safe starter-bundle default lint task and preserves custom tasks', () => {
+    const workspace = "/repo/policies/customer's policy";
     const result = mergePolicyEditorTasks(
       `{
   // Keep the repository build.
@@ -125,7 +143,7 @@ describe('Policy Engine VS Code setup', () => {
 }
 `,
       '/repo',
-      target,
+      workspace,
     );
     const parsed = parse(result.contents) as {
       /** VS Code tasks. */
@@ -136,12 +154,17 @@ describe('Policy Engine VS Code setup', () => {
     expect(result.contents).toContain('// Keep the repository build.');
     expect(parsed.tasks).toEqual([
       { label: 'build', type: 'shell', command: 'pnpm build' },
-      buildPolicyLintTask('/repo', target),
+      buildPolicyLintTask('/repo', workspace),
     ]);
     expect(parsed.tasks[1]).toMatchObject({
       label: 'policy: lint',
       command: 'transcend',
-      args: ['policy', 'lint', "policies/customer's policy", '--noInteractive'],
+      args: [
+        'policy',
+        'lint',
+        `policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
+        '--noInteractive',
+      ],
       group: { kind: 'test', isDefault: true },
     });
   });

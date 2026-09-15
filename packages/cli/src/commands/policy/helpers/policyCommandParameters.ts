@@ -1,10 +1,19 @@
-import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-project-discovery.js';
+import {
+  DEFAULT_POLICY_BUNDLE_DIRECTORY,
+  DEFAULT_POLICY_PROJECT_DIRECTORY,
+} from '../../../lib/policy/policy-project-discovery.js';
 import { createProjectDirectoryParameter } from '../../../lib/scaffolding/command-parameters.js';
 
-/** Shared positional local Policy project directory. */
-export const policyDirectoryParameter = createProjectDirectoryParameter({
+/** Shared positional Policy workspace directory (`policy init`). */
+export const policyWorkspaceDirectoryParameter = createProjectDirectoryParameter({
   projectName: 'Policy',
   defaultDirectory: DEFAULT_POLICY_PROJECT_DIRECTORY,
+});
+
+/** Shared positional local Policy publish directory (lint / test / eval / publish). */
+export const policyDirectoryParameter = createProjectDirectoryParameter({
+  projectName: 'Policy',
+  defaultDirectory: DEFAULT_POLICY_BUNDLE_DIRECTORY,
 });
 
 /** Shared logical Policy bundle name flag. */

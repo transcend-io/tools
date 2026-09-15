@@ -18,9 +18,9 @@ export default `#### Examples
 
 ${examples}
 
-The default project is \`transcend/policy\`. Pass another project directory positionally:
+The default publish directory is \`transcend/policy/example-bundle\`. Pass another \`{root}-bundle/\` directory positionally:
 
 \`\`\`sh
-transcend policy eval ./policies --pkg=data.transcend.decision --input=./fixtures/envelope.json
+transcend policy eval ./policies/example-bundle --pkg=data.transcend.decision --input=./fixtures/envelope.json
 \`\`\`
 `;

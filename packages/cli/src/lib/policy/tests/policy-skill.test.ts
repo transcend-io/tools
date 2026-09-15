@@ -58,34 +58,32 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_SETUP_TOOLING_REFERENCE_MD).not.toContain('policy publish');
   });
 
-  it('teaches OPA document trees, Rego v1, and one fail-closed result constructor', () => {
+  it('teaches OPA document trees, Rego v1, and fail-closed named decision rules', () => {
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain(
       'OPA evaluates queries against one document tree',
     );
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('import rego.v1');
-    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('import data.policy_engine.facts');
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('import data.example.facts');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain(
-      'Do not use a fully qualified `data.policy_engine...` reference',
+      'Do not use a fully qualified `data.<root>…` reference',
     );
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('{root}-bundle/');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('default decision := "deny"');
-    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('"reason_code": reason_code');
-    expect(POLICY_AUTHORING_REFERENCE_MD.match(/^result :=/gmu)).toHaveLength(1);
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('default reason_code :=');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('.manifest');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('Fail closed');
   });
 
-  it('covers tests, debugging, manifest coverage, lint, fix, and publish flow', () => {
+  it('covers tests, debugging, manifest coverage, lint, and publish flow', () => {
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('_test.rego');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('opa test --fail-on-empty');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('production-only OPA check');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain(
-      'Regal lint with warnings treated as failures',
-    );
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('example-bundle');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy lint');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('--fix');
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy eval');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.example.json');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.json');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('.manifest');
+    expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('{root}-bundle/');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy publish --help');
   });

@@ -6,7 +6,11 @@ import {
   parseJsoncObject,
   type JsoncUpdate,
 } from '../scaffolding/jsonc.js';
-import { POLICY_MANIFEST_FILENAME } from './policy-scaffold-templates.js';
+import {
+  POLICY_MANIFEST_FILENAME,
+  POLICY_STARTER_BUNDLE_DIRECTORY,
+  POLICY_STARTER_ROOT,
+} from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
 export const POLICY_VSCODE_EXTENSION = 'tsandall.opa';
@@ -139,50 +143,124 @@ function collectSafeScalarUpdates(
 }
 
 /**
- * Build the workspace-relative OPA bundle root.
+ * Build a `${workspaceFolder}/…` path for a repository-relative POSIX path.
  *
- * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param repositoryRelativePath - Path relative to the repository root
  * @returns VS Code workspace path
  */
-function buildOpaWorkspaceRoot(repositoryRoot: string, targetDirectory: string): string {
-  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
-  return target === '.' ? '${workspaceFolder}' : `\${workspaceFolder}/${target}`;
+function buildWorkspaceFolderPath(repositoryRelativePath: string): string {
+  return repositoryRelativePath === '.'
+    ? '${workspaceFolder}'
+    : `\${workspaceFolder}/${repositoryRelativePath}`;
 }
 
 /**
- * Build a `files.associations` glob scoped to the policy project `.manifest`.
+ * Repository-relative POSIX path from the root that owns `.vscode`.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param absolutePath - Absolute path below the repository
+ * @returns POSIX repository-relative path
+ */
+function repositoryRelativePosix(repositoryRoot: string, absolutePath: string): string {
+  return relative(repositoryRoot, absolutePath).split(sep).join('/') || '.';
+}
+
+/**
+ * Build the workspace-relative OPA publish root for the starter bundle.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @returns VS Code workspace path
+ */
+function buildOpaBundleRoot(repositoryRoot: string, workspaceDirectory: string): string {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundle =
+    workspace === '.'
+      ? POLICY_STARTER_BUNDLE_DIRECTORY
+      : `${workspace}/${POLICY_STARTER_BUNDLE_DIRECTORY}`;
+  return buildWorkspaceFolderPath(bundle);
+}
+
+/**
+ * Build the workspace-relative schemas directory path.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @returns VS Code workspace path
+ */
+function buildOpaSchemaDirectory(repositoryRoot: string, workspaceDirectory: string): string {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const schemas = workspace === '.' ? 'schemas' : `${workspace}/schemas`;
+  return buildWorkspaceFolderPath(schemas);
+}
+
+/**
+ * Build a `files.associations` glob for every `.manifest` under the workspace.
  *
  * Patterns that contain `/` are matched against the absolute file path, so a
  * leading `**\/` prefix is required for a portable workspace-relative association.
  *
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
  * @returns Association pattern key
  */
 function buildPolicyManifestAssociationPattern(
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
 ): string {
-  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
-  return target === '.' ? POLICY_MANIFEST_FILENAME : `**/${target}/${POLICY_MANIFEST_FILENAME}`;
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  return workspace === '.'
+    ? `**/${POLICY_MANIFEST_FILENAME}`
+    : `**/${workspace}/**/${POLICY_MANIFEST_FILENAME}`;
 }
 
 /**
- * Merge strict target-scoped OPA and Rego editor settings.
+ * Build `json.schemas` fileMatch globs for starter bundle input documents.
+ *
+ * @param repositoryRoot - Root that owns `.vscode`
+ * @param workspaceDirectory - Selected policy workspace directory
+ * @returns Absolute-style fileMatch paths and schema URL
+ */
+function buildStarterInputJsonSchema(
+  repositoryRoot: string,
+  workspaceDirectory: string,
+): {
+  /** VS Code fileMatch globs (leading slash = workspace-relative). */
+  fileMatch: string[];
+  /** Relative URL to the input schema. */
+  url: string;
+} {
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundlePrefix =
+    workspace === '.'
+      ? `/${POLICY_STARTER_BUNDLE_DIRECTORY}`
+      : `/${workspace}/${POLICY_STARTER_BUNDLE_DIRECTORY}`;
+  const schemaUrl =
+    workspace === '.'
+      ? `./schemas/${POLICY_STARTER_ROOT}/input.json`
+      : `./${workspace}/schemas/${POLICY_STARTER_ROOT}/input.json`;
+  return {
+    fileMatch: [`${bundlePrefix}/input.json`, `${bundlePrefix}/input.example.json`],
+    url: schemaUrl,
+  };
+}
+
+/**
+ * Merge strict workspace-scoped OPA and Rego editor settings.
  *
  * Setting names match the authoritative `open-policy-agent/vscode-opa`
  * extension metadata. Existing conflicting values are preserved and reported.
+ * `opa.roots` points at the starter `{root}-bundle/` publish directory.
  *
  * @param contents - Existing `.vscode/settings.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
  * @returns Merged settings and conflict warnings
  */
 export function mergePolicyEditorSettings(
   contents: string | null,
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy settings');
   if ('warning' in parsed) {
@@ -193,7 +271,7 @@ export function mergePolicyEditorSettings(
   const warnings: string[] = [];
 
   const roots = current['opa.roots'];
-  const desiredRoot = buildOpaWorkspaceRoot(repositoryRoot, targetDirectory);
+  const desiredRoot = buildOpaBundleRoot(repositoryRoot, workspaceDirectory);
   if (roots === undefined) {
     updates.push({ path: ['opa.roots'], value: [desiredRoot] });
   } else if (Array.isArray(roots) && roots.every((value) => typeof value === 'string')) {
@@ -208,6 +286,11 @@ export function mergePolicyEditorSettings(
   collectSafeScalarUpdates(
     current,
     [
+      {
+        path: ['opa.schema'],
+        value: buildOpaSchemaDirectory(repositoryRoot, workspaceDirectory),
+        label: 'opa.schema',
+      },
       { path: ['opa.checkOnSave'], value: true, label: 'opa.checkOnSave' },
       { path: ['opa.strictMode'], value: true, label: 'opa.strictMode' },
       { path: ['opa.bundleMode'], value: true, label: 'opa.bundleMode' },
@@ -220,7 +303,7 @@ export function mergePolicyEditorSettings(
   const associations = current['files.associations'];
   const manifestAssociation = buildPolicyManifestAssociationPattern(
     repositoryRoot,
-    targetDirectory,
+    workspaceDirectory,
   );
   if (associations === undefined) {
     updates.push({
@@ -246,6 +329,39 @@ export function mergePolicyEditorSettings(
     );
   } else {
     warnings.push('VS Code setting "files.associations" is customized and was left unchanged.');
+  }
+
+  const desiredJsonSchema = buildStarterInputJsonSchema(repositoryRoot, workspaceDirectory);
+  const jsonSchemas = current['json.schemas'];
+  if (jsonSchemas === undefined) {
+    updates.push({ path: ['json.schemas'], value: [desiredJsonSchema] });
+  } else if (Array.isArray(jsonSchemas)) {
+    const hasMatchingSchema = jsonSchemas.some(
+      (entry) =>
+        entry !== null &&
+        typeof entry === 'object' &&
+        !Array.isArray(entry) &&
+        configurationValuesEqual(entry, desiredJsonSchema),
+    );
+    if (!hasMatchingSchema) {
+      const conflicting = jsonSchemas.find(
+        (entry) =>
+          entry !== null &&
+          typeof entry === 'object' &&
+          !Array.isArray(entry) &&
+          typeof (entry as Record<string, unknown>).url === 'string' &&
+          (entry as Record<string, unknown>).url === desiredJsonSchema.url,
+      );
+      if (conflicting !== undefined) {
+        warnings.push(
+          'VS Code setting "json.schemas" has a repository-specific entry for the starter input schema and was left unchanged.',
+        );
+      } else {
+        updates.push({ path: ['json.schemas'], value: [...jsonSchemas, desiredJsonSchema] });
+      }
+    }
+  } else {
+    warnings.push('VS Code setting "json.schemas" is customized and was left unchanged.');
   }
 
   const regoSettings = current['[rego]'];
@@ -359,22 +475,26 @@ export function mergePolicyEditorExtensions(contents: string | null): PolicyEdit
 }
 
 /**
- * Build the generated target-scoped VS Code lint task.
+ * Build the generated starter-bundle VS Code lint task.
  *
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
  * @returns VS Code task object
  */
 export function buildPolicyLintTask(
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
 ): Record<string, unknown> {
-  const target = relative(repositoryRoot, targetDirectory).split(sep).join('/') || '.';
+  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
+  const bundle =
+    workspace === '.'
+      ? POLICY_STARTER_BUNDLE_DIRECTORY
+      : `${workspace}/${POLICY_STARTER_BUNDLE_DIRECTORY}`;
   return {
     label: 'policy: lint',
     type: 'process',
     command: 'transcend',
-    args: ['policy', 'lint', target, '--noInteractive'],
+    args: ['policy', 'lint', bundle, '--noInteractive'],
     group: {
       kind: 'test',
       isDefault: true,
@@ -388,13 +508,13 @@ export function buildPolicyLintTask(
  *
  * @param contents - Existing `.vscode/tasks.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
- * @param targetDirectory - Selected policy project directory
+ * @param workspaceDirectory - Selected policy workspace directory
  * @returns Merged task configuration and warnings
  */
 export function mergePolicyEditorTasks(
   contents: string | null,
   repositoryRoot: string,
-  targetDirectory: string,
+  workspaceDirectory: string,
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy tasks');
   if ('warning' in parsed) {
@@ -410,7 +530,7 @@ export function mergePolicyEditorTasks(
     warnings.push('VS Code task schema version is customized and was left unchanged.');
   }
 
-  const desiredTask = buildPolicyLintTask(repositoryRoot, targetDirectory);
+  const desiredTask = buildPolicyLintTask(repositoryRoot, workspaceDirectory);
   const tasks = current.tasks;
   if (tasks === undefined) {
     updates.push({ path: ['tasks'], value: [desiredTask] });

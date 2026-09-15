@@ -6,7 +6,7 @@ import {
   projectNoInteractiveParameter,
   projectYesParameter,
 } from '../../../lib/scaffolding/command-parameters.js';
-import { policyDirectoryParameter } from '../helpers/policyCommandParameters.js';
+import { policyWorkspaceDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
 export const initCommand = buildCommand({
   loader: async () => {
@@ -40,7 +40,7 @@ export const initCommand = buildCommand({
     },
     positional: {
       kind: 'tuple',
-      parameters: [policyDirectoryParameter],
+      parameters: [policyWorkspaceDirectoryParameter],
     },
   },
   docs: {

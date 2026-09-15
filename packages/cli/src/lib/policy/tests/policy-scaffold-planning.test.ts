@@ -105,15 +105,17 @@ describe('buildPolicyInitPlan', () => {
     expect(first.directoryPreconditions).toEqual([
       { path: '/repo/transcend/policy', relativePaths: [] },
     ]);
-    expect(first.changes).toHaveLength(7);
+    expect(first.changes).toHaveLength(8);
     expect(
       first.changes.every(
         (change) => change.kind === 'file' && change.before === null && change.createOnly,
       ),
     ).toBe(true);
-    expect(first.nextSteps[0]).toBe("transcend policy lint 'transcend/policy' --noInteractive");
+    expect(first.nextSteps[0]).toBe(
+      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
+    );
     expect(first.disposableExamplePath).toBe(
-      '/repo/transcend/policy/policy_engine/example/result.rego',
+      '/repo/transcend/policy/example-bundle/example/result/result.rego',
     );
   });
 
@@ -124,13 +126,13 @@ describe('buildPolicyInitPlan', () => {
     // Then: It creates every starter file without deleting the empty directories.
     const state = {
       ...buildState('/repo'),
-      relativePaths: ['.regal', 'policy_engine', 'policy_engine/example'],
+      relativePaths: ['.regal', 'example-bundle', 'example-bundle/example'],
     };
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
 
     const plan = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, CORE_OPTIONS);
 
-    expect(plan.changes).toHaveLength(7);
+    expect(plan.changes).toHaveLength(8);
     expect(plan.directoryPreconditions).toEqual([
       {
         path: '/repo/transcend/policy',
@@ -141,14 +143,14 @@ describe('buildPolicyInitPlan', () => {
 
   it('is a clean no-op when rerun against its exact starter and local input', () => {
     const initial = initializedState(buildState('/repo'));
-    initial.state.relativePaths.push('input.json');
-    initial.state.relativeFilePaths.push('input.json');
+    initial.state.relativePaths.push('example-bundle/input.json');
+    initial.state.relativeFilePaths.push('example-bundle/input.json');
 
     const plan = buildPolicyInitPlan(initial, CORE_OPTIONS);
 
     expect(plan.changes).toEqual([]);
     expect(plan.warnings).toEqual([]);
-    expect(plan.unchanged).toHaveLength(7);
+    expect(plan.unchanged).toHaveLength(8);
   });
 
   it('never fills in or overwrites a target containing custom or partial content', () => {
@@ -176,9 +178,11 @@ describe('buildPolicyInitPlan', () => {
     );
     expect(plan.warnings.at(-1)).toContain('no starter files were added or overwritten');
     expect(plan.warnings.at(-1)).toContain(
-      "transcend policy lint 'transcend/policy' --noInteractive",
+      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
     );
-    expect(plan.nextSteps).toEqual(["transcend policy lint 'transcend/policy' --noInteractive"]);
+    expect(plan.nextSteps).toEqual([
+      "transcend policy lint 'transcend/policy/example-bundle' --noInteractive",
+    ]);
     expect(plan.disposableExamplePath).toBeUndefined();
   });
 
@@ -189,7 +193,7 @@ describe('buildPolicyInitPlan', () => {
     const plan = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, CORE_OPTIONS);
 
     expect(buildPolicyLintCommand(state)).toBe(
-      "transcend policy lint 'policies with spaces' --noInteractive",
+      "transcend policy lint 'policies with spaces/example-bundle' --noInteractive",
     );
     expect(plan.nextSteps[0]).toBe(buildPolicyLintCommand(state));
   });

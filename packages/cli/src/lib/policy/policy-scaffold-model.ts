@@ -2,7 +2,7 @@ import type { ExistingProjectSkillDirectory } from '../scaffolding/agent-skill.j
 import type { ProjectPlan } from '../scaffolding/project-plan.js';
 
 /** Version of the stable policy initialization JSON result. */
-export const POLICY_INIT_RESULT_VERSION = 1 as const;
+export const POLICY_INIT_RESULT_VERSION = 2 as const;
 
 /** Optional repository integrations for policy authoring. */
 export const PolicySetupFeature = {

@@ -26,7 +26,7 @@ import {
   parseUnformattedPolicyFiles,
 } from '../../../lib/policy/policy-lint-output.js';
 import {
-  DEFAULT_POLICY_PROJECT_DIRECTORY,
+  DEFAULT_POLICY_BUNDLE_DIRECTORY,
   resolvePolicyProjectDirectory,
 } from '../../../lib/policy/policy-project-discovery.js';
 import {
@@ -135,7 +135,7 @@ function renderResult(context: LocalContext, result: PolicyLintResult): void {
 export async function lint(
   this: LocalContext,
   { fix = false, noInteractive = false, json = false }: LintCommandFlags,
-  directory: string = DEFAULT_POLICY_PROJECT_DIRECTORY,
+  directory: string = DEFAULT_POLICY_BUNDLE_DIRECTORY,
   runner: CapturedProcessRunner = runCapturedProcess,
 ): Promise<void> {
   doneInputValidation(this.process);

@@ -28,9 +28,9 @@ export default `#### Examples
 
 ${examples}
 
-To verify another project, pass its directory positionally:
+To verify another publish directory, pass it positionally:
 
 \`\`\`sh
-transcend policy lint ./policies --fix
+transcend policy lint ./policies/example-bundle --fix
 \`\`\`
 `;

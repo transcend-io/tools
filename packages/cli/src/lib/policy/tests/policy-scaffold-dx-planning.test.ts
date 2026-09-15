@@ -131,7 +131,7 @@ describe('Policy Engine repository integration planning', () => {
       expect(paths).toContain(`/repo/.agents/skills/${POLICY_SKILL_NAME}/${path}`);
     });
     expect(plan.features).toEqual(options.features);
-    expect(plan.changes).toHaveLength(16);
+    expect(plan.changes).toHaveLength(17);
     expect(plan.warnings).toEqual([]);
   });
 
@@ -153,7 +153,7 @@ describe('Policy Engine repository integration planning', () => {
 
     expect(second.changes).toEqual([]);
     expect(second.warnings).toEqual([]);
-    expect(second.unchanged).toHaveLength(16);
+    expect(second.unchanged).toHaveLength(17);
   });
 
   it('uses one existing skill directory without inventing editor-specific copies', () => {
