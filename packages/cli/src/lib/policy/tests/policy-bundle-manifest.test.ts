@@ -26,12 +26,13 @@ describe('policy bundle manifest contract', () => {
   });
 
   it.each([
-    [undefined, /must contain a manifest\.json/u],
-    ['{ invalid', /manifest\.json is not valid JSON/u],
+    [undefined, /must contain a \.manifest/u],
+    ['{ invalid', /\.manifest is not valid JSON/u],
     ['[]', /must contain a JSON object/u],
     ['{}', /must declare "roots" as a non-empty array/u],
     ['{"roots":[]}', /must declare "roots" as a non-empty array/u],
     ['{"roots":["policy_engine",42]}', /must be an array of non-empty strings/u],
+    ['{"roots":[""]}', /must be an array of non-empty strings/u],
     ['{"roots":["policy_engine/customer.policy"]}', /slash-separated Rego identifiers/u],
   ])('rejects an invalid manifest contract', (contents, message) => {
     expect(() => parsePolicyBundleManifest(contents)).toThrow(message);

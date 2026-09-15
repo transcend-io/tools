@@ -28,8 +28,9 @@ import {
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
 import {
+  isInteractivePromptInvocation,
   PromptCancelledError,
-  type PromptChoice,
+  resolveSetupFeatures,
   ScaffoldPrompts,
 } from '../../../lib/scaffolding/prompts.js';
 
@@ -67,57 +68,6 @@ const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
 const ALL_SETUP_FEATURES = Object.values(CustomFunctionSetupFeature);
 
 /**
- * Whether this invocation can ask questions.
- *
- * @param context - CLI context
- * @param flags - Interaction flags
- * @returns Whether prompts are enabled
- */
-function isInteractiveInvocation(
-  flags: Pick<CustomFunctionInitFlags, 'json' | 'noInteractive'>,
-  stdinIsTTY: boolean | undefined,
-  stderrIsTTY: boolean | undefined,
-): boolean {
-  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
-}
-
-/**
- * Resolve setup directly from individual flags or one checkbox prompt.
- *
- * @param context - CLI context
- * @param prompts - Prompt adapters
- * @param flags - Setup flags
- * @param options - Interaction state
- * @returns Selected setup features
- */
-async function resolveFeatures(
-  prompts: ScaffoldPrompts,
-  flags: CustomFunctionInitFlags,
-  options: {
-    /** Whether prompts are available. */
-    interactive: boolean;
-  },
-): Promise<CustomFunctionSetupFeatureType[]> {
-  const enabled: Readonly<Record<CustomFunctionSetupFeatureType, boolean | undefined>> = {
-    [CustomFunctionSetupFeature.Deno]: flags.deno,
-    [CustomFunctionSetupFeature.Editor]: flags.editor,
-    [CustomFunctionSetupFeature.Skill]: flags.skill,
-    [CustomFunctionSetupFeature.Ci]: flags.ci,
-  };
-  if (!options.interactive) {
-    return ALL_SETUP_FEATURES.filter((feature) => enabled[feature] === true);
-  }
-  const choices: PromptChoice<CustomFunctionSetupFeatureType>[] = ALL_SETUP_FEATURES.map(
-    (feature) => ({
-      name: SETUP_LABELS[feature],
-      value: feature,
-      checked: enabled[feature] !== false,
-    }),
-  );
-  return prompts.checkbox('Choose repository setup:', choices);
-}
-
-/**
  * Initialize a credential-free local Custom Function project.
  *
  * @param this - CLI context
@@ -136,12 +86,22 @@ export async function init(
       ...(flags.manifest ? { manifest: flags.manifest } : {}),
     });
     const prompts = new ScaffoldPrompts(this);
-    const interactive = isInteractiveInvocation(
+    const interactive = isInteractivePromptInvocation(
       flags,
       this.process.stdin.isTTY,
       this.process.stderr.isTTY,
     );
-    const features = await resolveFeatures(prompts, flags, { interactive });
+    const features = await resolveSetupFeatures(prompts, {
+      features: ALL_SETUP_FEATURES,
+      labels: SETUP_LABELS,
+      enabled: {
+        [CustomFunctionSetupFeature.Deno]: flags.deno,
+        [CustomFunctionSetupFeature.Editor]: flags.editor,
+        [CustomFunctionSetupFeature.Skill]: flags.skill,
+        [CustomFunctionSetupFeature.Ci]: flags.ci,
+      },
+      interactive,
+    });
     const snapshots = collectPlanningSnapshots(
       this,
       state.projectRoot,

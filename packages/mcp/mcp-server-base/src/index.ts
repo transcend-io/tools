@@ -3,6 +3,8 @@ export type { AuthCredentials, ApiKeyAuth, OAuthTokenAuth, SessionCookieAuth } f
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
+export { tenantCacheKey, STDIO_TENANT_CACHE_KEY } from './tenant-cache-key.js';
+
 export {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,
@@ -47,7 +49,12 @@ export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { derivePageInfo } from './clients/graphql/pagination.js';
 export { TranscendRestClient } from './clients/rest-client.js';
-export type { TranscendRestClientOptions } from './clients/rest-client.js';
+export type {
+  CustomFunctionCodeContext,
+  CustomFunctionSource,
+  SignedCustomFunction,
+  TranscendRestClientOptions,
+} from './clients/rest-client.js';
 
 export {
   DEFAULT_DASHBOARD_URL,

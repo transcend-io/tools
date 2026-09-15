@@ -85,7 +85,10 @@ describe('deactivate', () => {
       json: true,
     });
 
-    expect(context.stdout).toContain('"bundleName": "main"');
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      bundle: { bundleName: 'main' },
+    });
+    expect(context.stdout).not.toContain('Policy bundle version deactivated.');
   });
 
   it('throws a CLI-side error when the bundle name is unknown (before calling the monolith)', async () => {

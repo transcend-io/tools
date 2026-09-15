@@ -36,19 +36,31 @@ import type {
  * Lists policy bundles (mirrors `transcend policy bundles --json`).
  *
  * @param client - Policy Engine REST client
- * @param options - Pagination options
+ * @param options - Pagination and optional name filter
  * @returns Bundle list response
  */
 export async function listPolicyBundles(
   client: Got,
-  options: { limit?: number; offset?: number } = {},
+  options: {
+    /** Page size */
+    limit?: number;
+    /** Offset into the result set */
+    offset?: number;
+    /** When set, filter to this tenant-unique bundle name */
+    bundleName?: string;
+  } = {},
 ): Promise<PolicyBundleListResponse> {
   const limit = options.limit ?? 50;
   const offset = options.offset ?? 0;
+  const searchParams: Record<string, string | number> = { limit, offset };
+  if (options.bundleName) {
+    searchParams['filter[bundleName]'] = options.bundleName;
+  }
+
   return policyEngineRequest(
     client
       .get('v1/policy-engine/policy-bundles', {
-        searchParams: { limit, offset },
+        searchParams,
       })
       .json<PolicyBundleListResponse>(),
   );
@@ -91,7 +103,14 @@ export async function getPolicyBundleById(
 export async function listPolicyBundleVersions(
   client: Got,
   bundleId: string,
-  options: { limit?: number; after?: string; version?: string } = {},
+  options: {
+    /** Page size */
+    limit?: number;
+    /** Cursor from a prior page */
+    after?: string;
+    /** When set, filter to this version label */
+    version?: string;
+  } = {},
 ): Promise<PolicyBundleVersionListResponse> {
   const limit = options.limit ?? 50;
   const searchParams: Record<string, string | number> = { limit };

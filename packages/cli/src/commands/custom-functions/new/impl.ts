@@ -34,7 +34,11 @@ import {
   displayProjectPath,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
-import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
+import {
+  isInteractivePromptInvocation,
+  PromptCancelledError,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
@@ -52,21 +56,6 @@ export interface CustomFunctionNewFlags {
   yes: boolean;
   /** Emit one stable JSON result on stdout. */
   json: boolean;
-}
-
-/**
- * Whether this invocation can ask questions.
- *
- * @param context - CLI context
- * @param flags - Interaction flags
- * @returns Whether prompts are enabled
- */
-function isInteractiveInvocation(
-  flags: Pick<CustomFunctionNewFlags, 'json' | 'noInteractive'>,
-  stdinIsTTY: boolean | undefined,
-  stderrIsTTY: boolean | undefined,
-): boolean {
-  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
 }
 
 /**
@@ -142,7 +131,7 @@ export async function _new(
       );
     }
     const prompts = new ScaffoldPrompts(this);
-    const interactive = isInteractiveInvocation(
+    const interactive = isInteractivePromptInvocation(
       flags,
       this.process.stdin.isTTY,
       this.process.stderr.isTTY,

@@ -56,6 +56,25 @@ describe('bundles', () => {
     expect(context.stdout).toContain('bundle-id');
   });
 
+  it('prints parseable JSON without progress messages', async () => {
+    const body = { nodes: [], totalCount: 0 };
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue(body),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+
+    await bundles.call(context, {
+      auth: 'test-key',
+      'transcend-url': 'https://api.transcend.io',
+      limit: 50,
+      offset: 0,
+      json: true,
+    });
+
+    expect(JSON.parse(context.stdout)).toEqual(body);
+    expect(context.stdout).not.toContain('Listing policy bundles');
+  });
+
   it('surfaces auth failures with a user-readable message', async () => {
     const httpError = {
       response: {

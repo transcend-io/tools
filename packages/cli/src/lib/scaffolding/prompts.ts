@@ -165,3 +165,55 @@ export class ScaffoldPrompts {
     }
   }
 }
+
+/**
+ * Whether an invocation can safely display interactive prompts.
+ *
+ * @param flags - Prompt and output flags
+ * @param stdinIsTTY - Whether prompt input is interactive
+ * @param stderrIsTTY - Whether prompt output is interactive
+ * @returns Whether prompts are enabled
+ */
+export function isInteractivePromptInvocation(
+  flags: {
+    /** Whether machine-readable output is enabled. */
+    json: boolean;
+    /** Whether prompts are explicitly disabled. */
+    noInteractive: boolean;
+  },
+  stdinIsTTY: boolean | undefined,
+  stderrIsTTY: boolean | undefined,
+): boolean {
+  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
+}
+
+/**
+ * Resolve optional setup from explicit flags or a default-selected checklist.
+ *
+ * @param prompts - Prompt adapters
+ * @param options - Feature labels, selections, and interaction state
+ * @returns Selected setup features
+ */
+export async function resolveSetupFeatures<T extends string>(
+  prompts: Pick<ScaffoldPrompts, 'checkbox'>,
+  options: {
+    /** Features in stable display order. */
+    features: readonly T[];
+    /** User-facing feature labels. */
+    labels: Readonly<Record<T, string>>;
+    /** Explicit feature selections. */
+    enabled: Readonly<Record<T, boolean | undefined>>;
+    /** Whether a checklist can be displayed. */
+    interactive: boolean;
+  },
+): Promise<T[]> {
+  if (!options.interactive) {
+    return options.features.filter((feature) => options.enabled[feature] === true);
+  }
+  const choices: PromptChoice<T>[] = options.features.map((feature) => ({
+    name: options.labels[feature],
+    value: feature,
+    checked: options.enabled[feature] !== false,
+  }));
+  return prompts.checkbox('Choose repository setup:', choices);
+}

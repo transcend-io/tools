@@ -29,5 +29,8 @@ describe('DSR_BULK_ERROR_MESSAGE', () => {
     expect(DSR_BULK_ERROR_MESSAGE[DsrBulkErrorCode.ConcurrentSubmissionConflict]()).toBe(
       'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
     );
+    expect(DSR_BULK_ERROR_MESSAGE[DsrBulkErrorCode.InvalidBulkInput]()).toBe(
+      'Bulk submission input must be an array',
+    );
   });
 });

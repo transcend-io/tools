@@ -3,16 +3,22 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { buildCustomFunctionListJsonResult } from '../../../lib/custom-functions/command-output.js';
 
 export interface CustomFunctionsListCommandFlags {
+  /** Transcend API key. */
   auth: string;
+  /** Transcend backend URL. */
   transcendUrl: string;
+  /** Emit stable JSON output. */
+  json: boolean;
 }
 
 export async function list(
   this: LocalContext,
-  { auth, transcendUrl }: CustomFunctionsListCommandFlags,
+  { auth, transcendUrl, json }: CustomFunctionsListCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
 
@@ -27,7 +33,14 @@ export async function list(
   }
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKeyOrList as string);
-  const customFunctions = await fetchAllCustomFunctions(client, { logger: this.logger });
+  const commandLogger = selectCommandLogger(this.logger, json);
+  const customFunctions = await fetchAllCustomFunctions(client, { logger: commandLogger });
+
+  if (json) {
+    const result = buildCustomFunctionListJsonResult(customFunctions);
+    this.process.stdout.write(`${JSON.stringify(result)}\n`);
+    return;
+  }
 
   if (customFunctions.length === 0) {
     this.logger.info(colors.yellow('No custom functions found in this organization.'));

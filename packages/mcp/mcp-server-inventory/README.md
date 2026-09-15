@@ -102,10 +102,10 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `inventory_list_data_silos` — List data silos (optional `text` / `titles` filters)
-- `inventory_get_data_silo` — Get data silo details (vendor, purposes, owners, subjects, metadata)
+- `inventory_list_data_silos` — List data silos (optional `text` / `titles` / `customSiloConnectionStrategy` filters)
+- `inventory_get_data_silo` — Get data silo details (vendor, purposes, owners, subjects, metadata, `sombraId`, `customSiloConnectionStrategy`)
 - `inventory_list_catalog_integrations` — Search the integration catalog for valid `integrationName` values (optional `text` filter)
-- `inventory_write_data_silo` — Create or update a data silo (`integrationName` to create, `dataSiloId` to update; owners/vendor/purposes in the same call)
+- `inventory_write_data_silo` — Create or update a data silo (`integrationName` to create, `dataSiloId` to update; owners/vendor/purposes in the same call; pass `sombraId` when creating `customFunction`)
 - `inventory_list_data_points` — List data points (optional `dataSiloId` and `text` filters)
 - `inventory_update_or_create_data_point` — Create/update a datapoint and field-level purpose assignments
 - `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
