@@ -40,6 +40,16 @@ export interface PolicyBundleVersion {
   updatedAt: string;
 }
 
+/**
+ * Response from fetching a single policy bundle by UUID.
+ *
+ * `GET /v1/policy-engine/policy-bundles/:bundleId`
+ */
+export interface GetPolicyBundleResponse {
+  /** Bundle parent record */
+  bundle: PolicyBundle;
+}
+
 /** Offset-paginated list of policy bundles. */
 export interface PolicyBundleListResponse {
   /** Bundles on this page */
@@ -101,7 +111,7 @@ export interface DeactivatePolicyBundleResponse {
 /**
  * Response from fetching a policy bundle version with a short-lived download URL.
  *
- * `GET /v1/policy-engine/policy-bundle-versions/:versionId`
+ * `GET /v1/policy-engine/policy-bundles/:bundleId/versions/:versionId`
  */
 export interface GetPolicyBundleVersionResponse {
   /** Version UUID */

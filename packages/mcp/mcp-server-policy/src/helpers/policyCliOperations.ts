@@ -12,16 +12,16 @@ import {
   packPolicyBundleTarball,
   packPolicyBundleTarballFromFiles,
 } from './packPolicyBundleTarball.js';
-import { resolveBundle, resolveBundleIdByName } from './resolveBundle.js';
-import { resolvePolicyBundleVersion } from './resolvePolicyBundleVersion.js';
 import type {
   ActivatePolicyBundleVersionResponse,
   CreatePolicyBundleResponse,
   CreatePolicyBundleVersionResponse,
   DeactivatePolicyBundleResponse,
+  GetPolicyBundleResponse,
   GetPolicyBundleVersionResponse,
   PolicyBundle,
   PolicyBundleListResponse,
+  PolicyBundleVersion,
   PolicyBundleVersionListResponse,
 } from './types.js';
 
@@ -78,7 +78,10 @@ export async function getPolicyBundleById(
   bundleId: string,
 ): Promise<PolicyBundle | undefined> {
   try {
-    return await client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>();
+    const body = await client
+      .get(`v1/policy-engine/policy-bundles/${bundleId}`)
+      .json<GetPolicyBundleResponse>();
+    return body.bundle;
   } catch (error) {
     if (
       error &&
@@ -133,17 +136,21 @@ export async function listPolicyBundleVersions(
 /**
  * Fetches version metadata and presigned download URL (mirrors `transcend policy download --json`).
  *
+ * Uses the nested control-plane route under the parent bundle (same path as CLI download).
+ *
  * @param client - Policy Engine REST client
+ * @param bundleId - Parent bundle UUID
  * @param versionId - Version UUID
  * @returns Version metadata with download URL
  */
 export async function getPolicyBundleVersion(
   client: Got,
+  bundleId: string,
   versionId: string,
 ): Promise<GetPolicyBundleVersionResponse> {
   return policyEngineRequest(
     client
-      .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions/${versionId}`)
       .json<GetPolicyBundleVersionResponse>(),
   );
 }
@@ -192,7 +199,13 @@ export async function publishPolicyBundle(
     bundlePath = hasFiles
       ? await packPolicyBundleTarballFromFiles(options.files!)
       : await packPolicyBundleTarball(options.dir!);
-    const existingBundleId = await resolveBundleIdByName(client, options.bundleName);
+    const existingBundleId = (
+      await listPolicyBundles(client, {
+        bundleName: options.bundleName,
+        limit: 1,
+        offset: 0,
+      })
+    ).nodes[0]?.id;
 
     if (existingBundleId) {
       const form = buildPolicyBundleFormData({
@@ -238,6 +251,29 @@ export interface ActivatePolicyBundleOptions {
 }
 
 /**
+ * Maps a nested get-version API response to the canonical version record shape.
+ *
+ * @param body - Version metadata from `GET /policy-bundles/:id/versions/:versionId`
+ * @returns Version record used by activate
+ */
+function mapGetPolicyBundleVersionResponse(
+  body: GetPolicyBundleVersionResponse,
+): PolicyBundleVersion {
+  return {
+    id: body.versionId,
+    version: body.version,
+    sha256: body.sha256,
+    sizeBytes: body.sizeBytes,
+    description: body.description,
+    createdBy: '',
+    activatedAt: body.activatedAt,
+    deactivatedAt: body.deactivatedAt,
+    createdAt: body.uploadedAt,
+    updatedAt: body.uploadedAt,
+  };
+}
+
+/**
  * Activates a policy bundle version (mirrors `transcend policy activate --json`).
  *
  * @param client - Policy Engine REST client
@@ -248,11 +284,35 @@ export async function activatePolicyBundleVersion(
   client: Got,
   options: ActivatePolicyBundleOptions,
 ): Promise<ActivatePolicyBundleVersionResponse> {
-  const bundle = await resolveBundle(client, { bundleName: options.bundleName });
-  const resolvedVersion = await resolvePolicyBundleVersion(client, bundle.id, {
-    versionId: options.versionId,
-    version: options.version,
-  });
+  const bundle = (
+    await listPolicyBundles(client, {
+      bundleName: options.bundleName,
+      limit: 1,
+      offset: 0,
+    })
+  ).nodes[0];
+  if (!bundle) {
+    throw new Error(`Policy bundle "${options.bundleName}" was not found.`);
+  }
+
+  let resolvedVersion: PolicyBundleVersion;
+  if (options.versionId) {
+    const detail = await getPolicyBundleVersion(client, bundle.id, options.versionId);
+    resolvedVersion = mapGetPolicyBundleVersionResponse(detail);
+  } else {
+    const searchParams: { limit: number; version?: string } = { limit: 1 };
+    if (options.version) {
+      searchParams.version = options.version;
+    }
+    const match = (await listPolicyBundleVersions(client, bundle.id, searchParams)).nodes[0];
+    if (!match) {
+      if (options.version) {
+        throw new Error(`Version "${options.version}" was not found for this policy bundle.`);
+      }
+      throw new Error('No versions found for this policy bundle.');
+    }
+    resolvedVersion = match;
+  }
 
   try {
     return await policyEngineRequest(
@@ -287,7 +347,16 @@ export async function deactivatePolicyBundle(
   client: Got,
   bundleName: string,
 ): Promise<DeactivatePolicyBundleResponse> {
-  const bundle = await resolveBundle(client, { bundleName });
+  const bundle = (
+    await listPolicyBundles(client, {
+      bundleName,
+      limit: 1,
+      offset: 0,
+    })
+  ).nodes[0];
+  if (!bundle) {
+    throw new Error(`Policy bundle "${bundleName}" was not found.`);
+  }
 
   try {
     return await policyEngineRequest(

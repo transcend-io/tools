@@ -1,8 +1,7 @@
 import { createToolResult, defineTool, z } from '@transcend-io/mcp-server-base';
 
-import { publishPolicyBundle } from '../helpers/policyCliOperations.js';
+import { listPolicyBundles, publishPolicyBundle } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
-import { resolveBundle } from '../helpers/resolveBundle.js';
 
 export const PolicyPublishSchema = z
   .object({
@@ -50,7 +49,19 @@ export function createPolicyPublishTool(clients: PolicyToolClients) {
 
       const uploadedVersion = response.version;
       const bundle =
-        'bundle' in response ? response.bundle : await resolveBundle(client, { bundleName });
+        'bundle' in response
+          ? response.bundle
+          : (
+              await listPolicyBundles(client, {
+                bundleName,
+                limit: 1,
+                offset: 0,
+              })
+            ).nodes[0];
+
+      if (!bundle) {
+        throw new Error(`Policy bundle "${bundleName}" was not found.`);
+      }
 
       return createToolResult(true, {
         message: 'Uploaded inert version. Call policy_set_live with action "activate" to go live.',

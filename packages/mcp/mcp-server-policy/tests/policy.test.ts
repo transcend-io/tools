@@ -303,12 +303,12 @@ describe('Policy MCP tools', () => {
       mockClient.get.mockReturnValue({
         json: vi
           .fn()
-          // resolveBundle by name
+          // listPolicyBundles by name
           .mockResolvedValueOnce({
             nodes: [{ id: 'b1', bundleName: 'main', activeVersionId: null }],
             totalCount: 1,
           })
-          // GET /policy-bundle-versions/:versionId
+          // GET /policy-bundles/:id/versions/:versionId
           .mockResolvedValueOnce({
             versionId: 'v1',
             version: 'main-2026-01-01',
@@ -320,16 +320,6 @@ describe('Policy MCP tools', () => {
             sha256: 'abc',
             sizeBytes: 100,
             downloadUrl: 'https://example.com/bundle.tar.gz',
-          })
-          // GET /policy-bundles/:bundleId (ownership check)
-          .mockResolvedValueOnce({
-            id: 'b1',
-            bundleName: 'main',
-            description: null,
-            activeVersionId: null,
-            lastActivatedAt: null,
-            createdAt: '2026-01-01T00:00:00Z',
-            updatedAt: '2026-01-01T00:00:00Z',
           }),
       });
       mockClient.post.mockReturnValue({
@@ -344,6 +334,7 @@ describe('Policy MCP tools', () => {
         versionId: 'v1',
       });
 
+      expect(mockClient.get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/b1/versions/v1');
       expect(mockClient.post).toHaveBeenCalledWith(
         'v1/policy-engine/policy-bundles/b1/versions/v1/activate',
         { json: {} },
