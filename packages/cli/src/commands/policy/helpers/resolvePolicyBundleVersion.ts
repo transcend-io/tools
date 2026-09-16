@@ -2,7 +2,6 @@ import type { Got } from 'got';
 
 import type {
   GetPolicyBundleVersionResponse,
-  PolicyBundle,
   PolicyBundleVersion,
   PolicyBundleVersionListResponse,
 } from '../types.js';
@@ -20,9 +19,9 @@ export interface ResolvePolicyBundleVersionOptions {
 }
 
 /**
- * Maps a direct version-by-id API response to the canonical version record shape.
+ * Maps a nested get-version API response to the canonical version record shape.
  *
- * @param body - Version metadata from `GET /policy-bundle-versions/:versionId`
+ * @param body - Version metadata from `GET /policy-bundles/:id/versions/:versionId`
  * @returns Version record used by CLI commands
  */
 function mapGetPolicyBundleVersionResponse(
@@ -67,7 +66,9 @@ async function fetchPolicyBundleVersionPage(
 }
 
 /**
- * Resolves a version by UUID and verifies it belongs to the given parent bundle.
+ * Resolves a version by UUID under the given parent bundle.
+ *
+ * Uses the nested control-plane route (same path as `transcend policy download`).
  *
  * @param client - Policy Engine REST client
  * @param bundleId - Parent bundle UUID
@@ -82,7 +83,7 @@ async function resolvePolicyBundleVersionById(
   let body: GetPolicyBundleVersionResponse;
   try {
     body = await client
-      .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions/${versionId}`)
       .json<GetPolicyBundleVersionResponse>();
   } catch (error) {
     if (
@@ -94,14 +95,6 @@ async function resolvePolicyBundleVersionById(
       throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
     }
     throwPolicyEngineRequestError(error);
-  }
-
-  const bundle = await policyEngineRequest(
-    client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>(),
-  );
-
-  if (body.bundleName !== bundle.bundleName) {
-    throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
   }
 
   return mapGetPolicyBundleVersionResponse(body);
