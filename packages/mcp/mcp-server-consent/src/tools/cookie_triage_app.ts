@@ -2,7 +2,10 @@ import {
   createToolResult,
   defineToolWithCapabilities,
   ErrorCode,
+  getMcpSession,
   McpClientCapability,
+  McpHostClient,
+  quirksFor,
   ToolError,
   z,
   type ToolClients,
@@ -35,6 +38,18 @@ export const CookieTriageAppSchema = z.object({
 }) satisfies z.ZodType<CookieTriageAppInput>;
 
 const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens an interactive consent triage review UI for cookies or data flows. Pass triageType ("${ConsentTriageType.Cookies}" | "${ConsentTriageType.DataFlows}"). On MCP App hosts the tool returns a fast shell and the view pages consent_list_cookies or consent_list_data_flows; elsewhere the tool fetches the organization name and items (pages of ${COOKIE_TRIAGE_FETCH_PAGE_SIZE}, cap ~${COOKIE_TRIAGE_FETCH_MAX}), groups by purpose (≤${COOKIE_TRIAGE_MAX_PER_PURPOSE}/tab), and sorts by traffic. No agent classification suggestions. Use the consent-triage prompt for the full workflow.`;
+
+/**
+ * Whether this host can invoke app-only permanent-delete tools from the view.
+ *
+ * Defaults to true outside a request (unit tests) and for hosts without the
+ * Cursor quirk; only Cursor currently fails `callServerTool` for
+ * `visibility: ['app']` companions (ZEL-8402).
+ */
+function supportsPermanentDelete(): boolean {
+  const host = getMcpSession()?.client.host ?? McpHostClient.Unknown;
+  return quirksFor(host).appOnlyToolsUnreachable !== true;
+}
 
 /**
  * Re-throw a fetch failure with the step name so the UI/agent can see what broke.
@@ -83,6 +98,7 @@ function buildShellPayload(
     organizationName: '',
     categories: [],
     loaded: false,
+    supportsPermanentDelete: supportsPermanentDelete(),
     message: `Interactive review UI opened for ${kind}. Tell the user: use the interactive UI to review ${kind} and ask any follow-up questions. Do not call consent_list_cookies or consent_list_data_flows.`,
   };
 }
@@ -120,6 +136,7 @@ export function createConsentCookieTriageAppTool(clients: ToolClients) {
       organizationName,
       categories: groupCookiesForTriage(items),
       loaded: true,
+      supportsPermanentDelete: supportsPermanentDelete(),
     };
   }
 

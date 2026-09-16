@@ -92,6 +92,8 @@ export async function _eval(
     throw new Error(`Schema path not found: ${schemaPath}`);
   }
 
+  // Match lint/publish and production Evaluate: `*_test.rego` is local-only and
+  // never shipped. Keep `-b` / `--ignore` owned by the CLI (not pass-through).
   const args = [
     'eval',
     '--format',
@@ -99,6 +101,8 @@ export async function _eval(
     ...inputArgs,
     '-b',
     bundlePath,
+    '--ignore',
+    '*_test.rego',
     ...(schemaPath ? ['--schema', schemaPath] : []),
     ...(explain && explain !== 'off' ? ['--explain', explain] : []),
     ...(metrics ? ['--metrics'] : []),

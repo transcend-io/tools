@@ -61,6 +61,11 @@ interface CookieTriageProviderProps {
   triageType: ConsentTriageType;
   /** Admin dashboard base URL for deep links */
   dashboardUrl: string;
+  /**
+   * Whether the host can call app-only permanent-delete tools. When false the
+   * delete button is hidden (Junk remains available).
+   */
+  supportsPermanentDelete: boolean;
   /** Connected MCP App used to call list tools */
   app: App | null;
   /** Triage UI subtree */
@@ -103,6 +108,7 @@ function chromeSignature(chrome: CookieTriageChrome): string {
 export function CookieTriageProvider({
   triageType,
   dashboardUrl,
+  supportsPermanentDelete,
   app,
   children,
 }: CookieTriageProviderProps) {
@@ -315,8 +321,9 @@ export function CookieTriageProvider({
       triageType: state.triageType,
       dashboardUrl,
       purposeOptions: state.purposeOptions,
+      supportsPermanentDelete,
     }),
-    [dashboardUrl, state.purposeOptions, state.triageType],
+    [dashboardUrl, state.purposeOptions, state.triageType, supportsPermanentDelete],
   );
 
   const triagedCount = selectTriagedCount(state.categories);

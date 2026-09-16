@@ -1,12 +1,17 @@
 import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
+import permissionsPolicyInputSchema from '../../../../schema/permissions-policy-input.json' with { type: 'json' };
+import { version as CLI_VERSION } from '../../../constants.js';
 import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
+  buildPermissionsInputExampleContents,
+  buildPermissionsInputSchemaContents,
   generatePolicyStarterFiles,
   generatePolicyWorkspaceFiles,
   generatePolicyBundleFiles,
   mergePolicyRegalConfigRoots,
+  PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
   POLICY_GITIGNORE_TEMPLATE,
   POLICY_INPUT_EXAMPLE_TEMPLATE,
   POLICY_INPUT_SCHEMA_TEMPLATE,
@@ -68,6 +73,12 @@ describe('policy starter templates', () => {
       revision: '',
       roots: [POLICY_STARTER_ROOT],
       rego_version: 1,
+      metadata: {
+        'transcend.io': {
+          template: 'generic',
+          templateVersion: CLI_VERSION,
+        },
+      },
     });
     expect(
       validatePolicyBundleContents(POLICY_MANIFEST_TEMPLATE, [
@@ -81,7 +92,7 @@ describe('policy starter templates', () => {
         },
       ]),
     ).toEqual({
-      manifest: { roots: [POLICY_STARTER_ROOT] },
+      manifest: { roots: [POLICY_STARTER_ROOT], template: 'generic' },
       publishableRegoPaths: [`${POLICY_STARTER_ROOT}/result/result.rego`],
     });
   });
@@ -205,6 +216,9 @@ describe('policy bundle templates', () => {
     ]);
     expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
     expect(JSON.parse(files[0]!.contents).roots).toEqual(['myapp']);
+    expect(JSON.parse(files[0]!.contents).metadata).toEqual({
+      'transcend.io': { template: 'generic', templateVersion: CLI_VERSION },
+    });
     expect(files[2]!.contents).toContain('package myapp.result');
     expect(files[3]!.contents).toContain('package myapp.result_test');
     expect(files.find(({ path }) => path === 'myapp-bundle/input.json')?.contents).toBe(
@@ -234,9 +248,24 @@ describe('policy bundle templates', () => {
     expect(paths).toContain('permissions-bundle/input.json');
     expect(paths).toContain('permissions-bundle/.gitignore');
     expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
+    expect(
+      JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
+    ).toEqual({
+      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
+    });
     expect(files.find(({ path }) => path === 'permissions-bundle/input.json')?.contents).toBe(
       files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
     );
+    expect(files.find(({ path }) => path === 'schemas/permissions/input.json')?.contents).toBe(
+      buildPermissionsInputSchemaContents(),
+    );
+    expect(JSON.parse(buildPermissionsInputSchemaContents()).$id).toBe(
+      PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+    );
+    expect(JSON.parse(buildPermissionsInputSchemaContents())).toEqual(permissionsPolicyInputSchema);
+    expect(
+      files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
+    ).toBe(buildPermissionsInputExampleContents());
   });
 
   it('parameterizes the permissions bundle root correctly', () => {
@@ -245,6 +274,11 @@ describe('policy bundle templates', () => {
     const mainRego = files.find(({ path }) => path.endsWith('main.rego'));
     expect(mainRego?.contents).toContain('package consent');
     expect(mainRego?.path).toContain('consent-bundle/consent/main.rego');
+    expect(
+      JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
+    ).toEqual({
+      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
+    });
 
     const prefRego = files.find(
       ({ path }) => path.includes('preference.rego') && !path.includes('_test'),

@@ -7,6 +7,25 @@ import {
 import { parseRegoPackageReference } from '../rego-reference.js';
 
 describe('policy bundle manifest contract', () => {
+  it('parses optional transcend.io template metadata and ignores unknown values', () => {
+    expect(
+      parsePolicyBundleManifest(
+        JSON.stringify({
+          roots: ['permissions'],
+          metadata: { 'transcend.io': { template: 'permissions' } },
+        }),
+      ),
+    ).toEqual({ roots: ['permissions'], template: 'permissions' });
+    expect(
+      parsePolicyBundleManifest(
+        JSON.stringify({
+          roots: ['example'],
+          metadata: { 'transcend.io': { template: 'not-a-template' } },
+        }),
+      ),
+    ).toEqual({ roots: ['example'] });
+  });
+
   it('accepts nested packages and excludes local tests from publishable files', () => {
     expect(
       validatePolicyBundleContents('{"roots":["policy_engine"]}', [

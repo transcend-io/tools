@@ -4,12 +4,25 @@
 
 `.manifest` declares the document-tree roots included in the Policy Engine
 bundle. Each non-test Rego package must equal a root or be nested below one.
-Test modules remain local and are excluded from the upload archive. The
-`.manifest` filename is used end to end — on disk, in the upload tarball, and
-in the served combined bundle.
+Test modules remain local and are excluded from the upload archive.
 
 In this template, the publish directory is `{root}-bundle/` (the folder that
 contains `.manifest`), not the inner `{root}/` package tree alone.
+
+Scaffolded manifests may include optional OPA `metadata`:
+
+```json
+"metadata": {
+  "transcend.io": {
+    "template": "generic",
+    "templateVersion": "<@transcend-io/cli version>"
+  }
+}
+```
+
+`template` (`generic` or `permissions`) and `templateVersion` (the
+`@transcend-io/cli` version that generated the scaffold) are **authoring
+hints**. Upload does not branch on them.
 
 Before publishing:
 
@@ -21,11 +34,30 @@ Before publishing:
 The publish path validates strict Rego compatibility and bundle compilation
 before creating the upload tarball.
 
+## Bundle names: generic vs Permissions
+
+Upload uses one create/version path for every bundle. What makes a bundle
+“Permissions” is convention plus where Sombra queries it:
+
+- **Permissions API** always loads the fixed remote bundle name
+  `permissions`. Publish that starter with `--bundle-name=permissions`.
+- **Generic / decide** bundles use any other `--bundle-name` and the decide
+  path.
+
+`policy publish` may warn when `.manifest` metadata/roots look Permissions-
+oriented but `--bundle-name` is not `permissions` (or the reverse). The warning
+does not block upload.
+
 ## Publish deliberately
 
 ```sh
-transcend policy publish --bundle-name <name> --auth "$TRANSCEND_API_KEY" \
+# Generic / decide path
+transcend policy publish --bundle-name example --auth "$TRANSCEND_API_KEY" \
   transcend/policy/example-bundle
+
+# Permissions API path (fixed remote name)
+transcend policy publish --bundle-name permissions --auth "$TRANSCEND_API_KEY" \
+  transcend/policy/permissions-bundle
 ```
 
 Run `transcend policy publish --help` for current flags and scopes. Publishing
