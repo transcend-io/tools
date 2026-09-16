@@ -112,6 +112,39 @@ describe('Policy Engine VS Code setup', () => {
     });
   });
 
+  it('unions json.schemas fileMatch when the same schema URL already exists', () => {
+    const existing = `{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/transcend/policy/permissions-bundle/input.json",
+        "/transcend/policy/permissions-bundle/input.example.json"
+      ],
+      "url": "./transcend/policy/schemas/permissions/input.json"
+    }
+  ]
+}
+`;
+    const result = mergePolicyEditorSettings(existing, '/repo', '/repo/transcend/policy', [
+      { root: 'permissions', bundleDir: 'xyz' },
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(parse(result.contents)).toMatchObject({
+      'json.schemas': [
+        {
+          fileMatch: [
+            '/transcend/policy/permissions-bundle/input.json',
+            '/transcend/policy/permissions-bundle/input.example.json',
+            '/transcend/policy/xyz/input.json',
+            '/transcend/policy/xyz/input.example.json',
+          ],
+          url: './transcend/policy/schemas/permissions/input.json',
+        },
+      ],
+    });
+  });
+
   it('preserves conflicting settings and emits actionable warnings', () => {
     const existing = `{
   "opa.strictMode": false,

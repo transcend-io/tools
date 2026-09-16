@@ -374,29 +374,44 @@ export function mergePolicyEditorSettings(
     } else if (Array.isArray(jsonSchemas)) {
       let merged = [...jsonSchemas];
       desiredJsonSchemas.forEach((desired) => {
-        const hasMatch = merged.some(
+        const hasExactMatch = merged.some(
           (entry) =>
             entry !== null &&
             typeof entry === 'object' &&
             !Array.isArray(entry) &&
             configurationValuesEqual(entry, desired),
         );
-        if (!hasMatch) {
-          const conflicting = merged.find(
-            (entry) =>
-              entry !== null &&
-              typeof entry === 'object' &&
-              !Array.isArray(entry) &&
-              typeof (entry as Record<string, unknown>).url === 'string' &&
-              (entry as Record<string, unknown>).url === desired.url,
+        if (hasExactMatch) {
+          return;
+        }
+        const sameUrlIndex = merged.findIndex(
+          (entry) =>
+            entry !== null &&
+            typeof entry === 'object' &&
+            !Array.isArray(entry) &&
+            typeof (entry as Record<string, unknown>).url === 'string' &&
+            (entry as Record<string, unknown>).url === desired.url,
+        );
+        if (sameUrlIndex === -1) {
+          merged = [...merged, desired];
+          return;
+        }
+        const existing = merged[sameUrlIndex] as Record<string, unknown>;
+        const existingMatches = existing.fileMatch;
+        if (
+          !Array.isArray(existingMatches) ||
+          !existingMatches.every((m) => typeof m === 'string')
+        ) {
+          warnings.push(
+            `VS Code setting "json.schemas" has a repository-specific entry for the ${desired.url} schema and was left unchanged.`,
           );
-          if (conflicting === undefined) {
-            merged = [...merged, desired];
-          } else {
-            warnings.push(
-              `VS Code setting "json.schemas" has a repository-specific entry for the ${(desired as Record<string, unknown>).url as string} schema and was left unchanged.`,
-            );
-          }
+          return;
+        }
+        const unioned = mergeStringArray(existingMatches, desired.fileMatch);
+        if (!configurationValuesEqual(unioned, existingMatches)) {
+          merged = merged.map((entry, index) =>
+            index === sameUrlIndex ? { ...existing, fileMatch: unioned } : entry,
+          );
         }
       });
       if (!configurationValuesEqual(merged, jsonSchemas)) {
