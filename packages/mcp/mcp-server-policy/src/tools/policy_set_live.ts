@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, ErrorCode, ToolError, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  ErrorCode,
+  ToolError,
+  z,
+} from '@transcend-io/mcp-server-base';
 
 import {
   activatePolicyBundleVersion,

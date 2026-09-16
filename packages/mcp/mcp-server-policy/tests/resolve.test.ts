@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-
 import { ErrorCode } from '@transcend-io/mcp-server-base';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   getPolicyBundleById,
@@ -66,9 +65,9 @@ describe('policyCliOperations', () => {
       }),
     });
 
-    await expect(
-      resolvePolicyBundle({ get } as never, { bundleId: 'bundle-id' }),
-    ).resolves.toEqual(sampleBundle);
+    await expect(resolvePolicyBundle({ get } as never, { bundleId: 'bundle-id' })).resolves.toEqual(
+      sampleBundle,
+    );
   });
 
   it('resolvePolicyBundle resolves by name', async () => {
@@ -79,9 +78,9 @@ describe('policyCliOperations', () => {
       }),
     });
 
-    await expect(
-      resolvePolicyBundle({ get } as never, { bundleName: 'main' }),
-    ).resolves.toEqual(sampleBundle);
+    await expect(resolvePolicyBundle({ get } as never, { bundleName: 'main' })).resolves.toEqual(
+      sampleBundle,
+    );
   });
 
   it('resolvePolicyBundle throws non-retryable NOT_FOUND when missing', async () => {
