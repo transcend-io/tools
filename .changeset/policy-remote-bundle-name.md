@@ -1,8 +1,8 @@
 ---
-'@transcend-io/cli': major
+'@transcend-io/cli': minor
 ---
 
-Breaking: Policy Engine API commands rename `--bundle-name` to `--remote-bundle-name` so it is clearly distinct from the local bundle directory path (and from `policy new --bundle-dir`).
+Policy Engine API commands rename `--bundle-name` to `--remote-bundle-name` so it is clearly distinct from the local bundle directory path (and from `policy new --bundle-dir`).
 
 ### Migration
 
