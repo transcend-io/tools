@@ -99,7 +99,7 @@ describe('policy resolve helpers', () => {
     expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundle-versions/version-id');
   });
 
-  it('resolvePolicyBundleVersion points agents to policy_status for a missing versionId', async () => {
+  it('resolvePolicyBundleVersion points agents to policy_list_bundles for a missing versionId', async () => {
     const get = vi.fn().mockReturnValue({
       json: vi.fn().mockRejectedValue({ response: { statusCode: 404 } }),
     });
@@ -110,7 +110,7 @@ describe('policy resolve helpers', () => {
       name: 'ToolError',
       code: ErrorCode.NOT_FOUND,
       retryable: false,
-      message: expect.stringMatching(/policy_status/),
+      message: expect.stringMatching(/policy_list_bundles/),
     });
   });
 });

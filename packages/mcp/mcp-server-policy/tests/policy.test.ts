@@ -23,8 +23,8 @@ import { getPolicyTools } from '../src/tools/index.js';
 import { PolicyPublishSchema } from '../src/tools/policy_publish.js';
 
 const EXPECTED_TOOL_NAMES = [
-  'policy_help',
-  'policy_status',
+  'policy_get_templates',
+  'policy_list_bundles',
   'policy_publish',
   'policy_set_live',
 ] as const;
@@ -64,9 +64,9 @@ describe('Policy MCP tools', () => {
     expect(tools.map((tool) => tool.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
-  describe('policy_help', () => {
+  describe('policy_get_templates', () => {
     it('returns template list by default', async () => {
-      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_help')!;
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
       const result = await tool.handler({});
       expect(result).toMatchObject({
         success: true,
@@ -78,7 +78,7 @@ describe('Policy MCP tools', () => {
     });
 
     it('returns template files when templateId is set', async () => {
-      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_help')!;
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
       const result = await tool.handler({ templateId: 'starter' });
       expect(result).toMatchObject({
         success: true,

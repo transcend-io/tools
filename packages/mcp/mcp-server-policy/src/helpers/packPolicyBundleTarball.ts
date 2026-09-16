@@ -202,7 +202,7 @@ export function assertSafePolicyBundleRelativePath(relativePath: string): void {
  *
  * Callers must delete the returned directory when finished (typically after packing).
  *
- * @param files - Relative path → file contents (same shape as policy_help templateFiles.files)
+ * @param files - Relative path → file contents (same shape as policy_get_templates templateFiles.files)
  * @returns Absolute path to the staging directory
  */
 export function materializePolicyBundleFiles(files: Record<string, string>): string {

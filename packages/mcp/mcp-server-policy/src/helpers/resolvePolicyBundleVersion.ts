@@ -13,7 +13,7 @@ import type {
 } from './types.js';
 
 /**
- * Message for a missing or wrong-bundle version UUID, with recovery via policy_status.
+ * Message for a missing or wrong-bundle version UUID, with recovery via policy_list_bundles.
  *
  * @param versionId - Caller-supplied version UUID
  * @returns Agent-oriented not-found message
@@ -21,7 +21,7 @@ import type {
 function versionIdNotFoundMessage(versionId: string): string {
   return (
     `Version id "${versionId}" was not found for this policy bundle. ` +
-    'Call policy_status with this bundle (omit versionId) to list valid version ids and labels.'
+    'Call policy_list_bundles with this bundle (omit versionId) to list valid version ids and labels.'
   );
 }
 
@@ -154,13 +154,13 @@ export async function resolvePolicyBundleVersion(
       throw new ToolError(
         ErrorCode.NOT_FOUND,
         `Version "${options.version}" was not found for this policy bundle. ` +
-          'Call policy_status with this bundle (omit versionId) to list valid version ids and labels.',
+          'Call policy_list_bundles with this bundle (omit versionId) to list valid version ids and labels.',
         false,
       );
     }
     throw new ToolError(
       ErrorCode.NOT_FOUND,
-      'No versions found for this policy bundle. Call policy_status with this bundle to confirm uploads.',
+      'No versions found for this policy bundle. Call policy_list_bundles with this bundle to confirm uploads.',
       false,
     );
   }
