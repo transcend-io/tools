@@ -1,7 +1,10 @@
 import {
+  EMPTY_CAPABILITY_REPORT,
+  ErrorCode,
   isCapabilityAwareTool,
   McpClientCapability,
-  ErrorCode,
+  McpHostClient,
+  mcpSessionContext,
   ToolError,
   type RocQueryResponse,
   type RocUserRecord,
@@ -445,6 +448,7 @@ describe('Consent Tools', () => {
           dashboardUrl: 'https://app.transcend.io',
           organizationName: 'Acme Corp',
           loaded: true,
+          supportsPermanentDelete: true,
           categories: [
             {
               purpose: CookieTriagePurposeCategory.Analytics,
@@ -491,12 +495,35 @@ describe('Consent Tools', () => {
           organizationName: '',
           categories: [],
           loaded: false,
+          supportsPermanentDelete: true,
           message: expect.stringContaining(
             'Do not call consent_list_cookies or consent_list_data_flows.',
           ),
         },
       });
       expect(appVariant!.appOnlyTools ?? []).toEqual([]);
+    });
+
+    it('disables permanent delete on Cursor (app-only tools unreachable)', async () => {
+      const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
+      expect(isCapabilityAwareTool(tool)).toBe(true);
+      if (!isCapabilityAwareTool(tool)) {
+        return;
+      }
+
+      const appVariant = tool.variants[McpClientCapability.McpApp]!;
+      const result = await mcpSessionContext.run(
+        {
+          client: { ...EMPTY_CAPABILITY_REPORT, host: McpHostClient.Cursor },
+          server: {} as never,
+        },
+        () => appVariant.handler(tool.zodSchema.parse({ triageType: ConsentTriageType.Cookies })),
+      );
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { supportsPermanentDelete: false },
+      });
     });
 
     it('fetches data flows when triageType is data_flows', async () => {
@@ -531,6 +558,7 @@ describe('Consent Tools', () => {
           dashboardUrl: 'https://app.transcend.io',
           organizationName: 'Acme Corp',
           loaded: true,
+          supportsPermanentDelete: true,
           categories: [
             {
               purpose: CookieTriagePurposeCategory.Advertising,

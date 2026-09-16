@@ -13,7 +13,7 @@ export const PolicyPublishSchema = z
       .record(z.string(), z.string())
       .optional()
       .describe(
-        'Path → contents map (policy_help templateFiles.files). Mutually exclusive with dir.',
+        'Path → contents map (policy_get_templates templateFiles.files). Mutually exclusive with dir.',
       ),
     bundleName: z.string().describe('Tenant-unique policy bundle name'),
     version: z

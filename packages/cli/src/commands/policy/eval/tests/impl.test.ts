@@ -52,6 +52,8 @@ describe('policy eval', () => {
       '/repo/input.json',
       '-b',
       '/repo/transcend/policy/payments',
+      '--ignore',
+      '*_test.rego',
       '--schema',
       '/repo/schemas',
       '--explain',
@@ -95,6 +97,8 @@ describe('policy eval', () => {
       '--stdin-input',
       '-b',
       '/repo/transcend/policy/example-bundle',
+      '--ignore',
+      '*_test.rego',
       'data.example.result',
     ]);
   });

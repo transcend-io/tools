@@ -1,5 +1,20 @@
 # @transcend-io/mcp-server-consent
 
+## 1.2.3
+
+### Patch Changes
+
+- 31b74c6: Show purpose slugs (not custom titles) in the consent triage tabs and purpose dropdown.
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [b86b173]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+- Updated dependencies [20b054b]
+  - @transcend-io/mcp-server-base@2.5.0
+  - @transcend-io/privacy-types@6.1.0
+  - @transcend-io/sdk@2.1.11
+
 ## 1.2.2
 
 ### Patch Changes

@@ -19,6 +19,11 @@
       "command": "bash",
       "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-consent/dist/cli.mjs"]
     },
+    "transcend-custom-functions": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-custom-functions/dist/cli.mjs"]
+    },
     "transcend-discovery": {
       "disabled": true,
       "command": "bash",

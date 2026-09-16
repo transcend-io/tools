@@ -160,7 +160,7 @@ export interface PublishPolicyBundleOptions {
   /** Directory containing manifest.json and .rego files (mutually exclusive with files) */
   dir?: string;
   /**
-   * Relative path → file contents (same shape as policy_help templateFiles.files).
+   * Relative path → file contents (same shape as policy_get_templates templateFiles.files).
    * Mutually exclusive with dir.
    */
   files?: Record<string, string>;

@@ -4293,7 +4293,7 @@ USAGE
   transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <directory>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as lint/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
       --package               OPA query to evaluate (e.g. data.example.result)
@@ -4578,6 +4578,12 @@ transcend policy publish \
 
 ```sh
 transcend policy publish --bundle-name=common --auth="$TRANSCEND_API_KEY" --transcend-url=https://api.us.transcend.io
+```
+
+**Publish the Permissions API bundle (fixed remote name)**
+
+```sh
+transcend policy publish --bundle-name=permissions --auth="$TRANSCEND_API_KEY"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**

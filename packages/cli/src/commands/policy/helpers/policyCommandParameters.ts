@@ -1,3 +1,6 @@
+import type { TypedFlagParameter, TypedPositionalParameter } from '@stricli/core';
+
+import type { LocalContext } from '../../../context.js';
 import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-project-discovery.js';
 
 /**
@@ -9,9 +12,9 @@ export const policyWorkspaceDirectoryParameter = {
   brief: 'Policy workspace directory',
   placeholder: 'directory',
   parse: String,
-  optional: true as const,
+  optional: true,
   default: DEFAULT_POLICY_PROJECT_DIRECTORY,
-} as const;
+} as const satisfies TypedPositionalParameter<string | undefined, LocalContext>;
 
 /**
  * Positional directory for multi-bundle commands (`policy lint` / `policy test`).
@@ -24,9 +27,9 @@ export const policyWorkspaceOrBundleDirectoryParameter = {
   brief: 'Policy workspace or bundle directory (workspace runs every .manifest child)',
   placeholder: 'directory',
   parse: String,
-  optional: true as const,
+  optional: true,
   default: DEFAULT_POLICY_PROJECT_DIRECTORY,
-} as const;
+} as const satisfies TypedPositionalParameter<string | undefined, LocalContext>;
 
 /**
  * Required positional directory for one-bundle commands (`policy eval` / `publish`).
@@ -37,21 +40,21 @@ export const policyBundleDirectoryParameter = {
   brief: 'Policy bundle directory containing a .manifest',
   placeholder: 'directory',
   parse: String,
-} as const;
+} as const satisfies TypedPositionalParameter<string, LocalContext>;
 
 /** Shared logical Policy bundle name flag. */
 export const policyBundleNameParameter = {
   kind: 'parsed',
   parse: String,
   brief: 'Tenant-unique policy bundle name',
-} as const;
+} as const satisfies TypedFlagParameter<string, LocalContext>;
 
 /** Shared raw Policy Engine API response flag. */
 export const policyJsonParameter = {
   kind: 'boolean',
   brief: 'Print the raw JSON API response',
   default: false,
-} as const;
+} as const satisfies TypedFlagParameter<boolean, LocalContext>;
 
 /**
  * Shared `--debug` flag for Policy Engine API commands.
@@ -64,5 +67,5 @@ export function createPolicyDebugParameter() {
     brief:
       'Include technical error details (underlying API message and stack trace) when a command fails',
     optional: true as const,
-  };
+  } satisfies TypedFlagParameter<boolean | undefined, LocalContext>;
 }

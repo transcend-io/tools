@@ -13,6 +13,10 @@ import { ADMIN_OAUTH_SCOPES, getAdminTools } from '@transcend-io/mcp-server-admi
 import { ASSESSMENT_OAUTH_SCOPES, getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients, ToolDefinition } from '@transcend-io/mcp-server-base';
 import { CONSENT_OAUTH_SCOPES, getConsentTools } from '@transcend-io/mcp-server-consent';
+import {
+  CUSTOM_FUNCTIONS_OAUTH_SCOPES,
+  getCustomFunctionsTools,
+} from '@transcend-io/mcp-server-custom-functions';
 import { DISCOVERY_OAUTH_SCOPES, getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { DSR_OAUTH_SCOPES, getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -91,6 +95,16 @@ const DOMAINS: DomainMeta[] = [
     domain: 'Consent, cookies, data flows',
     scopes: CONSENT_OAUTH_SCOPES,
     getTools: getConsentTools,
+  },
+  {
+    id: 'custom-functions',
+    dir: 'mcp-server-custom-functions',
+    npmName: '@transcend-io/mcp-server-custom-functions',
+    binary: 'transcend-mcp-custom-functions',
+    description: 'Custom Function authoring and test runs',
+    domain: 'Custom Function authoring',
+    scopes: CUSTOM_FUNCTIONS_OAUTH_SCOPES,
+    getTools: getCustomFunctionsTools,
   },
   {
     id: 'base',

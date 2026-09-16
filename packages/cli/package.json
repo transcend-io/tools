@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/cli",
-  "version": "11.0.0",
+  "version": "12.0.0",
   "description": "A command line interface for programmatic operations across Transcend.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/cli",
   "license": "Apache-2.0",
@@ -80,8 +80,9 @@
     "check:skill-bundle": "tsx scripts/checkAgentSkillBundles.ts",
     "check:publint": "publint --level warning --strict --pack pnpm",
     "script:transcend-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt ./schema/transcend-yml-schema-*.json",
+    "script:permissions-policy-input-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildPermissionsPolicyInputSchema.ts && oxfmt ./schema/permissions-policy-input.json",
     "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts",
-    "genfiles": "pnpm script:transcend-json-schema && pnpm docgen"
+    "genfiles": "pnpm script:transcend-json-schema && pnpm script:permissions-policy-input-schema && pnpm docgen"
   },
   "dependencies": {
     "@duckdb/node-api": "1.4.2-r.1",

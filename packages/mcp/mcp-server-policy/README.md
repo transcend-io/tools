@@ -8,12 +8,12 @@ Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
 ## Tools
 
-| Tool              | Description                                                |
-| ----------------- | ---------------------------------------------------------- |
-| `policy_help`     | Embedded starter templates for policy bundles (no network) |
-| `policy_status`   | List bundles, version history, presigned download URLs     |
-| `policy_publish`  | Upload an inert version from a workspace directory         |
-| `policy_set_live` | Activate or deactivate a version (explicit go-live step)   |
+| Tool                   | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `policy_get_templates` | Embedded starter templates for policy bundles (no network) |
+| `policy_list_bundles`  | List bundles, version history, presigned download URLs     |
+| `policy_publish`       | Upload an inert version from a workspace directory         |
+| `policy_set_live`      | Activate or deactivate a version (explicit go-live step)   |
 
 Operations mirror `transcend policy` CLI commands. Use a single credential with **Activate Policy** scope — it includes Manage and View.
 

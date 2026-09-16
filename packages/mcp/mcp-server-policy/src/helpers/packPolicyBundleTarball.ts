@@ -4,8 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
+import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import fg from 'fast-glob';
+
+/** Recovery hint appended to oversize pack errors so agents shrink Rego instead of retrying. */
+const OVERSIZE_RECOVERY_HINT =
+  'Shrink the .rego policies (remove unused rules or split into a smaller bundle) and call policy_publish again — retrying the same payload will fail.';
 
 /**
  * Returns whether a relative path is a publishable Rego policy file.
@@ -197,7 +202,7 @@ export function assertSafePolicyBundleRelativePath(relativePath: string): void {
  *
  * Callers must delete the returned directory when finished (typically after packing).
  *
- * @param files - Relative path → file contents (same shape as policy_help templateFiles.files)
+ * @param files - Relative path → file contents (same shape as policy_get_templates templateFiles.files)
  * @returns Absolute path to the staging directory
  */
 export function materializePolicyBundleFiles(files: Record<string, string>): string {
@@ -251,26 +256,32 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
     encoding: 'utf8',
   });
   if (tarResult.status !== 0) {
-    throw new Error(
+    throw new ToolError(
+      ErrorCode.VALIDATION_ERROR,
       `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
+      false,
     );
   }
 
   const compressedBytes = fs.readFileSync(outputPath);
   if (compressedBytes.byteLength > MAX_BUNDLE_COMPRESSED_BYTES) {
     fs.unlinkSync(outputPath);
-    throw new Error(
+    throw new ToolError(
+      ErrorCode.VALIDATION_ERROR,
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_COMPRESSED_BYTES)} compressed upload limit ` +
-        `(bundle is ${formatBytes(compressedBytes.byteLength)}).`,
+        `(bundle is ${formatBytes(compressedBytes.byteLength)}). ${OVERSIZE_RECOVERY_HINT}`,
+      false,
     );
   }
 
   const decompressedBytes = gunzipSync(compressedBytes);
   if (decompressedBytes.byteLength > MAX_BUNDLE_DECOMPRESSED_BYTES) {
     fs.unlinkSync(outputPath);
-    throw new Error(
+    throw new ToolError(
+      ErrorCode.VALIDATION_ERROR,
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_DECOMPRESSED_BYTES)} decompressed upload limit ` +
-        `(bundle is ${formatBytes(decompressedBytes.byteLength)} decompressed).`,
+        `(bundle is ${formatBytes(decompressedBytes.byteLength)} decompressed). ${OVERSIZE_RECOVERY_HINT}`,
+      false,
     );
   }
 

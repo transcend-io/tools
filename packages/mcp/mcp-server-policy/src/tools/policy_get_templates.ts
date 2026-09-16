@@ -1,19 +1,19 @@
 import { createToolResult, defineTool, z } from '@transcend-io/mcp-server-base';
 
 import type { PolicyToolClients } from '../helpers/policyContext.js';
-import { resolvePolicyHelpContent } from '../templates/index.js';
+import { resolvePolicyGetTemplatesContent } from '../templates/index.js';
 
-export const PolicyHelpSchema = z.object({
+export const PolicyGetTemplatesSchema = z.object({
   templateId: z
     .string()
     .optional()
     .describe('Return scaffold files only for this template. Omit for the template list.'),
 });
-export type PolicyHelpInput = z.infer<typeof PolicyHelpSchema>;
+export type PolicyGetTemplatesInput = z.infer<typeof PolicyGetTemplatesSchema>;
 
-export function createPolicyHelpTool(_clients: PolicyToolClients) {
+export function createPolicyGetTemplatesTool(_clients: PolicyToolClients) {
   return defineTool({
-    name: 'policy_help',
+    name: 'policy_get_templates',
     description:
       'List Policy Engine starter templates (no args) or return scaffold files (templateId). ' +
       'ActivatePolicyEngineBundles covers all policy tools — do not create separate API keys per operation.',
@@ -21,9 +21,9 @@ export function createPolicyHelpTool(_clients: PolicyToolClients) {
     readOnly: true,
     requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: PolicyHelpSchema,
+    zodSchema: PolicyGetTemplatesSchema,
     handler: async ({ templateId }) => {
-      const content = resolvePolicyHelpContent(templateId);
+      const content = resolvePolicyGetTemplatesContent(templateId);
       return createToolResult(true, content);
     },
   });

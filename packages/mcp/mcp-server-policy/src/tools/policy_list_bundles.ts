@@ -14,7 +14,7 @@ import {
 } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
 
-export const PolicyStatusSchema = OffsetPaginationSchema.extend({
+export const PolicyListBundlesSchema = OffsetPaginationSchema.extend({
   bundleId: z.string().uuid().optional().describe('Policy bundle UUID to inspect'),
   bundleName: z.string().optional().describe('Tenant-unique bundle name (alternative to bundleId)'),
   versionId: z
@@ -25,20 +25,20 @@ export const PolicyStatusSchema = OffsetPaginationSchema.extend({
   cursor: z
     .string()
     .optional()
-    .describe('Cursor for version history pagination (from a prior policy_status response)'),
+    .describe('Cursor for version history pagination (from a prior policy_list_bundles response)'),
 });
-export type PolicyStatusInput = z.infer<typeof PolicyStatusSchema>;
+export type PolicyListBundlesInput = z.infer<typeof PolicyListBundlesSchema>;
 
-export function createPolicyStatusTool(clients: PolicyToolClients) {
+export function createPolicyListBundlesTool(clients: PolicyToolClients) {
   return defineTool({
-    name: 'policy_status',
+    name: 'policy_list_bundles',
     description:
       'Discover Policy Engine bundles, version history, and download URLs. ' +
       'Mirrors transcend policy bundles / versions / download. Requires View Policy scope (included in Activate scope).',
     category: 'Policy Engine',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: PolicyStatusSchema,
+    zodSchema: PolicyListBundlesSchema,
     handler: async ({ limit, offset, bundleId, bundleName, versionId, cursor }) => {
       const client = createPolicyEngineClient(clients);
 
