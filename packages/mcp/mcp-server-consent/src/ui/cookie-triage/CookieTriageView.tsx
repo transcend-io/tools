@@ -17,6 +17,7 @@ export function CookieTriageView() {
 
   const [triageType, setTriageType] = useState<ConsentTriageType | undefined>();
   const [dashboardUrl, setDashboardUrl] = useState<string | undefined>();
+  const [supportsPermanentDelete, setSupportsPermanentDelete] = useState<boolean | undefined>();
 
   useEffect(() => {
     if (data?.triageType) {
@@ -25,7 +26,10 @@ export function CookieTriageView() {
     if (data?.dashboardUrl) {
       setDashboardUrl((current) => current ?? data.dashboardUrl);
     }
-  }, [data?.dashboardUrl, data?.triageType]);
+    if (typeof data?.supportsPermanentDelete === 'boolean') {
+      setSupportsPermanentDelete((current) => current ?? data.supportsPermanentDelete);
+    }
+  }, [data?.dashboardUrl, data?.supportsPermanentDelete, data?.triageType]);
 
   if (connectionError) {
     return (
@@ -36,7 +40,12 @@ export function CookieTriageView() {
     );
   }
 
-  if (!isConnected || triageType === undefined || dashboardUrl === undefined) {
+  if (
+    !isConnected ||
+    triageType === undefined ||
+    dashboardUrl === undefined ||
+    supportsPermanentDelete === undefined
+  ) {
     return <ViewLoadingCard label={!isConnected ? 'Connecting to the host…' : 'Loading triage…'} />;
   }
 
@@ -45,6 +54,7 @@ export function CookieTriageView() {
       key={triageType}
       triageType={triageType}
       dashboardUrl={dashboardUrl}
+      supportsPermanentDelete={supportsPermanentDelete}
       app={app}
     >
       <CookieTriageLoaded app={app} />

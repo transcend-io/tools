@@ -101,6 +101,12 @@ export interface CookieTriageAppPayload {
    */
   loaded: boolean;
   /**
+   * Whether the host can invoke the app-only permanent-delete tools.
+   * False on hosts (Cursor) that cannot `callServerTool` for `visibility: ['app']`
+   * companions; the view hides the delete button and users should Junk instead.
+   */
+  supportsPermanentDelete: boolean;
+  /**
    * Agent-facing instruction on MCP App shell opens so the model does not
    * immediately re-fetch list tools after mounting the interactive UI.
    */

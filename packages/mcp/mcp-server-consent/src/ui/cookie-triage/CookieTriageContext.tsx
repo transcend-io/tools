@@ -84,6 +84,11 @@ export interface CookieTriageMeta {
   dashboardUrl: string;
   /** Org tracking-purpose slugs for the per-row purpose select */
   purposeOptions: string[];
+  /**
+   * Whether permanent delete is offered. False on Cursor (and any host with
+   * `appOnlyToolsUnreachable`), where the delete companion is not callable.
+   */
+  supportsPermanentDelete: boolean;
 }
 
 /** Badge + load chrome for one purpose tab. */
