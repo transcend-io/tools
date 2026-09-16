@@ -46,9 +46,9 @@ immediate child under the workspace (`transcend/policy`) that contains a
 ```sh
 transcend policy lint --noInteractive
 transcend policy test
-transcend policy lint transcend/policy/example-bundle --noInteractive
-transcend policy test transcend/policy/example-bundle
-opa check --strict -b transcend/policy/example-bundle -s transcend/policy/schemas
+transcend policy lint transcend/policy/permissions-bundle --noInteractive
+transcend policy test transcend/policy/permissions-bundle
+opa check --strict -b transcend/policy/permissions-bundle -s transcend/policy/schemas
 ```
 
 `policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
@@ -61,7 +61,18 @@ deliberately instead of applying broad rewrites.
 
 ## Evaluate a query
 
-`policy eval` requires an explicit bundle directory:
+`policy eval` requires an explicit bundle directory. For the Permissions starter,
+pass the bundle, a purpose query, the local envelope, and the workspace schemas
+directory (so `# METADATA` `schema.permissions.input` annotations type-check):
+
+```sh
+transcend policy eval transcend/policy/permissions-bundle \
+  --package data.permissions.purposes \
+  --input transcend/policy/permissions-bundle/input.json \
+  --schema transcend/policy/schemas
+```
+
+Generic example bundle:
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \

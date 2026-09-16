@@ -4316,20 +4316,19 @@ ARGUMENTS
 
 #### Examples
 
-**Evaluate a decision query with a local envelope**
-
-```sh
-transcend policy eval --package=data.example.result --input=./fixtures/envelope.json
-```
-
-**Emit JSON and attach workspace schemas**
+**Permissions starter (bundle + envelope + workspace schemas)**
 
 ```sh
 transcend policy eval \
-  --package=data.example.result \
-  --input=./fixtures/envelope.json \
-  --format=json \
+  --package=data.permissions.purposes \
+  --input=transcend/policy/permissions-bundle/input.json \
   --schema=transcend/policy/schemas
+```
+
+**Evaluate a generic decision query with a local envelope**
+
+```sh
+transcend policy eval --package=data.example.result --input=./fixtures/envelope.json
 ```
 
 **Pipe an envelope on stdin**
@@ -4338,7 +4337,18 @@ transcend policy eval \
 transcend policy eval --package=data.example.result --stdin-input
 ```
 
-Pass the bundle directory positionally (required — one bundle per invocation):
+Pass the bundle directory positionally (required — one bundle per invocation).
+
+Permissions happy path (closest to production Evaluate — query + envelope + schemas):
+
+```sh
+transcend policy eval transcend/policy/permissions-bundle \
+  --package=data.permissions.purposes \
+  --input=transcend/policy/permissions-bundle/input.json \
+  --schema=transcend/policy/schemas
+```
+
+Generic example bundle:
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
