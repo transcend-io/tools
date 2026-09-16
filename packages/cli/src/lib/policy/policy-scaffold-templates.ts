@@ -708,9 +708,7 @@ import rego.v1
   "default_consent_allowed": true,
   "purposes": [
     "Analytics",
-    "SaleOfInfo",
-    "Marketing",
-    "Personalization"
+    "SaleOfInfo"
   ],
   "default_consent": {}
 }
@@ -788,18 +786,18 @@ test_treats_an_absent_preferences_array_as_no_recorded_choices if {
 \tfixture := {}
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_accepts_an_empty_preferences_array if {
 \tfixture := given([])
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_reports_a_non_array_preferences_as_unavailable if {
-\tnot preference.source_available with input as {"preferences": {"Marketing": true}}
+\tnot preference.source_available with input as {"preferences": {"Analytics": true}}
 }
 
 test_reports_entries_without_a_usable_name_as_unavailable if {
@@ -810,35 +808,35 @@ test_reports_entries_without_a_usable_name_as_unavailable if {
 
 test_distinguishes_enabled_and_disabled_choices if {
 \tfixture := given([
-\t\t{"name": "Marketing", "choice": true},
-\t\t{"name": "Analytics", "choice": false},
+\t\t{"name": "Analytics", "choice": true},
+\t\t{"name": "SaleOfInfo", "choice": false},
 \t])
 
-\tpreference.enabled("Marketing") with input as fixture
-\tpreference.disabled("Analytics") with input as fixture
-\tpreference.decided("Marketing") with input as fixture
+\tpreference.enabled("Analytics") with input as fixture
+\tpreference.disabled("SaleOfInfo") with input as fixture
 \tpreference.decided("Analytics") with input as fixture
-\tnot preference.undecided("Marketing") with input as fixture
+\tpreference.decided("SaleOfInfo") with input as fixture
+\tnot preference.undecided("Analytics") with input as fixture
 }
 
 test_treats_a_null_choice_as_undecided if {
-\tfixture := given([{"name": "Marketing", "choice": null}])
+\tfixture := given([{"name": "Analytics", "choice": null}])
 
-\tpreference.undecided("Marketing") with input as fixture
-\tnot preference.decided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
+\tnot preference.decided("Analytics") with input as fixture
 }
 
 test_treats_an_absent_choice_key_as_undecided if {
-\tfixture := given([{"name": "Marketing", "channel": "email"}])
+\tfixture := given([{"name": "Analytics", "channel": "email"}])
 
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_treats_a_non_boolean_choice_as_undecided if {
-\tfixture := given([{"name": "Personalization", "choice": "Daily"}])
+\tfixture := given([{"name": "SaleOfInfo", "choice": "Daily"}])
 
-\tpreference.undecided("Personalization") with input as fixture
-\tnot preference.decided("Personalization") with input as fixture
+\tpreference.undecided("SaleOfInfo") with input as fixture
+\tnot preference.decided("SaleOfInfo") with input as fixture
 }
 
 # Sombra dedupes by purpose before sending; last-wins keeps the bundle correct
@@ -857,14 +855,14 @@ test_last_wins_on_duplicate_entries if {
 # rather than treated as a choice.
 test_ignores_fields_beyond_the_recorded_choice if {
 \tfixture := given([{
-\t\t"name": "Marketing",
+\t\t"name": "Analytics",
 \t\t"choice": true,
 \t\t"evidence": "consent_banner",
 \t\t"days_since_choice": 45,
 \t\t"channel": "email",
 \t}])
 
-\tpreference.enabled("Marketing") with input as fixture
+\tpreference.enabled("Analytics") with input as fixture
 }
 `,
       description: 'Create preference resolution tests',
