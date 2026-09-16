@@ -313,7 +313,7 @@ export const POLICY_GITIGNORE_TEMPLATE = `# Local policy evaluation input (VS Co
 /** Concise workspace-local authoring guide (multi-bundle, empty workspace). */
 export const POLICY_README_TEMPLATE = `# Transcend Policy
 
-Multi-bundle workspace for [Transcend Policy Engine](https://docs.transcend.io) bundles
+Multi-bundle workspace for Transcend Policy Engine bundles
 (OPA / Rego v1). Requires **Transcend CLI ≥ 11** (\`transcend policy --help\`
 should list \`init\`, \`new\`, and positional \`[directory]\` args).
 
