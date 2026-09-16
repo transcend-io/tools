@@ -149,7 +149,6 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
     return selectedIds.map((slug) => (
       <span
         key={slug}
-        title={slug}
         className={`inline-flex h-6 min-w-0 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(slug)}`}
       >
         {slug}
@@ -160,7 +159,6 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
   const renderOption = useCallback(
     (option: CheckboxMultiSelectOption) => (
       <span
-        title={option.id}
         className={`inline-flex h-6 min-w-0 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(option.id)}`}
       >
         {option.id}
