@@ -39,7 +39,7 @@ interface CookieRowProps {
 
 /** One cookie/data-flow triage table row. */
 export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProps) {
-  const { triageType, purposeOptions } = useCookieTriageMeta();
+  const { triageType, purposeOptions, supportsPermanentDelete } = useCookieTriageMeta();
   const { decide, undo, askOpinion, updateNotes, updatePurpose } = useCookieTriageActions();
   const requestDelete = useRequestDelete();
   const [asking, setAsking] = useState(false);
@@ -246,23 +246,25 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   >
                     <CancelIcon />
                   </Button>
-                  <Button
-                    variant={ButtonVariant.Icon}
-                    aria-label="Delete"
-                    disabled={busy}
-                    aria-busy={mutating}
-                    title={`Permanently delete this ${singular}`}
-                    onClick={() => {
-                      setNotesOpen(false);
-                      requestDelete({
-                        purpose,
-                        name: row.name,
-                        itemLabel: cookie.name,
-                      });
-                    }}
-                  >
-                    <TrashIcon />
-                  </Button>
+                  {supportsPermanentDelete ? (
+                    <Button
+                      variant={ButtonVariant.Icon}
+                      aria-label="Delete"
+                      disabled={busy}
+                      aria-busy={mutating}
+                      title={`Permanently delete this ${singular}`}
+                      onClick={() => {
+                        setNotesOpen(false);
+                        requestDelete({
+                          purpose,
+                          name: row.name,
+                          itemLabel: cookie.name,
+                        });
+                      }}
+                    >
+                      <TrashIcon />
+                    </Button>
+                  ) : null}
                 </>
               )}
             </div>
