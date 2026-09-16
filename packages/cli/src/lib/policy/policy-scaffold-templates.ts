@@ -357,7 +357,18 @@ transcend/policy/
 Replace or delete example bundles when you have a real policy. Publish each
 bundle separately (\`transcend policy publish --remote-bundle-name … <dir>\`).
 
-## Bundle names and Permissions
+## Permissions API
+
+Scaffold the Permissions starter, then simulate the query Sombra runs:
+
+\`\`\`sh
+transcend policy new --template permissions --yes
+
+transcend policy eval transcend/policy/permissions-bundle \\
+  --package=data.permissions.purposes \\
+  --input=transcend/policy/permissions-bundle/input.json \\
+  --schema=transcend/policy/permissions-bundle/input.schema.json
+\`\`\`
 
 Upload does **not** distinguish bundle kinds. What makes a bundle “Permissions”
 is the remote name plus where Sombra queries it:
