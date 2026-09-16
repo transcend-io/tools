@@ -1,5 +1,12 @@
 # @transcend-io/privacy-types
 
+## 6.1.0
+
+### Minor Changes
+
+- b86b173: Publish the Permissions API OPA input schema at `packages/cli/schema/permissions-policy-input.json`, generated from the `@transcend-io/privacy-types` codec. `policy new --template permissions` scaffolds from that published contract (including Preference Store-style purpose slugs like `Analytics`).
+- 20b054b: Add `DsrErrorCode.InvalidRequestInput`, `InvalidIdentifierJwt`, `DraftWorkflowConfig`, and `DsrBulkErrorCode.InvalidBulkInput` for row-level bulk DSR validation.
+
 ## 6.0.0
 
 ### Major Changes

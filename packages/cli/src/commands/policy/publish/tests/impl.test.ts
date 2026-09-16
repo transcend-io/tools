@@ -39,10 +39,24 @@ const sampleVersion = {
   updatedAt: '2026-06-25T00:00:00.000Z',
 };
 
+/** Default `.manifest` contents for publish command tests. */
+function defaultManifestContents(): string {
+  return JSON.stringify({
+    roots: ['example'],
+    metadata: { 'transcend.io': { template: 'generic' } },
+  });
+}
+
 describe('publish', () => {
   const existsSync = vi.fn<typeof fs.existsSync>(() => true);
   const unlinkSync = vi.fn<typeof fs.unlinkSync>();
-  const testFs = { ...fs, existsSync, unlinkSync };
+  const readFileSync = vi.fn((path: fs.PathOrFileDescriptor) => {
+    if (String(path).endsWith('.manifest')) {
+      return defaultManifestContents();
+    }
+    return fs.readFileSync(path, 'utf8');
+  });
+  const testFs = { ...fs, existsSync, unlinkSync, readFileSync } as unknown as typeof fs;
   const context = buildContextForTest({
     env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
     exitBehavior: 'record',
@@ -55,6 +69,12 @@ describe('publish', () => {
     context.reset();
     buildOpaBundleTarballMock.mockResolvedValue('/tmp/bundle.tar.gz');
     existsSync.mockReturnValue(true);
+    readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      if (String(path).endsWith('.manifest')) {
+        return defaultManifestContents();
+      }
+      return fs.readFileSync(path, 'utf8');
+    });
     inquirerConfirmBooleanMock.mockResolvedValue(true);
   });
 
@@ -123,6 +143,40 @@ describe('publish', () => {
       expect.any(Object),
     );
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+  });
+
+  it('warns when publishing a permissions template under a non-permissions name', async () => {
+    readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      if (String(path).endsWith('.manifest')) {
+        return JSON.stringify({
+          roots: ['consent'],
+          metadata: { 'transcend.io': { template: 'permissions' } },
+        });
+      }
+      return fs.readFileSync(path, 'utf8');
+    });
+    const post = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        version: sampleVersion,
+      }),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ post });
+    resolveBundleIdByNameMock.mockResolvedValue('existing-bundle-id');
+
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'consent',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
+
+    expect(post).toHaveBeenCalled();
+    expect(context.stderr).toContain('--bundle-name=permissions');
   });
 
   it('does not prompt in JSON mode when a new bundle needs confirmation', async () => {
