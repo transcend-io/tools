@@ -29,6 +29,12 @@ export interface PolicyStarterFile {
   contents: string;
   /** Human-readable reason shown in the plan. */
   description: string;
+  /**
+   * When true, the path may already exist (e.g. workspace `schemas/{root}/`
+   * shared by multiple publish directories with the same package root).
+   * Existing content is left unchanged; a differing template only warns.
+   */
+  shared?: boolean;
 }
 
 /** OPA bundle manifest filename used for local authoring and upload. */
@@ -395,6 +401,7 @@ const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
     path: `schemas/${POLICY_STARTER_ROOT}/input.json`,
     contents: POLICY_INPUT_SCHEMA_TEMPLATE,
     description: 'Create the input JSON Schema for the example bundle',
+    shared: true,
   },
   {
     path: POLICY_STARTER_RESULT_REGO_PATH,
@@ -549,6 +556,7 @@ export function generateGenericBundleFiles(
 }
 `,
       description: `Create the input JSON Schema for the ${root} bundle`,
+      shared: true,
     },
     {
       path: `${bundle}/${root}/result/result.rego`,
@@ -675,6 +683,7 @@ export function generatePermissionsBundleFiles(
       path: `schemas/${root}/input.json`,
       contents: buildPermissionsInputSchemaContents(),
       description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
+      shared: true,
     },
     {
       path: `${bundle}/${root}/config/config.rego`,

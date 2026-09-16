@@ -238,7 +238,9 @@ describe('policy bundle templates', () => {
     );
     expect(files.some(({ path }) => path.startsWith('permissions-bundle/'))).toBe(false);
     expect(JSON.parse(files[0]!.contents).roots).toEqual(['permissions']);
-    expect(files.find(({ path }) => path === 'schemas/permissions/input.json')).toBeDefined();
+    expect(files.find(({ path }) => path === 'schemas/permissions/input.json')).toMatchObject({
+      shared: true,
+    });
   });
 
   it('generates a permissions bundle with all expected files', () => {
