@@ -6,10 +6,11 @@ import {
   CookieTriagePurposeCategory,
 } from '../../lib/cookieTriageConfig.ts';
 import {
-  buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
+  buildTriageRecentActiveCountArgs,
+  deriveOverviewDormantTotal,
 } from '../../lib/cookieTriageQuery.ts';
 import { projectListNodeForTriage } from '../../lib/projectTriageItem.ts';
 import { dispatchAndSync, type CookieTriageToolCall } from './cookieTriagePersist.ts';
@@ -71,16 +72,22 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
 
   async function fetchSummaryTotals(isCancelled?: () => boolean): Promise<void> {
     dispatchLocal({ type: 'summaryLoadStart' });
-    const [pendingResult, dormantResult] = await Promise.all([
-      deps.callRef.current(buildTriagePendingCountArgs()),
-      deps.callRef.current(buildTriageDormantCountArgs()),
+    const triageType = deps.stateRef.current.triageType;
+    const [pendingResult, recentActiveResult] = await Promise.all([
+      deps.callRef.current(buildTriagePendingCountArgs(triageType)),
+      deps.callRef.current(buildTriageRecentActiveCountArgs(triageType)),
     ]);
     if (isCancelled?.()) {
       return;
     }
 
     const pendingTotal = pendingResult.error === undefined ? pendingResult.totalCount : undefined;
-    const dormantTotal = dormantResult.error === undefined ? dormantResult.totalCount : undefined;
+    const recentActiveTotal =
+      recentActiveResult.error === undefined ? recentActiveResult.totalCount : undefined;
+    const dormantTotal =
+      pendingTotal !== undefined && recentActiveTotal !== undefined
+        ? deriveOverviewDormantTotal(pendingTotal, recentActiveTotal)
+        : undefined;
 
     dispatchLocal({
       type: 'setSummaryTotals',
