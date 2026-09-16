@@ -74,7 +74,7 @@ function formatHttpStatusError(statusCode: number, apiMessage?: string): string 
     case 404:
       return (
         apiMessage ??
-        'Policy bundle or version not found. Use policy_status to list bundles and versions.'
+        'Policy bundle or version not found. Use policy_list_bundles to list bundles and versions.'
       );
     case 409:
       return apiMessage ?? 'The request conflicted with the current policy bundle state.';
