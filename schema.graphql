@@ -937,6 +937,7 @@ enum DatabaseModelName {
   feature
   formItem
   identifier
+  integrationOAuthSession
   legalHold
   legalMatter
   LegalMatterLegalHold
@@ -1088,6 +1089,8 @@ enum RequestDataSiloStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   SKIPPED_DUE_TO_EXCEPTION
+  TRANSCEND_RATE_LIMITED
+  VENDOR_RATE_LIMITED
 }
 
 enum SombraDataSubjectAuthMethod {
@@ -1097,6 +1100,13 @@ enum SombraDataSubjectAuthMethod {
   transcend
   authorized_agent
   noAuth
+}
+
+enum SombraReverseTunnelGatewayHealthStatus {
+  UNKNOWN
+  NOT_REGISTERED
+  UNHEALTHY
+  HEALTHY
 }
 
 enum PreflightRequestStatus {
@@ -1467,10 +1477,10 @@ enum ActionItemCode {
   COOKIE_NEEDS_REVIEW
   COOKIE_ASSIGNED_FOR_REVIEW
   CONSENT_MANAGER_VERSION_UPGRADE
+  CONSENT_SITE_TELEMETRY_STALE
   PLUGINS_WITH_ERRORS
   ONBOARDING
   REQUEST_ASSIGNED_TO_USER
-  BUSINESS_ENTITY_NEEDS_DOCUMENTATION
   DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL
   RULES_AUTOMATION_RULE_TERMINAL_FAILURE
   RULES_AUTOMATION_RULE_TERMINAL_FAILURE_ASSIGNED
@@ -2471,6 +2481,17 @@ enum SimplifiedPluginStatus {
   ERROR
 }
 
+enum DataSiloErrorRollupQueueModel {
+  RequestDataSilo
+  ProfileDataPoint
+  RequestFile
+}
+
+enum DataSiloErrorRollupGroupBy {
+  ERROR_MESSAGE
+  DATA_POINT
+}
+
 enum DataSubjectClass {
   END_USER
   EMPLOYEE
@@ -2841,6 +2862,8 @@ enum ActivityCode {
   REQUEST_DATA_SILO_RESOLVED
   REQUEST_DATA_SILO_SKIPPED
   REQUEST_DATA_SILO_SKIPPED_DUE_TO_EXCEPTION
+  REQUEST_DATA_SILO_VENDOR_RATE_LIMITED
+  REQUEST_DATA_SILO_TRANSCEND_RATE_LIMITED
   REQUEST_FILE_ARCHIVED
   REQUEST_FILE_ENCRYPTED_MODIFIED
   REQUEST_FILE_ENCRYPTED_COPY
@@ -2852,6 +2875,8 @@ enum ActivityCode {
   REQUEST_FILE_SKIPPED
   REQUEST_FILE_POLLING
   REQUEST_FILE_ACTION_REQUIRED
+  REQUEST_FILE_VENDOR_RATE_LIMITED
+  REQUEST_FILE_TRANSCEND_RATE_LIMITED
   PROFILE_DATA_POINT_QUEUED
   PROFILE_DATA_POINT_ACTION_REQUIRED
   PROFILE_DATA_POINT_REMOTE_PROCESSING
@@ -2865,6 +2890,8 @@ enum ActivityCode {
   PROFILE_DATA_POINT_SKIPPED
   PROFILE_DATA_POINT_MANUAL
   PROFILE_DATA_POINT_SKIPPED_DUE_TO_EXCEPTION
+  PROFILE_DATA_POINT_VENDOR_RATE_LIMITED
+  PROFILE_DATA_POINT_TRANSCEND_RATE_LIMITED
   REQUEST_ENRICHER_CREATED
   REQUEST_ENRICHER_POLLING
   REQUEST_ENRICHER_QUEUED
@@ -2936,18 +2963,32 @@ enum DownloadAndDecryptError {
   SINK_STALL_TIMEOUT
   SERVICE_WORKER_LOST
   SINK_BACKPRESSURE_TIMEOUT
+  SINK_FINALIZATION_TIMEOUT
+  SINK_BYTE_MISMATCH
+  SINK_CLOSE_UNCONFIRMED
   STREAMSAVER_INIT_FAILED
   DOWNLOAD_MANAGER_CANCELLED
+  DOWNLOAD_ABORTED_BY_NAVIGATION
   BROWSER_BLOCKED
   NETWORK_ERROR
   SAVE_DIALOG_CANCELLED
   SAVE_DIALOG_UNAVAILABLE
+  SAVE_DIALOG_TIMEOUT
+  LARGE_MOBILE_DOWNLOAD_DECLINED
   NATIVE_WRITER_FAILED
+  ARCHIVE_EXCEEDED_DECLARED_LENGTH
   OPFS_UNAVAILABLE
   OPFS_WRITE_FAILED
   WASM_UNAVAILABLE
   WASM_LOAD_FAILED
   UNKNOWN
+}
+
+enum DownloadDeliveryVerification {
+  OS_CONFIRMED
+  BROWSER_CONFIRMED
+  STORAGE_CONFIRMED
+  UNCONFIRMED
 }
 
 enum DownloadAndDecryptErrorClass {
@@ -2960,6 +3001,8 @@ enum DownloadAndDecryptErrorClass {
 }
 
 enum DownloadAndDecryptEventType {
+  DOWNLOAD_PAGE_VIEWED
+  DOWNLOAD_CLICKED
   INITIATED
   INITIALIZATION_SUCCEEDED
   DOWNLOAD_STARTED
@@ -3052,6 +3095,12 @@ enum ProfileDataPointOrderField {
   updatedAt
 }
 
+enum PrivacyCenterDeployStatus {
+  DEPLOYED
+  NOT_DEPLOYED
+  FAILED
+}
+
 enum RequestOrderField {
   createdAt
   updatedAt
@@ -3079,6 +3128,13 @@ enum RequestAttachmentSource {
 
 enum RequestAttachmentOrderField {
   createdAt
+  id
+}
+
+enum RequestDownloadAttemptOrderField {
+  createdAt
+  completedAt
+  attemptNumber
   id
 }
 
@@ -3113,6 +3169,8 @@ enum VisualRequestDataSiloStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   SKIPPED_DUE_TO_EXCEPTION
+  TRANSCEND_RATE_LIMITED
+  VENDOR_RATE_LIMITED
   WAITING_ON_DEPENDENCIES
   WAITING_ON_OTHER_REQUESTS
   DATA_SILO_DISCONNECTED
@@ -3625,6 +3683,8 @@ enum ProfileDataPointStatus {
   POLLING
   WAITING_ON_OTHER_REQUESTS
   SKIPPED_DUE_TO_EXCEPTION
+  TRANSCEND_RATE_LIMITED
+  VENDOR_RATE_LIMITED
   FINISHED
 }
 
@@ -3653,6 +3713,8 @@ enum RequestFileStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   POLLING
+  TRANSCEND_RATE_LIMITED
+  VENDOR_RATE_LIMITED
 }
 
 enum CommonLambdaStatus {
@@ -4357,6 +4419,7 @@ enum DsrIncomingRequestColumnName {
   id
   status
   isOpened
+  isDownloaded
   isArchived
   isSilent
   isTest
@@ -4456,8 +4519,7 @@ enum ScopeOrderField {
 enum SombraOrderField {
   hostedMethod
   title
-  url
-  publicUrl
+  transcendIngressUrl
   createdAt
   updatedAt
 }
@@ -4839,6 +4901,7 @@ enum AnalyticsDataSource {
   REQUEST_FULFILLMENT_BY_TYPE
   REQUEST_VOLUME_OVER_TIME
   REQUEST_DOWNLOAD_OUTCOMES
+  REQUEST_DATA_SILOS_BY_BLOCKER
   PRIVACY_RISKS
   HISTORICAL_REQUESTS_BY_STATUS
   VISITOR_CHOICES
@@ -4882,7 +4945,6 @@ enum BaseCacheKey {
   DATA_SILO_ACTIVITY
   AIRGAP_VERSION
   UI_V2_VERSION
-  REQUEST_DATA_SILO_SUMMARY
   DROP_RUN_DSR_PROGRESS
 }
 
@@ -5133,6 +5195,7 @@ type Query {
   dataSilo(id: String!): DataSilo!
   dataSiloCommunications(first: Int, offset: Int = 0, last: Int, filterBy: DataSiloCommunicationFilterInput!): DataSiloCommunicationsPayload!
   dataSiloCountsByCountry(input: DataSiloCountsByCountryInput!): DataSilosByCountry!
+  dataSiloErrorRollup(first: Int, offset: Int = 0, last: Int, filterBy: DataSiloErrorRollupFilterInput!): DataSiloErrorRollupPayload!
   dataSiloLineage(filterBy: DataSiloLineageFiltersInput): DataSiloLineagePayload!
   dataSiloRateLimits(id: ID!): DataSiloRateLimitsPayload!
   dataSiloReduced(input: DataSiloReducedQueryInput!): DataSiloReduced!
@@ -5223,7 +5286,7 @@ type Query {
   requestDataSilo(input: RequestDataSiloInput!): RequestDataSilo!
   requestDataSiloDataPoints(first: Int, offset: Int = 0, last: Int, input: RequestDataSiloDataPointInput, id: ID!): RequestDataSiloDataPointsPayload!
   requestDataSilos(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RequestDataSiloFiltersInput!, orderBy: [RequestDataSiloOrder!]): RequestDataSilosPayload!
-  requestDataSiloSummary(input: RequestDataSiloSummaryInput): RequestDataSiloSummaryResult!
+  requestDownloadAttempts(first: Int, last: Int, before: String, after: String, filterBy: RequestDownloadAttemptFiltersInput!, orderBy: [RequestDownloadAttemptOrder!]): RequestDownloadAttemptsPayload!
   requestEnrichers(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RequestEnrichersFiltersInput, orderBy: [RequestEnricherOrder!], input: RequestEnrichersInput!): RequestEnrichersPayload!
   requestFiles(first: Int, offset: Int = 0, last: Int, filterBy: RequestFileFiltersInput!, orderBy: [RequestFileOrder!], input: RequestFileResolverInput): RequestFilesPayload!
   requestFilesCountsOnly(filterBy: DownloadFileFiltersInput!): RequestFilesCountsOnlyPayload!
@@ -5544,6 +5607,7 @@ type Mutation {
   removeSombra(id: ID!): RemoveSombraPayload!
   removeTCFStacksFromBundle(input: SetTCFStacksInput!): RemoveTcfStacksFromBundlePayload!
   removeUser(id: ID, input: RemoveUserInput): RemoveUserPayload!
+  removeUsers(input: RemoveUsersInput!): RemoveUsersPayload!
   reportAiFeatureAsInaccurate(input: ReportAiFeatureAsInaccurateInput!): ReportAiFeatureAsInaccuratePayload!
   reprocessComplianceReport(input: ReprocessComplianceReportInput!): ReprocessComplianceReportPayload!
   requestCertificate(input: PrivacyCenterIdInput!): RequestCertificatePayload!
@@ -5564,6 +5628,7 @@ type Mutation {
   restoreDataSilos(input: RestoreDataSilosInput!): RestoreDataSilosPayload!
   resumeRequest(id: ID!): ResumeRequestPayload!
   retryDataSiloErrors(id: ID!): RetryDataSiloErrorsPayload!
+  retryDataSiloErrorsByMessage(input: RetryDataSiloErrorsByMessageInput!): RetryDataSiloErrorsByMessagePayload!
   retryEnricherErrors(id: ID!): RetryEnricherErrorsPayload!
   retryProfileDataPoint(id: ID!, input: RetryProfileDataPointInput): RetryProfileDataPointPayload!
   retryProfileDataPointSecondary(id: ID!, input: RetryProfileDataPointInput): RetryProfileDataPointSecondaryPayload!
@@ -5974,6 +6039,7 @@ input AddDataSiloToOpenRequestsInput {
 type AddDataSiloToWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 type AddEmailDomainPayload {
@@ -5984,6 +6050,7 @@ type AddEmailDomainPayload {
 type AddEnrichersToWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input AddEnrichersToWorkflowConfigInput {
@@ -6000,6 +6067,7 @@ input AddEnricherToWorkflowConfigInput {
 type AddFileUploadsToWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input AddFileUploadsToWorkflowConfigInput {
@@ -7409,6 +7477,7 @@ type AttributeDataSubCategoryResource implements AttributeResourceInterface {
   slug: String!
   regex: String
   isDefault: Boolean!
+  identifierId: ID
   description: String
   dataPointCount: Int!
   attributeValues: [AttributeValue!]!
@@ -7556,6 +7625,7 @@ type AttributeSubDataPointResource implements AttributeResourceInterface {
   encryption: ColumnEncryptionType
   subDataPointFQId: String!
   processingActivities: [ProcessingActivityPreview!]!
+  dataType: String
 }
 
 type AttributeValue {
@@ -8158,12 +8228,14 @@ input BulkUnwrapProfileIdentifiersInput {
 type BulkUpdateWorkflowConfigsPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
   updatedCount: Int!
 }
 
 input BulkUpdateWorkflowConfigsInput {
   workflowConfigIds: [ID!]!
   workflowConfigVisibility: WorkflowConfigVisibility
+  allowLegacyApiSubmission: Boolean
 }
 
 type BundleTCFStack {
@@ -9067,10 +9139,10 @@ input ComponentStylesInput {
 type ConfiguredSombra implements SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  url: String! @deprecated(reason: "Use transcendIngressUrl instead")
   transcendIngressUrl: String!
   title: String
-  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  publicUrl: String! @deprecated(reason: "Use customerIngressUrl instead")
   customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
@@ -9613,6 +9685,7 @@ input ConsentWorkflowTriggersFilterInput {
   isActive: Boolean
   isSilent: Boolean
   allowUnauthenticated: Boolean
+  workflowConfigId: ID
 }
 
 type ContainerTheme {
@@ -9680,7 +9753,7 @@ input ContentLayoutInput {
 
 type ContractEntitlement {
   metricName: String!
-  entitledQuantity: Float!
+  entitledQuantity: Float
   contractStartDate: String
   contractEndDate: String
   currentContractYearStartDate: String
@@ -11177,6 +11250,7 @@ interface DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
   description: String
   dataPointCount: Int!
 }
@@ -11333,6 +11407,7 @@ type DataInventoryCategory implements DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
   description: String
   dataPointCount: Int!
 }
@@ -11921,6 +11996,31 @@ type DataSiloDependencyPreview {
   catalog: CatalogPreview!
 }
 
+type DataSiloErrorRollupPayload {
+  clientMutationId: String
+  nodes: [DataSiloErrorRollup!]!
+  totalCount: Int!
+}
+
+type DataSiloErrorRollup {
+  errorMessage: String
+  errorCount: Int!
+  queueModel: DataSiloErrorRollupQueueModel!
+  dataPoint: DataSiloErrorRollupDataPoint
+}
+
+type DataSiloErrorRollupDataPoint {
+  id: ID!
+  name: String!
+  title: String!
+}
+
+input DataSiloErrorRollupFilterInput {
+  dataSiloId: ID!
+  dataPointIds: [ID!]
+  groupBy: DataSiloErrorRollupGroupBy
+}
+
 input DataSiloFiltersInput {
   text: String
   titles: [String!]
@@ -12108,6 +12208,7 @@ type DataSubCategory implements DataCategoryInterface {
   slug: String!
   regex: String
   isDefault: Boolean!
+  identifierId: ID
   description: String
   dataPointCount: Int!
   attributeValues: [AttributeValue!]!
@@ -12149,6 +12250,7 @@ type DataSubCategoryPreview {
   slug: String!
   regex: String
   isDefault: Boolean
+  identifierId: ID
 }
 
 type DataSubject implements DataSubjectInterface {
@@ -12933,6 +13035,7 @@ input DeleteVendorsInput {
 type DeleteWorkflowPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input DeleteWorkflowInput {
@@ -13170,6 +13273,7 @@ input DownloadAndDecryptEventInput {
   osFamily: DownloadOsFamily
   documentVisibilityState: DownloadDocumentVisibilityState
   clientBuildVersion: String
+  confluxVersion: String
   attemptToken: String
   recoveredFromErrorCode: DownloadAndDecryptError
   recoveredToSinkMode: DownloadSinkMode
@@ -13193,7 +13297,17 @@ input DownloadAndDecryptMetricsInput {
   msSinceLastSinkProgress: Float
   sinkCloseMs: Float
   swBodyClosed: Boolean
+  swBodyBytes: Float
+  archiveTrailer: DownloadArchiveTrailerInput
   recentActivity: String
+  hiddenMs: Float
+}
+
+input DownloadArchiveTrailerInput {
+  zip64: Boolean!
+  eocdEntryCount: Int!
+  cdOffsetSentinel: Boolean!
+  fileSize: Float!
 }
 
 type DownloadFile implements RequestFileInterface {
@@ -14255,6 +14369,7 @@ type GlobalActionItemContext {
   dataSiloId: ID
   requestType: String
   latestAirgapVersion: String
+  consentSiteLastDiscoveredAt: String
   parentTitle: String
   pluginType: String
   aggregateCount: Int
@@ -16869,11 +16984,13 @@ input RemoveAirgapPrefixModuleFromAirgapBundleInput {
 type RemoveDataSiloFromWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 type RemoveEnrichersFromWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input RemoveEnrichersFromWorkflowConfigInput {
@@ -16884,6 +17001,7 @@ input RemoveEnrichersFromWorkflowConfigInput {
 type RemoveFileUploadsFromWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input RemoveFileUploadsFromWorkflowConfigInput {
@@ -16916,8 +17034,24 @@ type RemoveUserPayload {
   success: Boolean!
 }
 
+type RemoveUserFailure {
+  id: ID!
+  email: String!
+  message: String!
+}
+
 input RemoveUserInput {
   email: String
+}
+
+type RemoveUsersPayload {
+  clientMutationId: String
+  count: Int!
+  failures: [RemoveUserFailure!]!
+}
+
+input RemoveUsersInput {
+  ids: [ID!]!
 }
 
 type ReportAiFeatureAsInaccuratePayload {
@@ -17008,7 +17142,9 @@ type Request implements RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -17139,14 +17275,6 @@ input RequestDataSiloInput {
   requestId: ID!
 }
 
-type RequestDataSiloMetricRow {
-  dataSilo: RequestDataSiloSummaryDataSilo!
-  requestStatus: RequestStatus!
-  expirationBucket: RequestExpirationBucket!
-  status: RequestDataSiloStatus!
-  jobCount: Int!
-}
-
 input RequestDataSiloOrder {
   field: RequestDataSiloOrderField!
   direction: OrderDirection!
@@ -17157,25 +17285,6 @@ type RequestDataSilosPayload {
   clientMutationId: String
   nodes: [RequestDataSilo!]!
   totalCount: Int!
-}
-
-type RequestDataSiloSummaryDataSilo {
-  id: ID!
-  title: String!
-  type: String!
-}
-
-input RequestDataSiloSummaryInput {
-  forceRefetch: Boolean
-  requestActions: [RequestAction!]
-  requestStatuses: [RequestStatus!]
-  dataSiloIds: [ID!]
-  dropRunIds: [ID!]
-}
-
-type RequestDataSiloSummaryResult {
-  rows: [RequestDataSiloMetricRow!]!
-  cachedAt: Date
 }
 
 type RequestDemoPayload {
@@ -17198,6 +17307,52 @@ type RequestDetails {
   country: IsoCountryCode
   countrySubDivision: String
   details: String
+}
+
+type RequestDownloadAttempt {
+  id: ID!
+  downloadAttemptId: String!
+  startedAt: Date
+  completedAt: Date
+  attemptNumber: Int
+  outcome: RequestDownloadAttemptOutcome
+  deliveryVerification: DownloadDeliveryVerification
+  errorCode: DownloadAndDecryptError
+  errorClass: DownloadAndDecryptErrorClass
+  errorName: String
+  errorDetail: String
+  phase: DownloadAndDecryptPhase
+  sinkMode: DownloadSinkMode
+  sinkVariant: DownloadSinkVariant
+  deviceClass: DownloadDeviceClass
+  browserFamily: DownloadBrowserFamily
+  osFamily: DownloadOsFamily
+  clientBuildVersion: String
+  testRunId: String
+  attemptElapsedMs: Float
+  totalSizeBytes: Float
+  totalNumFiles: Int
+  filesCompleted: Int
+  createdAt: Date!
+  updatedAt: Date!
+}
+
+input RequestDownloadAttemptFiltersInput {
+  requestId: ID!
+  ids: [ID!]
+  testRunId: String
+}
+
+input RequestDownloadAttemptOrder {
+  field: RequestDownloadAttemptOrderField!
+  direction: OrderDirection!
+}
+
+type RequestDownloadAttemptsPayload {
+  clientMutationId: String
+  nodes: [RequestDownloadAttempt!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type RequestEmailBouncedPayload {
@@ -17382,6 +17537,7 @@ input RequestFiltersInput {
   isClosed: Boolean
   isBounced: Boolean
   isOpened: Boolean
+  isDownloaded: Boolean
   origin: [RequestOrigin!]
   isTest: Boolean
   isSilent: Boolean
@@ -17464,7 +17620,9 @@ type RequestHistory implements RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -17612,7 +17770,9 @@ interface RequestInterface {
   secondaryReportSendTime: Date
   revokeDownloadAt: Date
   reportOpenedTime: Date
+  reportDownloadedTime: Date
   isOpened: Boolean
+  isDownloaded: Boolean
   canDownload: Boolean!
   useDownloadV2: Boolean @deprecated(reason: "V2 download is always used; field will be removed")
   canViewByDataSubject: Boolean!
@@ -17877,6 +18037,17 @@ input RetryDaemonQueueErrorsInput {
 type RetryDataSiloErrorsPayload {
   clientMutationId: String
   dataSilo: DataSilo!
+}
+
+type RetryDataSiloErrorsByMessagePayload {
+  clientMutationId: String
+  retriedCount: Int!
+}
+
+input RetryDataSiloErrorsByMessageInput {
+  id: ID!
+  exactErrorMessages: [String!]
+  fuzzyErrorMessages: [String!]
 }
 
 type RetryEnricherErrorsPayload {
@@ -18444,11 +18615,6 @@ input ScanPluginConfigInput {
   configuration: String
 }
 
-type ScanRunId {
-  scanId: String!
-  startEpoch: String!
-}
-
 type SchemaDiscoveryPluginConfigurationSchema {
   scanObjectsToFilter: [ScanObject!]
 }
@@ -18878,6 +19044,7 @@ type SetTokenSecretPayload {
 type SetWorkflowIdentifierDisabledPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input SetWorkflowIdentifierDisabledInput {
@@ -19196,10 +19363,10 @@ type SoftwareDevelopmentKitsPayload {
 type Sombra implements SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  url: String! @deprecated(reason: "Use transcendIngressUrl instead")
   transcendIngressUrl: String!
   title: String
-  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  publicUrl: String! @deprecated(reason: "Use customerIngressUrl instead")
   customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
@@ -19271,10 +19438,10 @@ input getSombraInput {
 interface SombraInterface {
   id: ID!
   publicKeyECDH: String
-  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  url: String! @deprecated(reason: "Use transcendIngressUrl instead")
   transcendIngressUrl: String!
   title: String
-  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  publicUrl: String! @deprecated(reason: "Use customerIngressUrl instead")
   customerIngressUrl: String!
   isPrimarySombra: Boolean!
   customerUrl: String!
@@ -19293,8 +19460,8 @@ interface SombraInterface {
 
 type SombraInternalUseOnly {
   id: ID!
-  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
-  publicUrl: String @deprecated(reason: "Use customerIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  url: String! @deprecated(reason: "Use transcendIngressUrl instead")
+  publicUrl: String! @deprecated(reason: "Use customerIngressUrl instead")
   transcendIngressUrl: String!
   customerIngressUrl: String!
   version: String
@@ -19346,7 +19513,7 @@ input SombraOrder {
 
 type SombraPreview {
   id: ID!
-  url: String @deprecated(reason: "Use transcendIngressUrl instead. Removal tracked in https://linear.app/transcend/issue/BOW-5180")
+  url: String! @deprecated(reason: "Use transcendIngressUrl instead")
   transcendIngressUrl: String!
   title: String
   hostedMethod: SombraHostedMethod!
@@ -19369,6 +19536,26 @@ type SombraReplicaResourceTelemetry {
   eventLoopLagP99Ms: Float!
   inflightRequests: Int!
   uptimeSeconds: Float!
+}
+
+type SombraReverseTunnelGatewayHealth {
+  status: SombraReverseTunnelGatewayHealthStatus!
+  connectedUpstreams: Int!
+  reasons: [String!]!
+  replicas: [SombraReverseTunnelGatewayHealthReplica!]
+  telemetrySupported: Boolean
+  minimumTelemetryVersion: String
+}
+
+type SombraReverseTunnelGatewayHealthReplica {
+  hostname: String!
+  memoryRssBytes: Float
+  memoryLimitBytes: Float
+  memoryUtilizationPercent: Float
+  cpuPercent: Float
+  eventLoopLagP99Ms: Float
+  inflightRequests: Int
+  reportedAt: String
 }
 
 type SombraSession {
@@ -19485,6 +19672,7 @@ type SubDataPoint {
   encryption: ColumnEncryptionType
   subDataPointFQId: String!
   processingActivities: [ProcessingActivityPreview!]!
+  dataType: String
 }
 
 type SubDataPointClassification {
@@ -20233,7 +20421,6 @@ type UnstructuredSubDataPointRecommendation {
   dataSiloId: ID!
   scannedObjectPathId: ID
   scannedObjectId: ID
-  scanRunId: ScanRunId
   classifierVersion: Int
 }
 
@@ -21192,6 +21379,7 @@ input UpdateEnricherInput {
 type UpdateEnrichersInWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input UpdateEnrichersInWorkflowConfigInput {
@@ -21274,6 +21462,7 @@ input UpdateFileUploadOnWorkflowConfigItemInput {
 type UpdateFileUploadsOnWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input UpdateFileUploadsOnWorkflowConfigInput {
@@ -21477,6 +21666,7 @@ input UpdateOrCreateDataPointInput {
 type UpdateOrCreateWorkflowDataPointPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input UpdateOrCreateWorkflowDataPointInput {
@@ -22323,6 +22513,7 @@ input UpdateVendorsInput {
 type UpdateWorkflowCommunicationSettingsPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input UpdateWorkflowCommunicationSettingsInput {
@@ -22335,11 +22526,13 @@ input UpdateWorkflowCommunicationSettingsInput {
 type UpdateWorkflowConfigPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 type UpdateWorkflowConfigDataSiloPayload {
   clientMutationId: String
   success: Boolean!
+  privacyCenterDeployStatus: String!
 }
 
 input UpdateWorkflowConfigDataSiloInput {
@@ -22365,6 +22558,7 @@ input UpdateWorkflowConfigInput {
   postCompileStatus: PostCompileStatus
   attributeKeyIds: [ID!]
   internalName: String
+  allowLegacyApiSubmission: Boolean
 }
 
 type UploadedModuleMetadata {
@@ -22663,6 +22857,7 @@ type WorkflowConfig {
   description: LocalizedMessage
   action: Action!
   lastRun: Date
+  deletedAt: Date
   collectDataSubjectRegions: CollectDataSubjectRegions!
   workflowConfigVisibility: WorkflowConfigVisibility!
   workflowConfigType: WorkflowConfigType!
@@ -22676,6 +22871,7 @@ type WorkflowConfig {
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String!
+  allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
 }
 
