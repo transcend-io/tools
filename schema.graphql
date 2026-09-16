@@ -12190,6 +12190,8 @@ type DataSiloSummary {
   requestsAwaitingTotal: Int!
   requestsQueuedTotal: Int!
   requestsErrorsTotal: Int!
+  requestsVendorRateLimitedTotal: Int!
+  requestsTranscendRateLimitedTotal: Int!
   pluginErrorsTotal: Int
   lookupProcessErrorsTotal: Int
   lookupProcessIndexedTotal: Int
