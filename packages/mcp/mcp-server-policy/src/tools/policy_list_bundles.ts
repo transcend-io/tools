@@ -2,17 +2,20 @@ import {
   createListResult,
   createToolResult,
   defineTool,
+  ErrorCode,
   OffsetPaginationSchema,
+  ToolError,
   z,
 } from '@transcend-io/mcp-server-base';
 
 import {
-  getPolicyBundleById,
   getPolicyBundleVersion,
   listPolicyBundleVersions,
   listPolicyBundles,
 } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
+import { resolveBundle } from '../helpers/resolveBundle.js';
+import { versionIdNotFoundMessage } from '../helpers/resolvePolicyBundleVersion.js';
 
 export const PolicyListBundlesSchema = OffsetPaginationSchema.extend({
   bundleId: z.string().uuid().optional().describe('Policy bundle UUID to inspect'),
@@ -43,28 +46,12 @@ export function createPolicyListBundlesTool(clients: PolicyToolClients) {
       const client = createPolicyEngineClient(clients);
 
       if (bundleId || bundleName) {
-        const bundle = bundleId
-          ? await getPolicyBundleById(client, bundleId)
-          : (
-              await listPolicyBundles(client, {
-                bundleName,
-                limit: 1,
-                offset: 0,
-              })
-            ).nodes[0];
-
-        if (!bundle) {
-          throw new Error(
-            bundleId
-              ? `Policy bundle with id "${bundleId}" was not found.`
-              : `Policy bundle "${bundleName}" was not found.`,
-          );
-        }
+        const bundle = await resolveBundle(client, { bundleId, bundleName });
 
         if (versionId) {
           const detail = await getPolicyBundleVersion(client, versionId);
           if (detail.bundleName !== bundle.bundleName) {
-            throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+            throw new ToolError(ErrorCode.NOT_FOUND, versionIdNotFoundMessage(versionId), false);
           }
           return createToolResult(true, {
             bundle: {
