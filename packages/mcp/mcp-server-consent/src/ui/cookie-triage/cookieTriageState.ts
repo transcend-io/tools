@@ -586,17 +586,6 @@ function rowMatchesEntity(row: CookieRowState, name: string, id: string | undefi
   return row.name === name || (id !== undefined && row.initial.id === id);
 }
 
-function updateCategoryRow(
-  category: CookieTriageCategoryState,
-  name: string,
-  patch: Partial<Pick<CookieRowState, 'decision' | 'notes' | 'initial'>>,
-): CookieTriageCategoryState {
-  return {
-    ...category,
-    cookies: category.cookies.map((row) => (row.name === name ? { ...row, ...patch } : row)),
-  };
-}
-
 /**
  * Patch every loaded instance of the same cookie/data-flow across purpose tabs.
  * Mixed-purpose items appear on each matching tab as separate row instances.
@@ -811,24 +800,62 @@ export function cookieTriageReducer(
       };
     }
     case 'setTrackingPurposes': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || samePurposeList(row.initial.trackingPurposes, action.trackingPurposes)) {
         return state;
       }
 
-      return {
-        ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: updateCategoryRow(category, action.name, {
-            initial: {
-              ...row.initial,
-              trackingPurposes: [...action.trackingPurposes],
+      const trackingPurposes = [...action.trackingPurposes];
+      const id = row.initial.id;
+      const categories: CookieTriageCategoriesState = { ...state.categories };
+
+      // Patch every loaded instance (including tabs that no longer match — those
+      // stay until refresh) and clone onto newly matching tabs that lack a row.
+      for (const purpose of COOKIE_TRIAGE_PURPOSE_ORDER) {
+        const category = getCategory(state.categories, purpose);
+        const existingIndex = category.cookies.findIndex((candidate) =>
+          rowMatchesEntity(candidate, action.name, id),
+        );
+
+        if (existingIndex >= 0) {
+          const cookies = category.cookies.map((candidate, index) =>
+            index === existingIndex
+              ? {
+                  ...candidate,
+                  initial: {
+                    ...candidate.initial,
+                    trackingPurposes,
+                  },
+                }
+              : candidate,
+          );
+          categories[purpose] = { ...category, cookies };
+          continue;
+        }
+
+        if (!itemBelongsOnPurposeTab(purpose, trackingPurposes)) {
+          continue;
+        }
+
+        categories[purpose] = {
+          ...category,
+          cookies: [
+            ...category.cookies,
+            {
+              name: row.name,
+              initial: {
+                ...structuredClone(row.initial),
+                trackingPurposes,
+              },
+              decision: row.decision,
+              notes: row.notes,
             },
-          }),
-        },
-      };
+          ],
+          totalCount: category.totalCount + 1,
+        };
+      }
+
+      return { ...state, categories };
     }
     case 'setPurposeOptions': {
       if (action.purposeOptions.length === 0) {

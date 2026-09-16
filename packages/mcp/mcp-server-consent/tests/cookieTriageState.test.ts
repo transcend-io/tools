@@ -663,7 +663,7 @@ describe('cookieTriageReducer', () => {
     expect(state.categories.Analytics.loadError).toBe('boom');
   });
 
-  it('updates tracking purposes in place when the primary tab is unchanged', () => {
+  it('adds the row to newly matching purpose tabs when purposes are assigned', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'setTrackingPurposes',
@@ -675,14 +675,22 @@ describe('cookieTriageReducer', () => {
       ],
     });
 
+    const purposes = [
+      CookieTriagePurposeCategory.Analytics,
+      CookieTriagePurposeCategory.SaleOfInfo,
+    ];
     expect(
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.initial
         .trackingPurposes,
-    ).toEqual([CookieTriagePurposeCategory.Analytics, CookieTriagePurposeCategory.SaleOfInfo]);
-    expect(state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga')).toBeUndefined();
+    ).toEqual(purposes);
+    expect(
+      state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga')?.initial
+        .trackingPurposes,
+    ).toEqual(purposes);
+    expect(state.categories.SaleOfInfo.totalCount).toBe(1);
   });
 
-  it('keeps the row on its current tab when the assigned purpose changes', () => {
+  it('keeps the row on its current tab and adds it to newly matching tabs', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'setTrackingPurposes',
@@ -695,6 +703,102 @@ describe('cookieTriageReducer', () => {
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.initial
         .trackingPurposes,
     ).toEqual([CookieTriagePurposeCategory.Essential]);
+    expect(
+      state.categories.Essential.cookies.find((row) => row.name === '_ga')?.initial
+        .trackingPurposes,
+    ).toEqual([CookieTriagePurposeCategory.Essential]);
+    expect(state.categories.Essential.totalCount).toBe(1);
+  });
+
+  it('adds a custom-purpose row under Custom without removing prior tabs', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'setTrackingPurposes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      trackingPurposes: [CookieTriagePurposeCategory.Analytics, 'CustomPurpose'],
+    });
+
+    expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')).toBeDefined();
+    expect(
+      state.categories.Custom.cookies.find((row) => row.name === '_ga')?.initial.trackingPurposes,
+    ).toEqual([CookieTriagePurposeCategory.Analytics, 'CustomPurpose']);
+  });
+
+  it('adds under Unknown when purposes clear, without removing prior tabs', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'setTrackingPurposes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      trackingPurposes: [],
+    });
+
+    expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')).toBeDefined();
+    expect(
+      state.categories.Unknown.cookies.find((row) => row.name === '_ga')?.initial.trackingPurposes,
+    ).toEqual([]);
+  });
+
+  it('clones decision and notes onto auto-added purpose tabs', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      decision: CookieTriageDecision.Approve,
+    });
+    state = cookieTriageReducer(state, {
+      type: 'setNotes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      notes: 'shared across tabs',
+    });
+    state = cookieTriageReducer(state, {
+      type: 'setTrackingPurposes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      trackingPurposes: [
+        CookieTriagePurposeCategory.Analytics,
+        CookieTriagePurposeCategory.SaleOfInfo,
+      ],
+    });
+
+    const saleRow = state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga');
+    expect(saleRow?.decision).toBe(CookieTriageDecision.Approve);
+    expect(saleRow?.notes).toBe('shared across tabs');
+  });
+
+  it('removes auto-added and orphaned copies when deleting from any tab', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'setTrackingPurposes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      trackingPurposes: [
+        CookieTriagePurposeCategory.Analytics,
+        CookieTriagePurposeCategory.SaleOfInfo,
+      ],
+    });
+    state = cookieTriageReducer(state, {
+      type: 'setTrackingPurposes',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      trackingPurposes: [CookieTriagePurposeCategory.Essential],
+    });
+
+    expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')).toBeDefined();
+    expect(state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga')).toBeDefined();
+    expect(state.categories.Essential.cookies.find((row) => row.name === '_ga')).toBeDefined();
+
+    state = cookieTriageReducer(state, {
+      type: 'remove',
+      purpose: CookieTriagePurposeCategory.Essential,
+      name: '_ga',
+    });
+
+    expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')).toBeUndefined();
+    expect(state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga')).toBeUndefined();
     expect(state.categories.Essential.cookies.find((row) => row.name === '_ga')).toBeUndefined();
   });
 
