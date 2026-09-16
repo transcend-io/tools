@@ -7,7 +7,7 @@ import {
 } from '../../../lib/cli/common-parameters.js';
 import {
   createPolicyDebugParameter,
-  policyBundleNameParameter,
+  policyRemoteBundleNameParameter,
 } from '../helpers/policyCommandParameters.js';
 
 export const downloadCommand = buildCommand({
@@ -17,7 +17,7 @@ export const downloadCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': policyBundleNameParameter,
+      'remote-bundle-name': policyRemoteBundleNameParameter,
       version: {
         kind: 'parsed',
         parse: String,

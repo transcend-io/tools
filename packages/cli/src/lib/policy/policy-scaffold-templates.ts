@@ -360,7 +360,7 @@ transcend/policy/
 \`\`\`
 
 Replace or delete example bundles when you have a real policy. Publish each
-bundle separately (\`transcend policy publish --bundle-name … <dir>\`).
+bundle separately (\`transcend policy publish --remote-bundle-name … <dir>\`).
 
 ## Bundle names and Permissions
 
@@ -369,14 +369,14 @@ is the remote name plus where Sombra queries it:
 
 - **Permissions API** always loads the fixed remote bundle name
   \`${PERMISSIONS_POLICY_BUNDLE_NAME}\`. Publish that starter with
-  \`--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
-- **Generic / decide** bundles use any other \`--bundle-name\` and the decide
+  \`--remote-bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
+- **Generic / decide** bundles use any other \`--remote-bundle-name\` and the decide
   path.
 
 Scaffolded \`.manifest\` files may include \`metadata.transcend.io.template\`
 (\`generic\` or \`permissions\`) and \`templateVersion\` (the \`@transcend-io/cli\`
 version that generated the scaffold) as authoring hints. Upload ignores them;
-\`policy publish\` may warn when the template hint and \`--bundle-name\` disagree.
+\`policy publish\` may warn when the template hint and \`--remote-bundle-name\` disagree.
 `;
 
 /** Workspace-relative path to the disposable example entrypoint. */

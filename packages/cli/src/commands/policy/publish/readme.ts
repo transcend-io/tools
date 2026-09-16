@@ -11,7 +11,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish a local policy bundle as the main bundle',
       positionals: ['transcend/policy/example-bundle'],
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
@@ -19,7 +19,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish with an explicit version label and description',
       positionals: ['transcend/policy/example-bundle'],
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         version: '2026-06-25',
         description: 'Quarterly policy update',
@@ -29,7 +29,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish to the US-hosted Transcend API',
       positionals: ['transcend/policy/example-bundle'],
       flags: {
-        'bundle-name': 'common',
+        'remote-bundle-name': 'common',
         auth: '$TRANSCEND_API_KEY',
         'transcend-url': 'https://api.us.transcend.io',
       },
@@ -38,7 +38,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish the Permissions API bundle (fixed remote name)',
       positionals: ['transcend/policy/permissions-bundle'],
       flags: {
-        'bundle-name': PERMISSIONS_POLICY_BUNDLE_NAME,
+        'remote-bundle-name': PERMISSIONS_POLICY_BUNDLE_NAME,
         auth: '$TRANSCEND_API_KEY',
       },
     },
@@ -46,7 +46,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       positionals: ['transcend/policy/example-bundle'],
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
       },
     },
   ],
@@ -56,7 +56,7 @@ export default `#### Examples
 
 ${examples}
 
-\`--bundle-name\` is the remote Policy Engine name (not the local folder). The \`<bundle>\`
+\`--remote-bundle-name\` is the remote Policy Engine name (not the local folder). The \`<bundle>\`
 positional is the local publish directory containing a \`.manifest\`.
 
 Requires the **${TRANSCEND_SCOPES[ScopeName.ManagePolicyEngineBundles].title}** scope on your API key.

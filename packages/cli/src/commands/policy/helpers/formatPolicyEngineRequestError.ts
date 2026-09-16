@@ -37,9 +37,9 @@ const NOT_FOUND_MESSAGE = `Resource not found (404 Not Found).
 The requested policy bundle or version does not exist.
 
 Fix:
-- Check the --bundle-name value
+- Check the --remote-bundle-name value
 - Run \`transcend policy bundles\` to see available bundles
-- Run \`transcend policy versions --bundle-name=<name>\` to see available versions`;
+- Run \`transcend policy versions --remote-bundle-name=<name>\` to see available versions`;
 
 const PAYLOAD_TOO_LARGE_MESSAGE = `Policy bundle upload is too large (413 Payload Too Large).
 

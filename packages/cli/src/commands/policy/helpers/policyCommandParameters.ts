@@ -36,7 +36,7 @@ export const policyWorkspaceOrBundleDirectoryParameter = {
  *
  * No default — callers must pass an explicit bundle directory with a `.manifest`.
  * This is the local publish path (e.g. `transcend/policy/my-bundle`), not the
- * remote Policy Engine `--bundle-name`.
+ * remote Policy Engine `--remote-bundle-name`.
  */
 export const policyBundleDirectoryParameter = {
   brief: 'Local policy bundle directory containing a .manifest',
@@ -51,7 +51,7 @@ export const policyBundleDirectoryParameter = {
  * This is the remote resource name in Transcend — not the local publish folder
  * (`--bundle-dir` / `{name}-bundle/`) and not the Rego package root (`--name`).
  */
-export const policyBundleNameParameter = {
+export const policyRemoteBundleNameParameter = {
   kind: 'parsed',
   parse: String,
   brief: 'Remote Policy Engine bundle name (not the local folder or --name root)',

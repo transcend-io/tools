@@ -49,7 +49,7 @@ Requires an initialized workspace (\`transcend policy init\` first). Naming tria
 
 - \`--name\` — Rego / \`.manifest\` package root (default local folder: \`{name}-bundle/\`)
 - \`--bundle-dir\` — local publish directory basename under the workspace only
-- \`--bundle-name\` (on \`policy publish\`) — remote Policy Engine name; unrelated to the local folder
+- \`--remote-bundle-name\` (on \`policy publish\`) — remote Policy Engine name; unrelated to the local folder
 
 The positional argument is the **workspace** (default \`transcend/policy\`).
 `;

@@ -101,7 +101,7 @@ describe('download', () => {
     const outputPath = path.join(tempDir, 'main-2026-06-25.tar.gz');
 
     await download.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       version: '2026-06-25',
       output: outputPath,
       auth: 'test-key',
@@ -139,7 +139,7 @@ describe('download', () => {
     const outputPath = path.join(tempDir, 'main-active-label.tar.gz');
 
     await download.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       output: outputPath,
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
@@ -164,7 +164,7 @@ describe('download', () => {
 
     await expect(
       download.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -184,7 +184,7 @@ describe('download', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await download.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       version: '2026-06-25',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
@@ -205,7 +205,7 @@ describe('download', () => {
 
     await expect(
       download.call(context, {
-        'bundle-name': 'missing',
+        'remote-bundle-name': 'missing',
         version: '2026-06-25',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
@@ -227,7 +227,7 @@ describe('download', () => {
 
     await expect(
       download.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: 'missing',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
@@ -251,7 +251,7 @@ describe('download', () => {
 
     await expect(
       download.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: '2026-06-25',
         output: path.join(tempDir, 'out.tar.gz'),
         auth: 'test-key',
@@ -277,7 +277,7 @@ describe('download', () => {
 
     await expect(
       download.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: '2026-06-25',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
