@@ -19,13 +19,15 @@ export const newCommand = buildCommand({
       name: {
         kind: 'parsed',
         parse: String,
-        brief: 'Package root name (Rego / .manifest roots); default dir is {name}-bundle/',
+        brief:
+          'Rego / .manifest package root (not the remote --bundle-name); default folder is {name}-bundle/',
         optional: true,
       },
       'bundle-dir': {
         kind: 'parsed',
         parse: String,
-        brief: 'Local publish directory basename under the workspace (default: {name}-bundle)',
+        brief:
+          'Local publish folder basename under the workspace (default: {name}-bundle; not --bundle-name)',
         optional: true,
       },
       template: {

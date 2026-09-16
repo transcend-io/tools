@@ -45,10 +45,16 @@ Templates available:
 - `generic` — A fail-closed teaching entrypoint (default root: `example`)
 - `permissions` — A Permission API starter with purpose preferences (default root: `permissions`)
 
-`--name` is the Rego package root. `--bundle-dir` is the local folder basename under
-the workspace (default `{name}-bundle`). Workspace schemas live at `schemas/{root}/`
-and are shared across publish directories with the same root. Remote publish uses
-`--bundle-name`, which is unrelated to the local folder.
+Naming triad (keep these distinct):
+
+- `--name` — Rego / `.manifest` package root
+- `--bundle-dir` — local publish folder basename under the workspace (default
+  `{name}-bundle`)
+- `--bundle-name` — remote Policy Engine name at upload time; unrelated to the
+  local folder
+
+Workspace schemas live at `schemas/{root}/` and are shared across publish
+directories with the same root.
 
 `policy new` creates the publish directory, its `.manifest`, Rego tree,
 input fixtures, and input schema. It also merges the root into Regal config and

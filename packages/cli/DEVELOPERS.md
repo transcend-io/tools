@@ -74,7 +74,7 @@ pnpm -F cli genfiles
 pnpm -F cli docgen
 ```
 
-This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
+This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For required positionals (e.g. a `<bundle>` directory), pass `positionals` on each example. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
 
 ### transcend.yml JSON schema
 

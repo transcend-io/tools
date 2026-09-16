@@ -44,11 +44,17 @@ export const policyBundleDirectoryParameter = {
   parse: String,
 } as const satisfies TypedPositionalParameter<string, LocalContext>;
 
-/** Shared remote Policy Engine bundle name flag. */
+/**
+ * Shared remote Policy Engine bundle name flag (`policy publish` / activate /
+ * deactivate / download / versions).
+ *
+ * This is the remote resource name in Transcend — not the local publish folder
+ * (`--bundle-dir` / `{name}-bundle/`) and not the Rego package root (`--name`).
+ */
 export const policyBundleNameParameter = {
   kind: 'parsed',
   parse: String,
-  brief: 'Remote Policy Engine bundle name (not the local folder path)',
+  brief: 'Remote Policy Engine bundle name (not the local folder or --name root)',
 } as const satisfies TypedFlagParameter<string, LocalContext>;
 
 /** Shared raw Policy Engine API response flag. */

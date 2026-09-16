@@ -338,8 +338,8 @@ transcend policy new --template generic # add a bundle from a template
 transcend policy lint --noInteractive
 transcend policy test
 transcend policy eval transcend/policy/example-bundle \\
-  --package data.example.result \\
-  --input transcend/policy/example-bundle/input.json
+  --package=data.example.result \\
+  --input=transcend/policy/example-bundle/input.json
 \`\`\`
 
 \`policy new\` also writes a gitignored \`input.json\` (copy of \`input.example.json\`)

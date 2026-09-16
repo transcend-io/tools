@@ -61,23 +61,25 @@ deliberately instead of applying broad rewrites.
 
 ## Evaluate a query
 
-`policy eval` requires an explicit bundle directory. For the Permissions starter,
-pass the bundle, a purpose query, the local envelope, and the workspace schemas
-directory (so `# METADATA` `schema.permissions.input` annotations type-check):
-
-```sh
-transcend policy eval transcend/policy/permissions-bundle \
-  --package data.permissions.purposes \
-  --input transcend/policy/permissions-bundle/input.json \
-  --schema transcend/policy/schemas
-```
+`policy eval` requires an explicit local publish directory (`<bundle>`).
 
 Generic example bundle:
 
 ```sh
 transcend policy eval transcend/policy/example-bundle \
-  --package data.example.result \
-  --input transcend/policy/example-bundle/input.json
+  --package=data.example.result \
+  --input=transcend/policy/example-bundle/input.json
+```
+
+To simulate the Permissions API, pass the bundle, a purpose query (`--package`),
+the local envelope (`--input`), and the workspace schemas directory (`--schema`)
+so `# METADATA` `schemas:` annotations type-check:
+
+```sh
+transcend policy eval transcend/policy/permissions-bundle \
+  --package=data.permissions.purposes \
+  --input=transcend/policy/permissions-bundle/input.json \
+  --schema=transcend/policy/schemas
 ```
 
 Or pipe the envelope with `--stdin-input`. `policy eval` ignores `*_test.rego`

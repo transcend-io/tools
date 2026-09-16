@@ -34,10 +34,15 @@ Before publishing:
 The publish path validates strict Rego compatibility and bundle compilation
 before creating the upload tarball.
 
-## Bundle names: generic vs Permissions
+## Bundle names: local folder vs remote name
 
-Upload uses one create/version path for every bundle. What makes a bundle
-“Permissions” is convention plus where Sombra queries it:
+Upload uses one create/version path for every bundle. Keep these distinct:
+
+- **Local** publish directory (`{root}-bundle/` or `--bundle-dir`) — the
+  `<bundle>` positional on `policy publish` / `policy eval`
+- **Remote** `--bundle-name` — the Policy Engine resource name in Transcend
+
+What makes a bundle “Permissions” is convention plus where Sombra queries it:
 
 - **Permissions API** always loads the fixed remote bundle name
   `permissions`. Publish that starter with `--bundle-name=permissions`.

@@ -4148,7 +4148,7 @@ USAGE
 Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder path)
+      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
      [--version]          Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
@@ -4196,7 +4196,7 @@ USAGE
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder path)
+      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
      [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
@@ -4236,7 +4236,7 @@ USAGE
 Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder path)
+      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
      [--version]          Caller-supplied version label to download; defaults to the bundle's currently active version
      [--output]           Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
@@ -4296,18 +4296,18 @@ USAGE
 Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as lint/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-      --package               OPA query to evaluate (e.g. data.example.result)
+      --package               OPA query path to evaluate (e.g. data.example.result)
      [--input]                Path to a JSON envelope input file (mutually exclusive with --stdin-input)
-     [--stdin-input]          opa eval --stdin-input (read input document from stdin)                    [default = false]
-     [--format]               opa eval --format                                                          [pretty|json|values|bindings|source|raw|discard, default = pretty]
-     [--schema]               opa eval --schema (file or directory)
-     [--explain]              opa eval --explain                                                         [off|full|notes|fails|debug]
-     [--metrics]              opa eval --metrics                                                         [default = false]
-     [--instrument]           opa eval --instrument (implies --metrics)                                  [default = false]
-     [--profile]              opa eval --profile                                                         [default = false]
-     [--timeout]              opa eval --timeout (e.g. 5s)
-     [--var-values]           opa eval --var-values (with --explain)                                     [default = false]
-     [--show-builtin-errors]  opa eval --show-builtin-errors                                             [default = false]
+     [--stdin-input]          Read the input document from stdin (opa eval --stdin-input)                                              [default = false]
+     [--format]               Output format (opa eval --format)                                                                        [pretty|json|values|bindings|source|raw|discard, default = pretty]
+     [--schema]               JSON Schema directory or file for input type-checking (opa eval --schema; needed for # METADATA schemas)
+     [--explain]              Explanation mode (opa eval --explain)                                                                    [off|full|notes|fails|debug]
+     [--metrics]              Report evaluation metrics (opa eval --metrics)                                                           [default = false]
+     [--instrument]           Enable instrumentation; implies --metrics (opa eval --instrument)                                        [default = false]
+     [--profile]              Enable performance profiling (opa eval --profile)                                                        [default = false]
+     [--timeout]              Evaluation timeout duration, e.g. 5s (opa eval --timeout)
+     [--var-values]           Show variable values with --explain (opa eval --var-values)                                              [default = false]
+     [--show-builtin-errors]  Collect and report built-in errors (opa eval --show-builtin-errors)                                      [default = false]
   -h  --help                  Print help information and exit
 
 ARGUMENTS
@@ -4316,30 +4316,15 @@ ARGUMENTS
 
 #### Examples
 
-**Permissions starter (bundle + envelope + workspace schemas)**
-
-```sh
-transcend policy eval \
-  --package=data.permissions.purposes \
-  --input=transcend/policy/permissions-bundle/input.json \
-  --schema=transcend/policy/schemas
-```
-
 **Evaluate a generic decision query with a local envelope**
 
 ```sh
-transcend policy eval --package=data.example.result --input=./fixtures/envelope.json
+transcend policy eval transcend/policy/example-bundle \
+  --package=data.example.result \
+  --input=transcend/policy/example-bundle/input.json
 ```
 
-**Pipe an envelope on stdin**
-
-```sh
-transcend policy eval --package=data.example.result --stdin-input
-```
-
-Pass the bundle directory positionally (required — one bundle per invocation).
-
-Permissions happy path (closest to production Evaluate — query + envelope + schemas):
+**Simulate the Permissions API (query + envelope + workspace schemas)**
 
 ```sh
 transcend policy eval transcend/policy/permissions-bundle \
@@ -4348,21 +4333,15 @@ transcend policy eval transcend/policy/permissions-bundle \
   --schema=transcend/policy/schemas
 ```
 
-Generic example bundle:
+**Pipe an envelope on stdin**
 
 ```sh
-transcend policy eval transcend/policy/example-bundle \
-  --package=data.example.result \
-  --input=./fixtures/envelope.json
+cat transcend/policy/example-bundle/input.json | transcend policy eval transcend/policy/example-bundle --package=data.example.result --stdin-input
 ```
 
-Or pipe the envelope:
-
-```sh
-cat ./fixtures/envelope.json | transcend policy eval transcend/policy/example-bundle \
-  --package=data.example.result \
-  --stdin-input
-```
+The `<bundle>` positional is required (one local publish directory with a `.manifest` per
+invocation). Pass `--schema` when Rego `# METADATA` `schemas:` annotations should type-check
+against workspace JSON Schemas (e.g. `transcend/policy/schemas`).
 
 ### `transcend policy init`
 
@@ -4435,13 +4414,13 @@ ARGUMENTS
 
 #### Examples
 
-**Verify the default local policy project**
+**Verify every bundle under the default workspace**
 
 ```sh
 transcend policy lint
 ```
 
-**Verify and format the default policy project**
+**Verify and format every bundle under the default workspace**
 
 ```sh
 transcend policy lint --fix
@@ -4453,11 +4432,15 @@ transcend policy lint --fix
 transcend policy lint --noInteractive --json
 ```
 
-With no directory argument, `policy lint` verifies every immediate child under the default workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a single unit:
+**Verify a single local publish directory**
 
 ```sh
-transcend policy lint ./policies/example-bundle --fix
+transcend policy lint transcend/policy/example-bundle --fix
 ```
+
+With no directory argument, `policy lint` verifies every immediate child under the default
+workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a
+single unit.
 
 ### `transcend policy new`
 
@@ -4469,48 +4452,52 @@ USAGE
 Adds a publishable bundle directory to an initialized policy workspace. `--name` is the Rego package root; `--bundle-dir` is the local folder basename under the workspace (defaults to `{name}-bundle`). This is not the remote Policy Engine `--bundle-name` used at publish time. Requires `.regal/config.yaml` (run `transcend policy init` first). Creates bundle files, merges the root into Regal config, and updates editor setup when present.
 
 FLAGS
-     [--name]           Package root name (Rego / .manifest roots); default dir is {name}-bundle/
-     [--bundle-dir]     Local publish directory basename under the workspace (default: {name}-bundle)
-     [--template]       Bundle template                                                               [generic|permissions]
-     [--noInteractive]  Disable prompts and require explicit --name and --template                    [default = false]
-     [--dryRun]         Preview changes without applying them                                         [default = false]
-     [--yes]            Skip only the final plan confirmation                                         [default = false]
-     [--json]           Emit stable JSON output and disable prompts                                   [default = false]
+     [--name]           Rego / .manifest package root (not the remote --bundle-name); default folder is {name}-bundle/
+     [--bundle-dir]     Local publish folder basename under the workspace (default: {name}-bundle; not --bundle-name)
+     [--template]       Bundle template                                                                                [generic|permissions]
+     [--noInteractive]  Disable prompts and require explicit --name and --template                                     [default = false]
+     [--dryRun]         Preview changes without applying them                                                          [default = false]
+     [--yes]            Skip only the final plan confirmation                                                          [default = false]
+     [--json]           Emit stable JSON output and disable prompts                                                    [default = false]
   -h  --help            Print help information and exit
 
 ARGUMENTS
   [workspace]  Policy workspace directory [default = transcend/policy]
 ```
 
-#### Add a generic example bundle
+#### Examples
+
+**Add a generic example bundle**
 
 ```sh
-transcend policy new --template generic --name example --yes
+transcend policy new --template=generic --name=example --yes
 ```
 
-#### Add a permissions bundle
+**Add a permissions bundle**
 
 ```sh
-transcend policy new --template permissions --name permissions --yes
+transcend policy new --template=permissions --name=permissions --yes
 ```
 
-#### Custom local folder, same package root
+**Custom local folder, same package root**
 
 ```sh
-transcend policy new --template permissions --name permissions --bundle-dir my-bundle --yes
+transcend policy new --template=permissions --name=permissions --bundle-dir=my-bundle --yes
 ```
 
-Creates `transcend/policy/my-bundle/` with Rego under `permissions/`. Remote publish still uses
-`--bundle-name` (not the local folder name).
-
-#### Preview without writing
+**Preview without writing**
 
 ```sh
-transcend policy new --template generic --name myapp --dryRun --json
+transcend policy new --template=generic --name=myapp --dryRun --json
 ```
 
-Requires an initialized workspace (`transcend policy init` first). The positional argument is the
-**workspace** (default `transcend/policy`); `--bundle-dir` is only the basename created under it.
+Requires an initialized workspace (`transcend policy init` first). Naming triad:
+
+- `--name` — Rego / `.manifest` package root (default local folder: `{name}-bundle/`)
+- `--bundle-dir` — local publish directory basename under the workspace only
+- `--bundle-name` (on `policy publish`) — remote Policy Engine name; unrelated to the local folder
+
+The positional argument is the **workspace** (default `transcend/policy`).
 
 ### `transcend policy bundles`
 
@@ -4563,7 +4550,7 @@ USAGE
 Packages `.manifest` and `.rego` policy files from one local bundle directory into a tarball and uploads it to Transcend. Requires an explicit directory containing a `.manifest`. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder path)
+      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
      [--version]          Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
@@ -4582,13 +4569,13 @@ ARGUMENTS
 **Publish a local policy bundle as the main bundle**
 
 ```sh
-transcend policy publish --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/example-bundle --bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Publish with an explicit version label and description**
 
 ```sh
-transcend policy publish \
+transcend policy publish transcend/policy/example-bundle \
   --bundle-name=main \
   --auth="$TRANSCEND_API_KEY" \
   --version=2026-06-25 \
@@ -4598,28 +4585,26 @@ transcend policy publish \
 **Publish to the US-hosted Transcend API**
 
 ```sh
-transcend policy publish --bundle-name=common --auth="$TRANSCEND_API_KEY" --transcend-url=https://api.us.transcend.io
+transcend policy publish transcend/policy/example-bundle \
+  --bundle-name=common \
+  --auth="$TRANSCEND_API_KEY" \
+  --transcend-url=https://api.us.transcend.io
 ```
 
 **Publish the Permissions API bundle (fixed remote name)**
 
 ```sh
-transcend policy publish --bundle-name=permissions --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/permissions-bundle --bundle-name=permissions --auth="$TRANSCEND_API_KEY"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy publish --bundle-name=main
+transcend policy publish transcend/policy/example-bundle --bundle-name=main
 ```
 
-Pass the bundle directory positionally (required — one bundle per invocation):
-
-```sh
-transcend policy publish transcend/policy/example-bundle \
-  --bundle-name=main \
-  --auth="$TRANSCEND_API_KEY"
-```
+`--bundle-name` is the remote Policy Engine name (not the local folder). The `<bundle>`
+positional is the local publish directory containing a `.manifest`.
 
 Requires the **Manage Policy** scope on your API key.
 
@@ -4633,16 +4618,16 @@ USAGE
 Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, run, coverage, threshold, timeout, var-values, explain, schema, and exit-zero-on-skipped; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     [--format]                opa test --format                                      [pretty|json|gobench, default = pretty]
-     [--verbose]               opa test --verbose                                     [default = false]
-     [--run]                   opa test --run (regex filter)
-     [--coverage]              opa test --coverage                                    [default = false]
-     [--threshold]             opa test --threshold (coverage %, requires --coverage)
-     [--timeout]               opa test --timeout (e.g. 5s)
-     [--var-values]            opa test --var-values                                  [default = false]
-     [--explain]               opa test --explain                                     [fails|full|notes|debug]
-     [--schema]                opa test --schema (file or directory)
-     [--exit-zero-on-skipped]  opa test --exit-zero-on-skipped                        [default = false]
+     [--format]                Output format (opa test --format)                                                                        [pretty|json|gobench, default = pretty]
+     [--verbose]               Show detailed test results (opa test --verbose)                                                          [default = false]
+     [--run]                   Regex filter for test names (opa test --run)
+     [--coverage]              Report coverage (opa test --coverage)                                                                    [default = false]
+     [--threshold]             Fail when coverage is below this % (requires --coverage)
+     [--timeout]               Test timeout duration, e.g. 5s (opa test --timeout)
+     [--var-values]            Show variable values in failures (opa test --var-values)                                                 [default = false]
+     [--explain]               Explanation mode (opa test --explain)                                                                    [fails|full|notes|debug]
+     [--schema]                JSON Schema file or directory for input type-checking (opa test --schema; needed for # METADATA schemas)
+     [--exit-zero-on-skipped]  Exit 0 when all matching tests are skipped (opa test --exit-zero-on-skipped)                             [default = false]
   -h  --help                   Print help information and exit
 
 ARGUMENTS
@@ -4669,11 +4654,14 @@ transcend policy test --format=json --run=test_allows --verbose
 transcend policy test --coverage --threshold=80
 ```
 
-Pass one bundle directory to test a single unit:
+**Test a single local publish directory**
 
 ```sh
 transcend policy test transcend/policy/example-bundle
 ```
+
+With no directory argument, `policy test` runs every immediate child under the default workspace
+(`transcend/policy`) that contains a `.manifest`. Pass one bundle path to test a single unit.
 
 ### `transcend policy versions`
 
@@ -4685,7 +4673,7 @@ USAGE
 Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder path)
+      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
      [--limit]            Maximum number of versions to return (1-100)                                                                                                                                                        [default = 50]

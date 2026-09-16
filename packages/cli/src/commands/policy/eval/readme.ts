@@ -1,62 +1,49 @@
-import { buildExamples } from '../../../lib/docgen/buildExamples.js';
+import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import type { EvalCommandFlags } from './impl.js';
 
 const examples = buildExamples<EvalCommandFlags>(
   ['policy', 'eval'],
   [
     {
-      description: 'Permissions starter (bundle + envelope + workspace schemas)',
+      description: 'Evaluate a generic decision query with a local envelope',
+      positionals: ['transcend/policy/example-bundle'],
+      flags: {
+        package: 'data.example.result',
+        input: 'transcend/policy/example-bundle/input.json',
+      },
+    },
+    {
+      description: 'Simulate the Permissions API (query + envelope + workspace schemas)',
+      positionals: ['transcend/policy/permissions-bundle'],
       flags: {
         package: 'data.permissions.purposes',
         input: 'transcend/policy/permissions-bundle/input.json',
         schema: 'transcend/policy/schemas',
       },
     },
-    {
-      description: 'Evaluate a generic decision query with a local envelope',
-      flags: {
-        package: 'data.example.result',
-        input: './fixtures/envelope.json',
-      },
-    },
-    {
-      description: 'Pipe an envelope on stdin',
-      flags: {
-        package: 'data.example.result',
-        'stdin-input': true,
-      },
-    },
   ],
+);
+
+const stdinExample = buildExampleCommand<EvalCommandFlags>(
+  ['policy', 'eval'],
+  {
+    package: 'data.example.result',
+    'stdin-input': true,
+  },
+  { positionals: ['transcend/policy/example-bundle'] },
 );
 
 export default `#### Examples
 
 ${examples}
 
-Pass the bundle directory positionally (required — one bundle per invocation).
-
-Permissions happy path (closest to production Evaluate — query + envelope + schemas):
+**Pipe an envelope on stdin**
 
 \`\`\`sh
-transcend policy eval transcend/policy/permissions-bundle \\
-  --package=data.permissions.purposes \\
-  --input=transcend/policy/permissions-bundle/input.json \\
-  --schema=transcend/policy/schemas
+cat transcend/policy/example-bundle/input.json | ${stdinExample}
 \`\`\`
 
-Generic example bundle:
-
-\`\`\`sh
-transcend policy eval transcend/policy/example-bundle \\
-  --package=data.example.result \\
-  --input=./fixtures/envelope.json
-\`\`\`
-
-Or pipe the envelope:
-
-\`\`\`sh
-cat ./fixtures/envelope.json | transcend policy eval transcend/policy/example-bundle \\
-  --package=data.example.result \\
-  --stdin-input
-\`\`\`
+The \`<bundle>\` positional is required (one local publish directory with a \`.manifest\` per
+invocation). Pass \`--schema\` when Rego \`# METADATA\` \`schemas:\` annotations should type-check
+against workspace JSON Schemas (e.g. \`transcend/policy/schemas\`).
 `;

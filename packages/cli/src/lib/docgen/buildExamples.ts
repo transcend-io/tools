@@ -5,6 +5,8 @@ export interface Example<Flags> {
   description: string;
   /** The flag arguments to the command */
   flags: Partial<Flags>;
+  /** Positional arguments after the command path (e.g. a required `<bundle>` directory) */
+  positionals?: string[];
 }
 
 /**
@@ -20,7 +22,9 @@ export function buildExamples<Flags = never>(
 ): string {
   return examples
     .map((example) => {
-      const exampleCommand = buildExampleCommand<Flags>(commandPath, example.flags);
+      const exampleCommand = buildExampleCommand<Flags>(commandPath, example.flags, {
+        positionals: example.positionals,
+      });
       return `**${example.description}**\n\n\`\`\`sh\n${exampleCommand}\n\`\`\``;
     })
     .join('\n\n');
@@ -42,9 +46,11 @@ export function buildExampleCommand<Flags = never>(
     forceSingleLine?: boolean;
     /** If true, the command will be indented */
     argsIndent?: number;
+    /** Positional arguments after the command path */
+    positionals?: string[];
   },
 ): string {
-  const command = commandPath.join(' ');
+  const command = [...commandPath, ...(options?.positionals ?? [])].join(' ');
   const flagList = getFlagList(flags);
   const { forceSingleLine = false, argsIndent = 2 } = options ?? {};
 
