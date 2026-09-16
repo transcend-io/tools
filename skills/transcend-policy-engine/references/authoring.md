@@ -20,7 +20,7 @@ be `{root}/` without doubling names:
 
 ```
 example-bundle/               # transcend policy publish … <dir>
-  .manifest                   # roots + optional metadata.transcend.io.template
+  .manifest                   # roots + optional metadata.transcend.io.template / templateVersion
   example/
     result/…                  # package example.result
   input.example.json

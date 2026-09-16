@@ -2,6 +2,7 @@ import yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 import permissionsPolicyInputSchema from '../../../../schema/permissions-policy-input.json' with { type: 'json' };
+import { version as CLI_VERSION } from '../../../constants.js';
 import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
   buildPermissionsInputExampleContents,
@@ -75,6 +76,7 @@ describe('policy starter templates', () => {
       metadata: {
         'transcend.io': {
           template: 'generic',
+          templateVersion: CLI_VERSION,
         },
       },
     });
@@ -215,7 +217,7 @@ describe('policy bundle templates', () => {
     expect(files.every(({ contents }) => contents.endsWith('\n'))).toBe(true);
     expect(JSON.parse(files[0]!.contents).roots).toEqual(['myapp']);
     expect(JSON.parse(files[0]!.contents).metadata).toEqual({
-      'transcend.io': { template: 'generic' },
+      'transcend.io': { template: 'generic', templateVersion: CLI_VERSION },
     });
     expect(files[2]!.contents).toContain('package myapp.result');
     expect(files[3]!.contents).toContain('package myapp.result_test');
@@ -249,7 +251,7 @@ describe('policy bundle templates', () => {
     expect(
       JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
     ).toEqual({
-      'transcend.io': { template: 'permissions' },
+      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
     });
     expect(files.find(({ path }) => path === 'permissions-bundle/input.json')?.contents).toBe(
       files.find(({ path }) => path === 'permissions-bundle/input.example.json')?.contents,
@@ -275,7 +277,7 @@ describe('policy bundle templates', () => {
     expect(
       JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
     ).toEqual({
-      'transcend.io': { template: 'permissions' },
+      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
     });
 
     const prefRego = files.find(
