@@ -11,7 +11,7 @@ import {
   POLICY_STARTER_BUNDLE_DIRECTORY,
 } from './policy-scaffold-templates.js';
 
-/** Default local policy workspace directory (shared Regal + schemas). */
+/** Default local policy workspace directory (shared Regal config + bundles). */
 export const DEFAULT_POLICY_PROJECT_DIRECTORY = 'transcend/policy';
 
 /**

@@ -237,26 +237,7 @@ export async function _new(
       const path = join(state.targetDirectory, file.path);
       const snapshot = getPlanningPathSnapshot(snapshots, path);
       if (snapshot.kind !== 'absent') {
-        if (!file.shared) {
-          throw new Error(`Expected an empty path but found an entry at: ${path}`);
-        }
-        // Workspace schemas are keyed by package root and may already exist when
-        // adding another publish directory for the same root (`--bundle-dir`).
-        const change = planFileChange({
-          snapshot: getPlanningFileSnapshot(snapshots, path),
-          after: file.contents,
-          description: file.description,
-        });
-        if (change) {
-          warnings.push(
-            `Shared file already exists and differs from the template; left unchanged: ${displayProjectPath(
-              state.invocationDirectory,
-              path,
-            )}`,
-          );
-        }
-        unchanged.push(path);
-        return;
+        throw new Error(`Expected an empty path but found an entry at: ${path}`);
       }
       const change = planFileChange({
         snapshot: getPlanningFileSnapshot(snapshots, path),

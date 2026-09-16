@@ -81,7 +81,9 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy eval');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('--package=data.permissions.purposes');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('--schema=transcend/policy/schemas');
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain(
+      '--schema=transcend/policy/permissions-bundle/input.schema.json',
+    );
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.example.json');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.json');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('.manifest');

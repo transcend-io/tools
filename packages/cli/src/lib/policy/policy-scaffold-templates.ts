@@ -21,6 +21,9 @@ export const POLICY_STARTER_ROOT = 'example';
 /** Publish directory name for the disposable starter (`{root}-bundle`). */
 export const POLICY_STARTER_BUNDLE_DIRECTORY = `${POLICY_STARTER_ROOT}-bundle`;
 
+/** Input JSON Schema filename written beside each publish directory's fixtures. */
+export const POLICY_INPUT_SCHEMA_FILENAME = 'input.schema.json';
+
 /** One deterministic file in the safe policy starter. */
 export interface PolicyStarterFile {
   /** POSIX-style path relative to the policy workspace directory. */
@@ -29,12 +32,6 @@ export interface PolicyStarterFile {
   contents: string;
   /** Human-readable reason shown in the plan. */
   description: string;
-  /**
-   * When true, the path may already exist (e.g. workspace `schemas/{root}/`
-   * shared by multiple publish directories with the same package root).
-   * Existing content is left unchanged; a differing template only warns.
-   */
-  shared?: boolean;
 }
 
 /** OPA bundle manifest filename used for local authoring and upload. */
@@ -237,8 +234,6 @@ export const POLICY_RESULT_REGO_TEMPLATE = `# METADATA
 #   A fail-closed teaching entrypoint. Replace this example with the document
 #   tree and result contract required by your application.
 # scope: package
-# schemas:
-#   - input: schema.${POLICY_STARTER_ROOT}.input
 # entrypoint: true
 package ${POLICY_STARTER_ROOT}.result
 
@@ -355,7 +350,7 @@ transcend/policy/
     example/                    # package root (matches .manifest roots)
     input.example.json
     input.json                  # local only (gitignored)
-  schemas/                      # input JSON Schemas (editor + opa check -s)
+    input.schema.json           # input JSON Schema (editor + opa --schema)
   .regal/config.yaml
 \`\`\`
 
@@ -398,10 +393,9 @@ const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
     description: `Pin strict Rego v1 linting to OPA ${POLICY_STARTER_OPA_VERSION} capabilities`,
   },
   {
-    path: `schemas/${POLICY_STARTER_ROOT}/input.json`,
+    path: `${POLICY_STARTER_BUNDLE_DIRECTORY}/${POLICY_INPUT_SCHEMA_FILENAME}`,
     contents: POLICY_INPUT_SCHEMA_TEMPLATE,
     description: 'Create the input JSON Schema for the example bundle',
-    shared: true,
   },
   {
     path: POLICY_STARTER_RESULT_REGO_PATH,
@@ -533,7 +527,7 @@ export function generateGenericBundleFiles(
       description: 'Create the OPA bundle .manifest',
     },
     {
-      path: `schemas/${root}/input.json`,
+      path: `${bundle}/${POLICY_INPUT_SCHEMA_FILENAME}`,
       contents: `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://transcend.io/policy-schemas/${root}/input.json",
@@ -556,7 +550,6 @@ export function generateGenericBundleFiles(
 }
 `,
       description: `Create the input JSON Schema for the ${root} bundle`,
-      shared: true,
     },
     {
       path: `${bundle}/${root}/result/result.rego`,
@@ -566,8 +559,6 @@ export function generateGenericBundleFiles(
 #   A fail-closed ${root === 'example' ? 'teaching ' : ''}entrypoint. Replace this ${root === 'example' ? 'example ' : ''}with the document
 #   tree and result contract required by your application.
 # scope: package
-# schemas:
-#   - input: schema.${root}.input
 # entrypoint: true
 package ${root}.result
 
@@ -636,10 +627,10 @@ test_allows_trusted_subject if {
  * @returns Bundle files relative to the workspace
  */
 /**
- * Serialize the published Permissions input schema for a local OPA schema path.
+ * Serialize the published Permissions input schema for the local bundle path.
  *
- * OPA maps `schemas/{root}/input.json` → `schema.{root}.input`; the file is a
- * copy of the published schema so type-checking works offline.
+ * Written as `{bundle}/input.schema.json` so editors and `opa --schema` can
+ * type-check the envelope offline without a workspace `schemas/` directory.
  *
  * @returns Schema file contents ending in a trailing newline
  */
@@ -680,10 +671,9 @@ export function generatePermissionsBundleFiles(
       description: 'Create the OPA bundle .manifest',
     },
     {
-      path: `schemas/${root}/input.json`,
+      path: `${bundle}/${POLICY_INPUT_SCHEMA_FILENAME}`,
       contents: buildPermissionsInputSchemaContents(),
       description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
-      shared: true,
     },
     {
       path: `${bundle}/${root}/config/config.rego`,
@@ -869,16 +859,14 @@ test_ignores_fields_beyond_the_recorded_choice if {
       contents: `# METADATA
 # title: Permissions bundle root
 # description: |
-#   Declares the Permissions envelope schema for this package and all
-#   subpackages (helpers, purposes, and static config data).
+#   Root package for helpers, purposes, and static config data. The Permissions
+#   input envelope is documented in \`input.schema.json\` beside this bundle.
 # scope: subpackages
-# schemas:
-#   - input: schema.${root}.input
 package ${root}
 
 import rego.v1
 `,
-      description: 'Create the bundle root package with schema declaration',
+      description: 'Create the bundle root package',
     },
     {
       path: `${bundle}/${root}/purposes/analytics/analytics.rego`,

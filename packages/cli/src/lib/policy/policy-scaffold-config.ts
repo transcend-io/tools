@@ -8,6 +8,7 @@ import {
 } from '../scaffolding/jsonc.js';
 import {
   buildBundleDirectoryName,
+  POLICY_INPUT_SCHEMA_FILENAME,
   POLICY_MANIFEST_FILENAME,
   POLICY_STARTER_ROOT,
 } from './policy-scaffold-templates.js';
@@ -206,19 +207,6 @@ function buildOpaBundleRoot(
 }
 
 /**
- * Build the workspace-relative schemas directory path.
- *
- * @param repositoryRoot - Root that owns `.vscode`
- * @param workspaceDirectory - Selected policy workspace directory
- * @returns VS Code workspace path
- */
-function buildOpaSchemaDirectory(repositoryRoot: string, workspaceDirectory: string): string {
-  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
-  const schemas = workspace === '.' ? 'schemas' : `${workspace}/schemas`;
-  return buildWorkspaceFolderPath(schemas);
-}
-
-/**
  * Build a `files.associations` glob for every `.manifest` under the workspace.
  *
  * Patterns that contain `/` are matched against the absolute file path, so a
@@ -261,8 +249,8 @@ function buildBundleInputJsonSchema(
     workspace === '.' ? `/${bundle.bundleDir}` : `/${workspace}/${bundle.bundleDir}`;
   const schemaUrl =
     workspace === '.'
-      ? `./schemas/${bundle.root}/input.json`
-      : `./${workspace}/schemas/${bundle.root}/input.json`;
+      ? `./${bundle.bundleDir}/${POLICY_INPUT_SCHEMA_FILENAME}`
+      : `./${workspace}/${bundle.bundleDir}/${POLICY_INPUT_SCHEMA_FILENAME}`;
   return {
     fileMatch: [`${bundlePrefix}/input.json`, `${bundlePrefix}/input.example.json`],
     url: schemaUrl,
@@ -319,11 +307,6 @@ export function mergePolicyEditorSettings(
   collectSafeScalarUpdates(
     current,
     [
-      {
-        path: ['opa.schema'],
-        value: buildOpaSchemaDirectory(repositoryRoot, workspaceDirectory),
-        label: 'opa.schema',
-      },
       { path: ['opa.checkOnSave'], value: true, label: 'opa.checkOnSave' },
       { path: ['opa.strictMode'], value: true, label: 'opa.strictMode' },
       { path: ['opa.bundleMode'], value: true, label: 'opa.bundleMode' },

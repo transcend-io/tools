@@ -25,6 +25,7 @@ example-bundle/               # transcend policy publish … <dir>
     result/…                  # package example.result
   input.example.json
   input.json                  # gitignored; VS Code / Regal Evaluate
+  input.schema.json           # input JSON Schema for editors and opa --schema
 ```
 
 Permissions starters use the same layout. Upload does not branch on template
@@ -70,8 +71,9 @@ Find the actual caller and document:
 Do not infer a product contract from the generated example. Replace its package
 names and fields when the repository's contract is known.
 
-Wire input JSON Schemas with `# METADATA` `schemas:` annotations and a schemas
-directory passed to `opa check -s` / VS Code `opa.schema`.
+Keep the input JSON Schema as `input.schema.json` in the publish directory.
+Pass that file to `opa check -s` / `transcend policy eval --schema` when you want
+OPA to type-check `input`.
 
 ## Prefer declarative result construction
 
