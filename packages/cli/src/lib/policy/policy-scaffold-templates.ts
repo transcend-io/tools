@@ -48,11 +48,17 @@ export const PERMISSIONS_POLICY_BUNDLE_NAME = 'permissions';
 /** OPA `.manifest` `metadata` key for Transcend authoring hints. */
 export const POLICY_MANIFEST_TRANSCEND_METADATA_KEY = 'transcend.io';
 
+/** Supported policy bundle templates (enum-style constants). */
+export const PolicyTemplate = {
+  Generic: 'generic',
+  Permissions: 'permissions',
+} as const;
+
 /** Supported policy bundle template names. */
-export const POLICY_TEMPLATE_NAMES = ['generic', 'permissions'] as const;
+export const POLICY_TEMPLATE_NAMES = [PolicyTemplate.Generic, PolicyTemplate.Permissions] as const;
 
 /** A supported policy bundle template name. */
-export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
+export type PolicyTemplateName = (typeof PolicyTemplate)[keyof typeof PolicyTemplate];
 
 /**
  * OPA `.manifest` `metadata.transcend.io` key for the CLI version that
@@ -75,7 +81,7 @@ export const POLICY_MANIFEST_TEMPLATE_VERSION_KEY = 'templateVersion';
  */
 export function buildPolicyManifestTemplate(
   root: string,
-  template: PolicyTemplateName = 'generic',
+  template: PolicyTemplateName = PolicyTemplate.Generic,
 ): string {
   return `{
   "$schema": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json",
@@ -93,7 +99,10 @@ export function buildPolicyManifestTemplate(
 }
 
 /** OPA bundle manifest for the disposable starter publish directory. */
-export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(POLICY_STARTER_ROOT, 'generic');
+export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(
+  POLICY_STARTER_ROOT,
+  PolicyTemplate.Generic,
+);
 
 /**
  * Build workspace-level Regal configuration for given roots.
@@ -481,14 +490,14 @@ export function generatePolicyWorkspaceFiles(): PolicyStarterFile[] {
 
 /** Interactive labels for each policy template. */
 export const POLICY_TEMPLATE_PROMPT_LABELS: Record<PolicyTemplateName, string> = {
-  generic: 'Generic example',
-  permissions: 'Permission API starter',
+  [PolicyTemplate.Generic]: 'Generic example',
+  [PolicyTemplate.Permissions]: 'Permission API starter',
 };
 
 /** Default root names for each template. */
 export const POLICY_TEMPLATE_DEFAULT_ROOTS: Record<PolicyTemplateName, string> = {
-  generic: 'example',
-  permissions: PERMISSIONS_POLICY_BUNDLE_NAME,
+  [PolicyTemplate.Generic]: 'example',
+  [PolicyTemplate.Permissions]: PERMISSIONS_POLICY_BUNDLE_NAME,
 };
 
 /**
@@ -538,7 +547,7 @@ export function generateGenericBundleFiles(
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root, 'generic'),
+      contents: buildPolicyManifestTemplate(root, PolicyTemplate.Generic),
       description: 'Create the OPA bundle .manifest',
     },
     {
@@ -682,7 +691,7 @@ export function generatePermissionsBundleFiles(
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root, 'permissions'),
+      contents: buildPolicyManifestTemplate(root, PolicyTemplate.Permissions),
       description: 'Create the OPA bundle .manifest',
     },
     {
@@ -1016,9 +1025,9 @@ export function generatePolicyBundleFiles(
   bundleDir: string = buildBundleDirectoryName(root),
 ): PolicyStarterFile[] {
   switch (template) {
-    case 'generic':
+    case PolicyTemplate.Generic:
       return generateGenericBundleFiles(root, bundleDir);
-    case 'permissions':
+    case PolicyTemplate.Permissions:
       return generatePermissionsBundleFiles(root, bundleDir);
     default:
       throw new Error(`Unknown policy template: ${String(template)}`);
@@ -1040,7 +1049,8 @@ export function buildPolicyBundleEvalNextStep(options: {
   template: PolicyTemplateName;
 }): string {
   const { bundleDirectory, root, template } = options;
-  const packagePath = template === 'permissions' ? `data.${root}.purposes` : `data.${root}.result`;
+  const packagePath =
+    template === PolicyTemplate.Permissions ? `data.${root}.purposes` : `data.${root}.result`;
   return [
     `transcend policy eval ${bundleDirectory} \\`,
     `  --package=${packagePath} \\`,

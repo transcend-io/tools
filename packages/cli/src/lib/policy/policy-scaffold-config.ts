@@ -12,6 +12,7 @@ import {
   POLICY_INPUT_SCHEMA_FILENAME,
   POLICY_MANIFEST_FILENAME,
   POLICY_STARTER_ROOT,
+  PolicyTemplate,
   type PolicyTemplateName,
 } from './policy-scaffold-templates.js';
 
@@ -264,7 +265,7 @@ function buildBundleInputJsonSchema(
   const bundlePrefix =
     workspace === '.' ? `/${bundle.bundleDir}` : `/${workspace}/${bundle.bundleDir}`;
   const schemaUrl =
-    bundle.template === 'permissions'
+    bundle.template === PolicyTemplate.Permissions
       ? PERMISSIONS_POLICY_INPUT_SCHEMA_ID
       : workspace === '.'
         ? `./${bundle.bundleDir}/${POLICY_INPUT_SCHEMA_FILENAME}`
