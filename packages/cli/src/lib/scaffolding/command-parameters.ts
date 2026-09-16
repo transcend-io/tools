@@ -1,3 +1,7 @@
+import type { TypedFlagParameter, TypedPositionalParameter } from '@stricli/core';
+
+import type { LocalContext } from '../../context.js';
+
 /**
  * Shared positional project directory parameter.
  *
@@ -16,7 +20,7 @@ export function createProjectDirectoryParameter(options: {
     parse: String,
     optional: true as const,
     default: options.defaultDirectory,
-  };
+  } satisfies TypedPositionalParameter<string | undefined, LocalContext>;
 }
 
 /** Shared stable machine-readable output flag. */
@@ -24,25 +28,25 @@ export const projectJsonParameter = {
   kind: 'boolean',
   brief: 'Emit stable JSON output and disable prompts',
   default: false,
-} as const;
+} as const satisfies TypedFlagParameter<boolean, LocalContext>;
 
 /** Shared prompt-disabling flag. */
 export const projectNoInteractiveParameter = {
   kind: 'boolean',
   brief: 'Disable prompts',
   default: false,
-} as const;
+} as const satisfies TypedFlagParameter<boolean, LocalContext>;
 
 /** Shared project preview flag. */
 export const projectDryRunParameter = {
   kind: 'boolean',
   brief: 'Preview changes without applying them',
   default: false,
-} as const;
+} as const satisfies TypedFlagParameter<boolean, LocalContext>;
 
 /** Shared final-confirmation bypass flag. */
 export const projectYesParameter = {
   kind: 'boolean',
   brief: 'Skip only the final plan confirmation',
   default: false,
-} as const;
+} as const satisfies TypedFlagParameter<boolean, LocalContext>;
