@@ -362,12 +362,16 @@ bundle separately (\`transcend policy publish --remote-bundle-name … <dir>\`).
 Scaffold the Permissions starter, then simulate the query Sombra runs:
 
 \`\`\`sh
-transcend policy new --template permissions --yes
+transcend policy new \\
+  --template permissions \\
+  --name ${PERMISSIONS_POLICY_BUNDLE_NAME} \\
+  --bundle-dir ${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle \\
+  --yes
 
-transcend policy eval transcend/policy/permissions-bundle \\
-  --package=data.permissions.purposes \\
-  --input=transcend/policy/permissions-bundle/input.json \\
-  --schema=transcend/policy/permissions-bundle/input.schema.json
+transcend policy eval transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle \\
+  --package=data.${PERMISSIONS_POLICY_BUNDLE_NAME}.purposes \\
+  --input=transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle/input.json \\
+  --schema=transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle/input.schema.json
 \`\`\`
 
 Upload does **not** distinguish bundle kinds. What makes a bundle “Permissions”

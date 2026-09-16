@@ -122,6 +122,8 @@ describe('policy starter templates', () => {
     expect(POLICY_GITIGNORE_TEMPLATE).toContain('/input.json');
     expect(POLICY_README_TEMPLATE).toContain('policy new');
     expect(POLICY_README_TEMPLATE).toContain('## Permissions API');
+    expect(POLICY_README_TEMPLATE).toContain('--name permissions');
+    expect(POLICY_README_TEMPLATE).toContain('--bundle-dir permissions-bundle');
     expect(POLICY_README_TEMPLATE).toContain(
       '--schema=transcend/policy/permissions-bundle/input.schema.json',
     );
