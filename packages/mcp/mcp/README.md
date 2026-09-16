@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 89 Transcend tools at once.
+Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 93 Transcend tools at once.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -118,7 +118,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 This package composes all domain MCP packages via `ToolRegistry`, which aggregates tools from each domain (`getConsentTools`, `getDSRTools`, etc.) into a single tool namespace. A composed `TranscendGraphQLClient` mixes in all domain GraphQL capabilities so each tool has access to the API surface it needs.
 
-If 89 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
+If 93 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
 
 ## Related packages
 
@@ -134,4 +134,5 @@ If 89 tools is too many for your AI agent, install individual domain packages in
 | `@transcend-io/mcp-server-dsr`              | `transcend-mcp-dsr`              | Data subject requests             |
 | `@transcend-io/mcp-server-inventory`        | `transcend-mcp-inventory`        | Data inventory, silos, vendors    |
 | `@transcend-io/mcp-server-preferences`      | `transcend-mcp-preferences`      | Privacy preferences               |
+| `@transcend-io/mcp-server-policy`           | `transcend-mcp-policy`           | Policy Engine (Rego bundles)      |
 | `@transcend-io/mcp-server-workflows`        | `transcend-mcp-workflows`        | Workflow configuration            |

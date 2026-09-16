@@ -28,8 +28,12 @@ export interface PolicyBundleVersion {
   sizeBytes: number;
   /** Human-readable description */
   description: string | null;
-  /** Actor who uploaded the version */
-  createdBy: string;
+  /**
+   * Actor who uploaded the version.
+   * Present on list responses; omitted when mapping the nested get-version detail
+   * endpoint, which does not return this field.
+   */
+  createdBy?: string;
   /** When the version was activated, if ever */
   activatedAt: string | null;
   /** When the version was deactivated, if ever */
@@ -38,6 +42,16 @@ export interface PolicyBundleVersion {
   createdAt: string;
   /** When the version was last updated */
   updatedAt: string;
+}
+
+/**
+ * Response from fetching a single policy bundle by UUID.
+ *
+ * `GET /v1/policy-engine/policy-bundles/:bundleId`
+ */
+export interface GetPolicyBundleResponse {
+  /** Bundle parent record */
+  bundle: PolicyBundle;
 }
 
 /** Offset-paginated list of policy bundles. */
@@ -101,7 +115,7 @@ export interface DeactivatePolicyBundleResponse {
 /**
  * Response from fetching a policy bundle version with a short-lived download URL.
  *
- * `GET /v1/policy-engine/policy-bundle-versions/:versionId`
+ * `GET /v1/policy-engine/policy-bundles/:bundleId/versions/:versionId`
  */
 export interface GetPolicyBundleVersionResponse {
   /** Version UUID */

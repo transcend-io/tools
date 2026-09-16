@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import type { Got } from 'got';
 
 import { buildPolicyBundleFormData } from './buildPolicyBundleFormData.js';
@@ -12,16 +13,16 @@ import {
   packPolicyBundleTarball,
   packPolicyBundleTarballFromFiles,
 } from './packPolicyBundleTarball.js';
-import { resolveBundle, resolveBundleIdByName } from './resolveBundle.js';
-import { resolvePolicyBundleVersion } from './resolvePolicyBundleVersion.js';
 import type {
   ActivatePolicyBundleVersionResponse,
   CreatePolicyBundleResponse,
   CreatePolicyBundleVersionResponse,
   DeactivatePolicyBundleResponse,
+  GetPolicyBundleResponse,
   GetPolicyBundleVersionResponse,
   PolicyBundle,
   PolicyBundleListResponse,
+  PolicyBundleVersion,
   PolicyBundleVersionListResponse,
 } from './types.js';
 
@@ -78,7 +79,10 @@ export async function getPolicyBundleById(
   bundleId: string,
 ): Promise<PolicyBundle | undefined> {
   try {
-    return await client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>();
+    const body = await client
+      .get(`v1/policy-engine/policy-bundles/${bundleId}`)
+      .json<GetPolicyBundleResponse>();
+    return body.bundle;
   } catch (error) {
     if (
       error &&
@@ -90,6 +94,58 @@ export async function getPolicyBundleById(
     }
     throwPolicyEngineRequestError(error);
   }
+}
+
+/** Options for resolving a policy bundle by UUID or tenant-unique name. */
+export interface ResolvePolicyBundleOptions {
+  /** Bundle UUID */
+  bundleId?: string;
+  /** Tenant-unique bundle name */
+  bundleName?: string;
+}
+
+/**
+ * Resolves a policy bundle by UUID or tenant-unique name.
+ *
+ * @param client - Policy Engine REST client
+ * @param options - Bundle UUID and/or name
+ * @returns Matching bundle
+ */
+export async function resolvePolicyBundle(
+  client: Got,
+  options: ResolvePolicyBundleOptions,
+): Promise<PolicyBundle> {
+  if (options.bundleId) {
+    const byId = await getPolicyBundleById(client, options.bundleId);
+    if (byId) {
+      return byId;
+    }
+    throw new ToolError(
+      ErrorCode.NOT_FOUND,
+      `Policy bundle with id "${options.bundleId}" was not found.`,
+      false,
+    );
+  }
+
+  if (options.bundleName) {
+    const byName = (
+      await listPolicyBundles(client, {
+        bundleName: options.bundleName,
+        limit: 1,
+        offset: 0,
+      })
+    ).nodes[0];
+    if (byName) {
+      return byName;
+    }
+    throw new ToolError(
+      ErrorCode.NOT_FOUND,
+      `Policy bundle "${options.bundleName}" was not found.`,
+      false,
+    );
+  }
+
+  throw new ToolError(ErrorCode.VALIDATION_ERROR, 'Provide bundleId or bundleName.', false);
 }
 
 /**
@@ -133,24 +189,28 @@ export async function listPolicyBundleVersions(
 /**
  * Fetches version metadata and presigned download URL (mirrors `transcend policy download --json`).
  *
+ * Uses the nested control-plane route under the parent bundle (same path as CLI download).
+ *
  * @param client - Policy Engine REST client
+ * @param bundleId - Parent bundle UUID
  * @param versionId - Version UUID
  * @returns Version metadata with download URL
  */
 export async function getPolicyBundleVersion(
   client: Got,
+  bundleId: string,
   versionId: string,
 ): Promise<GetPolicyBundleVersionResponse> {
   return policyEngineRequest(
     client
-      .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions/${versionId}`)
       .json<GetPolicyBundleVersionResponse>(),
   );
 }
 
 /** Options for publishing a policy bundle from disk or an in-memory file map. */
 export interface PublishPolicyBundleOptions {
-  /** Directory containing manifest.json and .rego files (mutually exclusive with files) */
+  /** Directory containing .manifest and .rego files (mutually exclusive with files) */
   dir?: string;
   /**
    * Relative path → file contents (same shape as policy_get_templates templateFiles.files).
@@ -192,7 +252,13 @@ export async function publishPolicyBundle(
     bundlePath = hasFiles
       ? await packPolicyBundleTarballFromFiles(options.files!)
       : await packPolicyBundleTarball(options.dir!);
-    const existingBundleId = await resolveBundleIdByName(client, options.bundleName);
+    const existingBundleId = (
+      await listPolicyBundles(client, {
+        bundleName: options.bundleName,
+        limit: 1,
+        offset: 0,
+      })
+    ).nodes[0]?.id;
 
     if (existingBundleId) {
       const form = buildPolicyBundleFormData({
@@ -238,6 +304,28 @@ export interface ActivatePolicyBundleOptions {
 }
 
 /**
+ * Maps a nested get-version API response to the canonical version record shape.
+ *
+ * @param body - Version metadata from `GET /policy-bundles/:id/versions/:versionId`
+ * @returns Version record used by activate
+ */
+function mapGetPolicyBundleVersionResponse(
+  body: GetPolicyBundleVersionResponse,
+): PolicyBundleVersion {
+  return {
+    id: body.versionId,
+    version: body.version,
+    sha256: body.sha256,
+    sizeBytes: body.sizeBytes,
+    description: body.description,
+    activatedAt: body.activatedAt,
+    deactivatedAt: body.deactivatedAt,
+    createdAt: body.uploadedAt,
+    updatedAt: body.uploadedAt,
+  };
+}
+
+/**
  * Activates a policy bundle version (mirrors `transcend policy activate --json`).
  *
  * @param client - Policy Engine REST client
@@ -248,11 +336,30 @@ export async function activatePolicyBundleVersion(
   client: Got,
   options: ActivatePolicyBundleOptions,
 ): Promise<ActivatePolicyBundleVersionResponse> {
-  const bundle = await resolveBundle(client, { bundleName: options.bundleName });
-  const resolvedVersion = await resolvePolicyBundleVersion(client, bundle.id, {
-    versionId: options.versionId,
-    version: options.version,
-  });
+  const bundle = await resolvePolicyBundle(client, { bundleName: options.bundleName });
+
+  let resolvedVersion: PolicyBundleVersion;
+  if (options.versionId) {
+    const detail = await getPolicyBundleVersion(client, bundle.id, options.versionId);
+    resolvedVersion = mapGetPolicyBundleVersionResponse(detail);
+  } else {
+    const searchParams: { limit: number; version?: string } = { limit: 1 };
+    if (options.version) {
+      searchParams.version = options.version;
+    }
+    const match = (await listPolicyBundleVersions(client, bundle.id, searchParams)).nodes[0];
+    if (!match) {
+      if (options.version) {
+        throw new ToolError(
+          ErrorCode.NOT_FOUND,
+          `Version "${options.version}" was not found for this policy bundle.`,
+          false,
+        );
+      }
+      throw new ToolError(ErrorCode.NOT_FOUND, 'No versions found for this policy bundle.', false);
+    }
+    resolvedVersion = match;
+  }
 
   try {
     return await policyEngineRequest(
@@ -267,9 +374,10 @@ export async function activatePolicyBundleVersion(
     const statusCode = (error as { cause?: { response?: { statusCode?: number } } })?.cause
       ?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(
+      throw new ToolError(
+        ErrorCode.API_ERROR,
         `Version "${resolvedVersion.version}" of policy bundle "${options.bundleName}" is already the active version.`,
-        { cause: error },
+        false,
       );
     }
     throw error;
@@ -287,7 +395,7 @@ export async function deactivatePolicyBundle(
   client: Got,
   bundleName: string,
 ): Promise<DeactivatePolicyBundleResponse> {
-  const bundle = await resolveBundle(client, { bundleName });
+  const bundle = await resolvePolicyBundle(client, { bundleName });
 
   try {
     return await policyEngineRequest(
@@ -299,7 +407,11 @@ export async function deactivatePolicyBundle(
     const statusCode = (error as { cause?: { response?: { statusCode?: number } } })?.cause
       ?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(`Policy bundle "${bundleName}" has no active version.`, { cause: error });
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        `Policy bundle "${bundleName}" has no active version.`,
+        false,
+      );
     }
     throw error;
   }

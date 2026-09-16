@@ -33,7 +33,7 @@ const STARTER_FILES = POLICY_TEMPLATES.starter.files;
 
 function writeStarterBundle(dir: string): void {
   fs.mkdirSync(path.join(dir, 'policy_engine'), { recursive: true });
-  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ roots: ['policy_engine'] }));
+  fs.writeFileSync(path.join(dir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
   fs.writeFileSync(
     path.join(dir, 'policy_engine', 'decision.rego'),
     'package policy_engine\n\ndefault decision := "deny"\n',
@@ -85,7 +85,7 @@ describe('Policy MCP tools', () => {
         data: {
           templateFiles: {
             files: expect.objectContaining({
-              'manifest.json': expect.any(String),
+              '.manifest': expect.any(String),
               'policy_engine/decision.rego': expect.any(String),
             }),
           },
@@ -125,17 +125,23 @@ describe('Policy MCP tools', () => {
   });
 
   describe('packPolicyBundleTarball', () => {
-    it('rejects directories without manifest.json', async () => {
+    it('rejects directories without .manifest', async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
-      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/manifest.json/);
+      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/\.manifest/);
     });
 
-    it('rejects directories without publishable rego', async () => {
+    it('rejects legacy manifest.json with a rename hint', async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
       fs.writeFileSync(
         path.join(dir, 'manifest.json'),
         JSON.stringify({ roots: ['policy_engine'] }),
       );
+      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/rename it to \.manifest/);
+    });
+
+    it('rejects directories without publishable rego', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
+      fs.writeFileSync(path.join(dir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
       await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/at least one .rego/);
     });
 
@@ -163,7 +169,7 @@ describe('Policy MCP tools', () => {
       await expect(
         packPolicyBundleTarballFromFiles({
           '../etc/passwd': 'nope',
-          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
           'policy_engine/decision.rego': 'package policy_engine\n',
         }),
       ).rejects.toThrow(/\.\./);
@@ -173,7 +179,7 @@ describe('Policy MCP tools', () => {
       await expect(
         packPolicyBundleTarballFromFiles({
           '/tmp/evil.rego': 'package policy_engine\n',
-          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
         }),
       ).rejects.toThrow(/relative/);
     });
@@ -185,7 +191,7 @@ describe('Policy MCP tools', () => {
         'package policy_engine\n\n' + `${'x'.repeat(MAX_BUNDLE_DECOMPRESSED_BYTES)}\n`;
       await expect(
         packPolicyBundleTarballFromFiles({
-          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
           'policy_engine/decision.rego': oversizedRego,
         }),
       ).rejects.toMatchObject({
@@ -323,12 +329,12 @@ describe('Policy MCP tools', () => {
       mockClient.get.mockReturnValue({
         json: vi
           .fn()
-          // resolveBundle by name
+          // listPolicyBundles by name
           .mockResolvedValueOnce({
             nodes: [{ id: 'b1', bundleName: 'main', activeVersionId: null }],
             totalCount: 1,
           })
-          // GET /policy-bundle-versions/:versionId
+          // GET /policy-bundles/:id/versions/:versionId
           .mockResolvedValueOnce({
             versionId: 'v1',
             version: 'main-2026-01-01',
@@ -340,16 +346,6 @@ describe('Policy MCP tools', () => {
             sha256: 'abc',
             sizeBytes: 100,
             downloadUrl: 'https://example.com/bundle.tar.gz',
-          })
-          // GET /policy-bundles/:bundleId (ownership check)
-          .mockResolvedValueOnce({
-            id: 'b1',
-            bundleName: 'main',
-            description: null,
-            activeVersionId: null,
-            lastActivatedAt: null,
-            createdAt: '2026-01-01T00:00:00Z',
-            updatedAt: '2026-01-01T00:00:00Z',
           }),
       });
       mockClient.post.mockReturnValue({
@@ -364,6 +360,7 @@ describe('Policy MCP tools', () => {
         versionId: 'v1',
       });
 
+      expect(mockClient.get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/b1/versions/v1');
       expect(mockClient.post).toHaveBeenCalledWith(
         'v1/policy-engine/policy-bundles/b1/versions/v1/activate',
         { json: {} },
