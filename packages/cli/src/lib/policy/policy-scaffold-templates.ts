@@ -13,7 +13,8 @@ export const POLICY_STARTER_OPA_VERSION = '1.18.2';
  * Package-path prefix for the disposable starter bundle.
  *
  * Matches OPA `.manifest` `roots` and Regal `project.roots` (not a filesystem
- * folder name by itself). The publish directory is `{root}-bundle/`.
+ * folder name by itself). The default publish directory is `{root}-bundle/`;
+ * `policy new --bundle-dir` can override that basename.
  */
 export const POLICY_STARTER_ROOT = 'example';
 
@@ -28,6 +29,12 @@ export interface PolicyStarterFile {
   contents: string;
   /** Human-readable reason shown in the plan. */
   description: string;
+  /**
+   * When true, the path may already exist (e.g. workspace `schemas/{root}/`
+   * shared by multiple publish directories with the same package root).
+   * Existing content is left unchanged; a differing template only warns.
+   */
+  shared?: boolean;
 }
 
 /** OPA bundle manifest filename used for local authoring and upload. */
@@ -331,8 +338,8 @@ transcend policy new --template generic # add a bundle from a template
 transcend policy lint --noInteractive
 transcend policy test
 transcend policy eval transcend/policy/example-bundle \\
-  --package data.example.result \\
-  --input transcend/policy/example-bundle/input.json
+  --package=data.example.result \\
+  --input=transcend/policy/example-bundle/input.json
 \`\`\`
 
 \`policy new\` also writes a gitignored \`input.json\` (copy of \`input.example.json\`)
@@ -394,6 +401,7 @@ const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
     path: `schemas/${POLICY_STARTER_ROOT}/input.json`,
     contents: POLICY_INPUT_SCHEMA_TEMPLATE,
     description: 'Create the input JSON Schema for the example bundle',
+    shared: true,
   },
   {
     path: POLICY_STARTER_RESULT_REGO_PATH,
@@ -485,13 +493,39 @@ export function buildBundleDirectoryName(root: string): string {
 }
 
 /**
+ * Validate a local bundle directory basename (under the policy workspace).
+ *
+ * @param value - Proposed directory basename
+ * @returns True or error message
+ */
+export function validateBundleDirectoryName(value: string): true | string {
+  if (!value) {
+    return 'Enter a bundle directory name.';
+  }
+  if (value === '.' || value === '..' || value.includes('/') || value.includes('\\')) {
+    return 'Bundle directory must be a single path segment (no slashes).';
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(value)) {
+    return 'Bundle directory must be alphanumeric (plus ., _, -), e.g. "my-bundle".';
+  }
+  if (value.length > 128) {
+    return 'Bundle directory cannot exceed 128 characters.';
+  }
+  return true;
+}
+
+/**
  * Generate bundle files for the generic template.
  *
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
-export function generateGenericBundleFiles(root: string): PolicyStarterFile[] {
-  const bundle = buildBundleDirectoryName(root);
+export function generateGenericBundleFiles(
+  root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
+): PolicyStarterFile[] {
+  const bundle = bundleDir;
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
@@ -522,6 +556,7 @@ export function generateGenericBundleFiles(root: string): PolicyStarterFile[] {
 }
 `,
       description: `Create the input JSON Schema for the ${root} bundle`,
+      shared: true,
     },
     {
       path: `${bundle}/${root}/result/result.rego`,
@@ -629,10 +664,14 @@ export function buildPermissionsInputExampleContents(): string {
  * Generate bundle files for the permissions template.
  *
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
-export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[] {
-  const bundle = buildBundleDirectoryName(root);
+export function generatePermissionsBundleFiles(
+  root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
+): PolicyStarterFile[] {
+  const bundle = bundleDir;
   const inputExample = buildPermissionsInputExampleContents();
   return [
     {
@@ -644,6 +683,7 @@ export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[
       path: `schemas/${root}/input.json`,
       contents: buildPermissionsInputSchemaContents(),
       description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
+      shared: true,
     },
     {
       path: `${bundle}/${root}/config/config.rego`,
@@ -980,17 +1020,19 @@ import rego.v1
  *
  * @param template - Template name
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
 export function generatePolicyBundleFiles(
   template: PolicyTemplateName,
   root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
 ): PolicyStarterFile[] {
   switch (template) {
     case 'generic':
-      return generateGenericBundleFiles(root);
+      return generateGenericBundleFiles(root, bundleDir);
     case 'permissions':
-      return generatePermissionsBundleFiles(root);
+      return generatePermissionsBundleFiles(root, bundleDir);
     default:
       throw new Error(`Unknown policy template: ${String(template)}`);
   }

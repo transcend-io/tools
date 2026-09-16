@@ -23,6 +23,11 @@ const examples = buildExamples<TestCommandFlags>(
         threshold: '80',
       },
     },
+    {
+      description: 'Test a single local publish directory',
+      positionals: ['transcend/policy/example-bundle'],
+      flags: {},
+    },
   ],
 );
 
@@ -30,9 +35,6 @@ export default `#### Examples
 
 ${examples}
 
-Pass one bundle directory to test a single unit:
-
-\`\`\`sh
-transcend policy test transcend/policy/example-bundle
-\`\`\`
+With no directory argument, \`policy test\` runs every immediate child under the default workspace
+(\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to test a single unit.
 `;

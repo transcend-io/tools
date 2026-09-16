@@ -226,6 +226,23 @@ describe('policy bundle templates', () => {
     );
   });
 
+  it('allows a custom publish directory basename independent of the package root', () => {
+    const files = generatePolicyBundleFiles('permissions', 'permissions', 'my-bundle');
+
+    expect(files.map(({ path }) => path).filter((path) => path.startsWith('my-bundle/'))).toEqual(
+      expect.arrayContaining([
+        'my-bundle/.manifest',
+        'my-bundle/permissions/main.rego',
+        'my-bundle/input.example.json',
+      ]),
+    );
+    expect(files.some(({ path }) => path.startsWith('permissions-bundle/'))).toBe(false);
+    expect(JSON.parse(files[0]!.contents).roots).toEqual(['permissions']);
+    expect(files.find(({ path }) => path === 'schemas/permissions/input.json')).toMatchObject({
+      shared: true,
+    });
+  });
+
   it('generates a permissions bundle with all expected files', () => {
     const files = generatePolicyBundleFiles('permissions', 'permissions');
 

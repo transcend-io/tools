@@ -1,20 +1,55 @@
-export default `#### Add a generic example bundle
+import { buildExamples } from '../../../lib/docgen/buildExamples.js';
+import type { PolicyNewFlags } from './impl.js';
 
-\`\`\`sh
-transcend policy new --template generic --name example --yes
-\`\`\`
+const examples = buildExamples<PolicyNewFlags>(
+  ['policy', 'new'],
+  [
+    {
+      description: 'Add a generic example bundle',
+      flags: {
+        template: 'generic',
+        name: 'example',
+        yes: true,
+      },
+    },
+    {
+      description: 'Add a permissions bundle',
+      flags: {
+        template: 'permissions',
+        name: 'permissions',
+        yes: true,
+      },
+    },
+    {
+      description: 'Custom local folder, same package root',
+      flags: {
+        template: 'permissions',
+        name: 'permissions',
+        'bundle-dir': 'my-bundle',
+        yes: true,
+      },
+    },
+    {
+      description: 'Preview without writing',
+      flags: {
+        template: 'generic',
+        name: 'myapp',
+        dryRun: true,
+        json: true,
+      },
+    },
+  ],
+);
 
-#### Add a permissions bundle
+export default `#### Examples
 
-\`\`\`sh
-transcend policy new --template permissions --name permissions --yes
-\`\`\`
+${examples}
 
-#### Preview without writing
+Requires an initialized workspace (\`transcend policy init\` first). Naming triad:
 
-\`\`\`sh
-transcend policy new --template generic --name myapp --dryRun --json
-\`\`\`
+- \`--name\` — Rego / \`.manifest\` package root (default local folder: \`{name}-bundle/\`)
+- \`--bundle-dir\` — local publish directory basename under the workspace only
+- \`--bundle-name\` (on \`policy publish\`) — remote Policy Engine name; unrelated to the local folder
 
-Requires an initialized workspace (\`transcend policy init\` first).
+The positional argument is the **workspace** (default \`transcend/policy\`).
 `;

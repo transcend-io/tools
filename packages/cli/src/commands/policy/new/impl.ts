@@ -16,6 +16,8 @@ import {
 import {
   mergePolicyEditorSettings,
   mergePolicyEditorTasks,
+  policyBundleRef,
+  type PolicyBundleRef,
 } from '../../../lib/policy/policy-scaffold-config.js';
 import {
   buildBundleDirectoryName,
@@ -25,6 +27,7 @@ import {
   POLICY_TEMPLATE_DEFAULT_ROOTS,
   POLICY_TEMPLATE_NAMES,
   POLICY_TEMPLATE_PROMPT_LABELS,
+  validateBundleDirectoryName,
   type PolicyTemplateName,
 } from '../../../lib/policy/policy-scaffold-templates.js';
 import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
@@ -51,6 +54,8 @@ import {
 export interface PolicyNewFlags {
   /** Package root name. */
   name?: string;
+  /** Local publish directory basename under the workspace. */
+  'bundle-dir'?: string;
   /** Starter template. */
   template?: PolicyTemplateName;
   /** Disable prompts. */
@@ -153,22 +158,38 @@ export async function _new(
       throw new Error(rootValidation);
     }
 
-    const bundleDir = buildBundleDirectoryName(name);
+    const defaultBundleDir = buildBundleDirectoryName(name);
+    const bundleDir =
+      flags['bundle-dir'] ??
+      (interactive
+        ? await prompts.text('Bundle directory name:', defaultBundleDir, (value) => {
+            const result = validateBundleDirectoryName(value);
+            return result === true ? true : result;
+          })
+        : defaultBundleDir);
+    const bundleDirValidation = validateBundleDirectoryName(bundleDir);
+    if (bundleDirValidation !== true) {
+      throw new Error(bundleDirValidation);
+    }
+
     const bundlePath = join(state.targetDirectory, bundleDir);
     if (this.fs.existsSync(bundlePath)) {
       throw new Error(
         `Bundle directory already exists: ${displayProjectPath(
           state.invocationDirectory,
           bundlePath,
-        )}. Choose a different --name.`,
+        )}. Choose a different --bundle-dir.`,
       );
     }
 
-    const files = generatePolicyBundleFiles(template, name);
+    const files = generatePolicyBundleFiles(template, name, bundleDir);
     const existingRegalContents = this.fs.readFileSync(regalConfigPath, 'utf8');
     const { contents: updatedRegalConfig, roots: allRoots } = mergePolicyRegalConfigRoots(
       existingRegalContents,
       name,
+    );
+    const bundleRefs: PolicyBundleRef[] = allRoots.map((root) =>
+      root === name ? { root, bundleDir } : policyBundleRef(root),
     );
 
     const candidatePaths = [
@@ -216,7 +237,26 @@ export async function _new(
       const path = join(state.targetDirectory, file.path);
       const snapshot = getPlanningPathSnapshot(snapshots, path);
       if (snapshot.kind !== 'absent') {
-        throw new Error(`Expected an empty path but found an entry at: ${path}`);
+        if (!file.shared) {
+          throw new Error(`Expected an empty path but found an entry at: ${path}`);
+        }
+        // Workspace schemas are keyed by package root and may already exist when
+        // adding another publish directory for the same root (`--bundle-dir`).
+        const change = planFileChange({
+          snapshot: getPlanningFileSnapshot(snapshots, path),
+          after: file.contents,
+          description: file.description,
+        });
+        if (change) {
+          warnings.push(
+            `Shared file already exists and differs from the template; left unchanged: ${displayProjectPath(
+              state.invocationDirectory,
+              path,
+            )}`,
+          );
+        }
+        unchanged.push(path);
+        return;
       }
       const change = planFileChange({
         snapshot: getPlanningFileSnapshot(snapshots, path),
@@ -237,7 +277,7 @@ export async function _new(
           settingsSnapshot.kind === 'file' ? settingsSnapshot.contents : null,
           state.projectRoot,
           state.targetDirectory,
-          allRoots,
+          bundleRefs,
         );
         const settingsChange = planFileChange({
           snapshot:
@@ -269,7 +309,7 @@ export async function _new(
           tasksSnapshot.kind === 'file' ? tasksSnapshot.contents : null,
           state.projectRoot,
           state.targetDirectory,
-          allRoots,
+          bundleRefs,
         );
         const tasksChange = planFileChange({
           snapshot:
@@ -301,9 +341,10 @@ export async function _new(
       if (workflowSnapshot.kind === 'file') {
         const workspaceDirectory =
           relative(state.repositoryRoot, state.targetDirectory).split(sep).join('/') || '.';
-        const bundleDirectories = allRoots.map((root) => {
-          const bundle = buildBundleDirectoryName(root);
-          return workspaceDirectory === '.' ? bundle : `${workspaceDirectory}/${bundle}`;
+        const bundleDirectories = bundleRefs.map((bundle) => {
+          return workspaceDirectory === '.'
+            ? bundle.bundleDir
+            : `${workspaceDirectory}/${bundle.bundleDir}`;
         });
         const desiredWorkflow = generatePolicyGithubActionsWorkflow({
           cliVersion: CLI_VERSION,
