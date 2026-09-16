@@ -21,6 +21,7 @@ import {
 } from '../../../lib/policy/policy-scaffold-config.js';
 import {
   buildBundleDirectoryName,
+  buildPolicyBundleEvalNextStep,
   generatePolicyBundleFiles,
   mergePolicyRegalConfigRoots,
   POLICY_MANIFEST_FILENAME,
@@ -34,7 +35,6 @@ import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-disco
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 import {
   displayProjectPath,
-  quoteShellArgument,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
 import {
@@ -359,9 +359,12 @@ export async function _new(
       }
     }
 
-    const lintCommand = `transcend policy lint ${quoteShellArgument(
-      displayProjectPath(state.invocationDirectory, bundlePath),
-    )} --noInteractive`;
+    const bundleDisplayPath = displayProjectPath(state.invocationDirectory, bundlePath);
+    const evalCommand = buildPolicyBundleEvalNextStep({
+      bundleDirectory: bundleDisplayPath,
+      root: name,
+      template,
+    });
 
     const plan: ProjectPlan & {
       /** Absolute workspace directory. */
@@ -381,7 +384,7 @@ export async function _new(
       changes,
       unchanged,
       warnings,
-      nextSteps: [lintCommand],
+      nextSteps: [evalCommand],
     };
 
     if (!flags.json) {

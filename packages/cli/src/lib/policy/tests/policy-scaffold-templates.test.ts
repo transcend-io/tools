@@ -7,6 +7,7 @@ import { validatePolicyBundleContents } from '../policy-bundle-manifest.js';
 import {
   buildPermissionsInputExampleContents,
   buildPermissionsInputSchemaContents,
+  buildPolicyBundleEvalNextStep,
   generatePolicyStarterFiles,
   generatePolicyWorkspaceFiles,
   generatePolicyBundleFiles,
@@ -305,5 +306,33 @@ describe('policy bundle templates', () => {
     ).toEqual({
       'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
     });
+  });
+});
+
+describe('buildPolicyBundleEvalNextStep', () => {
+  it('builds a permissions eval command for the created bundle paths', () => {
+    expect(
+      buildPolicyBundleEvalNextStep({
+        bundleDirectory: 'transcend/policy/textnow-bundle',
+        root: 'permissions',
+        template: 'permissions',
+      }),
+    ).toBe(`transcend policy eval transcend/policy/textnow-bundle \\
+  --package=data.permissions.purposes \\
+  --input=transcend/policy/textnow-bundle/input.json \\
+  --schema=transcend/policy/textnow-bundle/input.schema.json`);
+  });
+
+  it('builds a generic eval command against the result package', () => {
+    expect(
+      buildPolicyBundleEvalNextStep({
+        bundleDirectory: 'transcend/policy/example-bundle',
+        root: 'example',
+        template: 'generic',
+      }),
+    ).toBe(`transcend policy eval transcend/policy/example-bundle \\
+  --package=data.example.result \\
+  --input=transcend/policy/example-bundle/input.json \\
+  --schema=transcend/policy/example-bundle/input.schema.json`);
   });
 });

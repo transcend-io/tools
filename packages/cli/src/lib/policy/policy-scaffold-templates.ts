@@ -1024,3 +1024,27 @@ export function generatePolicyBundleFiles(
       throw new Error(`Unknown policy template: ${String(template)}`);
   }
 }
+
+/**
+ * Build the suggested `policy eval` follow-up after `policy new`.
+ *
+ * @param options - Bundle display path, package root, and template
+ * @returns Multi-line shell command ready to paste
+ */
+export function buildPolicyBundleEvalNextStep(options: {
+  /** Workspace-relative publish directory (e.g. `transcend/policy/permissions-bundle`). */
+  bundleDirectory: string;
+  /** Rego / `.manifest` package root. */
+  root: string;
+  /** Scaffold template that determined the query path. */
+  template: PolicyTemplateName;
+}): string {
+  const { bundleDirectory, root, template } = options;
+  const packagePath = template === 'permissions' ? `data.${root}.purposes` : `data.${root}.result`;
+  return [
+    `transcend policy eval ${bundleDirectory} \\`,
+    `  --package=${packagePath} \\`,
+    `  --input=${bundleDirectory}/input.json \\`,
+    `  --schema=${bundleDirectory}/${POLICY_INPUT_SCHEMA_FILENAME}`,
+  ].join('\n');
+}
