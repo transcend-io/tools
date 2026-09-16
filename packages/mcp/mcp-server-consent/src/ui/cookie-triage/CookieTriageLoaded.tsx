@@ -65,7 +65,7 @@ export function CookieTriageLoaded({ app }: CookieTriageLoadedProps) {
             <span className="flex-1 shrink-1 text-sm">
               {pluralTitle} needing review are grouped by the purpose Transcend assigned. Review
               each row and set a decision. You can also{' '}
-              <A app={app} href={dashboardUrl} label="go to the Transcend App" /> to review and
+              <A app={app} href={dashboardUrl} label="go to the Transcend App ↗" /> to review and
               triage {plural}.
             </span>
             <Overviews />

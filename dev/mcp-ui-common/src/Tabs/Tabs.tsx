@@ -8,6 +8,11 @@ export interface TabItem {
   id: string;
   /** Visible label */
   label: ReactNode;
+  /**
+   * Native tooltip for truncated labels.
+   * Defaults to `label` when `label` is a string.
+   */
+  title?: string;
   /** Optional count shown in a pill */
   count?: number;
   /** When true, the count badge shows a shimmer placeholder */
@@ -77,6 +82,7 @@ export const Tabs = memo(function Tabs({
       <div className="flex flex-wrap gap-x-6 gap-y-1" role="tablist" aria-label={ariaLabel}>
         {items.map((item, index) => {
           const isActive = item.id === selectedId;
+          const title = item.title ?? (typeof item.label === 'string' ? item.label : undefined);
 
           return (
             <button
@@ -86,15 +92,16 @@ export const Tabs = memo(function Tabs({
               aria-selected={isActive}
               tabIndex={isActive ? 0 : -1}
               id={`${idPrefix}-${item.id}`}
+              title={title}
               className={
                 isActive
-                  ? 'relative -mb-px flex cursor-pointer items-center gap-1 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand'
-                  : 'relative -mb-px flex cursor-pointer items-center gap-1 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-on-card-subtle'
+                  ? 'relative -mb-px flex min-w-0 max-w-full cursor-pointer items-center gap-1 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand'
+                  : 'relative -mb-px flex min-w-0 max-w-full cursor-pointer items-center gap-1 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-on-card-subtle'
               }
               onClick={() => onSelect(item.id)}
               onKeyDown={(event) => onTabKeyDown(event, index)}
             >
-              <span>{item.label}</span>
+              <span className="min-w-0 max-w-[12rem] truncate">{item.label}</span>
               {item.count !== undefined ? (
                 <CountBadge
                   count={item.count}
