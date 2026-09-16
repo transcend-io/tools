@@ -7,13 +7,10 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_poll_status',
   'dsr_list',
   'dsr_get_details',
-  'dsr_download_keys',
   'dsr_list_identifiers',
   'dsr_list_request_data_silos',
   'dsr_list_pending_requests',
   'dsr_enrich_identifiers',
-  'dsr_respond_access',
-  'dsr_respond_erasure',
   'dsr_cancel',
   'dsr_analyze',
 ] as const;
@@ -29,11 +26,8 @@ describe('DSR Tools', () => {
   let mockRest: {
     submitDSR: ReturnType<typeof vi.fn>;
     pollDSRStatus: ReturnType<typeof vi.fn>;
-    downloadKeys: ReturnType<typeof vi.fn>;
     listRequestIdentifiers: ReturnType<typeof vi.fn>;
     enrichIdentifiers: ReturnType<typeof vi.fn>;
-    respondToAccess: ReturnType<typeof vi.fn>;
-    confirmErasure: ReturnType<typeof vi.fn>;
     getPendingRequests: ReturnType<typeof vi.fn>;
   };
 
@@ -47,11 +41,8 @@ describe('DSR Tools', () => {
     mockRest = {
       submitDSR: vi.fn(),
       pollDSRStatus: vi.fn(),
-      downloadKeys: vi.fn(),
       listRequestIdentifiers: vi.fn(),
       enrichIdentifiers: vi.fn(),
-      respondToAccess: vi.fn(),
-      confirmErasure: vi.fn(),
       getPendingRequests: vi.fn(),
     };
   });
@@ -63,9 +54,9 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 13 tools with expected names', () => {
+  it('registers exactly 10 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(13);
+    expect(tools).toHaveLength(10);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -384,41 +375,6 @@ describe('DSR Tools', () => {
         requestId: undefined,
         enricherId: undefined,
         identifiers: { email: 'a@b.com' },
-      });
-    });
-  });
-
-  describe('dsr_respond_access', () => {
-    it('calls respondToAccess with nonce', async () => {
-      mockRest.respondToAccess.mockResolvedValue({ success: true });
-
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'dsr_respond_access')!;
-
-      await tool.handler({
-        nonce: 'access-nonce',
-        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
-      });
-
-      expect(mockRest.respondToAccess).toHaveBeenCalledWith({
-        nonce: 'access-nonce',
-        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
-      });
-    });
-  });
-
-  describe('dsr_respond_erasure', () => {
-    it('calls confirmErasure with nonce', async () => {
-      mockRest.confirmErasure.mockResolvedValue({ success: true });
-
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'dsr_respond_erasure')!;
-
-      await tool.handler({ nonce: 'erasure-nonce', profileIds: ['p1'] });
-
-      expect(mockRest.confirmErasure).toHaveBeenCalledWith({
-        nonce: 'erasure-nonce',
-        profileIds: ['p1'],
       });
     });
   });

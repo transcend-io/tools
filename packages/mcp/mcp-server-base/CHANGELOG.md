@@ -1,5 +1,155 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.0
+
+### Minor Changes
+
+- fcbc71b: Add Sombra customer-ingress sign/unwrap for custom function source.
+
+### Patch Changes
+
+- f5294d8: Adds read tools for custom functions
+- c052029: `assessments_prefill` no longer loses select answers when a value matches none of the question's answer options.
+
+  A select question holds at most one written-in answer, so sending each unmatched value as its own was rejected outright. Because the matched options and the written-in values travelled in a single write, that rejection discarded the matched options too, leaving the question blank on a form that reported itself filled. Unmatched values are now joined into a single written-in answer, separated by semicolons since the values themselves often contain commas.
+
+  Where a question takes no written-in answer, such values cannot be stored at all, so they come back under `missedOptionValues` with the form's `questionId` and the options the question does accept, including their IDs, ready to hand to `assessments_answer_question`. Whether a question takes one is read from `allowSelectOther`, which the form query now selects; `subType` does not imply it, as a `CUSTOM` select with the flag off refuses a written value.
+
+  Joining changes what the form says, so it is now reported rather than left to be discovered: the response carries `answersJoined` beside the counts, the message says so in words, and each detailed row reports the options a select actually holds and its written-in value instead of replaying the request. Rows also carry `questionId`, which is what `assessments_answer_question` needs and what answers keyed by `referenceId` do not give you.
+
+  The failure message no longer mentions answer keys unless a key actually failed to match, and `ASSESSMENT_PREFILL_INCOMPLETE` is no longer marked retryable: the form already exists, so retrying the call creates a second one.
+
+- 8f8a9a0: adds custom function upsert and promote tools
+
+## 2.4.0
+
+### Minor Changes
+
+- 13092af: Added consent_list_roc_records tool
+
+## 2.3.1
+
+### Patch Changes
+
+- 9bc5cb7: Adds mergeRecordsOnConflict for preference upsert
+
+## 2.3.0
+
+### Minor Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+## 2.2.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+## 2.2.1
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+## 2.2.0
+
+### Minor Changes
+
+- aefe248: Bound what `assessments_get` returns.
+
+  It returned every section, question, answer option and answer at once — a six-section,
+  twenty-question DPIA already ran to roughly 30,000 characters, and real forms have hundreds of
+  questions. Neither `sections` nor `questions` takes pagination arguments, so the only way to
+  bound the response is not to ask for the parts you do not want.
+
+  `assessmentId` alone now returns the section list with a question count each. `sectionIds`
+  expands the sections you name, and fails naming any ID the form does not have rather than
+  returning the rest in a response shaped like a complete one.
+
+  Free-text answers no longer come back twice. The API models a typed response as an answer
+  option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
+  Options are now dropped only when every one was selected, so select questions are unaffected.
+
+  Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+  a status, so confirming an assignment took previously meant querying the list index for a single
+  form whose ID the caller was already holding.
+
+  Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
+  of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
+
+  Breaking: pass `sectionIds` to get full section contents.
+
+- aefe248: Add `questionText` to `assessments_get`, so finding what a form asks does not mean guessing
+  which section holds it.
+
+  Reading a form meant naming sections and trusting their titles. One staging form has a section
+  titled "Data Storage and Security" whose questions are all legal basis and compliance, so the
+  guess-expand-repeat loop is the over-fetching the section list exists to prevent.
+
+  `questionText` returns only the questions whose text matches, with their answers and the
+  section each sits in. Pass `sectionIds` alongside it to search within those sections rather
+  than expanding them. Matches are drained rather than paged, since they cannot outnumber the
+  form's questions.
+
+  Answers cannot be searched — the API matches question and form titles only — and an empty
+  result says so, phrased as an answer rather than a failed lookup.
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+### Patch Changes
+
+- 74f2734: Emit the `VALIDATION_ERROR` code from `ErrorCode` rather than a string literal.
+
+  Both sites already produced that exact string, so the wire format is unchanged. Naming it keeps the
+  two in step if the code is ever renamed.
+
 ## 2.1.0
 
 ### Minor Changes

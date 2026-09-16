@@ -1,5 +1,245 @@
 # @transcend-io/mcp
 
+## 1.3.0
+
+### Minor Changes
+
+- f5294d8: Add the Custom Functions MCP domain with list and get_code tools that unwrap signed source to plaintext without exposing JWTs.
+- 7d2ba42: Add custom_functions_test_run and optional upsert testPayloads so agents can execute stored or unsaved code and set successfulTestRun when tests pass. Save and promote do not require a passing test.
+- 8f8a9a0: Add custom_functions_upsert and custom_functions_promote_version: sign plaintext through Sombra, auto-resolve sombraId, auto-create a customFunction silo for DSR creates, and promote drafts.
+
+### Patch Changes
+
+- 31b74c6: Show purpose slugs (not custom titles) in the consent triage tabs and purpose dropdown.
+- f5294d8: Adds read tools for custom functions
+- 5fda809: Include Custom Functions in MCP guide docs sync.
+- 8f8a9a0: adds custom function upsert and promote tools
+- Updated dependencies [30ff243]
+- Updated dependencies [90e7d4f]
+- Updated dependencies [31b74c6]
+- Updated dependencies [f5294d8]
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [7d2ba42]
+- Updated dependencies [8f8a9a0]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+  - @transcend-io/mcp-server-assessment@2.1.8
+  - @transcend-io/mcp-server-consent@1.2.3
+  - @transcend-io/mcp-server-custom-functions@0.2.0
+  - @transcend-io/mcp-server-inventory@1.0.11
+  - @transcend-io/mcp-server-base@2.5.0
+  - @transcend-io/mcp-server-admin@1.0.11
+  - @transcend-io/mcp-server-discovery@1.0.11
+  - @transcend-io/mcp-server-docs@0.4.11
+  - @transcend-io/mcp-server-dsr@2.0.8
+  - @transcend-io/mcp-server-preferences@0.7.15
+  - @transcend-io/mcp-server-workflows@1.0.11
+
+## 1.2.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.0.10
+- @transcend-io/mcp-server-assessment@2.1.7
+- @transcend-io/mcp-server-consent@1.2.2
+- @transcend-io/mcp-server-discovery@1.0.10
+- @transcend-io/mcp-server-dsr@2.0.7
+- @transcend-io/mcp-server-inventory@1.0.10
+- @transcend-io/mcp-server-preferences@0.7.14
+- @transcend-io/mcp-server-workflows@1.0.10
+
+## 1.2.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.0.9
+- @transcend-io/mcp-server-assessment@2.1.6
+- @transcend-io/mcp-server-consent@1.2.1
+- @transcend-io/mcp-server-discovery@1.0.9
+- @transcend-io/mcp-server-dsr@2.0.6
+- @transcend-io/mcp-server-inventory@1.0.9
+- @transcend-io/mcp-server-preferences@0.7.13
+- @transcend-io/mcp-server-workflows@1.0.9
+
+## 1.2.0
+
+### Minor Changes
+
+- 13092af: Added consent_list_roc_records tool
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-consent@1.2.0
+  - @transcend-io/mcp-server-base@2.4.0
+  - @transcend-io/mcp-server-admin@1.0.8
+  - @transcend-io/mcp-server-assessment@2.1.5
+  - @transcend-io/mcp-server-discovery@1.0.8
+  - @transcend-io/mcp-server-docs@0.4.10
+  - @transcend-io/mcp-server-dsr@2.0.5
+  - @transcend-io/mcp-server-inventory@1.0.8
+  - @transcend-io/mcp-server-preferences@0.7.12
+  - @transcend-io/mcp-server-workflows@1.0.8
+
+## 1.1.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-consent@1.1.2
+- @transcend-io/mcp-server-preferences@0.7.11
+
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-preferences@0.7.10
+  - @transcend-io/mcp-server-base@2.3.1
+  - @transcend-io/mcp-server-admin@1.0.7
+  - @transcend-io/mcp-server-assessment@2.1.4
+  - @transcend-io/mcp-server-consent@1.1.1
+  - @transcend-io/mcp-server-discovery@1.0.7
+  - @transcend-io/mcp-server-docs@0.4.9
+  - @transcend-io/mcp-server-dsr@2.0.4
+  - @transcend-io/mcp-server-inventory@1.0.7
+  - @transcend-io/mcp-server-workflows@1.0.7
+
+## 1.1.0
+
+### Minor Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-consent@1.1.0
+  - @transcend-io/mcp-server-base@2.3.0
+  - @transcend-io/mcp-server-admin@1.0.6
+  - @transcend-io/mcp-server-assessment@2.1.3
+  - @transcend-io/mcp-server-discovery@1.0.6
+  - @transcend-io/mcp-server-docs@0.4.8
+  - @transcend-io/mcp-server-dsr@2.0.3
+  - @transcend-io/mcp-server-inventory@1.0.6
+  - @transcend-io/mcp-server-preferences@0.7.9
+  - @transcend-io/mcp-server-workflows@1.0.6
+
+## 1.0.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-assessment@2.1.2
+  - @transcend-io/mcp-server-base@2.2.2
+  - @transcend-io/mcp-server-admin@1.0.5
+  - @transcend-io/mcp-server-consent@1.0.5
+  - @transcend-io/mcp-server-discovery@1.0.5
+  - @transcend-io/mcp-server-docs@0.4.7
+  - @transcend-io/mcp-server-dsr@2.0.2
+  - @transcend-io/mcp-server-inventory@1.0.5
+  - @transcend-io/mcp-server-preferences@0.7.8
+  - @transcend-io/mcp-server-workflows@1.0.5
+
+## 1.0.1
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+  - @transcend-io/mcp-server-consent@1.0.4
+  - @transcend-io/mcp-server-admin@1.0.4
+  - @transcend-io/mcp-server-assessment@2.1.1
+  - @transcend-io/mcp-server-discovery@1.0.4
+  - @transcend-io/mcp-server-docs@0.4.6
+  - @transcend-io/mcp-server-dsr@2.0.1
+  - @transcend-io/mcp-server-inventory@1.0.4
+  - @transcend-io/mcp-server-preferences@0.7.7
+  - @transcend-io/mcp-server-workflows@1.0.4
+
+## 1.0.0
+
+### Major Changes
+
+- e50ca9e: Remove `dsr_respond_access`, `dsr_respond_erasure`, and `dsr_download_keys`.
+
+  These fulfillment/download tools expanded the MCP surface for privacy-sensitive operations
+  without a clear long-term product fit. Enrichment and request lifecycle tools remain.
+
+### Minor Changes
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+- Updated dependencies [74f2734]
+- Updated dependencies [e50ca9e]
+  - @transcend-io/mcp-server-assessment@2.1.0
+  - @transcend-io/mcp-server-base@2.2.0
+  - @transcend-io/mcp-server-dsr@2.0.0
+  - @transcend-io/mcp-server-admin@1.0.3
+  - @transcend-io/mcp-server-consent@1.0.3
+  - @transcend-io/mcp-server-discovery@1.0.3
+  - @transcend-io/mcp-server-docs@0.4.5
+  - @transcend-io/mcp-server-inventory@1.0.3
+  - @transcend-io/mcp-server-preferences@0.7.6
+  - @transcend-io/mcp-server-workflows@1.0.3
+
 ## 0.17.2
 
 ### Patch Changes

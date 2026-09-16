@@ -99,6 +99,58 @@ describe('applyProjectPlan preflight', () => {
     );
     expect(existsSync(join(outside, 'example.ts'))).toBe(false);
   });
+
+  it('rejects an existing file replaced by a symlink after preview', async () => {
+    const root = makeTemporaryRoot();
+    const destination = join(root, 'settings.json');
+    const replacement = join(root, 'replacement.json');
+    writeFileSync(destination, '{}\n');
+    writeFileSync(replacement, '{}\n');
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: destination,
+        before: '{}\n',
+        after: '{"updated": true}\n',
+        description: 'Merge editor settings',
+      },
+    ]);
+    rmSync(destination);
+    fs.symlinkSync(replacement, destination);
+
+    await expect(applyProjectPlan(buildContextForTest({ cwd: root }), plan)).rejects.toThrow(
+      `File changed after preview: ${destination}`,
+    );
+    expect(fs.lstatSync(destination).isSymbolicLink()).toBe(true);
+    expect(readFileSync(replacement, 'utf8')).toBe('{}\n');
+  });
+
+  it('rejects unrelated target content added after preview', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'policy');
+    const destination = join(target, 'manifest.json');
+    mkdirSync(target);
+    const plan: ProjectPlan = {
+      rootDirectory: root,
+      directoryPreconditions: [{ path: target, relativePaths: [] }],
+      changes: [
+        {
+          kind: 'file',
+          path: destination,
+          before: null,
+          after: '{"roots":["policy_engine"]}\n',
+          description: 'Create policy manifest',
+          createOnly: true,
+        },
+      ],
+    };
+    writeFileSync(join(target, 'README.md'), '# Existing project\n');
+
+    await expect(applyProjectPlan(buildContextForTest({ cwd: root }), plan)).rejects.toThrow(
+      `Directory changed after preview: ${target}`,
+    );
+    expect(existsSync(destination)).toBe(false);
+  });
 });
 
 describe('applyProjectPlan rollback', () => {
@@ -174,6 +226,55 @@ describe('applyProjectPlan rollback', () => {
       applyProjectPlan(buildContextForTest({ cwd: root, fs: racingFs }), plan),
     ).rejects.toThrow();
     expect(readFileSync(destination, 'utf8')).toBe('appeared during apply\n');
+  });
+
+  it('removes newly created parent directories after a failed apply', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'transcend', 'policy');
+    const first = join(target, 'manifest.json');
+    const second = join(target, '.regal', 'config.yaml');
+    let failed = false;
+    const failingFs = new Proxy(fs, {
+      get(targetFs, property, receiver) {
+        if (property === 'linkSync') {
+          return (existingPath: PathLike, newPath: PathLike): void => {
+            if (!failed && String(newPath) === second) {
+              failed = true;
+              throw new Error('simulated create failure');
+            }
+            targetFs.linkSync(existingPath, newPath);
+          };
+        }
+        return Reflect.get(targetFs, property, receiver);
+      },
+    });
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: first,
+        before: null,
+        after: '{"roots":["policy_engine"]}\n',
+        createOnly: true,
+        description: 'Create policy manifest',
+      },
+      {
+        kind: 'file',
+        path: second,
+        before: null,
+        after: 'rules: {}\n',
+        createOnly: true,
+        description: 'Create Regal configuration',
+      },
+    ]);
+
+    await expect(
+      applyProjectPlan(buildContextForTest({ cwd: root, fs: failingFs }), plan),
+    ).rejects.toThrow('simulated create failure');
+    expect(existsSync(join(root, 'transcend'))).toBe(false);
+
+    await applyProjectPlan(buildContextForTest({ cwd: root }), plan);
+    expect(readFileSync(first, 'utf8')).toContain('policy_engine');
+    expect(readFileSync(second, 'utf8')).toBe('rules: {}\n');
   });
 });
 

@@ -5,7 +5,11 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
-import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
+import {
+  createPolicyDebugParameter,
+  policyBundleNameParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const deactivateCommand = buildCommand({
   loader: async () => {
@@ -14,21 +18,12 @@ export const deactivateCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief:
-          'Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally',
-      },
+      'bundle-name': policyBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ActivatePolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
+      json: policyJsonParameter,
       debug: createPolicyDebugParameter(),
     },
   },

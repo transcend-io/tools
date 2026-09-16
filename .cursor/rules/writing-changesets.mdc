@@ -1,0 +1,27 @@
+---
+description: Writing changesets
+globs: ".changeset/**/*.md"
+alwaysApply: true
+---
+
+## Style
+
+When writing a changeset, keep it customer-oriented and describe the change in a way that is easy to understand. Focus on the user and their needs, not the technical details of the implementation.
+
+Keep it simple and to the point.
+
+If it has no customer impact, keep it extra short.
+
+Breaking changes should be clearly described, and should be accompanied by instructions on how to migrate, particularly for changes to packages which are commonly consumed by customers: `@transcend-io/cli`, `@transcend-io/mcp`, `@transcend-io/airgap.js-types`. When in doubt, ask the user a question to help clarify.
+
+You may optionally link to our [documentation](https://docs.transcend.io/docs/articles) where helpful.
+
+## Updating a changeset
+
+When updating a changeset during a PR, make sure it is NOT logging incremental changes between commits, but rather the overall changes that were made.
+
+## References
+
+- For terminology, see our [Glossary](https://docs.transcend.io/docs/articles/overview/glossary.md).
+
+- To explore our docs for yourself, see our [LLMs index](https://docs.transcend.io/llms.txt). Be sure to exclude the `.md` suffix when linking to it in the changeset or otherwise to humans.

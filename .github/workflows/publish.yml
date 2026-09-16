@@ -34,11 +34,6 @@ jobs:
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
 
-      - name: Install Deno for Custom Function contract tests
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
-        with:
-          deno-version: 2.4.5
-
       - name: Check package consistency
         run: pnpm check:packages
 
@@ -79,6 +74,7 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+          HUSKY: '0'
 
   # After a successful npm release (changeset-release/main merge or manual dispatch),
   # push MCP tool counts to docs.transcend.io and publish the drafts.

@@ -1,5 +1,203 @@
 # @transcend-io/mcp-server-assessment
 
+## 2.1.8
+
+### Patch Changes
+
+- 30ff243: `assessments_create` now takes the assessment group as given and no longer accepts `templateId`.
+
+  `templateId` was a fallback that looked for a group built from that template. It only ever worked when exactly one such group existed, and when none existed it failed with "No assessment group found", pointing at a tool that lists groups rather than creates them. Pass `assessmentGroupId`, found by name with `assessments_list_groups`, and create one with `assessments_create_group` if no group is built from the template you want.
+
+  `assigneeIds` now explains why it is worth passing: a new assessment is `DRAFT` and rejects answers until it is assigned.
+
+- 90e7d4f: `assessments_prefill` now takes the assessment group as given and no longer accepts `templateId`, matching `assessments_create`.
+
+  `templateId` was a fallback that looked for a group built from that template, and it only ever worked when exactly one such group existed. Agents reached for it because they already hold a template ID from `assessments_export_template` for the answers map, and hit a dead end whenever no group had been created yet. Pass `assessmentGroupId`, found by name with `assessments_list_groups`, and create one with `assessments_create_group` if none is built from the template you want.
+
+- c052029: `assessments_prefill` no longer loses select answers when a value matches none of the question's answer options.
+
+  A select question holds at most one written-in answer, so sending each unmatched value as its own was rejected outright. Because the matched options and the written-in values travelled in a single write, that rejection discarded the matched options too, leaving the question blank on a form that reported itself filled. Unmatched values are now joined into a single written-in answer, separated by semicolons since the values themselves often contain commas.
+
+  Where a question takes no written-in answer, such values cannot be stored at all, so they come back under `missedOptionValues` with the form's `questionId` and the options the question does accept, including their IDs, ready to hand to `assessments_answer_question`. Whether a question takes one is read from `allowSelectOther`, which the form query now selects; `subType` does not imply it, as a `CUSTOM` select with the flag off refuses a written value.
+
+  Joining changes what the form says, so it is now reported rather than left to be discovered: the response carries `answersJoined` beside the counts, the message says so in words, and each detailed row reports the options a select actually holds and its written-in value instead of replaying the request. Rows also carry `questionId`, which is what `assessments_answer_question` needs and what answers keyed by `referenceId` do not give you.
+
+  The failure message no longer mentions answer keys unless a key actually failed to match, and `ASSESSMENT_PREFILL_INCOMPLETE` is no longer marked retryable: the form already exists, so retrying the call creates a second one.
+
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [b86b173]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+- Updated dependencies [20b054b]
+  - @transcend-io/mcp-server-base@2.5.0
+  - @transcend-io/privacy-types@6.1.0
+
+## 2.1.7
+
+### Patch Changes
+
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+  - @transcend-io/privacy-types@6.0.0
+
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+
+## 2.1.5
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-base@2.4.0
+
+## 2.1.4
+
+### Patch Changes
+
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-base@2.3.1
+
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+
+## 2.1.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
+## 2.1.0
+
+### Minor Changes
+
+- aefe248: Bound what `assessments_get` returns.
+
+  It returned every section, question, answer option and answer at once — a six-section,
+  twenty-question DPIA already ran to roughly 30,000 characters, and real forms have hundreds of
+  questions. Neither `sections` nor `questions` takes pagination arguments, so the only way to
+  bound the response is not to ask for the parts you do not want.
+
+  `assessmentId` alone now returns the section list with a question count each. `sectionIds`
+  expands the sections you name, and fails naming any ID the form does not have rather than
+  returning the rest in a response shaped like a complete one.
+
+  Free-text answers no longer come back twice. The API models a typed response as an answer
+  option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
+  Options are now dropped only when every one was selected, so select questions are unaffected.
+
+  Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+  a status, so confirming an assignment took previously meant querying the list index for a single
+  form whose ID the caller was already holding.
+
+  Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
+  of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
+
+  Breaking: pass `sectionIds` to get full section contents.
+
+- aefe248: Add `questionText` to `assessments_get`, so finding what a form asks does not mean guessing
+  which section holds it.
+
+  Reading a form meant naming sections and trusting their titles. One staging form has a section
+  titled "Data Storage and Security" whose questions are all legal basis and compliance, so the
+  guess-expand-repeat loop is the over-fetching the section list exists to prevent.
+
+  `questionText` returns only the questions whose text matches, with their answers and the
+  section each sits in. Pass `sectionIds` alongside it to search within those sections rather
+  than expanding them. Matches are drained rather than paged, since they cannot outnumber the
+  form's questions.
+
+  Answers cannot be searched — the API matches question and form titles only — and an empty
+  result says so, phrased as an answer rather than a failed lookup.
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+- 74f2734: Fix `assessments_prefill` losing answers.
+
+  **Answers were written before the form could accept them.** A form takes no answer until it is
+  assigned: the API moves it `DRAFT` → `SHARED` on assignment and `SHARED` → `IN_PROGRESS` on
+  answering. The tool assigned _after_ answering, so every answer was rejected and the errors only
+  reached `results`. With `submitForReview` that sent an empty form to a reviewer and reported
+  `success: true, answersApplied: 0`; without an assignee it failed and named no form, leaving one
+  orphaned. Assignment now happens straight after create, and `assigneeIds` or `assigneeEmails` is
+  required and checked before anything is created.
+
+  **Answers keyed by `referenceId` never matched.** The tool documents `referenceId` as a key and
+  `assessments_export_template` leads with it, but the form read never selected the field, so that
+  comparison ran against `undefined`. A caller following the documented path got zero answers applied
+  on a form that had already been created and assigned.
+
+  **Half-matching multi-selects lost values.** Matched options were written on their own and the
+  remaining values discarded while the question still reported as answered, so
+  `["Usage data", "Location data"]` against a list missing the latter stored one of the two. Matches
+  and custom values now go in one call, and the description no longer claims select values must match
+  the option text exactly — an unmatched value is kept as a custom answer.
+
+  Failures are now distinguishable from choices. An answer key naming no question is reported in
+  `unmatchedAnswerKeys` and fails the call. A question the caller simply left blank is not a failure
+  and is named in `unansweredQuestions` instead, since leaving one for a human is often the right
+  call on a compliance record. Because the tool only creates, failures point at
+  `assessments_answer_question` and `assessments_submit_response` rather than a retry that would
+  build a second form.
+
+  Every failure after the form exists names it, with its `url` and how many answers landed, so a
+  half-built form can be finished rather than abandoned. `submitForReview` with only external
+  assignees is rejected up front, since submitting acts as the calling user. Error codes live in one
+  place, each paired with its `retryable` flag. `includeDetails` returns the per-question rows.
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+  - @transcend-io/mcp-server-base@2.2.0
+
 ## 2.0.1
 
 ### Patch Changes

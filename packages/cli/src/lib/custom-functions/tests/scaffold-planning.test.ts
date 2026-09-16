@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { buildManagedAgentSkill } from '../../scaffolding/agent-skill.js';
+import type { PlanningPathSnapshot } from '../../scaffolding/project-plan.js';
 import { CUSTOM_FUNCTION_SKILL_FILES } from '../custom-function-skill.js';
 import { CustomFunctionSetupFeature, type CustomFunctionProjectState } from '../scaffold-model.js';
 import {
@@ -13,7 +14,6 @@ import {
   getInitPlanningCandidatePaths,
   prepareGeneratedCustomFunction,
   type CustomFunctionInitPlanningInput,
-  type PlanningPathSnapshot,
 } from '../scaffold-planning.js';
 
 /**
@@ -210,7 +210,7 @@ describe('buildAddFunctionPlan', () => {
     expect(commands).toHaveLength(3);
     expect(commands[0]).toContain("--manifest='custom-functions/functions.yml'");
     expect(commands[1]).toContain("--manifest='custom-functions/functions.yml'");
-    expect(commands[2]).toContain("--file='custom-functions/functions.yml'");
+    expect(commands[2]).toContain("--manifest='custom-functions/functions.yml'");
   });
 
   it('builds a deterministic manifest, source, and payload plan', () => {

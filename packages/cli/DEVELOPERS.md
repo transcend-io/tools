@@ -84,6 +84,16 @@ pnpm -F cli script:transcend-json-schema
 
 This command generates the `transcend.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
 
+### Permissions API OPA input schema
+
+```bash
+pnpm -F cli script:permissions-policy-input-schema
+```
+
+This command regenerates `schema/permissions-policy-input.json` from the
+`PermissionsPolicyInput` codec in `@transcend-io/privacy-types`. The CLI uses
+that file when scaffolding `policy new --template permissions`.
+
 ## Testing
 
 Uses [Vitest](https://vitest.dev/) (same test syntax as Jest/Mocha/Chai).

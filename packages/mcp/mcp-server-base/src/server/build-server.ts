@@ -20,6 +20,7 @@ import {
   type ClientCapabilityReport,
 } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { ErrorCode } from '../errors.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import {
@@ -487,7 +488,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
           )
           .join('; ');
         const errorResult = createToolResult(false, undefined, `Invalid input: ${issues}`, {
-          code: 'VALIDATION_ERROR',
+          code: ErrorCode.VALIDATION_ERROR,
           retryable: false,
         });
         return {

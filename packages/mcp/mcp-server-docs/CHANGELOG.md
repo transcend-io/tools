@@ -1,5 +1,60 @@
 # @transcend-io/mcp-server-docs
 
+## 0.4.11
+
+### Patch Changes
+
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+  - @transcend-io/mcp-server-base@2.5.0
+
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-base@2.4.0
+
+## 0.4.9
+
+### Patch Changes
+
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-base@2.3.1
+
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+  - @transcend-io/mcp-server-base@2.2.0
+
 ## 0.4.4
 
 ### Patch Changes

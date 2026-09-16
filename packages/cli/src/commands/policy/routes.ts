@@ -5,7 +5,9 @@ import { bundlesCommand } from './bundles/command.js';
 import { deactivateCommand } from './deactivate/command.js';
 import { downloadCommand } from './download/command.js';
 import { evalCommand } from './eval/command.js';
+import { initCommand } from './init/command.js';
 import { lintCommand } from './lint/command.js';
+import { newCommand } from './new/command.js';
 import { publishCommand } from './publish/command.js';
 import { testCommand } from './test/command.js';
 import { versionsCommand } from './versions/command.js';
@@ -16,7 +18,9 @@ export const policyRoutes = buildRouteMap({
     deactivate: deactivateCommand,
     download: downloadCommand,
     eval: evalCommand,
+    init: initCommand,
     lint: lintCommand,
+    new: newCommand,
     bundles: bundlesCommand,
     publish: publishCommand,
     test: testCommand,

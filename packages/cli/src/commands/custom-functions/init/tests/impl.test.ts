@@ -172,10 +172,12 @@ describe('custom-functions init', () => {
     await init.call(context, buildFlags({ json: false }), target);
 
     const lines = context.stdout.split('\n');
-    const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
+    const handoffHeading = lines.findIndex((line) =>
+      line.includes('AI handoff — paste into your coding agent'),
+    );
     expect(handoffHeading).toBeGreaterThan(-1);
-    expect(lines[handoffHeading + 1]).toMatch(/^(?:Ask|Use) /u);
-    const nextStepsHeading = lines.indexOf('Next steps');
+    expect(lines[handoffHeading + 1]).toMatch(/(?:Ask|Use) /u);
+    const nextStepsHeading = lines.findIndex((line) => line.includes('Next steps'));
     const nextSteps = lines.slice(nextStepsHeading + 1, handoffHeading).filter(Boolean);
     expect(nextSteps).toHaveLength(2);
     expect(nextSteps[0]).toMatch(/^transcend custom-functions new /u);

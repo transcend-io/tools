@@ -64,12 +64,11 @@ If the API says the request already exists, use a unique email (e.g. \`test+mcp-
 
 Call \`dsr_poll_status\` with the returned request id. Optionally call \`dsr_list_identifiers\` on the same id.
 
-## 4. Respond / enrich (only if needed)
+## 4. Enrich (only if needed)
 
 - Nonces are Sombra-signed JWTs — never invent them.
-- Call \`dsr_list_pending_requests\` with the data silo id and ACCESS/ERASURE, then pass the pending item's **\`nonce\`** field into \`dsr_respond_access\` / \`dsr_respond_erasure\` / enrich. Auth must be a Transcend API key associated with that data silo (Admin → API Keys → linked Data Silos); OAuth-only is not enough.
+- Call \`dsr_list_pending_requests\` with the data silo id and ACCESS/ERASURE, then pass the pending item's **\`nonce\`** field into \`dsr_enrich_identifiers\`. Auth must be a Transcend API key associated with that data silo (Admin → API Keys → linked Data Silos); OAuth-only is not enough.
 - Do **not** use \`encryptedCekContext\` (or other payload fields) as the nonce.
-- Enrichment-stage nonces are not interchangeable with fulfillment respond nonces.
 - Enrich alternate (no nonce): \`requestId\` + \`enricherId\` on \`dsr_enrich_identifiers\` only.
 
 Confirm the chosen workflow (id, actionType, subjectType) with the user before submitting if anything is ambiguous.`,

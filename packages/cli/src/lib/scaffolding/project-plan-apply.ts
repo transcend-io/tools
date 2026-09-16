@@ -1,8 +1,15 @@
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
 import { assertPathPhysicallyContained } from './path-safety.js';
-import type { PlannedFileChange, PlannedLinkChange, ProjectPlan } from './project-plan.js';
+import { collectProjectRelativePaths } from './project-discovery.js';
+import type {
+  PlannedDirectoryPrecondition,
+  PlannedChange,
+  PlannedFileChange,
+  PlannedLinkChange,
+  ProjectPlan,
+} from './project-plan.js';
 
 /** Original state retained for rollback. */
 type RollbackSnapshot =
@@ -178,12 +185,108 @@ function preflightFile(context: LocalContext, change: PlannedFileChange): void {
     }
     return;
   }
-  if (!exists || context.fs.readFileSync(change.path, 'utf8') !== change.before) {
+  if (!exists) {
+    throw new Error(`File changed after preview: ${change.path}`);
+  }
+  const stat = context.fs.lstatSync(change.path);
+  if (
+    !stat.isFile() ||
+    (change.mode !== undefined && stat.mode !== change.mode) ||
+    context.fs.readFileSync(change.path, 'utf8') !== change.before
+  ) {
     throw new Error(`File changed after preview: ${change.path}`);
   }
   if (change.createOnly) {
     throw new Error(`Refusing to overwrite existing file: ${change.path}`);
   }
+}
+
+/**
+ * Verify one planned mutation still matches preview assumptions.
+ *
+ * @param context - CLI context
+ * @param change - Planned mutation
+ */
+function preflightChange(context: LocalContext, change: PlannedChange): void {
+  if (change.kind === 'file') {
+    preflightFile(context, change);
+    return;
+  }
+  if (pathExists(context, change.path)) {
+    throw new Error(`Skill target appeared after preview: ${change.path}`);
+  }
+}
+
+/**
+ * Verify directory-wide contents observed during planning.
+ *
+ * @param context - CLI context
+ * @param precondition - Expected directory snapshot
+ */
+function preflightDirectory(
+  context: LocalContext,
+  precondition: PlannedDirectoryPrecondition,
+): void {
+  const currentPaths = collectProjectRelativePaths(context, precondition.path);
+  if (
+    currentPaths.length !== precondition.relativePaths.length ||
+    currentPaths.some((path, index) => path !== precondition.relativePaths[index])
+  ) {
+    throw new Error(`Directory changed after preview: ${precondition.path}`);
+  }
+}
+
+/**
+ * Record missing parent directories that this plan may create.
+ *
+ * @param context - CLI context
+ * @param plan - Approved project plan
+ * @returns Missing directories ordered deepest first
+ */
+function collectCreatedDirectoryCandidates(context: LocalContext, plan: ProjectPlan): string[] {
+  const rootDirectory = resolve(plan.rootDirectory);
+  const directories = new Set<string>();
+  for (const change of plan.changes) {
+    let current = dirname(resolve(change.path));
+    while (true) {
+      const child = relative(rootDirectory, current);
+      if (child === '..' || child.startsWith(`..${sep}`)) {
+        break;
+      }
+      if (!pathExists(context, current)) {
+        directories.add(current);
+      }
+      if (current === rootDirectory) {
+        break;
+      }
+      current = dirname(current);
+    }
+  }
+  return [...directories].sort((left, right) => right.split(sep).length - left.split(sep).length);
+}
+
+/**
+ * Remove empty parent directories created while applying a failed plan.
+ *
+ * @param context - CLI context
+ * @param directories - Previously absent directories
+ * @returns Rollback failures
+ */
+function removeCreatedDirectories(context: LocalContext, directories: readonly string[]): string[] {
+  const errors: string[] = [];
+  for (const directory of directories) {
+    if (!pathExists(context, directory)) {
+      continue;
+    }
+    try {
+      context.fs.rmdirSync(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        errors.push(`${directory}: ${(error as Error).message}`);
+      }
+    }
+  }
+  return errors;
 }
 
 /**
@@ -219,21 +322,20 @@ function applyLink(context: LocalContext, change: PlannedLinkChange, rootDirecto
 export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan): Promise<void> {
   for (const change of plan.changes) {
     assertPathPhysicallyContained(context, plan.rootDirectory, change.path);
-    if (change.kind === 'file') {
-      preflightFile(context, change);
-    } else {
-      if (pathExists(context, change.path)) {
-        throw new Error(`Skill target appeared after preview: ${change.path}`);
-      }
-    }
+    preflightChange(context, change);
+  }
+  for (const precondition of plan.directoryPreconditions ?? []) {
+    assertPathPhysicallyContained(context, plan.rootDirectory, precondition.path);
+    preflightDirectory(context, precondition);
   }
 
+  const createdDirectoryCandidates = collectCreatedDirectoryCandidates(context, plan);
   const applied: RollbackSnapshot[] = [];
   try {
     for (const change of plan.changes) {
       assertPathPhysicallyContained(context, plan.rootDirectory, change.path);
+      preflightChange(context, change);
       if (change.kind === 'file') {
-        preflightFile(context, change);
         const snapshot = snapshotPath(context, change.path);
         if (change.before === null) {
           writeAtomicCreateOnly(context, change.path, change.after, change.mode);
@@ -242,9 +344,6 @@ export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan)
         }
         applied.push(snapshot);
       } else {
-        if (pathExists(context, change.path)) {
-          throw new Error(`Skill target appeared after preview: ${change.path}`);
-        }
         applied.push({ kind: 'absent', path: change.path });
         applyLink(context, change, plan.rootDirectory);
       }
@@ -258,6 +357,7 @@ export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan)
         rollbackErrors.push(`${snapshot.path}: ${(rollbackError as Error).message}`);
       }
     }
+    rollbackErrors.push(...removeCreatedDirectories(context, createdDirectoryCandidates));
     if (rollbackErrors.length > 0) {
       throw new Error(
         `${(error as Error).message}\nRollback also failed:\n${rollbackErrors.join('\n')}`,

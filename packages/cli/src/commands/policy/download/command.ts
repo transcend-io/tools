@@ -5,7 +5,10 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
-import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
+import {
+  createPolicyDebugParameter,
+  policyBundleNameParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const downloadCommand = buildCommand({
   loader: async () => {
@@ -14,11 +17,7 @@ export const downloadCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Tenant-unique policy bundle name',
-      },
+      'bundle-name': policyBundleNameParameter,
       version: {
         kind: 'parsed',
         parse: String,
@@ -36,7 +35,7 @@ export const downloadCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       json: {
         kind: 'boolean',
         brief:

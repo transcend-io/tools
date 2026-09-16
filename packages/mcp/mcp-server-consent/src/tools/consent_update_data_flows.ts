@@ -40,7 +40,7 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const dfInputs: TranscendUpdateDataFlowInputGql[] = dataFlows.map((df) => ({
         id: df.id,
-        ...(df.trackingPurposes ? { purposeIds: df.trackingPurposes } : {}),
+        ...(df.trackingPurposes ? { trackingType: df.trackingPurposes } : {}),
         ...(df.description !== undefined ? { description: df.description } : {}),
         ...(df.service !== undefined ? { service: df.service } : {}),
         ...(df.isJunk !== undefined ? { isJunk: df.isJunk } : {}),

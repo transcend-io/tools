@@ -11,29 +11,28 @@ import {
   getDenoRuntimeCompatibility,
   SUPPORTED_DENO_MAJOR_VERSION,
 } from '../../../lib/custom-functions/deno-runtime.js';
-import {
-  collectPlanningSnapshots,
-  discoverCustomFunctionProject,
-} from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-  type PromptChoice,
-} from '../../../lib/custom-functions/prompts.js';
+import { discoverCustomFunctionProject } from '../../../lib/custom-functions/project-discovery.js';
 import {
   CustomFunctionSetupFeature,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from '../../../lib/custom-functions/scaffold-model.js';
-import {
-  buildPlanResult,
-  displayPath,
-  renderProjectPlan,
-} from '../../../lib/custom-functions/scaffold-output.js';
+import { buildPlanResult } from '../../../lib/custom-functions/scaffold-output.js';
 import {
   buildInitPlan,
   getInitPlanningCandidatePaths,
 } from '../../../lib/custom-functions/scaffold-planning.js';
+import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
+import {
+  displayProjectPath,
+  renderProjectPlan,
+} from '../../../lib/scaffolding/project-plan-output.js';
+import {
+  isInteractivePromptInvocation,
+  PromptCancelledError,
+  resolveSetupFeatures,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions init`. */
 export interface CustomFunctionInitFlags {
@@ -69,57 +68,6 @@ const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
 const ALL_SETUP_FEATURES = Object.values(CustomFunctionSetupFeature);
 
 /**
- * Whether this invocation can ask questions.
- *
- * @param context - CLI context
- * @param flags - Interaction flags
- * @returns Whether prompts are enabled
- */
-function isInteractiveInvocation(
-  flags: Pick<CustomFunctionInitFlags, 'json' | 'noInteractive'>,
-  stdinIsTTY: boolean | undefined,
-  stderrIsTTY: boolean | undefined,
-): boolean {
-  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
-}
-
-/**
- * Resolve setup directly from individual flags or one checkbox prompt.
- *
- * @param context - CLI context
- * @param prompts - Prompt adapters
- * @param flags - Setup flags
- * @param options - Interaction state
- * @returns Selected setup features
- */
-async function resolveFeatures(
-  prompts: CustomFunctionPrompts,
-  flags: CustomFunctionInitFlags,
-  options: {
-    /** Whether prompts are available. */
-    interactive: boolean;
-  },
-): Promise<CustomFunctionSetupFeatureType[]> {
-  const enabled: Readonly<Record<CustomFunctionSetupFeatureType, boolean | undefined>> = {
-    [CustomFunctionSetupFeature.Deno]: flags.deno,
-    [CustomFunctionSetupFeature.Editor]: flags.editor,
-    [CustomFunctionSetupFeature.Skill]: flags.skill,
-    [CustomFunctionSetupFeature.Ci]: flags.ci,
-  };
-  if (!options.interactive) {
-    return ALL_SETUP_FEATURES.filter((feature) => enabled[feature] === true);
-  }
-  const choices: PromptChoice<CustomFunctionSetupFeatureType>[] = ALL_SETUP_FEATURES.map(
-    (feature) => ({
-      name: SETUP_LABELS[feature],
-      value: feature,
-      checked: enabled[feature] !== false,
-    }),
-  );
-  return prompts.checkbox('Choose repository setup:', choices);
-}
-
-/**
  * Initialize a credential-free local Custom Function project.
  *
  * @param this - CLI context
@@ -137,13 +85,23 @@ export async function init(
       ...(directory ? { directory } : {}),
       ...(flags.manifest ? { manifest: flags.manifest } : {}),
     });
-    const prompts = new CustomFunctionPrompts(this);
-    const interactive = isInteractiveInvocation(
+    const prompts = new ScaffoldPrompts(this);
+    const interactive = isInteractivePromptInvocation(
       flags,
       this.process.stdin.isTTY,
       this.process.stderr.isTTY,
     );
-    const features = await resolveFeatures(prompts, flags, { interactive });
+    const features = await resolveSetupFeatures(prompts, {
+      features: ALL_SETUP_FEATURES,
+      labels: SETUP_LABELS,
+      enabled: {
+        [CustomFunctionSetupFeature.Deno]: flags.deno,
+        [CustomFunctionSetupFeature.Editor]: flags.editor,
+        [CustomFunctionSetupFeature.Skill]: flags.skill,
+        [CustomFunctionSetupFeature.Ci]: flags.ci,
+      },
+      interactive,
+    });
     const snapshots = collectPlanningSnapshots(
       this,
       state.projectRoot,
@@ -181,7 +139,16 @@ export async function init(
       }
     }
     if (!flags.json) {
-      this.logger.info(renderProjectPlan(plan, this.process.cwd()));
+      this.logger.info(
+        renderProjectPlan(plan, {
+          cwd: this.process.cwd(),
+          title: 'Custom Function plan',
+          details: [
+            { label: 'Target', path: plan.targetDirectory },
+            { label: 'Manifest', path: plan.manifestPath },
+          ],
+        }),
+      );
     }
 
     let approved = plan.changes.length === 0 || flags.dryRun;
@@ -203,8 +170,8 @@ export async function init(
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
     const setupAvailable = approved && !flags.dryRun;
     const aiHandoff = buildInitAiHandoff({
-      targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
-      manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+      targetDirectory: displayProjectPath(this.process.cwd(), state.targetDirectory),
+      manifestPath: displayProjectPath(this.process.cwd(), state.manifestPath),
       cliVersion: CLI_VERSION,
       hasSkill: setupAvailable && features.includes(CustomFunctionSetupFeature.Skill),
       hasGithubWorkflow:

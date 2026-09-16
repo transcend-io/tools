@@ -2,6 +2,7 @@ import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -23,6 +24,7 @@ const mockClients: ToolClients = {
 const allTools = [
   ...getDSRTools(mockClients),
   ...getConsentTools(mockClients),
+  ...getCustomFunctionsTools(mockClients),
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
@@ -35,7 +37,7 @@ const allTools = [
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
 
 describe('MCP Tool Annotations', () => {
-  it('registers all umbrella tools (deduped like ToolRegistry)', () => {
+  it('defines all umbrella tools across domain packages', () => {
     expect(allTools.length).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
   });
 
@@ -82,6 +84,8 @@ describe('MCP Tool Annotations', () => {
       'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
+      'consent_delete_cookies',
+      'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
       'dsr_cancel',
@@ -172,7 +176,6 @@ describe('MCP Tool Annotations', () => {
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
-      'dsr_respond_erasure',
     ];
 
     it.each(expectedIdempotentMutative)(

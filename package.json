@@ -6,6 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test test:root",
+    "test:integration": "turbo run test:integration",
     "quality": "turbo run quality",
     "quality:fix": "turbo run quality:fix",
     "changeset": "changeset",
@@ -46,6 +47,7 @@
     "@transcend-io/mcp-server-assessment": "workspace:*",
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/mcp-server-consent": "workspace:*",
+    "@transcend-io/mcp-server-custom-functions": "workspace:*",
     "@transcend-io/mcp-server-discovery": "workspace:*",
     "@transcend-io/mcp-server-dsr": "workspace:*",
     "@transcend-io/mcp-server-inventory": "workspace:*",
@@ -67,7 +69,7 @@
   },
   "engines": {
     "node": ">=22.12.0",
-    "pnpm": ">=10.34.4"
+    "pnpm": ">=10.34.5"
   },
-  "packageManager": "pnpm@10.34.4"
+  "packageManager": "pnpm@10.34.5"
 }

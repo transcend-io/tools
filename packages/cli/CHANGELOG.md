@@ -1,5 +1,170 @@
 # @transcend-io/cli
 
+## 12.0.0
+
+### Major Changes
+
+- 598e5b6: Breaking: Policy bundle uploads now require an OPA `.manifest` file — `manifest.json` is no longer accepted. The CLI no longer renames `.manifest` to `manifest.json` when packing the upload tarball; `.manifest` is used end to end. Rename any remaining `manifest.json` files to `.manifest`.
+- 868a0c6: Breaking: `policy init` now scaffolds an **empty multi-bundle workspace** (shared Regal config and README only — no bundles or Rego). Add bundles with the new `policy new` command.
+
+  ### New: `transcend policy new`
+
+  Adds a publishable `{name}-bundle/` directory to an initialized workspace from a template:
+  - **Generic** — a fail-closed teaching entrypoint (default root: `example`)
+  - **Permissions** — a Permission API starter with purpose preference resolution (default root: `permissions`)
+
+  ```sh
+  transcend policy init
+  transcend policy new --template generic --name example --yes
+  transcend policy new --template permissions --name permissions --yes
+  ```
+
+  `policy new` merges the root into `.regal/config.yaml`, creates bundle files, input schemas, and a gitignored local `input.json` (copy of the example). It also updates VS Code settings and lint tasks when `.vscode` is present.
+
+  `policy lint` and `policy test` now run `opa test -b` (bundle mode) so local `input.json` next to `input.example.json` no longer causes a merge error.
+
+  `policy lint` and `policy test` default to the workspace (`transcend/policy`) and run against **every** immediate child that contains a `.manifest`. Pass one bundle path to target a single unit. Strict OPA checks use Rego v1 (no `--v0-compatible`).
+
+  `policy eval` and `policy publish` require an explicit bundle directory (one-bundle operations — no default path).
+
+  `policy eval` uses `--package` for the OPA query (renamed from `--pkg`) and forwards curated `opa eval` options (`--format`, `--schema`, `--explain`, `--stdin-input`, `--metrics`, `--instrument`, `--profile`, `--timeout`, `--var-values`, `--show-builtin-errors`). Exit-on-result flags like OPA’s `--fail` are not exposed — production Evaluate uses the Data API (deny is a successful evaluation). `policy test` forwards `--format`, `--verbose`, `--run`, `--coverage`, `--threshold`, `--timeout`, `--var-values`, `--explain`, `--schema`, and `--exit-zero-on-skipped` while keeping `-b` and `--fail-on-empty` owned by the CLI.
+
+  Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0 capabilities). Help text distinguishes the **workspace** directory (`init` / `new` / `lint` / `test`) from a **bundle** directory (`eval` / `publish`).
+
+  ### Migration
+  - `policy init` no longer creates `example-bundle/` or any Rego — run `policy new` after init.
+  - `policy lint` / `policy test` with no args cover all `.manifest` bundles under `transcend/policy`.
+  - `policy new` still scaffolds directories as `{name}-bundle/`; that suffix is a layout convention, not a discovery requirement.
+  - `policy new` merges the new root into existing `.regal/config.yaml` without wiping custom Regal settings; invalid `project.roots` fail instead of resetting.
+  - `policy eval` and `policy publish` no longer default to `transcend/policy/example-bundle` — pass the bundle directory explicitly.
+  - `policy eval --pkg` is now `--package`.
+  - Upgrade local/CI OPA to 1.18.2 (and Regal to ≥ 0.42.0 for the generated capabilities pin).
+  - If you already use a flat `transcend/policy` publish directory, move the Rego tree and `.manifest` into a child publish directory (or pass that path explicitly).
+
+- ed6319d: Breaking: Policy projects now use an OPA `.manifest` file instead of `manifest.json`.
+
+  Rename existing `manifest.json` files to `.manifest`. `policy init` generates the OPA schema shape (including `roots` and `rego_version`), and editor setup associates `.manifest` with JSON.
+
+- 7c9d69a: Breaking: unify Custom Function project selection across local development and deployment commands.
+
+  `custom-functions push` now accepts the project directory positionally, defaults to `transcend/custom-functions`, and uses `--manifest` for an explicit manifest path. Replace existing `custom-functions push --file=path/to/transcend-functions.yml` invocations with `custom-functions push --manifest=path/to/transcend-functions.yml`.
+
+  `custom-functions list` and `custom-functions push` also support `--json` for structured automation output.
+
+- 794fa41: Breaking: use one consistent command shape across Policy Engine workflows.
+
+  `policy init`, `lint`, `test`, `eval`, and `publish` now accept the Policy project directory positionally and default to `transcend/policy`. Replace `--dir=./policies` or `--bundle=./policies` with a positional directory such as `transcend policy lint ./policies`.
+
+  Policy commands using `--json` now reserve stdout for valid JSON and do not prompt. Pass `--yes` with `policy publish --json` when creating a new bundle.
+
+### Minor Changes
+
+- 1d3e65d: Clarify how Permissions vs generic policy bundles are distinguished at publish time: scaffolded `.manifest` files now include `metadata.transcend.io.template`, docs explain that Permissions API only loads the remote bundle named `permissions`, and `policy publish` soft-warns when `--bundle-name` disagrees with that convention.
+
+### Patch Changes
+
+- 22916a2: Internal typing improvements for shared CLI parameter definitions. No user-facing changes.
+- b86b173: Publish the Permissions API OPA input schema at `packages/cli/schema/permissions-policy-input.json`, generated from the `@transcend-io/privacy-types` codec. `policy new --template permissions` scaffolds from that published contract (including Preference Store-style purpose slugs like `Analytics`).
+- Updated dependencies [b86b173]
+- Updated dependencies [20b054b]
+  - @transcend-io/privacy-types@6.1.0
+  - @transcend-io/airgap.js-types@14.2.44
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.11
+
+## 11.0.0
+
+### Major Changes
+
+- 3bc8980: Remove the unused `BusinessEntityNeedsDocumentation` / `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` action item code. The product feature was already disabled and is being deleted; configs that still reference this value should drop it.
+
+  **Migration:** Remove any `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` entries from `transcend.yml` action-item configuration before upgrading.
+
+### Patch Changes
+
+- 8695da7: Add `ConsentSiteTelemetryStale` to the `ActionItemCode` enum so Consent Manager sites with stale telemetry can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+- 1f35e6f: Inventory pull for multi-Sombra organizations fetches `sombra-id` from the bulk data silos query instead of one extra request per silo.
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+- Updated dependencies [1f35e6f]
+  - @transcend-io/privacy-types@6.0.0
+  - @transcend-io/sdk@2.1.10
+  - @transcend-io/airgap.js-types@14.2.43
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.29.3
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+  - @transcend-io/airgap.js-types@14.2.42
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.9
+
+## 10.29.2
+
+### Patch Changes
+
+- c4f1a55: Upgrade csv-parse to patch CVE
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+  - @transcend-io/sdk@2.1.8
+
+## 10.29.1
+
+### Patch Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/sdk@2.1.7
+
+## 10.29.0
+
+### Minor Changes
+
+- f74e10f: Add local Policy Engine scaffolding and validation.
+
+  `policy init` creates a safe, publishable Rego v1 starter and can merge repository-level VS Code tooling, install a portable policy authoring skill, and generate credential-free GitHub Actions validation. The transactional setup preserves existing policy, editor, workflow, and customized skill content.
+
+  `policy lint` now requires a manifest, OPA 1.x, and Regal, and verifies formatting, production compilation, and tests. Existing lint invocations may newly fail until these requirements are met.
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+### Patch Changes
+
+- 27e7c7a: Say which Custom Function type each `custom-functions new` template produces.
+
+  The command described its templates by the code they emit ("General or DSR starter", "Generated
+  handler and fixture shape"), which does not map onto the two product concepts a caller is choosing
+  between: a General function triggered by Rules Automation, and a DSR function triggered by a
+  Workflow step. The interactive flow now asks for that type first, using
+  `CustomFunctionType` from `@transcend-io/privacy-types` rather than a parallel local union.
+  General continues immediately because it has only one template; DSR opens a second prompt for a
+  data point resolver, preflight check, or both. The flag brief, command description, and README
+  use the same language.
+
+  The scaffolded DSR enricher comments and the skill's CI recipe follow the same wording, and that
+  recipe now pins Deno 2.4.5 to match the version this repository validates against.
+
+- Updated dependencies [e03b2bd]
+  - @transcend-io/sdk@2.1.6
+
 ## 10.28.0
 
 ### Minor Changes

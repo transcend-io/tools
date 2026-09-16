@@ -201,8 +201,11 @@ describe('Preferences Tools', () => {
       );
     });
 
-    it('returns preferences on success', async () => {
-      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+    it('returns preferences with next page when page is full and cursor is present', async () => {
+      const nodes = Array.from({ length: 10 }, (_, i) => ({
+        userId: `u${i}`,
+        purposes: [{ purpose: 'analytics', enabled: true }],
+      }));
       mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: 'next-page' });
 
       const tools = getTools();
@@ -217,15 +220,84 @@ describe('Preferences Tools', () => {
       expect(result).toMatchObject({
         success: true,
         data: nodes,
+        count: 10,
         hasNextPage: true,
         nextCursor: 'next-page',
       });
+      expect(result).not.toHaveProperty('totalCount');
       expect(mockRest.queryPreferences).toHaveBeenCalledWith({
         partition: 'my-org',
         identifiers: [{ name: 'email', value: 'user@example.com' }],
         limit: 10,
         cursor: undefined,
       });
+    });
+
+    it('sets hasNextPage false and omits nextCursor when API returns no cursor', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      mockRest.queryPreferences.mockResolvedValue({ nodes });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
+      expect(result).not.toHaveProperty('totalCount');
+    });
+
+    it('sets hasNextPage false when cursor is present but page is not full', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: 'spurious-cursor' });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
+    });
+
+    it('sets hasNextPage false when cursor decodes to decryptionStatus ERROR', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      const errorCursor = Buffer.from(
+        JSON.stringify({ decryptionStatus: 'ERROR', offset: 1 }),
+      ).toString('base64');
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: errorCursor });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 1,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
     });
 
     it('throws when client throws', async () => {
@@ -240,6 +312,57 @@ describe('Preferences Tools', () => {
           identifiers: [{ name: 'email', value: 'user@example.com' }],
         }),
       ).rejects.toThrow('REST error');
+    });
+  });
+
+  describe('preferences_upsert', () => {
+    it('forwards records[].options.mergeRecordsOnConflict to the REST client', async () => {
+      mockRest.upsertPreferences.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_upsert')!;
+      const records = [
+        {
+          partition: 'default',
+          timestamp: '2024-01-15T10:30:00.000Z',
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
+          purposes: [{ purpose: 'Marketing', enabled: false }],
+          options: { mergeRecordsOnConflict: false },
+        },
+      ];
+
+      const result = await tool.handler({ records, skipWorkflowTriggers: true });
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.upsertPreferences).toHaveBeenCalledWith({
+        records,
+        skipWorkflowTriggers: true,
+      });
+    });
+
+    it('accepts upsert records without options (API default merge)', async () => {
+      mockRest.upsertPreferences.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_upsert')!;
+      const records = [
+        {
+          partition: 'default',
+          timestamp: '2024-01-15T10:30:00.000Z',
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
+          purposes: [{ purpose: 'Marketing', enabled: true }],
+        },
+      ];
+
+      const parsed = tool.zodSchema.safeParse({ records });
+      expect(parsed.success).toBe(true);
+
+      const result = await tool.handler({ records });
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.upsertPreferences).toHaveBeenCalledWith({
+        records,
+        skipWorkflowTriggers: undefined,
+      });
     });
   });
 
@@ -258,7 +381,7 @@ describe('Preferences Tools', () => {
           {
             anchorIdentifier: { name: 'email', value: 'user@example.com' },
             append: { name: 'phone', value: '+14155550101' },
-            timestamp: '2024-01-15T10:30:00Z',
+            timestamp: '2024-01-15T10:30:00.000Z',
           },
         ],
       })) as { success: boolean; error?: string };
@@ -276,7 +399,7 @@ describe('Preferences Tools', () => {
         {
           anchorIdentifier: { name: 'email', value: 'user@example.com' },
           append: { name: 'phone', value: '+15551234567' },
-          timestamp: '2024-01-15T10:30:00Z',
+          timestamp: '2024-01-15T10:30:00.000Z',
         },
       ];
 

@@ -73,15 +73,18 @@ export const createAuthParameter = ({
  * Creates a standard Transcend URL parameter
  *
  * @param defaultUrl - The default URL to use if not provided
+ * @param flagName - Public flag name used by the command
  * @returns The parameter object
  */
 export const createTranscendUrlParameter = (
   defaultUrl = DEFAULT_TRANSCEND_API,
+  flagName = 'transcendUrl',
 ): TypedFlagParameter<string, LocalContext> => ({
   kind: 'parsed',
   parse: urlParser,
   brief:
-    'URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.',
+    `URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. ` +
+    `Defaults to the TRANSCEND_API_URL environment variable when set, so --${flagName} may be omitted if it is exported.`,
   default: defaultUrl,
 });
 

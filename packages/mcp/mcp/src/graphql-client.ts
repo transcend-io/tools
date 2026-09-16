@@ -5,6 +5,7 @@ import {
   type AuthCredentials,
   type Logger,
 } from '@transcend-io/mcp-server-base';
+import { CustomFunctionsMixin } from '@transcend-io/mcp-server-custom-functions';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';
@@ -99,6 +100,19 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listWorkflows: InstanceType<typeof WorkflowsMixin>['listWorkflows'];
   declare updateWorkflowConfig: InstanceType<typeof WorkflowsMixin>['updateWorkflowConfig'];
   declare listEmailTemplates: InstanceType<typeof WorkflowsMixin>['listEmailTemplates'];
+
+  // Custom Functions
+  declare listCustomFunctions: InstanceType<typeof CustomFunctionsMixin>['listCustomFunctions'];
+  declare getSignedCustomFunctionVersion: InstanceType<
+    typeof CustomFunctionsMixin
+  >['getSignedCustomFunctionVersion'];
+  declare createCustomFunction: InstanceType<typeof CustomFunctionsMixin>['createCustomFunction'];
+  declare updateCustomFunction: InstanceType<typeof CustomFunctionsMixin>['updateCustomFunction'];
+  declare promoteCustomFunctionVersion: InstanceType<
+    typeof CustomFunctionsMixin
+  >['promoteCustomFunctionVersion'];
+  declare testRunCustomFunction: InstanceType<typeof CustomFunctionsMixin>['testRunCustomFunction'];
+  declare listSombras: InstanceType<typeof CustomFunctionsMixin>['listSombras'];
 }
 
 applyMixin(TranscendGraphQLClient, AdminMixin);
@@ -107,3 +121,4 @@ applyMixin(TranscendGraphQLClient, InventoryMixin);
 applyMixin(TranscendGraphQLClient, DiscoveryMixin);
 applyMixin(TranscendGraphQLClient, AssessmentsMixin);
 applyMixin(TranscendGraphQLClient, WorkflowsMixin);
+applyMixin(TranscendGraphQLClient, CustomFunctionsMixin);

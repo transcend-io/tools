@@ -110,13 +110,11 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `dsr_list_request_data_silos` — List connected systems for a request (status, errors, system owners)
 - `dsr_submit` — Submit a new DSR via customer-ingress REST
 - `dsr_cancel` — Cancel a request
-- `dsr_respond_access` — Respond to an access request
-- `dsr_respond_erasure` — Respond to an erasure request
 - `dsr_poll_status` — Poll request status
 - `dsr_analyze` — Analyze DSR data
-- `dsr_download_keys` — Download encryption keys
 - `dsr_enrich_identifiers` — Enrich request identifiers
 - `dsr_list_identifiers` — List identifier types
+- `dsr_list_pending_requests` — List pending ACCESS/ERASURE jobs for a data silo
 
 ## Related packages
 

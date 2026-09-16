@@ -27,7 +27,7 @@ export function createDsrListPendingRequestsTool(clients: ToolClients) {
     description:
       'List outstanding ACCESS or ERASURE jobs waiting on one data silo (integration), oldest first. ' +
       'Each item carries the requestId, the identifier to process, and the Sombra-signed nonce that ' +
-      'dsr_respond_access, dsr_respond_erasure, and dsr_enrich_identifiers require for that job. ' +
+      'dsr_enrich_identifiers requires for that job. ' +
       'Requires Sombra and a Transcend API key linked to this data silo; ' +
       'OAuth-only auth returns 401.',
     category: 'DSR Automation',
@@ -45,7 +45,7 @@ export function createDsrListPendingRequestsTool(clients: ToolClients) {
           message:
             items.length === 0
               ? `No pending ${requestType} jobs for data silo ${dataSiloId}`
-              : `Found ${items.length} pending ${requestType} job(s). Use each item's nonce field for respond/enrich.`,
+              : `Found ${items.length} pending ${requestType} job(s). Use each item's nonce field for enrich.`,
         });
       } catch (error) {
         if (isPendingRequestsAuthError(error)) {

@@ -1,5 +1,30 @@
 # @transcend-io/privacy-types
 
+## 6.1.0
+
+### Minor Changes
+
+- b86b173: Publish the Permissions API OPA input schema at `packages/cli/schema/permissions-policy-input.json`, generated from the `@transcend-io/privacy-types` codec. `policy new --template permissions` scaffolds from that published contract (including Preference Store-style purpose slugs like `Analytics`).
+- 20b054b: Add `DsrErrorCode.InvalidRequestInput`, `InvalidIdentifierJwt`, `DraftWorkflowConfig`, and `DsrBulkErrorCode.InvalidBulkInput` for row-level bulk DSR validation.
+
+## 6.0.0
+
+### Major Changes
+
+- 3bc8980: Remove the unused `BusinessEntityNeedsDocumentation` / `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` action item code. The product feature was already disabled and is being deleted; configs that still reference this value should drop it.
+
+  **Migration:** Remove any `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` entries from `transcend.yml` action-item configuration before upgrading.
+
+### Patch Changes
+
+- 8695da7: Add `ConsentSiteTelemetryStale` to the `ActionItemCode` enum so Consent Manager sites with stale telemetry can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+
+## 5.27.0
+
+### Minor Changes
+
+- 76c05da: Add RequestDataSiloStatus.TranscendRateLimited (TRANSCEND_RATE_LIMITED) and RequestDataSiloStatus.VendorRateLimited (VENDOR_RATE_LIMITED) for DSR jobs deferred by Transcend's data silo rate limiter vs. rejected by the vendor's own rate limit (429 / API credits / quota).
+
 ## 5.26.0
 
 ### Minor Changes

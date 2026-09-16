@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { displayProjectPath, renderProjectPlan } from '../../scaffolding/project-plan-output.js';
 import type { CustomFunctionProjectPlan } from '../scaffold-model.js';
-import { buildPlanResult, displayPath, renderProjectPlan } from '../scaffold-output.js';
+import { buildPlanResult } from '../scaffold-output.js';
 
 const PLAN: CustomFunctionProjectPlan = {
   version: 1,
@@ -88,12 +89,21 @@ describe('renderProjectPlan', () => {
       nextSteps: [],
     };
 
-    expect(renderProjectPlan(noOpPlan, '/repo')).toContain('No changes needed.');
+    expect(
+      renderProjectPlan(noOpPlan, {
+        cwd: '/repo',
+        title: 'Custom Function plan',
+        details: [
+          { label: 'Target', path: noOpPlan.targetDirectory },
+          { label: 'Manifest', path: noOpPlan.manifestPath },
+        ],
+      }),
+    ).toContain('No changes needed.');
   });
 });
 
-describe('displayPath', () => {
+describe('displayProjectPath', () => {
   it('uses an absolute path instead of an ambiguous parent-relative path', () => {
-    expect(displayPath('/repo', '/outside/functions')).toBe('/outside/functions');
+    expect(displayProjectPath('/repo', '/outside/functions')).toBe('/outside/functions');
   });
 });

@@ -127,6 +127,23 @@ describe('discoverCustomFunctionProject', () => {
     expect(first.relativePaths).toContain('Functions/Existing.ts');
     expect(first.relativePaths.some((path) => path.includes('node_modules'))).toBe(false);
   });
+
+  it('detects GitHub remotes through a linked worktree common directory', async () => {
+    const root = makeTemporaryRoot();
+    const commonGitDirectory = makeTemporaryRoot();
+    const worktreeGitDirectory = join(commonGitDirectory, 'worktrees', 'fixture');
+    mkdirSync(worktreeGitDirectory, { recursive: true });
+    writeFileSync(join(root, '.git'), `gitdir: ${worktreeGitDirectory}\n`);
+    writeFileSync(join(worktreeGitDirectory, 'commondir'), '../..\n');
+    writeFileSync(
+      join(commonGitDirectory, 'config'),
+      '[remote "origin"]\n  url = git@github.com:transcend-io/tools.git\n',
+    );
+
+    const state = await discoverCustomFunctionProject(buildContextForTest({ cwd: root }), {});
+
+    expect(state.usesGithub).toBe(true);
+  });
 });
 
 describe('discoverCustomFunctionManifests', () => {

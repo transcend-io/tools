@@ -39,14 +39,29 @@ const sampleVersion = {
   updatedAt: '2026-06-25T00:00:00.000Z',
 };
 
+/** Default `.manifest` contents for publish command tests. */
+function defaultManifestContents(): string {
+  return JSON.stringify({
+    roots: ['example'],
+    metadata: { 'transcend.io': { template: 'generic' } },
+  });
+}
+
 describe('publish', () => {
   const existsSync = vi.fn<typeof fs.existsSync>(() => true);
   const unlinkSync = vi.fn<typeof fs.unlinkSync>();
-  const testFs = { ...fs, existsSync, unlinkSync };
+  const readFileSync = vi.fn((path: fs.PathOrFileDescriptor) => {
+    if (String(path).endsWith('.manifest')) {
+      return defaultManifestContents();
+    }
+    return fs.readFileSync(path, 'utf8');
+  });
+  const testFs = { ...fs, existsSync, unlinkSync, readFileSync } as unknown as typeof fs;
   const context = buildContextForTest({
     env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
     exitBehavior: 'record',
     fs: testFs,
+    stderrIsTTY: true,
   });
 
   beforeEach(() => {
@@ -54,6 +69,12 @@ describe('publish', () => {
     context.reset();
     buildOpaBundleTarballMock.mockResolvedValue('/tmp/bundle.tar.gz');
     existsSync.mockReturnValue(true);
+    readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      if (String(path).endsWith('.manifest')) {
+        return defaultManifestContents();
+      }
+      return fs.readFileSync(path, 'utf8');
+    });
     inquirerConfirmBooleanMock.mockResolvedValue(true);
   });
 
@@ -75,24 +96,25 @@ describe('publish', () => {
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
 
-    await publish.call(context, {
-      dir: './policies',
-      'bundle-name': 'main',
-      auth: 'test-key',
-      'transcend-url': 'https://api.transcend.io',
-      json: true,
-      yes: true,
-    });
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: true,
+        yes: true,
+      },
+      './policies',
+    );
 
     expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
-    expect(context.stdout).toContain('"version": "abc123"');
-    expect(context.stdout).toContain(
-      'Publishing a policy does not activate it. To activate this version, run:',
-    );
-    expect(context.stdout).toMatch(
-      /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundle-name=main/,
-    );
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      version: { version: 'abc123' },
+    });
+    expect(context.stdout).not.toContain('Policy bundle version uploaded successfully.');
+    expect(context.stdout).not.toContain('transcend policy activate');
   });
 
   it('uploads a new version when the bundle already exists', async () => {
@@ -104,20 +126,79 @@ describe('publish', () => {
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue('existing-bundle-id');
 
-    await publish.call(context, {
-      dir: './policies',
-      'bundle-name': 'main',
-      auth: 'test-key',
-      'transcend-url': 'https://api.transcend.io',
-      json: false,
-      yes: false,
-    });
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
 
     expect(post).toHaveBeenCalledWith(
       'v1/policy-engine/policy-bundles/existing-bundle-id/versions',
       expect.any(Object),
     );
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+  });
+
+  it('warns when publishing a permissions template under a non-permissions name', async () => {
+    readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      if (String(path).endsWith('.manifest')) {
+        return JSON.stringify({
+          roots: ['consent'],
+          metadata: { 'transcend.io': { template: 'permissions' } },
+        });
+      }
+      return fs.readFileSync(path, 'utf8');
+    });
+    const post = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        version: sampleVersion,
+      }),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ post });
+    resolveBundleIdByNameMock.mockResolvedValue('existing-bundle-id');
+
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'consent',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
+
+    expect(post).toHaveBeenCalled();
+    expect(context.stderr).toContain('--bundle-name=permissions');
+  });
+
+  it('does not prompt in JSON mode when a new bundle needs confirmation', async () => {
+    const post = vi.fn();
+    buildPolicyEngineClientMock.mockReturnValue({ post });
+    resolveBundleIdByNameMock.mockResolvedValue(undefined);
+
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: true,
+        yes: false,
+      },
+      './policies',
+    );
+
+    expect(post).not.toHaveBeenCalled();
+    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+    expect(context.exit).toHaveBeenCalledWith(1);
   });
 
   it('prompts before creating a bundle when the name does not exist', async () => {
@@ -139,14 +220,17 @@ describe('publish', () => {
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
     inquirerConfirmBooleanMock.mockResolvedValue(true);
 
-    await publish.call(context, {
-      dir: './policies',
-      'bundle-name': 'main',
-      auth: 'test-key',
-      'transcend-url': 'https://api.transcend.io',
-      json: false,
-      yes: false,
-    });
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
 
     expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
       message:
@@ -161,20 +245,23 @@ describe('publish', () => {
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
     inquirerConfirmBooleanMock.mockResolvedValue(false);
 
-    await publish.call(context, {
-      dir: './policies',
-      'bundle-name': 'main',
-      auth: 'test-key',
-      'transcend-url': 'https://api.transcend.io',
-      json: false,
-      yes: false,
-    });
+    await publish.call(
+      context,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
 
     expect(post).not.toHaveBeenCalled();
     expect(context.stdout).toContain('Publish cancelled.');
   });
 
-  it('fails in a non-interactive environment when creating a new bundle without --yes', async () => {
+  it('fails when prompt output is not interactive and creating a bundle without --yes', async () => {
     const post = vi.fn();
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
@@ -182,22 +269,25 @@ describe('publish', () => {
       env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
       exitBehavior: 'record',
       fs: testFs,
-      stdinIsTTY: false,
+      stderrIsTTY: false,
     });
 
-    await publish.call(nonInteractiveContext, {
-      dir: './policies',
-      'bundle-name': 'main',
-      auth: 'test-key',
-      'transcend-url': 'https://api.transcend.io',
-      json: false,
-      yes: false,
-    });
+    await publish.call(
+      nonInteractiveContext,
+      {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+        yes: false,
+      },
+      './policies',
+    );
 
     expect(post).not.toHaveBeenCalled();
     expect(nonInteractiveContext.exit).toHaveBeenCalledWith(1);
     expect(nonInteractiveContext.stderr).toContain(
-      'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
+      'Cannot create a new bundle in non-interactive or JSON mode; pass --yes to confirm.',
     );
   });
 });

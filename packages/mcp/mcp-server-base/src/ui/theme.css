@@ -68,6 +68,11 @@
   --color-on-card-muted: var(--text-subtle, #55535f);
   --color-on-card-subtle: var(--text-subtlest, #85838f);
   --color-card-line: var(--border-default, #d6d5db);
+  /*
+   * White label on bold fills (`bg-brand`, `bg-fill-*`). Skips host
+   * `--color-text-inverse`, which a dark host may flip to a dark color.
+   */
+  --color-on-fill: var(--text-inverse, #ffffff);
 
   /*
    * Fills for bars and swatches. Separate from the `--color-success` family
@@ -79,6 +84,21 @@
   --color-fill-warning: var(--background-warning-bold, #c98300);
   --color-fill-danger: var(--background-danger-bold, #bb0036);
   --color-fill-neutral: var(--background-neutral, #ebebef);
+  /* Dormant badge — warmer than fill-warning so it reads as a status chip */
+  --color-fill-dormant: var(--background-warning-bold, #ec9e00);
+  /* Soft brand wash for selected multi-select rows */
+  --color-fill-brand-subtle: var(--background-brand-subtle, #cfd1fe);
+
+  /*
+   * Consent purpose accent colors (cookie triage outline badges: border + text).
+   * Fallbacks match the Agentic Assist purpose-badge mockups.
+   */
+  --color-purpose-essential: var(--chart-teal, #44c9a4);
+  --color-purpose-functional: var(--background-accent-yellow-bold, #f4c139);
+  --color-purpose-advertising: var(--palette-red-400, #fb544e);
+  --color-purpose-analytics: var(--chart-orange, #fd7a36);
+  --color-purpose-sale: var(--background-accent-purple-bold, #7c35fb);
+  --color-purpose-other: var(--text-subtle, #485060);
 
   /*
    * Brand and status are Transcend's identity, so tokens lead here and the host
@@ -107,6 +127,9 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
 
   /* Type scale. Sizes and their line heights travel together as one utility. */
+  /* Ours: chrome / badge copy below body sm (host scale starts at text-sm). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
   --text-sm: var(--font-text-sm-size, 0.8125rem);
   --text-sm--line-height: var(--font-text-sm-line-height, 1.25rem);
   --text-md: var(--font-text-md-size, 0.875rem);

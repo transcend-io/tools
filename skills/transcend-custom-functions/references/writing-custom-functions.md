@@ -62,8 +62,7 @@ Run:
 ```sh
 transcend custom-functions check "<custom-function-directory>" \
   --variables=TRANSCEND_API_KEY:placeholder
-transcend custom-functions push \
-  --file="<custom-function-directory>/transcend-functions.yml" \
+transcend custom-functions push "<custom-function-directory>" \
   --auth="$TRANSCEND_API_KEY" \
   --variables="TRANSCEND_API_KEY:$TRANSCEND_API_KEY" \
   --dryRun

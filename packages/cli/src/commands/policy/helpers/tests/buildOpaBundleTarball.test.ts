@@ -47,11 +47,8 @@ describe('buildOpaBundleTarball', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('creates a tarball with manifest.json and policy files only', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+  it('creates a tarball with .manifest and policy files only', async () => {
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.mkdirSync(path.join(tempDir, 'policy_engine'));
     fs.writeFileSync(
       path.join(tempDir, 'policy_engine', 'decision.rego'),
@@ -70,17 +67,14 @@ describe('buildOpaBundleTarball', () => {
     expect(listResult.status).toBe(0);
 
     const entries = listResult.stdout.trim().split('\n').sort();
-    expect(entries).toEqual(['manifest.json', 'policy_engine/decision.rego']);
+    expect(entries).toEqual(['.manifest', 'policy_engine/decision.rego']);
     expect(entries).not.toContain('policy_engine/decision_test.rego');
     expect(entries).not.toContain('data.json');
-    expect(entries).not.toContain('.manifest');
+    expect(entries).not.toContain('manifest.json');
   });
 
   it('validates the bundle compiles with `opa build` before packaging', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.mkdirSync(path.join(tempDir, 'policy_engine'));
     fs.writeFileSync(
       path.join(tempDir, 'policy_engine', 'decision.rego'),
@@ -96,8 +90,10 @@ describe('buildOpaBundleTarball', () => {
     const buildArgs = runOPACaptureMock.mock.calls[1][0] as string[];
     const buildOptions = runOPACaptureMock.mock.calls[1][1] as { cwd?: string };
     expect(checkArgs[0]).toBe('check');
+    expect(checkArgs).not.toContain('--v0-compatible');
     expect(buildArgs[0]).toBe('build');
-    expect(buildArgs).toContain('--v0-compatible');
+    expect(buildArgs).not.toContain('--v0-compatible');
+    expect(buildArgs).toContain('-b');
     expect(buildArgs).toContain('--ignore');
     expect(buildArgs[buildArgs.indexOf('--ignore') + 1]).toBe('*_test.rego');
     expect(buildArgs.at(-1)).toBe('.');
@@ -105,10 +101,7 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws a clear error when `opa check` fails', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
     runOPACaptureMock.mockResolvedValueOnce({
       code: 2,
@@ -124,10 +117,7 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws a clear error when `opa build` fails to compile the bundle', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
     runOPACaptureMock
       .mockResolvedValueOnce({ code: 0, stdout: '', stderr: '' }) // opa check
@@ -143,33 +133,28 @@ describe('buildOpaBundleTarball', () => {
     expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
   });
 
-  it('throws when manifest.json is missing', async () => {
+  it('throws when .manifest is missing', async () => {
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/manifest\.json/i);
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/\.manifest/i);
   });
 
   it('throws when no publishable rego files exist', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.writeFileSync(path.join(tempDir, 'policy_test.rego'), 'package policy_engine\n');
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/at least one \.rego/i);
   });
 
-  it('throws a clear error when manifest.json is not valid JSON', async () => {
-    fs.writeFileSync(path.join(tempDir, 'manifest.json'), '{ not valid json');
+  it('throws a clear error when .manifest is not valid JSON', async () => {
+    fs.writeFileSync(path.join(tempDir, '.manifest'), '{ not valid json');
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
-      /manifest\.json is not valid JSON/i,
-    );
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/\.manifest is not valid JSON/i);
   });
 
-  it('throws when manifest.json roots is missing or empty', async () => {
-    fs.writeFileSync(path.join(tempDir, 'manifest.json'), JSON.stringify({}));
+  it('throws when .manifest roots is missing or empty', async () => {
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({}));
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
@@ -177,9 +162,9 @@ describe('buildOpaBundleTarball', () => {
     );
   });
 
-  it('throws when manifest.json roots contains non-string entries', async () => {
+  it('throws when .manifest roots contains non-string entries', async () => {
     fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
+      path.join(tempDir, '.manifest'),
       JSON.stringify({ roots: ['policy_engine', 42] }),
     );
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
@@ -190,10 +175,7 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('throws when a Rego package is not covered by manifest roots', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.writeFileSync(path.join(tempDir, 'other.rego'), 'package other.package\n');
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
@@ -202,10 +184,7 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('accepts nested Rego packages under a manifest root', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.mkdirSync(path.join(tempDir, 'policy_engine', 'transcend'), { recursive: true });
     fs.writeFileSync(
       path.join(tempDir, 'policy_engine', 'transcend', 'decision.rego'),
@@ -219,10 +198,7 @@ describe('buildOpaBundleTarball', () => {
   });
 
   it('reports the compressed size limit with human-readable units', async () => {
-    fs.writeFileSync(
-      path.join(tempDir, 'manifest.json'),
-      JSON.stringify({ roots: ['policy_engine'] }),
-    );
+    fs.writeFileSync(path.join(tempDir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
     // Force the compressed-size check to trip with a 1-byte limit.

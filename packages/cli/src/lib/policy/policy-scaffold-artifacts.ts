@@ -1,0 +1,149 @@
+import { posix } from 'node:path';
+
+import {
+  POLICY_STARTER_BUNDLE_DIRECTORY,
+  POLICY_STARTER_OPA_VERSION,
+} from './policy-scaffold-templates.js';
+
+/** Regal version pinned by generated policy validation. */
+export const POLICY_STARTER_REGAL_VERSION = '0.42.0';
+
+/** Repository-relative generated workflow path. */
+export const POLICY_CI_WORKFLOW_PATH = '.github/workflows/transcend-policy.yml';
+
+/** Immutable actions/checkout v6 release commit. */
+export const ACTIONS_CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
+
+/** Immutable open-policy-agent/setup-opa v2.4.0 release commit. */
+export const SETUP_OPA_SHA = 'b2b258e089860efaadaaf71bf6e3aecb4a3eeff1';
+
+/** Immutable open-policy-agent/setup-regal v2.0.0 release commit. */
+export const SETUP_REGAL_SHA = '761188c3b435761fa254beca508a44875619648f';
+
+/**
+ * Prefix a path below the repository-relative policy workspace.
+ *
+ * @param workspaceDirectory - POSIX repository-relative workspace
+ * @param child - POSIX workspace-relative path or pattern
+ * @returns Repository-relative path or pattern
+ */
+function workspacePath(workspaceDirectory: string, child: string): string {
+  return workspaceDirectory === '.' ? child : posix.join(workspaceDirectory, child);
+}
+
+/**
+ * Generate credential-free, validation-only Policy Engine CI.
+ *
+ * Path filters watch the whole policy workspace. Lint runs against each
+ * publishable `{root}-bundle/` directory.
+ *
+ * @param options - Repository paths and exact CLI release
+ * @returns Complete GitHub Actions workflow YAML
+ */
+export function generatePolicyGithubActionsWorkflow(options: {
+  /** Exact released Transcend CLI version. */
+  cliVersion: string;
+  /** Policy workspace directory relative to the repository root. */
+  workspaceDirectory: string;
+  /**
+   * Publish directories to lint, relative to the repository root.
+   *
+   * Pass an empty array for a workspace with no bundles yet (`policy init`).
+   * Defaults to the disposable starter bundle under the workspace when omitted.
+   */
+  bundleDirectories?: readonly string[];
+}): string {
+  const bundleDirectories = options.bundleDirectories ?? [
+    workspacePath(options.workspaceDirectory, POLICY_STARTER_BUNDLE_DIRECTORY),
+  ];
+  const watchedPaths = [
+    workspacePath(options.workspaceDirectory, '**/*.rego'),
+    workspacePath(options.workspaceDirectory, '**/*.json'),
+    workspacePath(options.workspaceDirectory, '**/*.yaml'),
+    workspacePath(options.workspaceDirectory, '**/*.yml'),
+    workspacePath(options.workspaceDirectory, '**/.manifest'),
+    workspacePath(options.workspaceDirectory, '.regal/config.yaml'),
+    workspacePath(options.workspaceDirectory, '.regal.yaml'),
+    POLICY_CI_WORKFLOW_PATH,
+  ];
+  const pathFilters = watchedPaths.map((path) => `      - ${JSON.stringify(path)}`).join('\n');
+
+  let lintJob: string;
+  if (bundleDirectories.length === 0) {
+    lintJob = `  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
+      - name: No publishable bundles yet
+        run: >-
+          echo "Run transcend policy new to add a bundle;
+          policy new refreshes this workflow automatically."
+`;
+  } else if (bundleDirectories.length === 1) {
+    lintJob = `  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
+      - name: Set up OPA
+        uses: open-policy-agent/setup-opa@${SETUP_OPA_SHA} # v2.4.0
+        with:
+          version: ${JSON.stringify(POLICY_STARTER_OPA_VERSION)}
+      - name: Set up Regal
+        uses: open-policy-agent/setup-regal@${SETUP_REGAL_SHA} # v2.0.0
+        with:
+          version: ${JSON.stringify(POLICY_STARTER_REGAL_VERSION)}
+      - name: Install the Transcend CLI
+        run: npm install --global @transcend-io/cli@${options.cliVersion}
+      - name: Validate Policy Engine project
+        env:
+          POLICY_DIRECTORY: ${JSON.stringify(bundleDirectories[0])}
+        run: >-
+          transcend policy lint
+          "$POLICY_DIRECTORY"
+          --noInteractive
+          --json
+`;
+  } else {
+    lintJob = `  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        policy_directory:
+${bundleDirectories.map((directory) => `          - ${JSON.stringify(directory)}`).join('\n')}
+    steps:
+      - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
+      - name: Set up OPA
+        uses: open-policy-agent/setup-opa@${SETUP_OPA_SHA} # v2.4.0
+        with:
+          version: ${JSON.stringify(POLICY_STARTER_OPA_VERSION)}
+      - name: Set up Regal
+        uses: open-policy-agent/setup-regal@${SETUP_REGAL_SHA} # v2.0.0
+        with:
+          version: ${JSON.stringify(POLICY_STARTER_REGAL_VERSION)}
+      - name: Install the Transcend CLI
+        run: npm install --global @transcend-io/cli@${options.cliVersion}
+      - name: Validate Policy Engine project
+        env:
+          POLICY_DIRECTORY: \${{ matrix.policy_directory }}
+        run: transcend policy lint "$POLICY_DIRECTORY" --noInteractive --json
+`;
+  }
+
+  return `# Generated by transcend policy init.
+name: Transcend Policy
+
+on:
+  pull_request:
+    paths:
+${pathFilters}
+  push:
+    paths:
+${pathFilters}
+
+permissions:
+  contents: read
+
+jobs:
+${lintJob}`;
+}

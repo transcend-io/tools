@@ -8,4 +8,5 @@ export const CONSENT_OAUTH_SCOPES = [
   ScopeName.ManageAssignedConsentManager,
   ScopeName.ViewDataFlow,
   ScopeName.ManageDataFlow,
+  ScopeName.ViewManagedConsentDatabaseAdminApi,
 ] as const;

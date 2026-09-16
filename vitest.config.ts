@@ -41,8 +41,11 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
     },
     // Opt MCP test-only URL overrides on for the suite; production/runtime stays off unless set.
+    // Force a colorless terminal so `colors` assertions stay stable under FORCE_COLOR=1 shells.
     env: {
       ALLOW_TEST_OVERRIDES: '1',
+      FORCE_COLOR: '0',
+      NO_COLOR: '1',
     },
     environment: 'node',
     globals: true,
