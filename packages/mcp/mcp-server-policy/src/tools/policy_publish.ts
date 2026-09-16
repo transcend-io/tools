@@ -8,12 +8,12 @@ export const PolicyPublishSchema = z
     dir: z
       .string()
       .optional()
-      .describe('Local directory with manifest.json + .rego (mutually exclusive with files)'),
+      .describe('Local directory with .manifest + .rego (mutually exclusive with files)'),
     files: z
       .record(z.string(), z.string())
       .optional()
       .describe(
-        'Relative path → file contents (manifest.json + .rego). Same map as policy_get_templates scaffold output. Mutually exclusive with dir.',
+        'Relative path → file contents (.manifest + .rego). Same map as policy_get_templates scaffold output. Mutually exclusive with dir.',
       ),
     bundleName: z.string().describe('Tenant-unique policy bundle name'),
     version: z
@@ -49,9 +49,7 @@ export function createPolicyPublishTool(clients: PolicyToolClients) {
 
       const uploadedVersion = response.version;
       const bundle =
-        'bundle' in response
-          ? response.bundle
-          : await resolvePolicyBundle(client, { bundleName });
+        'bundle' in response ? response.bundle : await resolvePolicyBundle(client, { bundleName });
 
       return createToolResult(true, {
         message: 'Uploaded inert version. Call policy_set_live with action "activate" to go live.',

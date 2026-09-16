@@ -55,7 +55,7 @@ export const POLICY_TEMPLATES: Record<string, PolicyTemplateFiles & PolicyTempla
     description:
       'Default allow/deny/escalate decision policy under package policy_engine with manifest roots.',
     files: {
-      'manifest.json': STARTER_MANIFEST,
+      '.manifest': STARTER_MANIFEST,
       'policy_engine/decision.rego': STARTER_DECISION_REGO,
       'sample-input.json': STARTER_SAMPLE_INPUT,
     },

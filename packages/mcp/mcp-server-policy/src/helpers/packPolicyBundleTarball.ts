@@ -22,22 +22,34 @@ function isPublishableRegoFile(relativePath: string): boolean {
   return relativePath.endsWith('.rego') && !relativePath.endsWith('_test.rego');
 }
 
-/** Shape of the OPA bundle `manifest.json` as accepted by the Policy Engine. */
+/** OPA bundle manifest filename used for local authoring and upload. */
+const POLICY_MANIFEST_FILENAME = '.manifest';
+
+/** Legacy manifest filename no longer accepted for upload. */
+const LEGACY_MANIFEST_FILENAME = 'manifest.json';
+
+/** Shape of the OPA bundle `.manifest` as accepted by the Policy Engine. */
 interface PolicyBundleManifest {
   /** Roots of the bundle, e.g. `["policy_engine"]` */
   roots: string[];
 }
 
 /**
- * Reads and validates `manifest.json` from a policy bundle directory.
+ * Reads and validates `.manifest` from a policy bundle directory.
  *
  * @param dir - Absolute path to the policy bundle directory
  * @returns The parsed manifest
  */
 function readPolicyBundleManifest(dir: string): PolicyBundleManifest {
-  const manifestPath = path.join(dir, 'manifest.json');
+  const manifestPath = path.join(dir, POLICY_MANIFEST_FILENAME);
   if (!fs.existsSync(manifestPath)) {
-    throw new Error('Policy bundle directory must contain a manifest.json file.');
+    if (fs.existsSync(path.join(dir, LEGACY_MANIFEST_FILENAME))) {
+      throw new Error(
+        `Policy bundle directory must contain a ${POLICY_MANIFEST_FILENAME} file. ` +
+          `Found ${LEGACY_MANIFEST_FILENAME} — rename it to ${POLICY_MANIFEST_FILENAME}.`,
+      );
+    }
+    throw new Error(`Policy bundle directory must contain a ${POLICY_MANIFEST_FILENAME} file.`);
   }
 
   const raw = fs.readFileSync(manifestPath, 'utf8');
@@ -46,24 +58,24 @@ function readPolicyBundleManifest(dir: string): PolicyBundleManifest {
     parsed = JSON.parse(raw);
   } catch (err) {
     throw new Error(
-      `manifest.json is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      `${POLICY_MANIFEST_FILENAME} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
       { cause: err },
     );
   }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('manifest.json must contain a JSON object.');
+    throw new Error(`${POLICY_MANIFEST_FILENAME} must contain a JSON object.`);
   }
 
   const roots = (parsed as { roots?: unknown }).roots;
   if (!Array.isArray(roots) || roots.length === 0) {
     throw new Error(
-      'manifest.json must declare "roots" as a non-empty array of strings (e.g. {"roots":["policy_engine"]}).',
+      `${POLICY_MANIFEST_FILENAME} must declare "roots" as a non-empty array of strings (e.g. {"roots":["policy_engine"]}).`,
     );
   }
 
   if (!roots.every((root) => typeof root === 'string' && root.length > 0)) {
-    throw new Error('manifest.json "roots" must be an array of non-empty strings.');
+    throw new Error(`${POLICY_MANIFEST_FILENAME} "roots" must be an array of non-empty strings.`);
   }
 
   return { roots };
@@ -78,7 +90,7 @@ interface PolicyBundleArchiveContents {
 }
 
 /**
- * Collects `manifest.json` and publishable `.rego` files from a policy directory.
+ * Collects `.manifest` and publishable `.rego` files from a policy directory.
  *
  * @param dir - Absolute path to the policy bundle directory
  * @returns Archive entries and the parsed manifest
@@ -98,7 +110,7 @@ function collectPolicyBundleArchiveEntries(dir: string): PolicyBundleArchiveCont
     throw new Error('Policy bundle directory must contain at least one .rego policy file.');
   }
 
-  return { entries: ['manifest.json', ...regoFiles.sort()], manifest };
+  return { entries: [POLICY_MANIFEST_FILENAME, ...regoFiles.sort()], manifest };
 }
 
 /** Matches a Rego `package <path>` declaration. */
@@ -152,9 +164,10 @@ function assertRootsCoverPackages(dir: string, regoFiles: string[], roots: strin
 
   if (uncovered.length > 0) {
     throw new Error(
-      ['manifest.json "roots" do not cover all Rego packages in the bundle:', ...uncovered].join(
-        '\n',
-      ),
+      [
+        `${POLICY_MANIFEST_FILENAME} "roots" do not cover all Rego packages in the bundle:`,
+        ...uncovered,
+      ].join('\n'),
     );
   }
 }
@@ -233,7 +246,7 @@ export function materializePolicyBundleFiles(files: Record<string, string>): str
  * local `opa` binary. The monolith validates Rego on upload via
  * `validatePolicyBundleRego`.
  *
- * @param dir - Directory containing `manifest.json` and `.rego` policy files
+ * @param dir - Directory containing `.manifest` and `.rego` policy files
  * @returns Absolute path to the generated `.tar.gz` bundle
  */
 export async function packPolicyBundleTarball(dir: string): Promise<string> {
@@ -243,7 +256,7 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
   }
 
   const { entries: archiveEntries, manifest } = collectPolicyBundleArchiveEntries(resolvedDir);
-  const regoFiles = archiveEntries.filter((entry) => entry !== 'manifest.json');
+  const regoFiles = archiveEntries.filter((entry) => entry !== POLICY_MANIFEST_FILENAME);
   assertRootsCoverPackages(resolvedDir, regoFiles, manifest.roots);
 
   const outputPath = path.join(
@@ -292,7 +305,7 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
  * Materializes an in-memory file map, packs it, then removes the staging directory.
  *
  * Non-publishable extras (e.g. `sample-input.json`) may be present; only
- * `manifest.json` and publishable `.rego` files are archived.
+ * `.manifest` and publishable `.rego` files are archived.
  *
  * @param files - Relative path → file contents
  * @returns Absolute path to the generated `.tar.gz` bundle

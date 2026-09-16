@@ -210,7 +210,7 @@ export async function getPolicyBundleVersion(
 
 /** Options for publishing a policy bundle from disk or an in-memory file map. */
 export interface PublishPolicyBundleOptions {
-  /** Directory containing manifest.json and .rego files (mutually exclusive with files) */
+  /** Directory containing .manifest and .rego files (mutually exclusive with files) */
   dir?: string;
   /**
    * Relative path → file contents (same shape as policy_get_templates templateFiles.files).
