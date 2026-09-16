@@ -65,6 +65,10 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
   const listboxId = useId();
   const tooltipId = useId();
   const selectedSet = new Set(selected);
+  const selectedTitle =
+    selected.length > 0
+      ? selected.map((id) => options.find((option) => option.id === id)?.label ?? id).join(', ')
+      : undefined;
 
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) {
@@ -160,10 +164,12 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
         aria-expanded={open}
         aria-controls={listboxId}
         aria-label={ariaLabel}
+        title={selectedTitle}
         disabled={disabled || options.length === 0}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+        {/* pointer-events-none so native `title` on the button fires over chip children */}
+        <span className="pointer-events-none flex min-w-0 flex-1 flex-wrap items-center gap-1">
           {renderValue(selected, options)}
         </span>
         <span className="mt-0.5 shrink-0 text-on-card-muted" aria-hidden="true">
@@ -206,6 +212,7 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
                     role="option"
                     aria-selected={checked}
                     aria-disabled={optionDisabled || undefined}
+                    title={option.label}
                     onMouseEnter={(event) => {
                       showDisabledTooltip(event.currentTarget, option.disabledReason);
                     }}
@@ -228,11 +235,12 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
                         void toggleId(option.id);
                       }}
                     />
-                    <span className="min-w-0 flex-1 whitespace-nowrap">
+                    {/* pointer-events-none so native `title` on the label fires over chip children */}
+                    <span className="pointer-events-none min-w-0 flex-1 whitespace-nowrap">
                       {renderOption ? renderOption(option) : option.label}
                     </span>
                     <span
-                      className={`inline-flex size-4 shrink-0 items-center justify-center text-brand ${
+                      className={`pointer-events-none inline-flex size-4 shrink-0 items-center justify-center text-brand ${
                         checked ? 'opacity-100' : 'opacity-0'
                       }`}
                       aria-hidden="true"

@@ -27,7 +27,7 @@ export function A({ app, href, label }: AProps) {
   };
 
   return (
-    <a className="cursor-pointer text-brand-text no-underline" href={href} onClick={onClick}>
+    <a className="cursor-pointer text-brand no-underline" href={href} onClick={onClick}>
       {label}
     </a>
   );
