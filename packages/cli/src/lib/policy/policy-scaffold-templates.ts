@@ -868,20 +868,6 @@ test_ignores_fields_beyond_the_recorded_choice if {
       description: 'Create preference resolution tests',
     },
     {
-      path: `${bundle}/${root}/main.rego`,
-      contents: `# METADATA
-# title: Permissions bundle root
-# description: |
-#   Root package for helpers, purposes, and static config data. The Permissions
-#   input envelope is documented in \`input.schema.json\` beside this bundle.
-# scope: subpackages
-package ${root}
-
-import rego.v1
-`,
-      description: 'Create the bundle root package',
-    },
-    {
       path: `${bundle}/${root}/purposes/analytics/analytics.rego`,
       contents: `# METADATA
 # title: Analytics purpose decision

@@ -238,7 +238,7 @@ describe('policy bundle templates', () => {
     expect(files.map(({ path }) => path).filter((path) => path.startsWith('my-bundle/'))).toEqual(
       expect.arrayContaining([
         'my-bundle/.manifest',
-        'my-bundle/permissions/main.rego',
+        'my-bundle/permissions/helpers/preference/preference.rego',
         'my-bundle/input.example.json',
       ]),
     );
@@ -261,7 +261,7 @@ describe('policy bundle templates', () => {
     expect(paths).toContain(
       'permissions-bundle/permissions/helpers/preference/preference_test.rego',
     );
-    expect(paths).toContain('permissions-bundle/permissions/main.rego');
+    expect(paths).not.toContain('permissions-bundle/permissions/main.rego');
     expect(paths).toContain('permissions-bundle/permissions/purposes/analytics/analytics.rego');
     expect(paths).toContain(
       'permissions-bundle/permissions/purposes/analytics/analytics_test.rego',
@@ -294,19 +294,16 @@ describe('policy bundle templates', () => {
   it('parameterizes the permissions bundle root correctly', () => {
     const files = generatePolicyBundleFiles('permissions', 'consent');
 
-    const mainRego = files.find(({ path }) => path.endsWith('main.rego'));
-    expect(mainRego?.contents).toContain('package consent');
-    expect(mainRego?.path).toContain('consent-bundle/consent/main.rego');
-    expect(
-      JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
-    ).toEqual({
-      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
-    });
-
     const prefRego = files.find(
       ({ path }) => path.includes('preference.rego') && !path.includes('_test'),
     );
     expect(prefRego?.contents).toContain('package consent.helpers.preference');
     expect(prefRego?.contents).toContain('import data.consent.config');
+    expect(prefRego?.path).toContain('consent-bundle/consent/helpers/preference/preference.rego');
+    expect(
+      JSON.parse(files.find(({ path }) => path.endsWith('.manifest'))!.contents).metadata,
+    ).toEqual({
+      'transcend.io': { template: 'permissions', templateVersion: CLI_VERSION },
+    });
   });
 });
