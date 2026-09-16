@@ -6,13 +6,39 @@ import {
   parseJsoncObject,
   type JsoncUpdate,
 } from '../scaffolding/jsonc.js';
-import { POLICY_MANIFEST_FILENAME, POLICY_STARTER_ROOT } from './policy-scaffold-templates.js';
+import {
+  buildBundleDirectoryName,
+  POLICY_MANIFEST_FILENAME,
+  POLICY_STARTER_ROOT,
+} from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
 export const POLICY_VSCODE_EXTENSION = 'tsandall.opa';
 
 /** Conflicting syntax-only VS Code extension. */
 export const CONFLICTING_POLICY_VSCODE_EXTENSION = 'glebbash.opa-highlight-only';
+
+/**
+ * Local publish unit: Rego package root plus its workspace-relative folder basename.
+ *
+ * `bundleDir` is not required to be `{root}-bundle` — `policy new --bundle-dir` may override it.
+ */
+export interface PolicyBundleRef {
+  /** Package-path root (`.manifest` / Regal `project.roots`). */
+  root: string;
+  /** Basename of the publish directory under the policy workspace. */
+  bundleDir: string;
+}
+
+/**
+ * Build a bundle ref with the default `{root}-bundle` directory.
+ *
+ * @param root - Package root
+ * @returns Bundle ref
+ */
+export function policyBundleRef(root: string): PolicyBundleRef {
+  return { root, bundleDir: buildBundleDirectoryName(root) };
+}
 
 /** Result of safely merging one repository editor artifact. */
 export interface PolicyEditorMergeResult {
@@ -166,18 +192,17 @@ function repositoryRelativePosix(repositoryRoot: string, absolutePath: string): 
  *
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
- * @param root - Package root name
+ * @param bundle - Package root and local directory basename
  * @returns VS Code workspace path
  */
 function buildOpaBundleRoot(
   repositoryRoot: string,
   workspaceDirectory: string,
-  root: string = POLICY_STARTER_ROOT,
+  bundle: PolicyBundleRef = policyBundleRef(POLICY_STARTER_ROOT),
 ): string {
   const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
-  const bundleDir = `${root}-bundle`;
-  const bundle = workspace === '.' ? bundleDir : `${workspace}/${bundleDir}`;
-  return buildWorkspaceFolderPath(bundle);
+  const path = workspace === '.' ? bundle.bundleDir : `${workspace}/${bundle.bundleDir}`;
+  return buildWorkspaceFolderPath(path);
 }
 
 /**
@@ -218,13 +243,13 @@ function buildPolicyManifestAssociationPattern(
  *
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
- * @param root - Package root name
+ * @param bundle - Package root and local directory basename
  * @returns Absolute-style fileMatch paths and schema URL
  */
 function buildBundleInputJsonSchema(
   repositoryRoot: string,
   workspaceDirectory: string,
-  root: string = POLICY_STARTER_ROOT,
+  bundle: PolicyBundleRef = policyBundleRef(POLICY_STARTER_ROOT),
 ): {
   /** VS Code fileMatch globs (leading slash = workspace-relative). */
   fileMatch: string[];
@@ -232,12 +257,12 @@ function buildBundleInputJsonSchema(
   url: string;
 } {
   const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
-  const bundleDir = `${root}-bundle`;
-  const bundlePrefix = workspace === '.' ? `/${bundleDir}` : `/${workspace}/${bundleDir}`;
+  const bundlePrefix =
+    workspace === '.' ? `/${bundle.bundleDir}` : `/${workspace}/${bundle.bundleDir}`;
   const schemaUrl =
     workspace === '.'
-      ? `./schemas/${root}/input.json`
-      : `./${workspace}/schemas/${root}/input.json`;
+      ? `./schemas/${bundle.root}/input.json`
+      : `./${workspace}/schemas/${bundle.root}/input.json`;
   return {
     fileMatch: [`${bundlePrefix}/input.json`, `${bundlePrefix}/input.example.json`],
     url: schemaUrl,
@@ -250,21 +275,21 @@ function buildBundleInputJsonSchema(
  * Setting names match the authoritative `open-policy-agent/vscode-opa`
  * extension metadata. Existing conflicting values are preserved and reported.
  *
- * When `bundleRoots` is provided, `opa.roots` and `json.schemas` are populated
+ * When `bundles` is provided, `opa.roots` and `json.schemas` are populated
  * for those bundles. When omitted (init without bundles), `opa.roots` and
  * `json.schemas` are left empty or unset.
  *
  * @param contents - Existing `.vscode/settings.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
- * @param bundleRoots - Bundle roots to add to `opa.roots` and `json.schemas`
+ * @param bundles - Local publish units to add to `opa.roots` and `json.schemas`
  * @returns Merged settings and conflict warnings
  */
 export function mergePolicyEditorSettings(
   contents: string | null,
   repositoryRoot: string,
   workspaceDirectory: string,
-  bundleRoots?: readonly string[],
+  bundles?: readonly PolicyBundleRef[],
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy settings');
   if ('warning' in parsed) {
@@ -274,10 +299,10 @@ export function mergePolicyEditorSettings(
   const updates: JsoncUpdate[] = [];
   const warnings: string[] = [];
 
-  if (bundleRoots && bundleRoots.length > 0) {
+  if (bundles && bundles.length > 0) {
     const roots = current['opa.roots'];
-    const desiredRoots = bundleRoots.map((root) =>
-      buildOpaBundleRoot(repositoryRoot, workspaceDirectory, root),
+    const desiredRoots = bundles.map((bundle) =>
+      buildOpaBundleRoot(repositoryRoot, workspaceDirectory, bundle),
     );
     if (roots === undefined) {
       updates.push({ path: ['opa.roots'], value: desiredRoots });
@@ -339,9 +364,9 @@ export function mergePolicyEditorSettings(
     warnings.push('VS Code setting "files.associations" is customized and was left unchanged.');
   }
 
-  if (bundleRoots && bundleRoots.length > 0) {
-    const desiredJsonSchemas = bundleRoots.map((root) =>
-      buildBundleInputJsonSchema(repositoryRoot, workspaceDirectory, root),
+  if (bundles && bundles.length > 0) {
+    const desiredJsonSchemas = bundles.map((bundle) =>
+      buildBundleInputJsonSchema(repositoryRoot, workspaceDirectory, bundle),
     );
     const jsonSchemas = current['json.schemas'];
     if (jsonSchemas === undefined) {
@@ -497,22 +522,21 @@ export function mergePolicyEditorExtensions(contents: string | null): PolicyEdit
  *
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
- * @param root - Package root name
+ * @param bundle - Package root and local directory basename
  * @returns VS Code task object
  */
 export function buildPolicyLintTask(
   repositoryRoot: string,
   workspaceDirectory: string,
-  root: string = POLICY_STARTER_ROOT,
+  bundle: PolicyBundleRef = policyBundleRef(POLICY_STARTER_ROOT),
 ): Record<string, unknown> {
   const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
-  const bundleDir = `${root}-bundle`;
-  const bundle = workspace === '.' ? bundleDir : `${workspace}/${bundleDir}`;
+  const path = workspace === '.' ? bundle.bundleDir : `${workspace}/${bundle.bundleDir}`;
   return {
-    label: `policy: lint ${root}`,
+    label: `policy: lint ${bundle.root}`,
     type: 'process',
     command: 'transcend',
-    args: ['policy', 'lint', bundle, '--noInteractive'],
+    args: ['policy', 'lint', path, '--noInteractive'],
     group: {
       kind: 'test',
       isDefault: false,
@@ -524,13 +548,15 @@ export function buildPolicyLintTask(
 /**
  * Build the aggregate "policy: lint" task (runs all bundles).
  *
- * @param roots - All bundle root names
+ * @param bundles - Local publish units
  * @returns VS Code task object
  */
-export function buildPolicyAggregateLintTask(roots: readonly string[]): Record<string, unknown> {
+export function buildPolicyAggregateLintTask(
+  bundles: readonly PolicyBundleRef[],
+): Record<string, unknown> {
   return {
     label: 'policy: lint',
-    dependsOn: roots.map((root) => `policy: lint ${root}`),
+    dependsOn: bundles.map((bundle) => `policy: lint ${bundle.root}`),
     dependsOrder: 'sequence',
     group: {
       kind: 'test',
@@ -543,21 +569,21 @@ export function buildPolicyAggregateLintTask(roots: readonly string[]): Record<s
 /**
  * Merge policy lint tasks while preserving custom tasks.
  *
- * When `bundleRoots` is provided, creates per-bundle tasks and an aggregate.
+ * When `bundles` is provided, creates per-bundle tasks and an aggregate.
  * Managed `policy: lint*` tasks are updated in place as roots grow. When
  * omitted, skips task creation (init without bundles).
  *
  * @param contents - Existing `.vscode/tasks.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
- * @param bundleRoots - Bundle roots to generate tasks for
+ * @param bundles - Local publish units to generate tasks for
  * @returns Merged task configuration and warnings
  */
 export function mergePolicyEditorTasks(
   contents: string | null,
   repositoryRoot: string,
   workspaceDirectory: string,
-  bundleRoots?: readonly string[],
+  bundles?: readonly PolicyBundleRef[],
 ): PolicyEditorMergeResult {
   const parsed = parseEditorObject(contents, 'VS Code policy tasks');
   if ('warning' in parsed) {
@@ -573,14 +599,14 @@ export function mergePolicyEditorTasks(
     warnings.push('VS Code task schema version is customized and was left unchanged.');
   }
 
-  if (!bundleRoots || bundleRoots.length === 0) {
+  if (!bundles || bundles.length === 0) {
     return applyEditorUpdates(contents, updates, 'VS Code policy tasks', warnings);
   }
 
-  const desiredPerBundleTasks = bundleRoots.map((root) =>
-    buildPolicyLintTask(repositoryRoot, workspaceDirectory, root),
+  const desiredPerBundleTasks = bundles.map((bundle) =>
+    buildPolicyLintTask(repositoryRoot, workspaceDirectory, bundle),
   );
-  const desiredAggregateTask = buildPolicyAggregateLintTask(bundleRoots);
+  const desiredAggregateTask = buildPolicyAggregateLintTask(bundles);
   const desiredTasks = [...desiredPerBundleTasks, desiredAggregateTask];
   const managedLabels = new Set(desiredTasks.map((task) => task.label as string));
   const tasks = current.tasks;

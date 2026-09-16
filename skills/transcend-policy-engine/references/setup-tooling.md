@@ -36,6 +36,8 @@ After initializing the workspace, add bundles with `transcend policy new`:
 ```sh
 transcend policy new --template generic --name example --yes
 transcend policy new --template permissions --name permissions --yes
+# optional: different local folder than {name}-bundle
+transcend policy new --template permissions --name permissions --bundle-dir my-bundle --yes
 ```
 
 Templates available:
@@ -43,7 +45,11 @@ Templates available:
 - `generic` — A fail-closed teaching entrypoint (default root: `example`)
 - `permissions` — A Permission API starter with purpose preferences (default root: `permissions`)
 
-`policy new` creates the `{name}-bundle/` directory, its `.manifest`, Rego tree,
+`--name` is the Rego package root. `--bundle-dir` is the local folder basename under
+the workspace (default `{name}-bundle`). Remote publish uses `--bundle-name`, which
+is unrelated to the local folder.
+
+`policy new` creates the publish directory, its `.manifest`, Rego tree,
 input fixtures, and input schema. It also merges the root into Regal config and
 updates VS Code settings/tasks when `.vscode` is present.
 
