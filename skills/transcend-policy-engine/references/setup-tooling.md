@@ -77,8 +77,9 @@ Repository-level VS Code settings should include:
 
 - `opa.roots` — one entry per `{root}-bundle/` publish directory
 - `opa.bundleMode: true` — avoid loading fixture JSON as data
-- `json.schemas` — optional validation of `input.json` / `input.example.json`
-  against each bundle's `input.schema.json`
+- `json.schemas` — validates `input.json` / `input.example.json`; Permissions
+  templates point at the published schema `$id`, generic bundles use the local
+  `input.schema.json`
 
 Preserve custom settings and tasks when adapting generated editor files.
 

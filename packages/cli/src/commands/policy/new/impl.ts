@@ -189,7 +189,7 @@ export async function _new(
       name,
     );
     const bundleRefs: PolicyBundleRef[] = allRoots.map((root) =>
-      root === name ? { root, bundleDir } : policyBundleRef(root),
+      root === name ? { root, bundleDir, template } : policyBundleRef(root),
     );
 
     const candidatePaths = [
