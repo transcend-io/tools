@@ -1,6 +1,7 @@
 import yaml from 'js-yaml';
 
 import permissionsPolicyInputSchema from '../../../schema/permissions-policy-input.json' with { type: 'json' };
+import { version as CLI_VERSION } from '../../constants.js';
 
 /** Published Permissions API OPA input schema `$id` (raw GitHub URL). */
 export const PERMISSIONS_POLICY_INPUT_SCHEMA_ID = permissionsPolicyInputSchema.$id;
@@ -50,11 +51,19 @@ export const POLICY_TEMPLATE_NAMES = ['generic', 'permissions'] as const;
 export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
 
 /**
+ * OPA `.manifest` `metadata.transcend.io` key for the CLI version that
+ * generated the scaffold template.
+ */
+export const POLICY_MANIFEST_TEMPLATE_VERSION_KEY = 'templateVersion';
+
+/**
  * Build an OPA bundle manifest for a given root and scaffold template.
  *
- * `metadata.transcend.io.template` is an authoring hint only — Policy Engine
- * upload does not branch on it. Permissions API still keys off the remote
- * bundle name {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
+ * `metadata.transcend.io.template` and `templateVersion` are authoring hints
+ * only — Policy Engine upload does not branch on them. Permissions API still
+ * keys off the remote bundle name {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
+ * `templateVersion` records the `@transcend-io/cli` package version used to
+ * generate the scaffold.
  *
  * @param root - Package root
  * @param template - Scaffold template that produced this bundle
@@ -71,7 +80,8 @@ export function buildPolicyManifestTemplate(
   "rego_version": 1,
   "metadata": {
     "${POLICY_MANIFEST_TRANSCEND_METADATA_KEY}": {
-      "template": "${template}"
+      "template": "${template}",
+      "${POLICY_MANIFEST_TEMPLATE_VERSION_KEY}": "${CLI_VERSION}"
     }
   }
 }
@@ -357,8 +367,9 @@ is the remote name plus where Sombra queries it:
   path.
 
 Scaffolded \`.manifest\` files may include \`metadata.transcend.io.template\`
-(\`generic\` or \`permissions\`) as an authoring hint. Upload ignores it;
-\`policy publish\` may warn when the hint and \`--bundle-name\` disagree.
+(\`generic\` or \`permissions\`) and \`templateVersion\` (the \`@transcend-io/cli\`
+version that generated the scaffold) as authoring hints. Upload ignores them;
+\`policy publish\` may warn when the template hint and \`--bundle-name\` disagree.
 `;
 
 /** Workspace-relative path to the disposable example entrypoint. */

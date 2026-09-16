@@ -69,8 +69,9 @@ transcend policy eval transcend/policy/example-bundle \
   --input transcend/policy/example-bundle/input.json
 ```
 
-Or pipe the envelope with `--stdin-input`. Use `transcend policy eval --help` for
-curated `opa eval` pass-through flags (format, explain, metrics, and similar).
+Or pipe the envelope with `--stdin-input`. `policy eval` ignores `*_test.rego`
+(same as lint/publish — tests are not shipped). Use `transcend policy eval --help`
+for curated `opa eval` pass-through flags (format, explain, metrics, and similar).
 Exit-on-result flags like OPA `--fail` are not exposed — production Evaluate uses
 the Data API (policy deny is a successful evaluation).
 
