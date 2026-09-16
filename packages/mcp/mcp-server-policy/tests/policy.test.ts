@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { getPolicyTools } from '../src/tools/index.js';
 
-const EXPECTED_TOOL_NAMES = ['policy_help', 'policy_status'] as const;
+const EXPECTED_TOOL_NAMES = ['policy_get_templates', 'policy_status'] as const;
 
 describe('Policy MCP read tools', () => {
   const clients = {
@@ -17,15 +17,15 @@ describe('Policy MCP read tools', () => {
     vi.clearAllMocks();
   });
 
-  it('registers help and status tools', () => {
+  it('registers templates and status tools', () => {
     const tools = getPolicyTools(clients);
     expect(tools).toHaveLength(2);
     expect(tools.map((tool) => tool.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
-  describe('policy_help', () => {
+  describe('policy_get_templates', () => {
     it('returns template list by default', async () => {
-      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_help')!;
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
       const result = await tool.handler({});
       expect(result).toMatchObject({
         success: true,
@@ -37,7 +37,7 @@ describe('Policy MCP read tools', () => {
     });
 
     it('returns template files when templateId is set', async () => {
-      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_help')!;
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
       const result = await tool.handler({ templateId: 'starter' });
       expect(result).toMatchObject({
         success: true,

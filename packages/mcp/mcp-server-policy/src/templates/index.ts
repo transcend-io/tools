@@ -1,6 +1,6 @@
 /** Metadata for an embedded policy starter template. */
 export interface PolicyTemplateSummary {
-  /** Template identifier passed to policy_help */
+  /** Template identifier passed to policy_get_templates */
   id: string;
   /** Short human-readable name */
   title: string;
@@ -47,7 +47,7 @@ const STARTER_SAMPLE_INPUT = `{
 }
 `;
 
-/** Embedded starter templates for policy_help. */
+/** Embedded starter templates for policy_get_templates. */
 export const POLICY_TEMPLATES: Record<string, PolicyTemplateFiles & PolicyTemplateSummary> = {
   starter: {
     id: 'starter',
@@ -71,7 +71,7 @@ export const POLICY_TEMPLATES: Record<string, PolicyTemplateFiles & PolicyTempla
  * @param templateId - Optional template id
  * @returns Templates, or template files only
  */
-export function resolvePolicyHelpContent(templateId?: string): {
+export function resolvePolicyGetTemplatesContent(templateId?: string): {
   /** Template summaries (list mode only) */
   templates?: PolicyTemplateSummary[];
   /** Scaffold files when `templateId` is set */

@@ -4,4 +4,4 @@
 
 ### Minor Changes
 
-- Initial release with Policy Engine MCP tools: `policy_help`, `policy_status`, `policy_publish`, and `policy_set_live`.
+- Initial release with Policy Engine MCP tools: `policy_get_templates`, `policy_status`, `policy_publish`, and `policy_set_live`.
