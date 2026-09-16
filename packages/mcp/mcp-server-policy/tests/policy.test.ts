@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { ErrorCode } from '@transcend-io/mcp-server-base';
+import { MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
@@ -174,6 +176,24 @@ describe('Policy MCP tools', () => {
           'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
         }),
       ).rejects.toThrow(/relative/);
+    });
+
+    it('rejects oversize bundles as non-retryable ToolError with shrink guidance', async () => {
+      // Highly compressible text can still pass the compressed check; blow the
+      // decompressed limit so the recovery path is exercised deterministically.
+      const oversizedRego =
+        'package policy_engine\n\n' + `${'x'.repeat(MAX_BUNDLE_DECOMPRESSED_BYTES)}\n`;
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+          'policy_engine/decision.rego': oversizedRego,
+        }),
+      ).rejects.toMatchObject({
+        name: 'ToolError',
+        code: ErrorCode.VALIDATION_ERROR,
+        retryable: false,
+        message: expect.stringMatching(/Shrink the \.rego policies/),
+      });
     });
   });
 

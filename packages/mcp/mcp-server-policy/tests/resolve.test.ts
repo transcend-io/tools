@@ -1,3 +1,4 @@
+import { ErrorCode } from '@transcend-io/mcp-server-base';
 import { describe, expect, it, vi } from 'vitest';
 
 import { getPolicyBundleVersion } from '../src/helpers/policyCliOperations.js';
@@ -96,5 +97,20 @@ describe('policy resolve helpers', () => {
 
     await expect(getPolicyBundleVersion({ get } as never, 'version-id')).resolves.toEqual(detail);
     expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundle-versions/version-id');
+  });
+
+  it('resolvePolicyBundleVersion points agents to policy_status for a missing versionId', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockRejectedValue({ response: { statusCode: 404 } }),
+    });
+
+    await expect(
+      resolvePolicyBundleVersion({ get } as never, 'bundle-id', { versionId: 'missing-version' }),
+    ).rejects.toMatchObject({
+      name: 'ToolError',
+      code: ErrorCode.NOT_FOUND,
+      retryable: false,
+      message: expect.stringMatching(/policy_status/),
+    });
   });
 });

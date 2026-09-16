@@ -1,3 +1,4 @@
+import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import type { Got } from 'got';
 
 import {
@@ -10,6 +11,21 @@ import type {
   PolicyBundleVersion,
   PolicyBundleVersionListResponse,
 } from './types.js';
+
+/**
+ * Message for a missing or wrong-bundle version UUID, with recovery via policy_status.
+ *
+ * @param versionId - Caller-supplied version UUID
+ * @returns Agent-oriented not-found message
+ */
+function versionIdNotFoundMessage(versionId: string): string {
+  return (
+    `Version id "${versionId}" was not found for this policy bundle. ` +
+    'Call policy_status with this bundle (omit versionId) to list valid version ids and labels.'
+  );
+}
+
+export { versionIdNotFoundMessage };
 
 /** Options for resolving a policy bundle version. */
 export interface ResolvePolicyBundleVersionOptions {
@@ -91,7 +107,7 @@ async function resolvePolicyBundleVersionById(
       'response' in error &&
       (error as { response?: { statusCode?: number } }).response?.statusCode === 404
     ) {
-      throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+      throw new ToolError(ErrorCode.NOT_FOUND, versionIdNotFoundMessage(versionId), false);
     }
     throwPolicyEngineRequestError(error);
   }
@@ -101,7 +117,7 @@ async function resolvePolicyBundleVersionById(
   );
 
   if (body.bundleName !== bundle.bundleName) {
-    throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+    throw new ToolError(ErrorCode.NOT_FOUND, versionIdNotFoundMessage(versionId), false);
   }
 
   return mapGetPolicyBundleVersionResponse(body);
@@ -135,9 +151,18 @@ export async function resolvePolicyBundleVersion(
 
   if (!match) {
     if (options.version) {
-      throw new Error(`Version "${options.version}" was not found for this policy bundle.`);
+      throw new ToolError(
+        ErrorCode.NOT_FOUND,
+        `Version "${options.version}" was not found for this policy bundle. ` +
+          'Call policy_status with this bundle (omit versionId) to list valid version ids and labels.',
+        false,
+      );
     }
-    throw new Error('No versions found for this policy bundle.');
+    throw new ToolError(
+      ErrorCode.NOT_FOUND,
+      'No versions found for this policy bundle. Call policy_status with this bundle to confirm uploads.',
+      false,
+    );
   }
 
   return match;
