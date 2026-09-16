@@ -28,8 +28,12 @@ export interface PolicyBundleVersion {
   sizeBytes: number;
   /** Human-readable description */
   description: string | null;
-  /** Actor who uploaded the version */
-  createdBy: string;
+  /**
+   * Actor who uploaded the version.
+   * Present on list responses; omitted when mapping the nested get-version detail
+   * endpoint, which does not return this field.
+   */
+  createdBy?: string;
   /** When the version was activated, if ever */
   activatedAt: string | null;
   /** When the version was deactivated, if ever */

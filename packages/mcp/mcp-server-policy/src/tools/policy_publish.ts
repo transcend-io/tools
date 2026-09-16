@@ -1,6 +1,6 @@
 import { createToolResult, defineTool, z } from '@transcend-io/mcp-server-base';
 
-import { listPolicyBundles, publishPolicyBundle } from '../helpers/policyCliOperations.js';
+import { publishPolicyBundle, resolvePolicyBundle } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
 
 export const PolicyPublishSchema = z
@@ -13,7 +13,7 @@ export const PolicyPublishSchema = z
       .record(z.string(), z.string())
       .optional()
       .describe(
-        'Path → contents map (policy_get_templates templateFiles.files). Mutually exclusive with dir.',
+        'Relative path → file contents (manifest.json + .rego). Same map as policy_get_templates scaffold output. Mutually exclusive with dir.',
       ),
     bundleName: z.string().describe('Tenant-unique policy bundle name'),
     version: z
@@ -51,17 +51,7 @@ export function createPolicyPublishTool(clients: PolicyToolClients) {
       const bundle =
         'bundle' in response
           ? response.bundle
-          : (
-              await listPolicyBundles(client, {
-                bundleName,
-                limit: 1,
-                offset: 0,
-              })
-            ).nodes[0];
-
-      if (!bundle) {
-        throw new Error(`Policy bundle "${bundleName}" was not found.`);
-      }
+          : await resolvePolicyBundle(client, { bundleName });
 
       return createToolResult(true, {
         message: 'Uploaded inert version. Call policy_set_live with action "activate" to go live.',

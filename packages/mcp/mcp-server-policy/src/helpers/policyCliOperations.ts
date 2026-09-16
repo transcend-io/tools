@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import type { Got } from 'got';
 
 import { buildPolicyBundleFormData } from './buildPolicyBundleFormData.js';
@@ -93,6 +94,58 @@ export async function getPolicyBundleById(
     }
     throwPolicyEngineRequestError(error);
   }
+}
+
+/** Options for resolving a policy bundle by UUID or tenant-unique name. */
+export interface ResolvePolicyBundleOptions {
+  /** Bundle UUID */
+  bundleId?: string;
+  /** Tenant-unique bundle name */
+  bundleName?: string;
+}
+
+/**
+ * Resolves a policy bundle by UUID or tenant-unique name.
+ *
+ * @param client - Policy Engine REST client
+ * @param options - Bundle UUID and/or name
+ * @returns Matching bundle
+ */
+export async function resolvePolicyBundle(
+  client: Got,
+  options: ResolvePolicyBundleOptions,
+): Promise<PolicyBundle> {
+  if (options.bundleId) {
+    const byId = await getPolicyBundleById(client, options.bundleId);
+    if (byId) {
+      return byId;
+    }
+    throw new ToolError(
+      ErrorCode.NOT_FOUND,
+      `Policy bundle with id "${options.bundleId}" was not found.`,
+      false,
+    );
+  }
+
+  if (options.bundleName) {
+    const byName = (
+      await listPolicyBundles(client, {
+        bundleName: options.bundleName,
+        limit: 1,
+        offset: 0,
+      })
+    ).nodes[0];
+    if (byName) {
+      return byName;
+    }
+    throw new ToolError(
+      ErrorCode.NOT_FOUND,
+      `Policy bundle "${options.bundleName}" was not found.`,
+      false,
+    );
+  }
+
+  throw new ToolError(ErrorCode.VALIDATION_ERROR, 'Provide bundleId or bundleName.', false);
 }
 
 /**
@@ -265,7 +318,6 @@ function mapGetPolicyBundleVersionResponse(
     sha256: body.sha256,
     sizeBytes: body.sizeBytes,
     description: body.description,
-    createdBy: '',
     activatedAt: body.activatedAt,
     deactivatedAt: body.deactivatedAt,
     createdAt: body.uploadedAt,
@@ -284,16 +336,7 @@ export async function activatePolicyBundleVersion(
   client: Got,
   options: ActivatePolicyBundleOptions,
 ): Promise<ActivatePolicyBundleVersionResponse> {
-  const bundle = (
-    await listPolicyBundles(client, {
-      bundleName: options.bundleName,
-      limit: 1,
-      offset: 0,
-    })
-  ).nodes[0];
-  if (!bundle) {
-    throw new Error(`Policy bundle "${options.bundleName}" was not found.`);
-  }
+  const bundle = await resolvePolicyBundle(client, { bundleName: options.bundleName });
 
   let resolvedVersion: PolicyBundleVersion;
   if (options.versionId) {
@@ -307,9 +350,13 @@ export async function activatePolicyBundleVersion(
     const match = (await listPolicyBundleVersions(client, bundle.id, searchParams)).nodes[0];
     if (!match) {
       if (options.version) {
-        throw new Error(`Version "${options.version}" was not found for this policy bundle.`);
+        throw new ToolError(
+          ErrorCode.NOT_FOUND,
+          `Version "${options.version}" was not found for this policy bundle.`,
+          false,
+        );
       }
-      throw new Error('No versions found for this policy bundle.');
+      throw new ToolError(ErrorCode.NOT_FOUND, 'No versions found for this policy bundle.', false);
     }
     resolvedVersion = match;
   }
@@ -327,9 +374,10 @@ export async function activatePolicyBundleVersion(
     const statusCode = (error as { cause?: { response?: { statusCode?: number } } })?.cause
       ?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(
+      throw new ToolError(
+        ErrorCode.API_ERROR,
         `Version "${resolvedVersion.version}" of policy bundle "${options.bundleName}" is already the active version.`,
-        { cause: error },
+        false,
       );
     }
     throw error;
@@ -347,16 +395,7 @@ export async function deactivatePolicyBundle(
   client: Got,
   bundleName: string,
 ): Promise<DeactivatePolicyBundleResponse> {
-  const bundle = (
-    await listPolicyBundles(client, {
-      bundleName,
-      limit: 1,
-      offset: 0,
-    })
-  ).nodes[0];
-  if (!bundle) {
-    throw new Error(`Policy bundle "${bundleName}" was not found.`);
-  }
+  const bundle = await resolvePolicyBundle(client, { bundleName });
 
   try {
     return await policyEngineRequest(
@@ -368,7 +407,11 @@ export async function deactivatePolicyBundle(
     const statusCode = (error as { cause?: { response?: { statusCode?: number } } })?.cause
       ?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(`Policy bundle "${bundleName}" has no active version.`, { cause: error });
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        `Policy bundle "${bundleName}" has no active version.`,
+        false,
+      );
     }
     throw error;
   }

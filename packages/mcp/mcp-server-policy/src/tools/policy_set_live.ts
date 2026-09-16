@@ -1,10 +1,9 @@
-import { createToolResult, defineTool, z } from '@transcend-io/mcp-server-base';
+import { createToolResult, defineTool, ErrorCode, ToolError, z } from '@transcend-io/mcp-server-base';
 
 import {
   activatePolicyBundleVersion,
   deactivatePolicyBundle,
-  getPolicyBundleById,
-  listPolicyBundles,
+  resolvePolicyBundle,
 } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
 
@@ -38,27 +37,7 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
     handler: async ({ action, bundleId, bundleName, versionId, version }) => {
       const client = createPolicyEngineClient(clients);
 
-      const bundle = bundleId
-        ? await getPolicyBundleById(client, bundleId)
-        : bundleName
-          ? (
-              await listPolicyBundles(client, {
-                bundleName,
-                limit: 1,
-                offset: 0,
-              })
-            ).nodes[0]
-          : undefined;
-
-      if (!bundle) {
-        throw new Error(
-          bundleId
-            ? `Policy bundle with id "${bundleId}" was not found.`
-            : bundleName
-              ? `Policy bundle "${bundleName}" was not found.`
-              : 'Provide bundleId or bundleName.',
-        );
-      }
+      const bundle = await resolvePolicyBundle(client, { bundleId, bundleName });
 
       if (action === 'deactivate') {
         const response = await deactivatePolicyBundle(client, bundle.bundleName);
@@ -71,7 +50,11 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
       }
 
       if (!versionId && !version) {
-        throw new Error('Provide versionId or version when action is "activate".');
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'Provide versionId or version when action is "activate".',
+          false,
+        );
       }
 
       const response = await activatePolicyBundleVersion(client, {

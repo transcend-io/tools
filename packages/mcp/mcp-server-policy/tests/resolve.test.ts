@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@transcend-io/mcp-server-base';
+
 import {
   getPolicyBundleById,
   getPolicyBundleVersion,
   listPolicyBundles,
+  resolvePolicyBundle,
 } from '../src/helpers/policyCliOperations.js';
 import type { GetPolicyBundleVersionResponse, PolicyBundle } from '../src/helpers/types.js';
 
@@ -54,6 +57,58 @@ describe('policyCliOperations', () => {
     });
 
     await expect(getPolicyBundleById({ get } as never, 'missing-id')).resolves.toBeUndefined();
+  });
+
+  it('resolvePolicyBundle resolves by id', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        bundle: sampleBundle,
+      }),
+    });
+
+    await expect(
+      resolvePolicyBundle({ get } as never, { bundleId: 'bundle-id' }),
+    ).resolves.toEqual(sampleBundle);
+  });
+
+  it('resolvePolicyBundle resolves by name', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        nodes: [sampleBundle],
+        totalCount: 1,
+      }),
+    });
+
+    await expect(
+      resolvePolicyBundle({ get } as never, { bundleName: 'main' }),
+    ).resolves.toEqual(sampleBundle);
+  });
+
+  it('resolvePolicyBundle throws non-retryable NOT_FOUND when missing', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+      }),
+    });
+
+    await expect(
+      resolvePolicyBundle({ get } as never, { bundleName: 'missing' }),
+    ).rejects.toMatchObject({
+      name: 'ToolError',
+      code: ErrorCode.NOT_FOUND,
+      retryable: false,
+      message: 'Policy bundle "missing" was not found.',
+    });
+  });
+
+  it('resolvePolicyBundle throws non-retryable VALIDATION_ERROR without id or name', async () => {
+    await expect(resolvePolicyBundle({ get: vi.fn() } as never, {})).rejects.toMatchObject({
+      name: 'ToolError',
+      code: ErrorCode.VALIDATION_ERROR,
+      retryable: false,
+      message: 'Provide bundleId or bundleName.',
+    });
   });
 
   it('getPolicyBundleVersion uses the nested bundle version endpoint', async () => {
