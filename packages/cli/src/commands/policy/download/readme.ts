@@ -9,14 +9,14 @@ const examples = buildExamples<DownloadCommandFlags>(
     {
       description: 'Download the currently active version of a policy bundle',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
     {
       description: 'Download a specific compiled policy bundle version to the default path',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: '2026-06-25',
         auth: '$TRANSCEND_API_KEY',
       },
@@ -24,7 +24,7 @@ const examples = buildExamples<DownloadCommandFlags>(
     {
       description: 'Download to an explicit output path',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: '2026-06-25',
         auth: '$TRANSCEND_API_KEY',
         output: './bundles/main-2026-06-25.tar.gz',
@@ -33,7 +33,7 @@ const examples = buildExamples<DownloadCommandFlags>(
     {
       description: 'Print version metadata and the presigned URL as JSON without writing a file',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: '2026-06-25',
         auth: '$TRANSCEND_API_KEY',
         json: true,
@@ -42,7 +42,7 @@ const examples = buildExamples<DownloadCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
       },
     },
   ],

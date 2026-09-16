@@ -29,7 +29,7 @@ import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } fr
 /** CLI flags for `transcend policy publish`. */
 export interface PublishCommandFlags {
   /** Tenant-unique bundle name */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
@@ -56,7 +56,7 @@ export interface PublishCommandFlags {
 export async function publish(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     auth,
     'transcend-url': transcendUrl,
     version,
@@ -164,7 +164,7 @@ export async function publish(
 
     const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
       version: responseBody.version.version,
-      'bundle-name': bundleName,
+      'remote-bundle-name': bundleName,
     });
     commandLogger.info(
       colors.yellow(

@@ -17,7 +17,7 @@ import type { PolicyBundleVersionListResponse } from '../types.js';
 /** CLI flags for `transcend policy versions`. */
 export interface VersionsCommandFlags {
   /** Tenant-unique bundle name */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
@@ -41,7 +41,7 @@ export interface VersionsCommandFlags {
 export async function versions(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     auth,
     'transcend-url': transcendUrl,
     limit,

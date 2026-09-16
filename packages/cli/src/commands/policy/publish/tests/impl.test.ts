@@ -99,7 +99,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: true,
@@ -129,7 +129,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -166,7 +166,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'consent',
+        'remote-bundle-name': 'consent',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -176,7 +176,7 @@ describe('publish', () => {
     );
 
     expect(post).toHaveBeenCalled();
-    expect(context.stderr).toContain('--bundle-name=permissions');
+    expect(context.stderr).toContain('--remote-bundle-name=permissions');
   });
 
   it('does not prompt in JSON mode when a new bundle needs confirmation', async () => {
@@ -187,7 +187,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: true,
@@ -223,7 +223,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -248,7 +248,7 @@ describe('publish', () => {
     await publish.call(
       context,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -275,7 +275,7 @@ describe('publish', () => {
     await publish.call(
       nonInteractiveContext,
       {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,

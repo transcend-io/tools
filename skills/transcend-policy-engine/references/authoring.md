@@ -29,8 +29,8 @@ example-bundle/               # transcend policy publish … <dir>
 
 Permissions starters use the same layout. Upload does not branch on template
 metadata; Permissions API still loads only the remote bundle named
-`permissions` (publish with `--bundle-name=permissions`). Local folder
-(`--bundle-dir` / `{root}-bundle/`) and remote `--bundle-name` are independent.
+`permissions` (publish with `--remote-bundle-name=permissions`). Local folder
+(`--bundle-dir` / `{root}-bundle/`) and remote `--remote-bundle-name` are independent.
 
 OPA `.rego` placement follows the `package` line; `data.json` paths follow the
 filesystem and must sit under the manifest root prefix on disk.

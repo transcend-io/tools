@@ -88,7 +88,7 @@ describe('Policy Engine Agent Skill', () => {
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('{root}-bundle/');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend policy publish --help');
-    expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('--bundle-name=permissions');
+    expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('--remote-bundle-name=permissions');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('transcend.io');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('"template"');
     expect(POLICY_PUBLISHING_REFERENCE_MD).toContain('templateVersion');

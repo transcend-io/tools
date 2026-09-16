@@ -9,7 +9,7 @@ describe('formatPolicyPublishBundleNameHint', () => {
         template: 'permissions',
         roots: ['consent'],
       }),
-    ).toMatch(/--bundle-name=permissions/);
+    ).toMatch(/--remote-bundle-name=permissions/);
   });
 
   it('warns when the reserved permissions name is used for a generic template', () => {

@@ -9,7 +9,7 @@ const examples = buildExamples<ActivateCommandFlags>(
     {
       description: 'Activate the latest uploaded version for a bundle',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
@@ -17,7 +17,7 @@ const examples = buildExamples<ActivateCommandFlags>(
       description: 'Activate a specific version label by bundle name',
       flags: {
         version: 'abc123',
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
@@ -25,7 +25,7 @@ const examples = buildExamples<ActivateCommandFlags>(
       description: 'Validate activation without flipping the active version',
       flags: {
         version: 'abc123',
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         'dry-run': true,
       },
@@ -33,7 +33,7 @@ const examples = buildExamples<ActivateCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
       },
     },
   ],

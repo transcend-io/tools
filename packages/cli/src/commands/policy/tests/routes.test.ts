@@ -122,7 +122,7 @@ describe('policy routes', () => {
       await run(app, ['policy', command, '--help'], context);
 
       const output = `${context.stdout}\n${context.stderr}`;
-      expect(output).toContain('--bundle-name');
+      expect(output).toContain('--remote-bundle-name');
     },
   );
 });

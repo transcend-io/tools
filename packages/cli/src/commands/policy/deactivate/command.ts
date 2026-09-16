@@ -7,7 +7,7 @@ import {
 } from '../../../lib/cli/common-parameters.js';
 import {
   createPolicyDebugParameter,
-  policyBundleNameParameter,
+  policyRemoteBundleNameParameter,
   policyJsonParameter,
 } from '../helpers/policyCommandParameters.js';
 
@@ -18,7 +18,7 @@ export const deactivateCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': policyBundleNameParameter,
+      'remote-bundle-name': policyRemoteBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ActivatePolicyEngineBundles],
       }),

@@ -50,8 +50,8 @@ Naming triad (keep these distinct):
 - `--name` — Rego / `.manifest` package root
 - `--bundle-dir` — local publish folder basename under the workspace (default
   `{name}-bundle`)
-- `--bundle-name` — remote Policy Engine name at upload time; unrelated to the
-  local folder
+- `--remote-bundle-name` — remote Policy Engine name at upload time; unrelated to
+  the local folder
 
 Workspace schemas live at `schemas/{root}/` and are shared across publish
 directories with the same root.

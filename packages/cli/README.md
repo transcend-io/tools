@@ -4142,20 +4142,20 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate (--bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json] [--debug]
+  transcend policy activate (--remote-bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json] [--debug]
   transcend policy activate --help
 
 Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
-     [--version]          Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
-      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
-     [--dry-run]          Validate activation without flipping the active version                                                                                                                                             [default = false]
-     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
-     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
-  -h  --help              Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+     [--version]            Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--dry-run]            Validate activation without flipping the active version                                                                                                                                             [default = false]
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -4163,25 +4163,25 @@ FLAGS
 **Activate the latest uploaded version for a bundle**
 
 ```sh
-transcend policy activate --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy activate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Activate a specific version label by bundle name**
 
 ```sh
-transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy activate --version=abc123 --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Validate activation without flipping the active version**
 
 ```sh
-transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY" --dry-run
+transcend policy activate --version=abc123 --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --dry-run
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy activate --bundle-name=main
+transcend policy activate --remote-bundle-name=main
 ```
 
 Requires the **Activate Policy** scope on your API key.
@@ -4190,18 +4190,18 @@ Requires the **Activate Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy deactivate (--bundle-name value) (--auth value) [--transcend-url value] [--json] [--debug]
+  transcend policy deactivate (--remote-bundle-name value) (--auth value) [--transcend-url value] [--json] [--debug]
   transcend policy deactivate --help
 
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
-      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
-     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
-     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
-  -h  --help              Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -4209,19 +4209,19 @@ FLAGS
 **Deactivate the active version of a bundle by name**
 
 ```sh
-transcend policy deactivate --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy deactivate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Print the raw JSON response**
 
 ```sh
-transcend policy deactivate --bundle-name=main --auth="$TRANSCEND_API_KEY" --json
+transcend policy deactivate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --json
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy deactivate --bundle-name=main
+transcend policy deactivate --remote-bundle-name=main
 ```
 
 Requires the **Activate Policy** scope on your API key.
@@ -4230,20 +4230,20 @@ Requires the **Activate Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy download (--bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json] [--debug]
+  transcend policy download (--remote-bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json] [--debug]
   transcend policy download --help
 
 Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
-     [--version]          Caller-supplied version label to download; defaults to the bundle's currently active version
-     [--output]           Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
-      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
-     [--json]             Print version metadata and the presigned download URL as JSON without writing a file                                                                                                                [default = false]
-     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
-  -h  --help              Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+     [--version]            Caller-supplied version label to download; defaults to the bundle's currently active version
+     [--output]             Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]               Print version metadata and the presigned download URL as JSON without writing a file                                                                                                                [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -4251,20 +4251,20 @@ FLAGS
 **Download the currently active version of a policy bundle**
 
 ```sh
-transcend policy download --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy download --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Download a specific compiled policy bundle version to the default path**
 
 ```sh
-transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
+transcend policy download --remote-bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
 ```
 
 **Download to an explicit output path**
 
 ```sh
 transcend policy download \
-  --bundle-name=main \
+  --remote-bundle-name=main \
   --version=2026-06-25 \
   --auth="$TRANSCEND_API_KEY" \
   --output=./bundles/main-2026-06-25.tar.gz
@@ -4273,13 +4273,13 @@ transcend policy download \
 **Print version metadata and the presigned URL as JSON without writing a file**
 
 ```sh
-transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY" --json
+transcend policy download --remote-bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY" --json
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy download --bundle-name=main
+transcend policy download --remote-bundle-name=main
 ```
 
 Requires the **View Policy** scope on your API key.
@@ -4449,16 +4449,16 @@ USAGE
   transcend policy new [--name value] [--bundle-dir value] [--template generic|permissions] [--noInteractive] [--dryRun] [--yes] [--json] [<workspace>]
   transcend policy new --help
 
-Adds a publishable bundle directory to an initialized policy workspace. `--name` is the Rego package root; `--bundle-dir` is the local folder basename under the workspace (defaults to `{name}-bundle`). This is not the remote Policy Engine `--bundle-name` used at publish time. Requires `.regal/config.yaml` (run `transcend policy init` first). Creates bundle files, merges the root into Regal config, and updates editor setup when present.
+Adds a publishable bundle directory to an initialized policy workspace. `--name` is the Rego package root; `--bundle-dir` is the local folder basename under the workspace (defaults to `{name}-bundle`). This is not the remote Policy Engine `--remote-bundle-name` used at publish time. Requires `.regal/config.yaml` (run `transcend policy init` first). Creates bundle files, merges the root into Regal config, and updates editor setup when present.
 
 FLAGS
-     [--name]           Rego / .manifest package root (not the remote --bundle-name); default folder is {name}-bundle/
-     [--bundle-dir]     Local publish folder basename under the workspace (default: {name}-bundle; not --bundle-name)
-     [--template]       Bundle template                                                                                [generic|permissions]
-     [--noInteractive]  Disable prompts and require explicit --name and --template                                     [default = false]
-     [--dryRun]         Preview changes without applying them                                                          [default = false]
-     [--yes]            Skip only the final plan confirmation                                                          [default = false]
-     [--json]           Emit stable JSON output and disable prompts                                                    [default = false]
+     [--name]           Rego / .manifest package root (not the remote --remote-bundle-name); default folder is {name}-bundle/
+     [--bundle-dir]     Local publish folder basename under the workspace (default: {name}-bundle; not --remote-bundle-name)
+     [--template]       Bundle template                                                                                       [generic|permissions]
+     [--noInteractive]  Disable prompts and require explicit --name and --template                                            [default = false]
+     [--dryRun]         Preview changes without applying them                                                                 [default = false]
+     [--yes]            Skip only the final plan confirmation                                                                 [default = false]
+     [--json]           Emit stable JSON output and disable prompts                                                           [default = false]
   -h  --help            Print help information and exit
 
 ARGUMENTS
@@ -4495,7 +4495,7 @@ Requires an initialized workspace (`transcend policy init` first). Naming triad:
 
 - `--name` — Rego / `.manifest` package root (default local folder: `{name}-bundle/`)
 - `--bundle-dir` — local publish directory basename under the workspace only
-- `--bundle-name` (on `policy publish`) — remote Policy Engine name; unrelated to the local folder
+- `--remote-bundle-name` (on `policy publish`) — remote Policy Engine name; unrelated to the local folder
 
 The positional argument is the **workspace** (default `transcend/policy`).
 
@@ -4544,21 +4544,21 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] <bundle>
+  transcend policy publish (--remote-bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] <bundle>
   transcend policy publish --help
 
 Packages `.manifest` and `.rego` policy files from one local bundle directory into a tarball and uploads it to Transcend. Requires an explicit directory containing a `.manifest`. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
-      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
-     [--version]          Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
-     [--description]      Optional description for the uploaded version
-     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
-     [--yes]              Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                              [default = false]
-     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
-  -h  --help              Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--version]            Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
+     [--description]        Optional description for the uploaded version
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--yes]                Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                              [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 
 ARGUMENTS
   bundle  Local policy bundle directory containing a .manifest
@@ -4569,14 +4569,14 @@ ARGUMENTS
 **Publish a local policy bundle as the main bundle**
 
 ```sh
-transcend policy publish transcend/policy/example-bundle --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/example-bundle --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Publish with an explicit version label and description**
 
 ```sh
 transcend policy publish transcend/policy/example-bundle \
-  --bundle-name=main \
+  --remote-bundle-name=main \
   --auth="$TRANSCEND_API_KEY" \
   --version=2026-06-25 \
   --description="Quarterly policy update"
@@ -4586,7 +4586,7 @@ transcend policy publish transcend/policy/example-bundle \
 
 ```sh
 transcend policy publish transcend/policy/example-bundle \
-  --bundle-name=common \
+  --remote-bundle-name=common \
   --auth="$TRANSCEND_API_KEY" \
   --transcend-url=https://api.us.transcend.io
 ```
@@ -4594,16 +4594,18 @@ transcend policy publish transcend/policy/example-bundle \
 **Publish the Permissions API bundle (fixed remote name)**
 
 ```sh
-transcend policy publish transcend/policy/permissions-bundle --bundle-name=permissions --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/permissions-bundle \
+  --remote-bundle-name=permissions \
+  --auth="$TRANSCEND_API_KEY"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy publish transcend/policy/example-bundle --bundle-name=main
+transcend policy publish transcend/policy/example-bundle --remote-bundle-name=main
 ```
 
-`--bundle-name` is the remote Policy Engine name (not the local folder). The `<bundle>`
+`--remote-bundle-name` is the remote Policy Engine name (not the local folder). The `<bundle>`
 positional is the local publish directory containing a `.manifest`.
 
 Requires the **Manage Policy** scope on your API key.
@@ -4667,20 +4669,20 @@ With no directory argument, `policy test` runs every immediate child under the d
 
 ```txt
 USAGE
-  transcend policy versions (--bundle-name value) (--auth value) [--transcend-url value] [--limit value] [--after value] [--json] [--debug]
+  transcend policy versions (--remote-bundle-name value) (--auth value) [--transcend-url value] [--limit value] [--after value] [--json] [--debug]
   transcend policy versions --help
 
 Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --bundle-name       Remote Policy Engine bundle name (not the local folder or --name root)
-      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]            Maximum number of versions to return (1-100)                                                                                                                                                        [default = 50]
-     [--after]            Opaque cursor from a previous response pageInfo.endCursor
-     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
-     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
-  -h  --help              Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--limit]              Maximum number of versions to return (1-100)                                                                                                                                                        [default = 50]
+     [--after]              Opaque cursor from a previous response pageInfo.endCursor
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -4688,19 +4690,19 @@ FLAGS
 **List versions for a policy bundle**
 
 ```sh
-transcend policy versions --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy versions --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Fetch the next page of versions using an after cursor**
 
 ```sh
-transcend policy versions --bundle-name=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
+transcend policy versions --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy versions --bundle-name=main
+transcend policy versions --remote-bundle-name=main
 ```
 
 Requires the **View Policy** scope on your API key.

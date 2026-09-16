@@ -17,7 +17,7 @@ import type { DeactivatePolicyBundleResponse } from '../types.js';
 /** CLI flags for `transcend policy deactivate`. */
 export interface DeactivateCommandFlags {
   /** Logical bundle name to deactivate */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
@@ -31,7 +31,7 @@ export interface DeactivateCommandFlags {
 /**
  * Deactivate the currently active version of a policy bundle.
  *
- * Resolves `--bundle-name` to the parent bundle UUID internally, then calls the
+ * Resolves `--remote-bundle-name` to the parent bundle UUID internally, then calls the
  * Policy Engine deactivate endpoint. The bundle is addressed by name only -- the
  * UUID is never exposed to the operator.
  *
@@ -41,7 +41,7 @@ export interface DeactivateCommandFlags {
 export async function deactivate(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     auth,
     'transcend-url': transcendUrl,
     json,

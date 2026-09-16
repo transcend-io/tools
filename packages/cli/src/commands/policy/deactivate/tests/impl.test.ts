@@ -56,7 +56,7 @@ describe('deactivate', () => {
     resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
 
     await deactivate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       json: false,
@@ -79,7 +79,7 @@ describe('deactivate', () => {
     resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
 
     await deactivate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       json: true,
@@ -98,7 +98,7 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        'bundle-name': 'missing',
+        'remote-bundle-name': 'missing',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -125,7 +125,7 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
@@ -148,7 +148,7 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         json: false,
