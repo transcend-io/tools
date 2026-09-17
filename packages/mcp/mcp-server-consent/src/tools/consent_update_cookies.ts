@@ -13,7 +13,9 @@ export const UpdateCookieItemSchema = z.object({
   trackingPurposes: z
     .array(z.string())
     .optional()
-    .describe('Tracking purpose slugs (e.g., "Advertising", "Analytics")'),
+    .describe(
+      'Tracking purpose slugs (e.g., "Advertising", "Analytics"). Pass an empty array to clear all purposes.',
+    ),
   description: z.string().optional().describe('Cookie description'),
   service: z.string().optional().describe('Service/integration name'),
   isJunk: z.boolean().optional().describe('Mark as junk'),
@@ -44,7 +46,9 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const cookieInputs: TranscendUpdateCookieInputGql[] = cookies.map((c) => ({
         name: c.name,
-        ...(c.trackingPurposes ? { trackingPurposes: c.trackingPurposes } : {}),
+        // Use !== undefined so an empty array (clear all purposes) is sent to the API.
+        // Truthiness would drop `[]` and leave server purposes unchanged.
+        ...(c.trackingPurposes !== undefined ? { trackingPurposes: c.trackingPurposes } : {}),
         ...(c.description !== undefined ? { description: c.description } : {}),
         ...(c.service !== undefined ? { service: c.service } : {}),
         ...(c.isJunk !== undefined ? { isJunk: c.isJunk } : {}),

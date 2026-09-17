@@ -156,9 +156,8 @@ function triageUpdateFields(
     return {
       status: ConsentTrackerStatus.Live,
       isJunk: false,
-      ...(item.trackingPurposes && item.trackingPurposes.length > 0
-        ? { trackingPurposes: item.trackingPurposes }
-        : {}),
+      // Include empty arrays so clearing purposes before approve is persisted.
+      ...(item.trackingPurposes !== undefined ? { trackingPurposes: item.trackingPurposes } : {}),
     };
   }
   if (decision === CookieTriageDecision.Junk) {

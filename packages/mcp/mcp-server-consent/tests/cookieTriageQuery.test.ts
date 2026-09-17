@@ -226,6 +226,43 @@ describe('buildTriageUpdateArgs', () => {
     });
   });
 
+  it('approves cookies with an empty trackingPurposes array so cleared purposes persist', () => {
+    expect(
+      buildTriageUpdateArgs(
+        ConsentTriageType.Cookies,
+        { name: '_ga', id: 'cookie-1', trackingPurposes: [] },
+        CookieTriageDecision.Approve,
+      ),
+    ).toEqual({
+      cookies: [
+        {
+          name: '_ga',
+          status: ConsentTrackerStatus.Live,
+          isJunk: false,
+          trackingPurposes: [],
+        },
+      ],
+    });
+  });
+
+  it('omits trackingPurposes on approve when the field is absent', () => {
+    expect(
+      buildTriageUpdateArgs(
+        ConsentTriageType.Cookies,
+        { name: '_ga', id: 'cookie-1' },
+        CookieTriageDecision.Approve,
+      ),
+    ).toEqual({
+      cookies: [
+        {
+          name: '_ga',
+          status: ConsentTrackerStatus.Live,
+          isJunk: false,
+        },
+      ],
+    });
+  });
+
   it('junks cookies as LIVE + isJunk', () => {
     expect(
       buildTriageUpdateArgs(ConsentTriageType.Cookies, cookie, CookieTriageDecision.Junk),
