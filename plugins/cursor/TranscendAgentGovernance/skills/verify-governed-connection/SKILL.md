@@ -24,7 +24,7 @@ Confirm that Cursor can reach Transcend Agent Governance through the **policy ga
 
 Primary path is Cursor-native **browser OAuth**:
 
-- The only optional plugin variable is `GATEWAY_BASE_URL` (self-host / non-Dev override; SaaS uses the default). There is **no** `TENANT_ID` — organization is chosen at consent
+- Organization is chosen at consent — do not ask the user for an org / tenant identifier to put in plugin config
 - The plugin declares public client id `myelin_cursor_plugin` with scopes `mcp` and `offline_access` (no client secret)
 - Tokens live in the IDE session; Cursor refreshes via the refresh grant until absolute lifetime or revoke
 
@@ -35,7 +35,7 @@ There is **no** credential / Bearer / API-key plugin variable. Do **not** tell u
 Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Cursor already exposes — do not invent hostnames or internal service names.
 
 1. **Plugin installed and enabled**  
-   Confirm **Transcend Agent Governance** is installed. For self-host, confirm optional `GATEWAY_BASE_URL` is set in **Plugins → Configure** (scheme + host only; no `/mcp/...`). SaaS / Dev should use the default — do not ask for `TENANT_ID` or a third "credential" variable; neither exists.
+   Confirm **Transcend Agent Governance** is installed. Do not ask for an org / tenant identifier or a credential variable — neither belongs in plugin configuration.
 
 2. **Gateway connection / Connect**  
    Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-agent-governance**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.
@@ -65,8 +65,8 @@ Be concrete and short:
 
 - Connected or not; whether browser OAuth completed
 - How many / which tools are visible (names only)
-- Whether the failure looks like **needs re-auth (Connect)**, **misconfigured gateway URL**, **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
-- Next step: fix optional `GATEWAY_BASE_URL` (self-host), re-run Connect and pick the correct org at consent, ask admin to assign MCP servers / policy, or open a policy/approval conversation
+- Whether the failure looks like **needs re-auth (Connect)**, **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
+- Next step: re-run Connect and pick the correct org at consent, ask admin to assign MCP servers / policy, or open a policy/approval conversation
 
 ## Forbidden workarounds
 

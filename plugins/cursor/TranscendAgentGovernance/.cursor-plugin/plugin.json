@@ -16,7 +16,7 @@
       "GATEWAY_BASE_URL": {
         "type": "string",
         "title": "Gateway base URL",
-        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to the Transcend Dev gateway (https://mcp.dev.myelin-internal.com). Override only for self-host or non-Dev environments. Do not append /mcp/... — the plugin adds that.",
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to https://mcp.dev.myelin-internal.com. Do not append /mcp/... — the plugin adds that.",
         "default": "https://mcp.dev.myelin-internal.com"
       }
     }
