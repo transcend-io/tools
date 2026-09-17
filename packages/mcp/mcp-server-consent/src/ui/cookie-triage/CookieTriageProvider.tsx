@@ -33,7 +33,6 @@ import {
   getCategory,
   selectCustomPurposeSlugs,
   selectPurposes,
-  selectTriagedCount,
   type CookieTriageSessionState,
   type CookieTriageSummary,
 } from './cookieTriageState.ts';
@@ -281,6 +280,7 @@ export function CookieTriageProvider({
         void fetchApi.fetchPurposePages(purpose, 'more');
       },
       refresh: () => {
+        setAppliedSuggestionsByPurpose({});
         void fetchApi.refresh();
       },
       askOpinion: async (purpose, name) => {
@@ -326,15 +326,14 @@ export function CookieTriageProvider({
     [dashboardUrl, state.purposeOptions, state.triageType, supportsPermanentDelete],
   );
 
-  const triagedCount = selectTriagedCount(state.categories);
   const summary = useMemo<CookieTriageSummary>(
     () => ({
       pendingCount: state.pendingTotal ?? 0,
       dormantCount: state.dormantTotal ?? 0,
-      triagedCount,
+      triagedCount: state.triagedCount,
       summaryBusy: state.summaryLoadStatus === CookieTriageLoadStatus.Loading,
     }),
-    [state.dormantTotal, state.pendingTotal, state.summaryLoadStatus, triagedCount],
+    [state.dormantTotal, state.pendingTotal, state.summaryLoadStatus, state.triagedCount],
   );
 
   const nextChrome = projectChrome(state);
