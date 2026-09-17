@@ -45,7 +45,7 @@ export const Header = memo(function Header({ app }: HeaderProps) {
     year: 'numeric',
   });
 
-  const labels = ['Scan', organization.data?.name, displayDate].filter(
+  const labels = [organization.data?.name, displayDate].filter(
     (label): label is string => typeof label === 'string' && label.length > 0,
   );
 
