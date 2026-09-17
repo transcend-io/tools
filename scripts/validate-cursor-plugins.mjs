@@ -6,6 +6,9 @@
  * Checks JSON parseability and required fields so a malformed manifest
  * cannot reach a marketplace submission. Intentionally dependency-free
  * (plain Node) so CI can run without pnpm bootstrap.
+ *
+ * Path-tenant Meta URLs (`…/mcp/{tenant}/agent`) are rewritten to the
+ * tenantless entry (`…/mcp/agent`) when run with `--fix`.
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -13,6 +16,9 @@ import process from 'node:process';
 
 const repoRoot = process.cwd();
 const errors = [];
+const applyFix = process.argv.includes('--fix');
+/** @type {string[]} */
+const fixNotes = [];
 
 const pluginNamePattern = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const marketplaceNamePattern = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
@@ -97,6 +103,16 @@ async function readJsonFile(filePath, context) {
     addError(`${context} contains invalid JSON (${filePath}): ${detail}`);
     return null;
   }
+}
+
+/**
+ * Rewrite a path-tenant Meta MCP URL to the tenantless public entry.
+ * e.g. …/mcp/${TENANT_ID}/agent or …/mcp/{tenant}/agent → …/mcp/agent
+ * @param {string} url
+ * @returns {string}
+ */
+function rewriteToTenantlessMetaUrl(url) {
+  return url.replace(/\/mcp\/[^/?#]+\/agent(?=[?#]|$)/, '/mcp/agent');
 }
 
 /**
@@ -403,19 +419,55 @@ function validateOAuthAuthBlock(auth, serverLabel, pluginName) {
  * @param {object} mcpConfig
  * @param {string} pluginName
  * @param {Set<string>} declaredVariables
+ * @param {{ mcpPath?: string }} [options]
+ * @returns {Promise<boolean>} true when mcp.json was rewritten on disk
  */
-function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
+async function validateMcpConfig(mcpConfig, pluginName, declaredVariables, options = {}) {
   const context = `${pluginName}: mcp.json`;
+  let mcpRewritten = false;
 
   if (!mcpConfig.mcpServers || typeof mcpConfig.mcpServers !== 'object') {
     addError(`${context}: root must contain an "mcpServers" object.`);
-    return;
+    return false;
   }
 
   const servers = Object.entries(mcpConfig.mcpServers);
   if (servers.length === 0) {
     addError(`${context}: "mcpServers" must declare at least one server.`);
-    return;
+    return false;
+  }
+
+  for (const [serverName, server] of servers) {
+    const serverLabel = `${context} server "${serverName}"`;
+
+    if (!server || typeof server !== 'object' || Array.isArray(server)) {
+      continue;
+    }
+
+    if (typeof server.url !== 'string' || server.url.length === 0) {
+      continue;
+    }
+
+    const rewrittenUrl = rewriteToTenantlessMetaUrl(server.url);
+    if (rewrittenUrl !== server.url) {
+      if (applyFix) {
+        fixNotes.push(`${serverLabel}.url: rewrote "${server.url}" → "${rewrittenUrl}"`);
+        server.url = rewrittenUrl;
+        mcpRewritten = true;
+      } else {
+        addError(
+          `${serverLabel}.url: path-tenant Meta URL must use the tenantless entry "${rewrittenUrl}". Re-run with --fix to rewrite automatically.`,
+        );
+      }
+    }
+  }
+
+  if (mcpRewritten) {
+    if (typeof options.mcpPath !== 'string') {
+      addError(`${context}: internal error — rewritten URL but mcp path is missing.`);
+    } else {
+      await fs.writeFile(options.mcpPath, `${JSON.stringify(mcpConfig, null, 2)}\n`, 'utf8');
+    }
   }
 
   const refs = new Set();
@@ -438,12 +490,10 @@ function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
           `${serverLabel}.url: do not hardcode a gateway hostname; use \${VAR} placeholders for environment-specific values.`,
         );
       }
-      if (server.url.includes('${TENANT_ID}')) {
-        addError(
-          `${serverLabel}.url: must not interpolate \${TENANT_ID} — OAuth-first clients use the tenantless Meta entry; tenancy comes from the token after consent.`,
-        );
-      }
-      if (!/\/mcp\/agent(?:[?#]|$)/.test(server.url)) {
+      if (
+        rewriteToTenantlessMetaUrl(server.url) === server.url &&
+        !/\/mcp\/agent(?:[?#]|$)/.test(server.url)
+      ) {
         addError(
           `${serverLabel}.url: expected tenantless Meta path shape …/mcp/agent (via \${GATEWAY_BASE_URL} or equivalent).`,
         );
@@ -521,6 +571,8 @@ function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
       );
     }
   }
+
+  return mcpRewritten;
 }
 
 /**
@@ -588,7 +640,7 @@ async function validatePluginManifest(pluginManifest, entryName, pluginDir) {
   if (await pathExists(mcpPath)) {
     const mcpConfig = await readJsonFile(mcpPath, `${entryName} mcp.json`);
     if (mcpConfig) {
-      validateMcpConfig(mcpConfig, entryName, declaredVariables);
+      await validateMcpConfig(mcpConfig, entryName, declaredVariables, { mcpPath });
     }
   } else if (declaredVariables.size > 0) {
     addError(
@@ -675,6 +727,13 @@ async function main() {
 }
 
 function summarizeAndExit() {
+  if (fixNotes.length > 0) {
+    console.log('Cursor plugin manifest auto-fixes applied:');
+    for (const note of fixNotes) {
+      console.log(`- ${note}`);
+    }
+  }
+
   if (errors.length > 0) {
     console.error('Cursor plugin manifest validation failed:');
     for (const error of errors) {
