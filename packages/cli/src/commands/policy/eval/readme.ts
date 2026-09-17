@@ -13,12 +13,12 @@ const examples = buildExamples<EvalCommandFlags>(
       },
     },
     {
-      description: 'Simulate the Permissions API (query + envelope + workspace schemas)',
+      description: 'Simulate the Permissions API (query + envelope + input schema)',
       positionals: ['transcend/policy/permissions-bundle'],
       flags: {
         package: 'data.permissions.purposes',
         input: 'transcend/policy/permissions-bundle/input.json',
-        schema: 'transcend/policy/schemas',
+        schema: 'transcend/policy/permissions-bundle/input.schema.json',
       },
     },
   ],
@@ -44,6 +44,6 @@ cat transcend/policy/example-bundle/input.json | ${stdinExample}
 \`\`\`
 
 The \`<bundle>\` positional is required (one local publish directory with a \`.manifest\` per
-invocation). Pass \`--schema\` when Rego \`# METADATA\` \`schemas:\` annotations should type-check
-against workspace JSON Schemas (e.g. \`transcend/policy/schemas\`).
+invocation). Pass \`--schema\` with the bundle's \`input.schema.json\` when you want OPA to
+type-check \`input\` (e.g. \`transcend/policy/permissions-bundle/input.schema.json\`).
 `;

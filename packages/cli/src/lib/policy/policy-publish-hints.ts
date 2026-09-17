@@ -1,5 +1,6 @@
 import {
   PERMISSIONS_POLICY_BUNDLE_NAME,
+  PolicyTemplate,
   type PolicyTemplateName,
 } from './policy-scaffold-templates.js';
 
@@ -21,10 +22,10 @@ export interface PolicyPublishBundleNameHintInput {
  * @returns Whether the local tree looks Permissions-oriented
  */
 function looksLikePermissionsBundle(input: PolicyPublishBundleNameHintInput): boolean {
-  if (input.template === 'permissions') {
+  if (input.template === PolicyTemplate.Permissions) {
     return true;
   }
-  if (input.template === 'generic') {
+  if (input.template === PolicyTemplate.Generic) {
     return false;
   }
   return input.roots.some(

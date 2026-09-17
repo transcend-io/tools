@@ -48,7 +48,7 @@ transcend policy lint --noInteractive
 transcend policy test
 transcend policy lint transcend/policy/permissions-bundle --noInteractive
 transcend policy test transcend/policy/permissions-bundle
-opa check --strict -b transcend/policy/permissions-bundle -s transcend/policy/schemas
+opa check --strict -b transcend/policy/permissions-bundle -s transcend/policy/permissions-bundle/input.schema.json
 ```
 
 `policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
@@ -72,14 +72,14 @@ transcend policy eval transcend/policy/example-bundle \
 ```
 
 To simulate the Permissions API, pass the bundle, a purpose query (`--package`),
-the local envelope (`--input`), and the workspace schemas directory (`--schema`)
-so `# METADATA` `schemas:` annotations type-check:
+the local envelope (`--input`), and the bundle's input schema (`--schema`) so
+OPA type-checks `input`:
 
 ```sh
 transcend policy eval transcend/policy/permissions-bundle \
   --package=data.permissions.purposes \
   --input=transcend/policy/permissions-bundle/input.json \
-  --schema=transcend/policy/schemas
+  --schema=transcend/policy/permissions-bundle/input.schema.json
 ```
 
 Or pipe the envelope with `--stdin-input`. `policy eval` ignores `*_test.rego`

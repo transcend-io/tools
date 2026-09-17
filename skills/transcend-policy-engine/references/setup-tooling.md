@@ -53,8 +53,8 @@ Naming triad (keep these distinct):
 - `--remote-bundle-name` — remote Policy Engine name at upload time; unrelated to
   the local folder
 
-Workspace schemas live at `schemas/{root}/` and are shared across publish
-directories with the same root.
+Each publish directory includes its own `input.schema.json` beside the input
+fixtures.
 
 `policy new` creates the publish directory, its `.manifest`, Rego tree,
 input fixtures, and input schema. It also merges the root into Regal config and
@@ -77,9 +77,9 @@ Repository-level VS Code settings should include:
 
 - `opa.roots` — one entry per `{root}-bundle/` publish directory
 - `opa.bundleMode: true` — avoid loading fixture JSON as data
-- `opa.schema` — directory of input JSON Schemas (shared when multiple bundles
-  need different envelopes)
-- `json.schemas` — optional validation of `input.json` / `input.example.json`
+- `json.schemas` — validates `input.json` / `input.example.json`; Permissions
+  templates point at the published schema `$id`, generic bundles use the local
+  `input.schema.json`
 
 Preserve custom settings and tasks when adapting generated editor files.
 

@@ -21,6 +21,7 @@ import {
 } from '../../../lib/policy/policy-scaffold-config.js';
 import {
   buildBundleDirectoryName,
+  buildPolicyBundleEvalNextStep,
   generatePolicyBundleFiles,
   mergePolicyRegalConfigRoots,
   POLICY_MANIFEST_FILENAME,
@@ -34,7 +35,6 @@ import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-disco
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 import {
   displayProjectPath,
-  quoteShellArgument,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
 import {
@@ -189,7 +189,7 @@ export async function _new(
       name,
     );
     const bundleRefs: PolicyBundleRef[] = allRoots.map((root) =>
-      root === name ? { root, bundleDir } : policyBundleRef(root),
+      root === name ? { root, bundleDir, template } : policyBundleRef(root),
     );
 
     const candidatePaths = [
@@ -237,26 +237,7 @@ export async function _new(
       const path = join(state.targetDirectory, file.path);
       const snapshot = getPlanningPathSnapshot(snapshots, path);
       if (snapshot.kind !== 'absent') {
-        if (!file.shared) {
-          throw new Error(`Expected an empty path but found an entry at: ${path}`);
-        }
-        // Workspace schemas are keyed by package root and may already exist when
-        // adding another publish directory for the same root (`--bundle-dir`).
-        const change = planFileChange({
-          snapshot: getPlanningFileSnapshot(snapshots, path),
-          after: file.contents,
-          description: file.description,
-        });
-        if (change) {
-          warnings.push(
-            `Shared file already exists and differs from the template; left unchanged: ${displayProjectPath(
-              state.invocationDirectory,
-              path,
-            )}`,
-          );
-        }
-        unchanged.push(path);
-        return;
+        throw new Error(`Expected an empty path but found an entry at: ${path}`);
       }
       const change = planFileChange({
         snapshot: getPlanningFileSnapshot(snapshots, path),
@@ -378,9 +359,12 @@ export async function _new(
       }
     }
 
-    const lintCommand = `transcend policy lint ${quoteShellArgument(
-      displayProjectPath(state.invocationDirectory, bundlePath),
-    )} --noInteractive`;
+    const bundleDisplayPath = displayProjectPath(state.invocationDirectory, bundlePath);
+    const evalCommand = buildPolicyBundleEvalNextStep({
+      bundleDirectory: bundleDisplayPath,
+      root: name,
+      template,
+    });
 
     const plan: ProjectPlan & {
       /** Absolute workspace directory. */
@@ -400,7 +384,7 @@ export async function _new(
       changes,
       unchanged,
       warnings,
-      nextSteps: [lintCommand],
+      nextSteps: [evalCommand],
     };
 
     if (!flags.json) {

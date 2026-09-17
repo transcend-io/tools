@@ -69,8 +69,7 @@ export const testCommand = buildCommand({
       schema: {
         kind: 'parsed',
         parse: String,
-        brief:
-          'JSON Schema file or directory for input type-checking (opa test --schema; needed for # METADATA schemas)',
+        brief: 'JSON Schema file or directory for input type-checking (opa test --schema)',
         optional: true,
       },
       'exit-zero-on-skipped': {

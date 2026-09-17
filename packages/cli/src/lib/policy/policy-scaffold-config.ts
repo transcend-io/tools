@@ -8,8 +8,12 @@ import {
 } from '../scaffolding/jsonc.js';
 import {
   buildBundleDirectoryName,
+  PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+  POLICY_INPUT_SCHEMA_FILENAME,
   POLICY_MANIFEST_FILENAME,
   POLICY_STARTER_ROOT,
+  PolicyTemplate,
+  type PolicyTemplateName,
 } from './policy-scaffold-templates.js';
 
 /** Recommended VS Code extension for OPA and Regal authoring. */
@@ -28,16 +32,26 @@ export interface PolicyBundleRef {
   root: string;
   /** Basename of the publish directory under the policy workspace. */
   bundleDir: string;
+  /**
+   * Scaffold template that produced this bundle, when known.
+   *
+   * Permissions bundles point VS Code `json.schemas` at the published input
+   * schema `$id` so editor validation tracks the live contract.
+   */
+  template?: PolicyTemplateName;
 }
 
 /**
  * Build a bundle ref with the default `{root}-bundle` directory.
  *
  * @param root - Package root
+ * @param template - Optional scaffold template
  * @returns Bundle ref
  */
-export function policyBundleRef(root: string): PolicyBundleRef {
-  return { root, bundleDir: buildBundleDirectoryName(root) };
+export function policyBundleRef(root: string, template?: PolicyTemplateName): PolicyBundleRef {
+  return template === undefined
+    ? { root, bundleDir: buildBundleDirectoryName(root) }
+    : { root, bundleDir: buildBundleDirectoryName(root), template };
 }
 
 /** Result of safely merging one repository editor artifact. */
@@ -206,19 +220,6 @@ function buildOpaBundleRoot(
 }
 
 /**
- * Build the workspace-relative schemas directory path.
- *
- * @param repositoryRoot - Root that owns `.vscode`
- * @param workspaceDirectory - Selected policy workspace directory
- * @returns VS Code workspace path
- */
-function buildOpaSchemaDirectory(repositoryRoot: string, workspaceDirectory: string): string {
-  const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
-  const schemas = workspace === '.' ? 'schemas' : `${workspace}/schemas`;
-  return buildWorkspaceFolderPath(schemas);
-}
-
-/**
  * Build a `files.associations` glob for every `.manifest` under the workspace.
  *
  * Patterns that contain `/` are matched against the absolute file path, so a
@@ -241,6 +242,10 @@ function buildPolicyManifestAssociationPattern(
 /**
  * Build `json.schemas` fileMatch globs for a bundle's input documents.
  *
+ * Permissions templates use the published schema `$id` so VS Code validation
+ * tracks the live contract. Generic bundles use the local `input.schema.json`
+ * (OPA / offline tooling still always use the local file via `--schema`).
+ *
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
  * @param bundle - Package root and local directory basename
@@ -253,16 +258,18 @@ function buildBundleInputJsonSchema(
 ): {
   /** VS Code fileMatch globs (leading slash = workspace-relative). */
   fileMatch: string[];
-  /** Relative URL to the input schema. */
+  /** Schema URL (local path or published Permissions `$id`). */
   url: string;
 } {
   const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
   const bundlePrefix =
     workspace === '.' ? `/${bundle.bundleDir}` : `/${workspace}/${bundle.bundleDir}`;
   const schemaUrl =
-    workspace === '.'
-      ? `./schemas/${bundle.root}/input.json`
-      : `./${workspace}/schemas/${bundle.root}/input.json`;
+    bundle.template === PolicyTemplate.Permissions
+      ? PERMISSIONS_POLICY_INPUT_SCHEMA_ID
+      : workspace === '.'
+        ? `./${bundle.bundleDir}/${POLICY_INPUT_SCHEMA_FILENAME}`
+        : `./${workspace}/${bundle.bundleDir}/${POLICY_INPUT_SCHEMA_FILENAME}`;
   return {
     fileMatch: [`${bundlePrefix}/input.json`, `${bundlePrefix}/input.example.json`],
     url: schemaUrl,
@@ -319,11 +326,6 @@ export function mergePolicyEditorSettings(
   collectSafeScalarUpdates(
     current,
     [
-      {
-        path: ['opa.schema'],
-        value: buildOpaSchemaDirectory(repositoryRoot, workspaceDirectory),
-        label: 'opa.schema',
-      },
       { path: ['opa.checkOnSave'], value: true, label: 'opa.checkOnSave' },
       { path: ['opa.strictMode'], value: true, label: 'opa.strictMode' },
       { path: ['opa.bundleMode'], value: true, label: 'opa.bundleMode' },

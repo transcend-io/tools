@@ -54,8 +54,7 @@ export const evalCommand = buildCommand({
       schema: {
         kind: 'parsed',
         parse: String,
-        brief:
-          'JSON Schema directory or file for input type-checking (opa eval --schema; needed for # METADATA schemas)',
+        brief: 'JSON Schema file or directory for input type-checking (opa eval --schema)',
         optional: true,
       },
       explain: {

@@ -6,7 +6,7 @@ import { DEFAULT_POLICY_PROJECT_DIRECTORY } from '../../../lib/policy/policy-pro
 /**
  * Shared positional Policy workspace directory (`policy init` / `policy new`).
  *
- * The workspace holds shared Regal config, schemas, and one or more bundles.
+ * The workspace holds shared Regal config and one or more bundles.
  */
 export const policyWorkspaceDirectoryParameter = {
   brief: 'Policy workspace directory',

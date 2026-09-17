@@ -4298,16 +4298,16 @@ Wraps `opa eval` for local policy debugging against one bundle directory. Always
 FLAGS
       --package               OPA query path to evaluate (e.g. data.example.result)
      [--input]                Path to a JSON envelope input file (mutually exclusive with --stdin-input)
-     [--stdin-input]          Read the input document from stdin (opa eval --stdin-input)                                              [default = false]
-     [--format]               Output format (opa eval --format)                                                                        [pretty|json|values|bindings|source|raw|discard, default = pretty]
-     [--schema]               JSON Schema directory or file for input type-checking (opa eval --schema; needed for # METADATA schemas)
-     [--explain]              Explanation mode (opa eval --explain)                                                                    [off|full|notes|fails|debug]
-     [--metrics]              Report evaluation metrics (opa eval --metrics)                                                           [default = false]
-     [--instrument]           Enable instrumentation; implies --metrics (opa eval --instrument)                                        [default = false]
-     [--profile]              Enable performance profiling (opa eval --profile)                                                        [default = false]
+     [--stdin-input]          Read the input document from stdin (opa eval --stdin-input)                [default = false]
+     [--format]               Output format (opa eval --format)                                          [pretty|json|values|bindings|source|raw|discard, default = pretty]
+     [--schema]               JSON Schema file or directory for input type-checking (opa eval --schema)
+     [--explain]              Explanation mode (opa eval --explain)                                      [off|full|notes|fails|debug]
+     [--metrics]              Report evaluation metrics (opa eval --metrics)                             [default = false]
+     [--instrument]           Enable instrumentation; implies --metrics (opa eval --instrument)          [default = false]
+     [--profile]              Enable performance profiling (opa eval --profile)                          [default = false]
      [--timeout]              Evaluation timeout duration, e.g. 5s (opa eval --timeout)
-     [--var-values]           Show variable values with --explain (opa eval --var-values)                                              [default = false]
-     [--show-builtin-errors]  Collect and report built-in errors (opa eval --show-builtin-errors)                                      [default = false]
+     [--var-values]           Show variable values with --explain (opa eval --var-values)                [default = false]
+     [--show-builtin-errors]  Collect and report built-in errors (opa eval --show-builtin-errors)        [default = false]
   -h  --help                  Print help information and exit
 
 ARGUMENTS
@@ -4324,13 +4324,13 @@ transcend policy eval transcend/policy/example-bundle \
   --input=transcend/policy/example-bundle/input.json
 ```
 
-**Simulate the Permissions API (query + envelope + workspace schemas)**
+**Simulate the Permissions API (query + envelope + input schema)**
 
 ```sh
 transcend policy eval transcend/policy/permissions-bundle \
   --package=data.permissions.purposes \
   --input=transcend/policy/permissions-bundle/input.json \
-  --schema=transcend/policy/schemas
+  --schema=transcend/policy/permissions-bundle/input.schema.json
 ```
 
 **Pipe an envelope on stdin**
@@ -4340,8 +4340,8 @@ cat transcend/policy/example-bundle/input.json | transcend policy eval transcend
 ```
 
 The `<bundle>` positional is required (one local publish directory with a `.manifest` per
-invocation). Pass `--schema` when Rego `# METADATA` `schemas:` annotations should type-check
-against workspace JSON Schemas (e.g. `transcend/policy/schemas`).
+invocation). Pass `--schema` with the bundle's `input.schema.json` when you want OPA to
+type-check `input` (e.g. `transcend/policy/permissions-bundle/input.schema.json`).
 
 ### `transcend policy init`
 
@@ -4374,7 +4374,7 @@ transcend policy init
 
 This creates a multi-bundle Policy Engine workspace under `transcend/policy` with shared Regal config (`project.roots: []`) and a README. No bundles or Rego are created — add them with `transcend policy new`.
 
-The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, configures strict Rego v1 formatting, and sets `opa.schema` to the workspace schemas directory.
+The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension and configures strict Rego v1 formatting.
 
 To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
 
@@ -4620,16 +4620,16 @@ USAGE
 Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, run, coverage, threshold, timeout, var-values, explain, schema, and exit-zero-on-skipped; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     [--format]                Output format (opa test --format)                                                                        [pretty|json|gobench, default = pretty]
-     [--verbose]               Show detailed test results (opa test --verbose)                                                          [default = false]
+     [--format]                Output format (opa test --format)                                            [pretty|json|gobench, default = pretty]
+     [--verbose]               Show detailed test results (opa test --verbose)                              [default = false]
      [--run]                   Regex filter for test names (opa test --run)
-     [--coverage]              Report coverage (opa test --coverage)                                                                    [default = false]
+     [--coverage]              Report coverage (opa test --coverage)                                        [default = false]
      [--threshold]             Fail when coverage is below this % (requires --coverage)
      [--timeout]               Test timeout duration, e.g. 5s (opa test --timeout)
-     [--var-values]            Show variable values in failures (opa test --var-values)                                                 [default = false]
-     [--explain]               Explanation mode (opa test --explain)                                                                    [fails|full|notes|debug]
-     [--schema]                JSON Schema file or directory for input type-checking (opa test --schema; needed for # METADATA schemas)
-     [--exit-zero-on-skipped]  Exit 0 when all matching tests are skipped (opa test --exit-zero-on-skipped)                             [default = false]
+     [--var-values]            Show variable values in failures (opa test --var-values)                     [default = false]
+     [--explain]               Explanation mode (opa test --explain)                                        [fails|full|notes|debug]
+     [--schema]                JSON Schema file or directory for input type-checking (opa test --schema)
+     [--exit-zero-on-skipped]  Exit 0 when all matching tests are skipped (opa test --exit-zero-on-skipped) [default = false]
   -h  --help                   Print help information and exit
 
 ARGUMENTS
