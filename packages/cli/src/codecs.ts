@@ -602,7 +602,7 @@ export const DatapointInput = t.intersection([
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/actions.ts
      */
-    'privacy-actions': t.array(RequestActionCodec),
+    'privacy-actions': t.array(valuesOf(RequestActionObjectResolver)),
     /**
      * Provide field-level metadata for this datapoint.
      * This is often the column metadata
