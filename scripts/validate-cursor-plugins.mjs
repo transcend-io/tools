@@ -438,9 +438,14 @@ function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
           `${serverLabel}.url: do not hardcode a gateway hostname; use \${VAR} placeholders for environment-specific values.`,
         );
       }
-      if (!server.url.includes('/mcp/') || !server.url.includes('/agent')) {
+      if (server.url.includes('${TENANT_ID}')) {
         addError(
-          `${serverLabel}.url: expected agent bundle path shape …/mcp/{tenant}/agent (via variables).`,
+          `${serverLabel}.url: must not interpolate \${TENANT_ID} — OAuth-first clients use the tenantless Meta entry; tenancy comes from the token after consent.`,
+        );
+      }
+      if (!/\/mcp\/agent(?:[?#]|$)/.test(server.url)) {
+        addError(
+          `${serverLabel}.url: expected tenantless Meta path shape …/mcp/agent (via \${GATEWAY_BASE_URL} or equivalent).`,
         );
       }
     }

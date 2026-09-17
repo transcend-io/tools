@@ -7,7 +7,7 @@ alwaysApply: true
 
 You are connected to MCP tools through **Transcend Agent Governance**. Tool calls do not go to upstream servers directly. They route through your organization's **policy gateway**.
 
-Auth is Cursor-native **browser OAuth** (public client `myelin_cursor_plugin`, scopes `mcp` + `offline_access`). Plugin variables are only `GATEWAY_BASE_URL` and `TENANT_ID` — there is no credential-paste variable.
+Auth is Cursor-native **browser OAuth** (public client `myelin_cursor_plugin`, scopes `mcp` + `offline_access`). The only optional plugin variable is `GATEWAY_BASE_URL` (self-host override; SaaS uses the baked-in default). There is no `TENANT_ID` and no credential-paste variable — organization is chosen at consent.
 
 ## Expected operating conditions
 
