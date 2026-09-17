@@ -138,6 +138,8 @@ on:
     paths:
 ${pathFilters}
   push:
+    branches:
+      - main
     paths:
 ${pathFilters}
 
