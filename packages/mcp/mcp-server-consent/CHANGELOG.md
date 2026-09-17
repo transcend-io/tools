@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-consent
 
+## 1.2.5
+
+### Patch Changes
+
+- 8ad30d3: Clearing all purposes on a cookie or data flow in consent triage now persists correctly after approve and refresh.
+- 8ad30d3: When assigning purposes in the consent triage app, the cookie or data flow now appears immediately at the top of every newly matching purpose tab. Tabs that no longer match keep showing the item until you refresh.
+- 8ad30d3: Refreshing consent triage now reloads tab lists from the API instead of keeping approved or junked rows on screen. Your Triaged count for the session is preserved.
+
 ## 1.2.4
 
 ### Patch Changes

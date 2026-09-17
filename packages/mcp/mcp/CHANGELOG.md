@@ -1,5 +1,18 @@
 # @transcend-io/mcp
 
+## 1.4.1
+
+### Patch Changes
+
+- 9331229: Require human confirmation before Policy Engine publish/go-live and Custom Function upsert, promote, and test-run actions so those changes cannot run without your approval.
+- Updated dependencies [8ad30d3]
+- Updated dependencies [8ad30d3]
+- Updated dependencies [8ad30d3]
+- Updated dependencies [9331229]
+  - @transcend-io/mcp-server-consent@1.2.5
+  - @transcend-io/mcp-server-policy@0.2.1
+  - @transcend-io/mcp-server-custom-functions@0.2.2
+
 ## 1.4.0
 
 ### Minor Changes
