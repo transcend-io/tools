@@ -74,7 +74,7 @@ export interface CookieTriageSessionState {
    */
   purposeOptionsLoaded: boolean;
   /**
-   * Session Triaged KPI: unique entities decided this session.
+   * Session Triaged KPI: unique entities handled this session (decide or delete).
    * Survives refresh (which clears local rows) so progress is not lost.
    */
   triagedCount: number;
@@ -99,7 +99,7 @@ export interface CookieTriageSummary {
   pendingCount: number;
   /** API-derived dormant total (Pending minus recent-active) */
   dormantCount: number;
-  /** Cookies/data flows decided this session (survives refresh) */
+  /** Cookies/data flows handled this session via decide or delete (survives refresh) */
   triagedCount: number;
   /** True while overview pending/dormant counts are fetching */
   summaryBusy: boolean;
@@ -369,24 +369,6 @@ export function selectPurposes(state: CookieTriageSessionState): CookieTriagePur
     );
   }
   return [...COOKIE_TRIAGE_PURPOSE_ORDER];
-}
-
-/** Stable identity for a cookie/data-flow across purpose tabs. */
-function rowEntityKey(row: Pick<CookieRowState, 'name' | 'initial'>): string {
-  return row.initial.id || row.name;
-}
-
-/** Count unique entities with a session decision (overview Triaged). */
-export function selectTriagedCount(categories: CookieTriageCategoriesState): number {
-  const seen = new Set<string>();
-  for (const category of Object.values(categories)) {
-    for (const row of category.cookies) {
-      if (row.decision !== undefined) {
-        seen.add(rowEntityKey(row));
-      }
-    }
-  }
-  return seen.size;
 }
 
 /**
@@ -1076,6 +1058,8 @@ export function cookieTriageReducer(
       return {
         ...state,
         categories,
+        // Pending delete counts as handled; already-decided rows were counted on decide.
+        ...(wasPending ? { triagedCount: state.triagedCount + 1 } : {}),
         ...(wasPending && state.pendingTotal !== undefined
           ? { pendingTotal: Math.max(0, state.pendingTotal - 1) }
           : {}),

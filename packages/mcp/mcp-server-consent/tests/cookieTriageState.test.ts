@@ -491,7 +491,7 @@ describe('cookieTriageReducer', () => {
     expect(selectSummary(state)).toMatchObject({
       pendingCount: 2,
       dormantCount: 0,
-      triagedCount: 0,
+      triagedCount: 1,
     });
   });
 
@@ -576,7 +576,7 @@ describe('cookieTriageReducer', () => {
     expect(selectSummary(state)).toMatchObject({
       pendingCount: 0,
       dormantCount: 0,
-      triagedCount: 0,
+      triagedCount: 1,
     });
   });
 
@@ -1043,6 +1043,32 @@ describe('cookieTriageReducer', () => {
     expect(
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.decision,
     ).toBeUndefined();
+  });
+
+  it('increments session triagedCount on pending delete but not after decide', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'remove',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_stale',
+    });
+    expect(state.triagedCount).toBe(1);
+
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+      decision: CookieTriageDecision.Approve,
+    });
+    expect(state.triagedCount).toBe(2);
+
+    state = cookieTriageReducer(state, {
+      type: 'remove',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+    });
+    expect(state.triagedCount).toBe(2);
+    expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')).toBeUndefined();
   });
 
   it('tracks countBusy separately from list loadStatus', () => {
