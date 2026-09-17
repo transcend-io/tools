@@ -82,9 +82,13 @@ const IsoCountrySubdivisionCodeCodec = valuesOf(
   IsoCountrySubdivisionCode,
   'IsoCountrySubdivisionCode',
 );
-const IsoCountryOrSubdivisionCodeCodec = valuesOf(
-  { ...IsoCountryCode, ...IsoCountrySubdivisionCode },
+const IsoCountryOrSubdivisionCodeCodec = t.union(
+  [IsoCountryCodeCodec, IsoCountrySubdivisionCodeCodec],
   'IsoCountryOrSubdivisionCode',
+);
+const DefaultIsoCountryOrSubdivisionCodeCodec = t.union(
+  [t.literal('default'), IsoCountryOrSubdivisionCodeCodec],
+  'DefaultIsoCountryOrSubdivisionCode',
 );
 const CodePackageTypeCodec = valuesOf(CodePackageType, 'CodePackageType');
 const DataFlowScopeCodec = valuesOf(DataFlowScope, 'DataFlowScope');
@@ -598,7 +602,7 @@ export const DatapointInput = t.intersection([
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/actions.ts
      */
-    'privacy-actions': t.array(valuesOf(RequestActionObjectResolver)),
+    'privacy-actions': t.array(RequestActionCodec),
     /**
      * Provide field-level metadata for this datapoint.
      * This is often the column metadata
@@ -2011,7 +2015,7 @@ export const WorkflowConfigInput = t.intersection([
     'expiry-time': t.array(
       t.type({
         /** Region code (or 'default') */
-        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
+        region: DefaultIsoCountryOrSubdivisionCodeCodec,
         /** Expiry time in days */
         value: t.number,
       }),

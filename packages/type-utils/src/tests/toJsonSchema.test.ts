@@ -60,6 +60,56 @@ describe('toJsonSchema', () => {
     });
   });
 
+  it('composes shared enum codecs without copying their values into unions', () => {
+    const country = t.keyof(
+      {
+        'country-value-long-enough-to-reference-one': null,
+        'country-value-long-enough-to-reference-two': null,
+      },
+      'Country',
+    );
+    const subdivision = t.keyof(
+      {
+        'subdivision-value-long-enough-to-reference-one': null,
+        'subdivision-value-long-enough-to-reference-two': null,
+      },
+      'Subdivision',
+    );
+    const region = t.union([country, subdivision], 'Region');
+    const schema = toJsonSchema(
+      t.type({
+        country,
+        subdivision,
+        firstRegion: region,
+        secondRegion: region,
+        thirdRegion: region,
+      }),
+      false,
+      false,
+      { useReferences: true },
+    );
+
+    expect(schema.definitions).toEqual({
+      Country: {
+        type: 'string',
+        enum: [
+          'country-value-long-enough-to-reference-one',
+          'country-value-long-enough-to-reference-two',
+        ],
+      },
+      Subdivision: {
+        type: 'string',
+        enum: [
+          'subdivision-value-long-enough-to-reference-one',
+          'subdivision-value-long-enough-to-reference-two',
+        ],
+      },
+      Region: {
+        anyOf: [{ $ref: '#/definitions/Country' }, { $ref: '#/definitions/Subdivision' }],
+      },
+    });
+  });
+
   it('references reused composite codecs by identity', () => {
     const shared = t.type(
       {
