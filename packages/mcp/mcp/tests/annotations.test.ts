@@ -92,6 +92,7 @@ describe('MCP Tool Annotations', () => {
       'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
+      'custom_functions_promote_version',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
@@ -127,9 +128,14 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'custom_functions_promote_version',
+      'custom_functions_test_run',
+      'custom_functions_upsert',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
+      'policy_publish',
+      'policy_set_live',
       'preferences_append_identifiers',
       'preferences_delete',
       'preferences_delete_identifiers',
@@ -137,7 +143,13 @@ describe('MCP Tool Annotations', () => {
       'preferences_upsert',
     ];
 
-    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
+    const expectedGatedNonDestructive = [
+      'custom_functions_test_run',
+      'custom_functions_upsert',
+      'policy_publish',
+      'preferences_append_identifiers',
+      'preferences_upsert',
+    ];
 
     // Exact in both directions: adding a gate makes a tool refuse on hosts that
     // cannot ask, and dropping one silently un-guards an irreversible action.

@@ -103,6 +103,13 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
+    confirmation: {
+      hint:
+        'Creates or updates a Custom Function from the TypeScript in the call arguments. ' +
+        'Updates write a draft; setActive or promote can make GENERAL code live. On DSR ' +
+        'create without dataSiloId, a customFunction data silo is created too. Check name, ' +
+        'type, code, setActive, and promote before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsUpsertSchema,
     handler: async ({
