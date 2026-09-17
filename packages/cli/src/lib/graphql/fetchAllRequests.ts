@@ -1,10 +1,10 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import {
   RequestAction,
   RequestOrigin,
   RequestStatus,
   IsoCountryCode,
   IsoCountrySubdivisionCode,
+  LocaleCodec,
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { valuesOf } from '@transcend-io/type-utils';
@@ -80,7 +80,7 @@ export const PrivacyRequest = t.intersection([
     /** Request details */
     details: t.string,
     /** Locale of request */
-    locale: valuesOf(LOCALE_KEY),
+    locale: LocaleCodec,
     /** Status of request */
     status: valuesOf(RequestStatus),
     /** Type of data subject */

@@ -1,9 +1,9 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import {
   CompletedRequestStatus,
   RequestAction,
   IsoCountryCode,
   IsoCountrySubdivisionCode,
+  LocaleCodec,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
@@ -74,7 +74,7 @@ export const CachedFileState = t.type({
   /** Mapping between CSV data subject type and the name of the data subject in Transcend */
   subjectTypeToSubjectName: t.record(t.string, t.string),
   /** Mapping between language imported and Transcend locale code */
-  languageToLocale: t.record(t.string, valuesOf(LOCALE_KEY)),
+  languageToLocale: t.record(t.string, LocaleCodec),
   /** Mapping between region and country code */
   regionToCountry: t.record(t.string, valuesOf({ ...IsoCountryCode, [NONE]: NONE })),
   /** Mapping between region and country sub division code */
