@@ -1,5 +1,12 @@
 # @transcend-io/sdk
 
+## 2.1.12
+
+### Patch Changes
+
+- Updated dependencies [4726631]
+  - @transcend-io/utils@0.3.0
+
 ## 2.1.11
 
 ### Patch Changes

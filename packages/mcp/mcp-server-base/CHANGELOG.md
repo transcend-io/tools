@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.1
+
+### Patch Changes
+
+- f3a7dc8: Hide the permanent-delete control in the consent triage UI on Cursor, where that action cannot run. Mark items as Junk instead.
+
 ## 2.5.0
 
 ### Minor Changes

@@ -1,5 +1,34 @@
 # @transcend-io/mcp
 
+## 1.4.0
+
+### Minor Changes
+
+- 582fdbe: Add Policy Engine MCP domain with `policy_help`, `policy_status`, `policy_publish`, and `policy_set_live`. Operations follow `transcend policy` CLI paths; OAuth requests only Activate Policy scope (superset of Manage/View).
+
+### Patch Changes
+
+- aef6694: Fix consent triage overview Pending and Dormant counts so they match the Consent Manager Needs Review table, including never-seen items counted as dormant.
+- Updated dependencies [83d8033]
+- Updated dependencies [f3a7dc8]
+- Updated dependencies [3501b59]
+- Updated dependencies [4726631]
+- Updated dependencies [2efa29d]
+- Updated dependencies [582fdbe]
+- Updated dependencies [aef6694]
+  - @transcend-io/mcp-server-consent@1.2.4
+  - @transcend-io/mcp-server-base@2.5.1
+  - @transcend-io/mcp-server-policy@0.2.0
+  - @transcend-io/mcp-server-admin@1.0.12
+  - @transcend-io/mcp-server-assessment@2.1.9
+  - @transcend-io/mcp-server-custom-functions@0.2.1
+  - @transcend-io/mcp-server-discovery@1.0.12
+  - @transcend-io/mcp-server-docs@0.4.12
+  - @transcend-io/mcp-server-dsr@2.0.9
+  - @transcend-io/mcp-server-inventory@1.0.12
+  - @transcend-io/mcp-server-preferences@0.7.16
+  - @transcend-io/mcp-server-workflows@1.0.12
+
 ## 1.3.0
 
 ### Minor Changes
