@@ -107,19 +107,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -353,104 +341,7 @@
     "preflights": {
       "type": "array",
       "items": {
-        "allOf": [
-          {
-            "type": "object",
-            "required": ["title", "output-identifiers"],
-            "properties": {
-              "title": {
-                "type": "string"
-              },
-              "output-identifiers": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string"
-              },
-              "type": {
-                "$ref": "#/definitions/enum-14-169b0u1"
-              },
-              "input-identifier": {
-                "type": "string"
-              },
-              "testRegex": {
-                "type": "string"
-              },
-              "lookerQueryTitle": {
-                "type": "string"
-              },
-              "expirationDuration": {
-                "type": "number"
-              },
-              "transitionRequestStatus": {
-                "type": "string",
-                "enum": ["CANCELED", "ON_HOLD"]
-              },
-              "phoneNumbers": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "regionList": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/definitions/enum-5383-1d2f5pg"
-                }
-              },
-              "data-subjects": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "headers": {
-                "type": "array",
-                "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["name", "value"],
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "isSecret": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  ]
-                }
-              },
-              "privacy-actions": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/definitions/enum-19-8qwl1"
-                }
-              }
-            }
-          }
-        ]
+        "$ref": "#/definitions/intersection-8py0u3"
       },
       "description": "Preflight check definitions (identity enrichment, fraud checks, etc.) run before privacy request workflows."
     },
@@ -497,7 +388,7 @@
               "resources": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-26-1q5sy6w"
+                  "$ref": "#/definitions/AttributeSupportedResourceType"
                 }
               },
               "values": {
@@ -555,10 +446,10 @@
                 "type": "string"
               },
               "headquarterCountry": {
-                "$ref": "#/definitions/enum-250-dl4wec"
+                "$ref": "#/definitions/IsoCountryCode"
               },
               "headquarterSubDivision": {
-                "$ref": "#/definitions/enum-5133-kju7db"
+                "$ref": "#/definitions/IsoCountrySubdivisionCode"
               },
               "dataProtectionOfficerName": {
                 "type": "string"
@@ -569,19 +460,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               },
               "owners": {
@@ -633,10 +512,10 @@
                 "type": "string"
               },
               "headquarterCountry": {
-                "$ref": "#/definitions/enum-250-dl4wec"
+                "$ref": "#/definitions/IsoCountryCode"
               },
               "headquarterSubDivision": {
-                "$ref": "#/definitions/enum-5133-kju7db"
+                "$ref": "#/definitions/IsoCountrySubdivisionCode"
               },
               "websiteUrl": {
                 "type": "string"
@@ -659,19 +538,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -691,7 +558,7 @@
                 "type": "string"
               },
               "category": {
-                "$ref": "#/definitions/enum-17-1n770do"
+                "$ref": "#/definitions/DataCategoryType"
               }
             }
           },
@@ -719,19 +586,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -751,7 +606,7 @@
                 "type": "string"
               },
               "purpose": {
-                "$ref": "#/definitions/enum-13-1cpuk94"
+                "$ref": "#/definitions/ProcessingPurpose"
               }
             }
           },
@@ -776,19 +631,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -827,7 +670,7 @@
               "actions": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-19-8qwl1"
+                  "$ref": "#/definitions/RequestAction"
                 }
               }
             }
@@ -844,7 +687,7 @@
             "required": ["type"],
             "properties": {
               "type": {
-                "$ref": "#/definitions/enum-19-8qwl1"
+                "$ref": "#/definitions/RequestAction"
               }
             }
           },
@@ -870,13 +713,13 @@
               "regionList": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-5383-1d2f5pg"
+                  "$ref": "#/definitions/IsoCountryOrSubdivisionCode"
                 }
               },
               "regionBlockList": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-5383-1d2f5pg"
+                  "$ref": "#/definitions/IsoCountryOrSubdivisionCode"
                 }
               }
             }
@@ -915,7 +758,7 @@
               "privacyCenterVisibility": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-19-8qwl1"
+                  "$ref": "#/definitions/RequestAction"
                 }
               },
               "dataSubjects": {
@@ -984,28 +827,7 @@
               "headers": {
                 "type": "array",
                 "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["name", "value"],
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "isSecret": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-xgvhyu"
                 }
               },
               "data-subjects": {
@@ -1240,49 +1062,13 @@
                                   "purposes": {
                                     "type": "array",
                                     "items": {
-                                      "allOf": [
-                                        {
-                                          "type": "object",
-                                          "required": ["purpose"],
-                                          "properties": {
-                                            "purpose": {
-                                              "$ref": "#/definitions/enum-13-1cpuk94"
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "type": "object",
-                                          "properties": {
-                                            "name": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        }
-                                      ]
+                                      "$ref": "#/definitions/intersection-cmp77n"
                                     }
                                   },
                                   "categories": {
                                     "type": "array",
                                     "items": {
-                                      "allOf": [
-                                        {
-                                          "type": "object",
-                                          "required": ["category"],
-                                          "properties": {
-                                            "category": {
-                                              "$ref": "#/definitions/enum-17-1n770do"
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "type": "object",
-                                          "properties": {
-                                            "name": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        }
-                                      ]
+                                      "$ref": "#/definitions/intersection-1fdifnz"
                                     }
                                   },
                                   "guessed-categories": {
@@ -1294,25 +1080,7 @@
                                           "required": ["category", "status", "confidence"],
                                           "properties": {
                                             "category": {
-                                              "allOf": [
-                                                {
-                                                  "type": "object",
-                                                  "required": ["category"],
-                                                  "properties": {
-                                                    "category": {
-                                                      "$ref": "#/definitions/enum-17-1n770do"
-                                                    }
-                                                  }
-                                                },
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "name": {
-                                                      "type": "string"
-                                                    }
-                                                  }
-                                                }
-                                              ]
+                                              "$ref": "#/definitions/intersection-1fdifnz"
                                             },
                                             "status": {
                                               "type": "string",
@@ -1343,19 +1111,7 @@
                                   "attributes": {
                                     "type": "array",
                                     "items": {
-                                      "type": "object",
-                                      "required": ["key", "values"],
-                                      "properties": {
-                                        "key": {
-                                          "type": "string"
-                                        },
-                                        "values": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "string"
-                                          }
-                                        }
-                                      }
+                                      "$ref": "#/definitions/interface-1qdwyzz"
                                     }
                                   }
                                 }
@@ -1410,27 +1166,15 @@
                 }
               },
               "country": {
-                "$ref": "#/definitions/enum-250-dl4wec"
+                "$ref": "#/definitions/IsoCountryCode"
               },
               "countrySubDivision": {
-                "$ref": "#/definitions/enum-5133-kju7db"
+                "$ref": "#/definitions/IsoCountrySubdivisionCode"
               },
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               },
               "businessEntityTitles": {
@@ -1495,19 +1239,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -1565,19 +1297,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -1651,15 +1371,7 @@
                   "regions": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "country": {
-                          "$ref": "#/definitions/enum-250-dl4wec"
-                        },
-                        "countrySubDivision": {
-                          "$ref": "#/definitions/enum-5133-kju7db"
-                        }
-                      }
+                      "$ref": "#/definitions/partial-57hb0b"
                     }
                   },
                   "onConsentExpiry": {
@@ -2525,7 +2237,204 @@
                   "locales": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/definitions/enum-195-10q434h"
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "ar",
+                        "fr",
+                        "es",
+                        "de",
+                        "it",
+                        "ja",
+                        "ru",
+                        "af",
+                        "bg",
+                        "zh",
+                        "hr",
+                        "cs",
+                        "da",
+                        "fi",
+                        "el",
+                        "hi",
+                        "hu",
+                        "ko",
+                        "lt",
+                        "ms",
+                        "mr",
+                        "nb",
+                        "no",
+                        "pl",
+                        "pt",
+                        "ro",
+                        "sr",
+                        "sv",
+                        "ta",
+                        "th",
+                        "tr",
+                        "uk",
+                        "vi",
+                        "zu",
+                        "he",
+                        "iw",
+                        "nl",
+                        "et",
+                        "is",
+                        "lv",
+                        "mt",
+                        "sk",
+                        "sl",
+                        "fil",
+                        "bs",
+                        "ca",
+                        "eu",
+                        "gl",
+                        "dv",
+                        "ur",
+                        "sq",
+                        "am",
+                        "hy",
+                        "az",
+                        "bn",
+                        "fa-AF",
+                        "fa",
+                        "tl",
+                        "ka",
+                        "gu",
+                        "ht",
+                        "ha",
+                        "ga",
+                        "kn",
+                        "kk",
+                        "mk",
+                        "ml",
+                        "mn",
+                        "ps",
+                        "pa",
+                        "si",
+                        "so",
+                        "sw",
+                        "te",
+                        "uz",
+                        "cy",
+                        "ar-AE",
+                        "fr-FR",
+                        "de-DE",
+                        "de-AT",
+                        "de-CH",
+                        "it-IT",
+                        "it-CH",
+                        "af-ZA",
+                        "bg-BG",
+                        "zh-CN",
+                        "zh-TW",
+                        "zh-Hans",
+                        "hr-HR",
+                        "cs-CZ",
+                        "da-DK",
+                        "en-GB",
+                        "en-CA",
+                        "en-AE",
+                        "fi-FI",
+                        "el-GR",
+                        "hi-IN",
+                        "hu-HU",
+                        "id-ID",
+                        "ja-JP",
+                        "ko-KR",
+                        "lt-LT",
+                        "ms-MY",
+                        "ms-SG",
+                        "mr-IN",
+                        "no-NO",
+                        "nb-NO",
+                        "pl-PL",
+                        "pt-BR",
+                        "pt-PT",
+                        "ro-RO",
+                        "ru-RU",
+                        "sr-Latn-RS",
+                        "sr-Cyrl-RS",
+                        "sv-SE",
+                        "ta-IN",
+                        "th-TH",
+                        "tr-TR",
+                        "uk-UA",
+                        "vi-VN",
+                        "zu-ZA",
+                        "en-US",
+                        "en-AU",
+                        "fr-BE",
+                        "fr-CA",
+                        "fr-CH",
+                        "en-IE",
+                        "nl-NL",
+                        "nl-BE",
+                        "es-ES",
+                        "es-AR",
+                        "es-CR",
+                        "es-CL",
+                        "es-CO",
+                        "es-MX",
+                        "es-419",
+                        "zh-HK",
+                        "he-IL",
+                        "iw-IL",
+                        "en-NZ",
+                        "et-EE",
+                        "is-IS",
+                        "lv-LV",
+                        "mt-MT",
+                        "sk-SK",
+                        "sl-SL",
+                        "fil-PH",
+                        "sq-AL",
+                        "sq-MK",
+                        "sq-XK",
+                        "am-ET",
+                        "hy-AM",
+                        "az-AZ",
+                        "bn-BD",
+                        "bn-IN",
+                        "bs-BA",
+                        "bs-Cyrl-BA",
+                        "bs-Latn-BA",
+                        "ca-ES",
+                        "ca-AD",
+                        "ca-FR",
+                        "ca-IT",
+                        "tl-PH",
+                        "ka-GE",
+                        "gu-IN",
+                        "ht-HT",
+                        "ha-NG",
+                        "ha-NE",
+                        "ha-GH",
+                        "ga-IE",
+                        "kn-IN",
+                        "kk-KZ",
+                        "mk-MK",
+                        "ml-IN",
+                        "mn-MN",
+                        "ps-AF",
+                        "pa-Guru-IN",
+                        "pa-Arab-PK",
+                        "si-LK",
+                        "so-SO",
+                        "so-DJ",
+                        "so-ET",
+                        "so-KE",
+                        "sw-KE",
+                        "sw-TZ",
+                        "sw-UG",
+                        "sw-CD",
+                        "te-IN",
+                        "ur-PK",
+                        "ur-IN",
+                        "uz-UZ",
+                        "cy-GB",
+                        "eu-ES",
+                        "gl-ES"
+                      ]
                     }
                   },
                   "configuration": {
@@ -2628,11 +2537,11 @@
         "locales": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/enum-195-10q434h"
+            "$ref": "#/definitions/Locale"
           }
         },
         "defaultLocale": {
-          "$ref": "#/definitions/enum-195-10q434h"
+          "$ref": "#/definitions/Locale"
         },
         "preferBrowserDefaultLocale": {
           "type": "boolean"
@@ -2820,76 +2729,10 @@
               "type": "object",
               "properties": {
                 "fontFamilyHeader": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["name", "url"],
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "url": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "assets": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["name", "url"],
-                            "properties": {
-                              "name": {
-                                "type": "string"
-                              },
-                              "url": {
-                                "type": "string"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-zb9v3p"
                 },
                 "fontFamilyBody": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["name", "url"],
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "url": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "assets": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["name", "url"],
-                            "properties": {
-                              "name": {
-                                "type": "string"
-                              },
-                              "url": {
-                                "type": "string"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-zb9v3p"
                 }
               }
             }
@@ -2929,7 +2772,7 @@
               "disabledLocales": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-195-10q434h"
+                  "$ref": "#/definitions/Locale"
                 }
               }
             }
@@ -3600,219 +3443,7 @@
               "sections": {
                 "type": "array",
                 "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["title", "questions"],
-                      "properties": {
-                        "title": {
-                          "type": "string"
-                        },
-                        "questions": {
-                          "type": "array",
-                          "items": {
-                            "allOf": [
-                              {
-                                "type": "object",
-                                "required": ["title", "type"],
-                                "properties": {
-                                  "title": {
-                                    "type": "string"
-                                  },
-                                  "type": {
-                                    "$ref": "#/definitions/enum-8-147imbl"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "sub-type": {
-                                    "$ref": "#/definitions/enum-24-nmhkqz"
-                                  },
-                                  "placeholder": {
-                                    "type": "string"
-                                  },
-                                  "description": {
-                                    "type": "string"
-                                  },
-                                  "is-required": {
-                                    "type": "boolean"
-                                  },
-                                  "reference-id": {
-                                    "type": "string"
-                                  },
-                                  "display-logic": {
-                                    "allOf": [
-                                      {
-                                        "type": "object",
-                                        "required": ["action"],
-                                        "properties": {
-                                          "action": {
-                                            "type": "string",
-                                            "enum": ["SHOW", "SKIP"]
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "rule": {
-                                            "allOf": [
-                                              {
-                                                "type": "object",
-                                                "required": [
-                                                  "depends-on-question-reference-id",
-                                                  "comparison-operator"
-                                                ],
-                                                "properties": {
-                                                  "depends-on-question-reference-id": {
-                                                    "type": "string"
-                                                  },
-                                                  "comparison-operator": {
-                                                    "$ref": "#/definitions/enum-8-ruffme"
-                                                  }
-                                                }
-                                              },
-                                              {
-                                                "type": "object",
-                                                "properties": {
-                                                  "comparison-operands": {
-                                                    "type": "array",
-                                                    "items": {
-                                                      "type": "string"
-                                                    }
-                                                  }
-                                                }
-                                              }
-                                            ]
-                                          },
-                                          "nested-rule": {}
-                                        }
-                                      }
-                                    ]
-                                  },
-                                  "risk-logic": {
-                                    "type": "array",
-                                    "items": {
-                                      "allOf": [
-                                        {
-                                          "type": "object",
-                                          "required": [
-                                            "comparison-operands",
-                                            "comparison-operator"
-                                          ],
-                                          "properties": {
-                                            "comparison-operands": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "comparison-operator": {
-                                              "$ref": "#/definitions/enum-8-ruffme"
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "type": "object",
-                                          "properties": {
-                                            "risk-level": {
-                                              "type": "string"
-                                            },
-                                            "risk-matrix-column": {
-                                              "type": "string"
-                                            },
-                                            "risk-matrix-row": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "risk-categories": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "risk-framework": {
-                                    "type": "string"
-                                  },
-                                  "answer-options": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "required": ["value"],
-                                      "properties": {
-                                        "value": {
-                                          "type": "string"
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "selected-answers": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "allowed-mime-types": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "allow-select-other": {
-                                    "type": "boolean"
-                                  },
-                                  "sync-model": {
-                                    "$ref": "#/definitions/enum-7-14t2i2e"
-                                  },
-                                  "sync-column": {
-                                    "$ref": "#/definitions/enum-86-1g0ixd3"
-                                  },
-                                  "attribute-key": {
-                                    "type": "string"
-                                  },
-                                  "require-risk-evaluation": {
-                                    "type": "boolean"
-                                  },
-                                  "require-risk-matrix-evaluation": {
-                                    "type": "boolean"
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "assignees": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "external-assignees": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "is-reviewed": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-1mgfn2j"
                 }
               },
               "description": {
@@ -3848,21 +3479,7 @@
                 }
               },
               "retention-schedule": {
-                "type": "object",
-                "required": ["type", "duration-days", "operand"],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": ["REQUESTS_CREATED_AT", "ASSESSMENT_FORM_COMPLETED_AT"]
-                  },
-                  "duration-days": {
-                    "type": "number"
-                  },
-                  "operand": {
-                    "type": "string",
-                    "enum": ["FULL_DELETE", "PARTIAL_DELETE", "NONE"]
-                  }
-                }
+                "$ref": "#/definitions/interface-1v2um4l"
               },
               "templates": {
                 "type": "array",
@@ -3897,219 +3514,7 @@
               "sections": {
                 "type": "array",
                 "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["title", "questions"],
-                      "properties": {
-                        "title": {
-                          "type": "string"
-                        },
-                        "questions": {
-                          "type": "array",
-                          "items": {
-                            "allOf": [
-                              {
-                                "type": "object",
-                                "required": ["title", "type"],
-                                "properties": {
-                                  "title": {
-                                    "type": "string"
-                                  },
-                                  "type": {
-                                    "$ref": "#/definitions/enum-8-147imbl"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "sub-type": {
-                                    "$ref": "#/definitions/enum-24-nmhkqz"
-                                  },
-                                  "placeholder": {
-                                    "type": "string"
-                                  },
-                                  "description": {
-                                    "type": "string"
-                                  },
-                                  "is-required": {
-                                    "type": "boolean"
-                                  },
-                                  "reference-id": {
-                                    "type": "string"
-                                  },
-                                  "display-logic": {
-                                    "allOf": [
-                                      {
-                                        "type": "object",
-                                        "required": ["action"],
-                                        "properties": {
-                                          "action": {
-                                            "type": "string",
-                                            "enum": ["SHOW", "SKIP"]
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "rule": {
-                                            "allOf": [
-                                              {
-                                                "type": "object",
-                                                "required": [
-                                                  "depends-on-question-reference-id",
-                                                  "comparison-operator"
-                                                ],
-                                                "properties": {
-                                                  "depends-on-question-reference-id": {
-                                                    "type": "string"
-                                                  },
-                                                  "comparison-operator": {
-                                                    "$ref": "#/definitions/enum-8-ruffme"
-                                                  }
-                                                }
-                                              },
-                                              {
-                                                "type": "object",
-                                                "properties": {
-                                                  "comparison-operands": {
-                                                    "type": "array",
-                                                    "items": {
-                                                      "type": "string"
-                                                    }
-                                                  }
-                                                }
-                                              }
-                                            ]
-                                          },
-                                          "nested-rule": {}
-                                        }
-                                      }
-                                    ]
-                                  },
-                                  "risk-logic": {
-                                    "type": "array",
-                                    "items": {
-                                      "allOf": [
-                                        {
-                                          "type": "object",
-                                          "required": [
-                                            "comparison-operands",
-                                            "comparison-operator"
-                                          ],
-                                          "properties": {
-                                            "comparison-operands": {
-                                              "type": "array",
-                                              "items": {
-                                                "type": "string"
-                                              }
-                                            },
-                                            "comparison-operator": {
-                                              "$ref": "#/definitions/enum-8-ruffme"
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "type": "object",
-                                          "properties": {
-                                            "risk-level": {
-                                              "type": "string"
-                                            },
-                                            "risk-matrix-column": {
-                                              "type": "string"
-                                            },
-                                            "risk-matrix-row": {
-                                              "type": "string"
-                                            }
-                                          }
-                                        }
-                                      ]
-                                    }
-                                  },
-                                  "risk-categories": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "risk-framework": {
-                                    "type": "string"
-                                  },
-                                  "answer-options": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "required": ["value"],
-                                      "properties": {
-                                        "value": {
-                                          "type": "string"
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "selected-answers": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "allowed-mime-types": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "allow-select-other": {
-                                    "type": "boolean"
-                                  },
-                                  "sync-model": {
-                                    "$ref": "#/definitions/enum-7-14t2i2e"
-                                  },
-                                  "sync-column": {
-                                    "$ref": "#/definitions/enum-86-1g0ixd3"
-                                  },
-                                  "attribute-key": {
-                                    "type": "string"
-                                  },
-                                  "require-risk-evaluation": {
-                                    "type": "boolean"
-                                  },
-                                  "require-risk-matrix-evaluation": {
-                                    "type": "boolean"
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "assignees": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "external-assignees": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "is-reviewed": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-1mgfn2j"
                 }
               },
               "creator": {
@@ -4181,66 +3586,22 @@
               "resources": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["title", "type"],
-                  "properties": {
-                    "title": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "$ref": "#/definitions/enum-26-1q5sy6w"
-                    }
-                  }
+                  "$ref": "#/definitions/interface-b6iz1o"
                 }
               },
               "rows": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["title", "type"],
-                  "properties": {
-                    "title": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "$ref": "#/definitions/enum-26-1q5sy6w"
-                    }
-                  }
+                  "$ref": "#/definitions/interface-b6iz1o"
                 }
               },
               "retention-schedule": {
-                "type": "object",
-                "required": ["type", "duration-days", "operand"],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": ["REQUESTS_CREATED_AT", "ASSESSMENT_FORM_COMPLETED_AT"]
-                  },
-                  "duration-days": {
-                    "type": "number"
-                  },
-                  "operand": {
-                    "type": "string",
-                    "enum": ["FULL_DELETE", "PARTIAL_DELETE", "NONE"]
-                  }
-                }
+                "$ref": "#/definitions/interface-1v2um4l"
               },
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               }
             }
@@ -4280,29 +3641,13 @@
               "storageRegions": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "country": {
-                      "$ref": "#/definitions/enum-250-dl4wec"
-                    },
-                    "countrySubDivision": {
-                      "$ref": "#/definitions/enum-5133-kju7db"
-                    }
-                  }
+                  "$ref": "#/definitions/partial-57hb0b"
                 }
               },
               "transferRegions": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "country": {
-                      "$ref": "#/definitions/enum-250-dl4wec"
-                    },
-                    "countrySubDivision": {
-                      "$ref": "#/definitions/enum-5133-kju7db"
-                    }
-                  }
+                  "$ref": "#/definitions/partial-57hb0b"
                 }
               },
               "retentionType": {
@@ -4322,19 +3667,7 @@
               "attributes": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "required": ["key", "values"],
-                  "properties": {
-                    "key": {
-                      "type": "string"
-                    },
-                    "values": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/definitions/interface-1qdwyzz"
                 }
               },
               "dataSiloTitles": {
@@ -4364,49 +3697,13 @@
               "processingSubPurposes": {
                 "type": "array",
                 "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["purpose"],
-                      "properties": {
-                        "purpose": {
-                          "$ref": "#/definitions/enum-13-1cpuk94"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-cmp77n"
                 }
               },
               "dataSubCategories": {
                 "type": "array",
                 "items": {
-                  "allOf": [
-                    {
-                      "type": "object",
-                      "required": ["category"],
-                      "properties": {
-                        "category": {
-                          "$ref": "#/definitions/enum-17-1n770do"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/definitions/intersection-1fdifnz"
                 }
               },
               "saaSCategories": {
@@ -4498,16 +3795,7 @@
                         "options": {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "required": ["title", "slug"],
-                            "properties": {
-                              "title": {
-                                "type": "string"
-                              },
-                              "slug": {
-                                "type": "string"
-                              }
-                            }
+                            "$ref": "#/definitions/interface-lnwhgm"
                           }
                         }
                       }
@@ -4570,10 +3858,10 @@
             "type": "object",
             "properties": {
               "country": {
-                "$ref": "#/definitions/enum-250-dl4wec"
+                "$ref": "#/definitions/IsoCountryCode"
               },
               "countrySubDivision": {
-                "$ref": "#/definitions/enum-5133-kju7db"
+                "$ref": "#/definitions/IsoCountrySubdivisionCode"
               },
               "plaintextContext": {
                 "type": "string"
@@ -4628,7 +3916,7 @@
                 "type": "string"
               },
               "action-type": {
-                "$ref": "#/definitions/enum-19-8qwl1"
+                "$ref": "#/definitions/RequestAction"
               },
               "data-subject-type": {
                 "type": "string"
@@ -4665,7 +3953,7 @@
                 "type": "string"
               },
               "action-type": {
-                "$ref": "#/definitions/enum-19-8qwl1"
+                "$ref": "#/definitions/RequestAction"
               }
             }
           },
@@ -4699,7 +3987,7 @@
               "region-list": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/definitions/enum-5383-1d2f5pg"
+                  "$ref": "#/definitions/IsoCountryOrSubdivisionCode"
                 }
               },
               "expiry-time": {
@@ -10117,40 +9405,122 @@
     "preference-options": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["title", "slug"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          }
-        }
+        "$ref": "#/definitions/interface-lnwhgm"
       }
     }
   },
   "definitions": {
-    "enum-14-169b0u1": {
-      "type": "string",
-      "enum": [
-        "SOMBRA",
-        "email",
-        "phone",
-        "SERVER",
-        "PERSON",
-        "LEGAL_HOLD",
-        "AUTO_APPROVE",
-        "REGEX_MATCH",
-        "REGION_MATCH",
-        "DATABASE",
-        "LOOKER",
-        "WAIT_PERIOD",
-        "GOVERNMENT_ID",
-        "CUSTOM_FUNCTION"
+    "interface-1qdwyzz": {
+      "type": "object",
+      "required": ["key", "values"],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "intersection-8py0u3": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["title", "output-identifiers"],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "output-identifiers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "SOMBRA",
+                "email",
+                "phone",
+                "SERVER",
+                "PERSON",
+                "LEGAL_HOLD",
+                "AUTO_APPROVE",
+                "REGEX_MATCH",
+                "REGION_MATCH",
+                "DATABASE",
+                "LOOKER",
+                "WAIT_PERIOD",
+                "GOVERNMENT_ID",
+                "CUSTOM_FUNCTION"
+              ]
+            },
+            "input-identifier": {
+              "type": "string"
+            },
+            "testRegex": {
+              "type": "string"
+            },
+            "lookerQueryTitle": {
+              "type": "string"
+            },
+            "expirationDuration": {
+              "type": "number"
+            },
+            "transitionRequestStatus": {
+              "type": "string",
+              "enum": ["CANCELED", "ON_HOLD"]
+            },
+            "phoneNumbers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "regionList": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/IsoCountryOrSubdivisionCode"
+              }
+            },
+            "data-subjects": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "headers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/intersection-xgvhyu"
+              }
+            },
+            "privacy-actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RequestAction"
+              }
+            }
+          }
+        }
       ]
     },
-    "enum-5383-1d2f5pg": {
+    "IsoCountryOrSubdivisionCode": {
       "type": "string",
       "enum": [
         "EU",
@@ -15538,7 +14908,31 @@
         "ZW-MW"
       ]
     },
-    "enum-19-8qwl1": {
+    "intersection-xgvhyu": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["name", "value"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "isSecret": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "RequestAction": {
       "type": "string",
       "enum": [
         "AUTOMATED_DECISION_MAKING_OPT_OUT",
@@ -15562,7 +14956,7 @@
         "REMOVE_FROM_LEGAL_HOLD"
       ]
     },
-    "enum-26-1q5sy6w": {
+    "AttributeSupportedResourceType": {
       "type": "string",
       "enum": [
         "actionItem",
@@ -15593,7 +14987,7 @@
         "vendor"
       ]
     },
-    "enum-250-dl4wec": {
+    "IsoCountryCode": {
       "type": "string",
       "enum": [
         "EU",
@@ -15848,7 +15242,7 @@
         "ZW"
       ]
     },
-    "enum-5133-kju7db": {
+    "IsoCountrySubdivisionCode": {
       "type": "string",
       "enum": [
         "AD-02",
@@ -20986,7 +20380,7 @@
         "ZW-MW"
       ]
     },
-    "enum-17-1n770do": {
+    "DataCategoryType": {
       "type": "string",
       "enum": [
         "FINANCIAL",
@@ -21008,7 +20402,7 @@
         "INTEGRATION_IDENTIFIER"
       ]
     },
-    "enum-13-1cpuk94": {
+    "ProcessingPurpose": {
       "type": "string",
       "enum": [
         "ESSENTIAL",
@@ -21026,7 +20420,60 @@
         "UNSPECIFIED"
       ]
     },
-    "enum-195-10q434h": {
+    "intersection-cmp77n": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["purpose"],
+          "properties": {
+            "purpose": {
+              "$ref": "#/definitions/ProcessingPurpose"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "intersection-1fdifnz": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["category"],
+          "properties": {
+            "category": {
+              "$ref": "#/definitions/DataCategoryType"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "partial-57hb0b": {
+      "type": "object",
+      "properties": {
+        "country": {
+          "$ref": "#/definitions/IsoCountryCode"
+        },
+        "countrySubDivision": {
+          "$ref": "#/definitions/IsoCountrySubdivisionCode"
+        }
+      }
+    },
+    "Locale": {
       "type": "string",
       "enum": [
         "en",
@@ -21226,49 +20673,382 @@
         "gl-ES"
       ]
     },
-    "enum-8-147imbl": {
-      "type": "string",
-      "enum": [
-        "LONG_ANSWER_TEXT",
-        "SHORT_ANSWER_TEXT",
-        "URL",
-        "EMAIL",
-        "SINGLE_SELECT",
-        "MULTI_SELECT",
-        "FILE",
-        "DESCRIPTION"
+    "intersection-zb9v3p": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/interface-5xfnzw"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "assets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/interface-5xfnzw"
+              }
+            }
+          }
+        }
       ]
     },
-    "enum-24-nmhkqz": {
-      "type": "string",
-      "enum": [
-        "NONE",
-        "CUSTOM",
-        "USER",
-        "TEAM",
-        "DATA_SUB_CATEGORY",
-        "PROCESSING_PURPOSE_SUB_CATEGORY",
-        "PROCESSING_ACTIVITY",
-        "VENDOR",
-        "REGION",
-        "BUSINESS_ENTITY",
-        "SAA_S_CATEGORY",
-        "DATA_PROCESSING_AGREEMENT_STATUS",
-        "DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS",
-        "DEPRECATION_STATE",
-        "IDENTIFIER",
-        "DATA_SILO",
-        "RECOMMENDED_FOR_CONSENT",
-        "RECOMMENDED_FOR_PRIVACY",
-        "SUBJECT",
-        "RETENTION_TYPE",
-        "CONTROLLERSHIP",
-        "HAS_PERSONAL_DATA",
-        "ATTRIBUTE_KEY",
-        "SENSITIVE_CATEGORY"
+    "interface-5xfnzw": {
+      "type": "object",
+      "required": ["name", "url"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "intersection-1mgfn2j": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": ["title", "questions"],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "questions": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "required": ["title", "type"],
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LONG_ANSWER_TEXT",
+                          "SHORT_ANSWER_TEXT",
+                          "URL",
+                          "EMAIL",
+                          "SINGLE_SELECT",
+                          "MULTI_SELECT",
+                          "FILE",
+                          "DESCRIPTION"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "sub-type": {
+                        "type": "string",
+                        "enum": [
+                          "NONE",
+                          "CUSTOM",
+                          "USER",
+                          "TEAM",
+                          "DATA_SUB_CATEGORY",
+                          "PROCESSING_PURPOSE_SUB_CATEGORY",
+                          "PROCESSING_ACTIVITY",
+                          "VENDOR",
+                          "REGION",
+                          "BUSINESS_ENTITY",
+                          "SAA_S_CATEGORY",
+                          "DATA_PROCESSING_AGREEMENT_STATUS",
+                          "DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS",
+                          "DEPRECATION_STATE",
+                          "IDENTIFIER",
+                          "DATA_SILO",
+                          "RECOMMENDED_FOR_CONSENT",
+                          "RECOMMENDED_FOR_PRIVACY",
+                          "SUBJECT",
+                          "RETENTION_TYPE",
+                          "CONTROLLERSHIP",
+                          "HAS_PERSONAL_DATA",
+                          "ATTRIBUTE_KEY",
+                          "SENSITIVE_CATEGORY"
+                        ]
+                      },
+                      "placeholder": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "is-required": {
+                        "type": "boolean"
+                      },
+                      "reference-id": {
+                        "type": "string"
+                      },
+                      "display-logic": {
+                        "allOf": [
+                          {
+                            "type": "object",
+                            "required": ["action"],
+                            "properties": {
+                              "action": {
+                                "type": "string",
+                                "enum": ["SHOW", "SKIP"]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "allOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "depends-on-question-reference-id",
+                                      "comparison-operator"
+                                    ],
+                                    "properties": {
+                                      "depends-on-question-reference-id": {
+                                        "type": "string"
+                                      },
+                                      "comparison-operator": {
+                                        "$ref": "#/definitions/ComparisonOperator"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "comparison-operands": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              "nested-rule": {}
+                            }
+                          }
+                        ]
+                      },
+                      "risk-logic": {
+                        "type": "array",
+                        "items": {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": ["comparison-operands", "comparison-operator"],
+                              "properties": {
+                                "comparison-operands": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "comparison-operator": {
+                                  "$ref": "#/definitions/ComparisonOperator"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "risk-level": {
+                                  "type": "string"
+                                },
+                                "risk-matrix-column": {
+                                  "type": "string"
+                                },
+                                "risk-matrix-row": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "risk-categories": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "risk-framework": {
+                        "type": "string"
+                      },
+                      "answer-options": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["value"],
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "selected-answers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "allowed-mime-types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "allow-select-other": {
+                        "type": "boolean"
+                      },
+                      "sync-model": {
+                        "type": "string",
+                        "enum": [
+                          "dataSilo",
+                          "subDataPoint",
+                          "vendor",
+                          "dataSubCategory",
+                          "processingPurposeSubCategory",
+                          "businessEntity",
+                          "processingActivity"
+                        ]
+                      },
+                      "sync-column": {
+                        "type": "string",
+                        "enum": [
+                          "TITLE",
+                          "SLUG",
+                          "DESCRIPTION",
+                          "HEADQUARTER_COUNTRY",
+                          "CONNECTION_STATE",
+                          "CONNECT_START_TIME",
+                          "CONTACT_EMAIL",
+                          "CONTACT_NAME",
+                          "COUNTRY",
+                          "COUNTRY_SUB_DIVISION",
+                          "CREDENTIALS_REFRESH_SCHEDULED_AT",
+                          "DATA_PROCESSING_AGREEMENT_LINK",
+                          "DATA_PROCESSING_AGREEMENT_STATUS",
+                          "DATA_RETENTION_NOTE",
+                          "DEFAULT_ACCESS_REQUEST_VISIBILITY",
+                          "DELETED_AT",
+                          "DEPRECATION_STATE",
+                          "EMAIL_SENDING_LOCK",
+                          "EXPIRED_AT",
+                          "EXTERNAL_ID",
+                          "HAS_PERSONAL_DATA",
+                          "HEADERS",
+                          "IS_LIVE",
+                          "LAST_CONNECTED_AT",
+                          "LAST_ENABLED_AT",
+                          "LAST_LOOKUP_PROCESS_CREATION_TIME",
+                          "MANUAL_WORK_RETRY_FREQUENCY",
+                          "MANUAL_WORK_RETRY_START_AT",
+                          "NOTES",
+                          "NOTIFY_EMAIL_ADDRESS",
+                          "NOTIFY_WEBHOOK_URL",
+                          "OUTER_TYPE",
+                          "PLAINTEXT_CONTEXT",
+                          "PROMPT_A_VENDOR_EMAIL_COMPLETION_LINK_TYPE",
+                          "PROMPT_A_VENDOR_EMAIL_INCLUDE_IDENTIFIERS_ATTACHMENT",
+                          "PROMPT_A_VENDOR_EMAIL_SCHEDULED_AT",
+                          "PROMPT_A_VENDOR_EMAIL_SEND_FREQUENCY",
+                          "PROMPT_A_VENDOR_EMAIL_SEND_TYPE",
+                          "PROMPT_A_VENDOR_EMAIL_START_AT",
+                          "RECOMMENDED_FOR_CONSENT",
+                          "RECOMMENDED_FOR_PRIVACY",
+                          "RECONNECT_FORM_ITEMS",
+                          "SAAS_CONTEXT",
+                          "SECRET_HEADERS",
+                          "SUBDOMAIN",
+                          "TYPE",
+                          "URL",
+                          "WEBSITE_URL",
+                          "TRANSFER_REGIONS",
+                          "CONTROLLERSHIPS",
+                          "NAME",
+                          "DATA_POINT_ID",
+                          "ENCRYPTED_SAMPLES_S3_KEY",
+                          "ACCESS_REQUESTED_VISIBILITY_ENABLED",
+                          "ENSURE_REQUEST_REDACTION_ENABLED",
+                          "LAST_CLASSIFIED_AT",
+                          "LAST_RUN_AT",
+                          "ERROR",
+                          "ERROR_COUNT",
+                          "CONTEXT",
+                          "CONTENT_CLASSIFICATION_STATUS",
+                          "NON_NULL_CHECK_COMPLETED",
+                          "CONTROLLERSHIP",
+                          "RETENTION_TYPE",
+                          "RETENTION_PERIOD",
+                          "SCAN_RUN_ID",
+                          "CONTACT_PHONE",
+                          "ADDRESS",
+                          "HEADQUARTER_SUB_DIVISION",
+                          "PRIVACY_POLICY_URL",
+                          "CATEGORY",
+                          "IS_DEFAULT",
+                          "REGEX",
+                          "PURPOSE",
+                          "DATA_PROTECTION_OFFICER_EMAIL",
+                          "DATA_PROTECTION_OFFICER_NAME",
+                          "DATA_TYPE",
+                          "ENCRYPTION",
+                          "IS_PRIMARY_KEY",
+                          "CUSTOM_SILO_CONNECTION_STRATEGY",
+                          "SECURITY_MEASURE_DETAILS",
+                          "STORAGE_REGIONS",
+                          "DATA_PROTECTION_IMPACT_ASSESSMENT_LINK",
+                          "DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS",
+                          "METADATA",
+                          "SCHEDULING_PRIORITY"
+                        ]
+                      },
+                      "attribute-key": {
+                        "type": "string"
+                      },
+                      "require-risk-evaluation": {
+                        "type": "boolean"
+                      },
+                      "require-risk-matrix-evaluation": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "assignees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "external-assignees": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "status": {
+              "type": "string"
+            },
+            "is-reviewed": {
+              "type": "boolean"
+            }
+          }
+        }
       ]
     },
-    "enum-8-ruffme": {
+    "ComparisonOperator": {
       "type": "string",
       "enum": [
         "IS_EQUAL_TO",
@@ -21281,108 +21061,46 @@
         "DOES_NOT_CONTAIN"
       ]
     },
-    "enum-7-14t2i2e": {
-      "type": "string",
-      "enum": [
-        "dataSilo",
-        "subDataPoint",
-        "vendor",
-        "dataSubCategory",
-        "processingPurposeSubCategory",
-        "businessEntity",
-        "processingActivity"
-      ]
+    "interface-1v2um4l": {
+      "type": "object",
+      "required": ["type", "duration-days", "operand"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["REQUESTS_CREATED_AT", "ASSESSMENT_FORM_COMPLETED_AT"]
+        },
+        "duration-days": {
+          "type": "number"
+        },
+        "operand": {
+          "type": "string",
+          "enum": ["FULL_DELETE", "PARTIAL_DELETE", "NONE"]
+        }
+      }
     },
-    "enum-86-1g0ixd3": {
-      "type": "string",
-      "enum": [
-        "TITLE",
-        "SLUG",
-        "DESCRIPTION",
-        "HEADQUARTER_COUNTRY",
-        "CONNECTION_STATE",
-        "CONNECT_START_TIME",
-        "CONTACT_EMAIL",
-        "CONTACT_NAME",
-        "COUNTRY",
-        "COUNTRY_SUB_DIVISION",
-        "CREDENTIALS_REFRESH_SCHEDULED_AT",
-        "DATA_PROCESSING_AGREEMENT_LINK",
-        "DATA_PROCESSING_AGREEMENT_STATUS",
-        "DATA_RETENTION_NOTE",
-        "DEFAULT_ACCESS_REQUEST_VISIBILITY",
-        "DELETED_AT",
-        "DEPRECATION_STATE",
-        "EMAIL_SENDING_LOCK",
-        "EXPIRED_AT",
-        "EXTERNAL_ID",
-        "HAS_PERSONAL_DATA",
-        "HEADERS",
-        "IS_LIVE",
-        "LAST_CONNECTED_AT",
-        "LAST_ENABLED_AT",
-        "LAST_LOOKUP_PROCESS_CREATION_TIME",
-        "MANUAL_WORK_RETRY_FREQUENCY",
-        "MANUAL_WORK_RETRY_START_AT",
-        "NOTES",
-        "NOTIFY_EMAIL_ADDRESS",
-        "NOTIFY_WEBHOOK_URL",
-        "OUTER_TYPE",
-        "PLAINTEXT_CONTEXT",
-        "PROMPT_A_VENDOR_EMAIL_COMPLETION_LINK_TYPE",
-        "PROMPT_A_VENDOR_EMAIL_INCLUDE_IDENTIFIERS_ATTACHMENT",
-        "PROMPT_A_VENDOR_EMAIL_SCHEDULED_AT",
-        "PROMPT_A_VENDOR_EMAIL_SEND_FREQUENCY",
-        "PROMPT_A_VENDOR_EMAIL_SEND_TYPE",
-        "PROMPT_A_VENDOR_EMAIL_START_AT",
-        "RECOMMENDED_FOR_CONSENT",
-        "RECOMMENDED_FOR_PRIVACY",
-        "RECONNECT_FORM_ITEMS",
-        "SAAS_CONTEXT",
-        "SECRET_HEADERS",
-        "SUBDOMAIN",
-        "TYPE",
-        "URL",
-        "WEBSITE_URL",
-        "TRANSFER_REGIONS",
-        "CONTROLLERSHIPS",
-        "NAME",
-        "DATA_POINT_ID",
-        "ENCRYPTED_SAMPLES_S3_KEY",
-        "ACCESS_REQUESTED_VISIBILITY_ENABLED",
-        "ENSURE_REQUEST_REDACTION_ENABLED",
-        "LAST_CLASSIFIED_AT",
-        "LAST_RUN_AT",
-        "ERROR",
-        "ERROR_COUNT",
-        "CONTEXT",
-        "CONTENT_CLASSIFICATION_STATUS",
-        "NON_NULL_CHECK_COMPLETED",
-        "CONTROLLERSHIP",
-        "RETENTION_TYPE",
-        "RETENTION_PERIOD",
-        "SCAN_RUN_ID",
-        "CONTACT_PHONE",
-        "ADDRESS",
-        "HEADQUARTER_SUB_DIVISION",
-        "PRIVACY_POLICY_URL",
-        "CATEGORY",
-        "IS_DEFAULT",
-        "REGEX",
-        "PURPOSE",
-        "DATA_PROTECTION_OFFICER_EMAIL",
-        "DATA_PROTECTION_OFFICER_NAME",
-        "DATA_TYPE",
-        "ENCRYPTION",
-        "IS_PRIMARY_KEY",
-        "CUSTOM_SILO_CONNECTION_STRATEGY",
-        "SECURITY_MEASURE_DETAILS",
-        "STORAGE_REGIONS",
-        "DATA_PROTECTION_IMPACT_ASSESSMENT_LINK",
-        "DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS",
-        "METADATA",
-        "SCHEDULING_PRIORITY"
-      ]
+    "interface-b6iz1o": {
+      "type": "object",
+      "required": ["title", "type"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/AttributeSupportedResourceType"
+        }
+      }
+    },
+    "interface-lnwhgm": {
+      "type": "object",
+      "required": ["title", "slug"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        }
+      }
     }
   }
 }

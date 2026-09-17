@@ -67,6 +67,7 @@ describe('monorepo compatibility helpers', () => {
     expect(getValues(Example)).toEqual(['READY', 'PENDING']);
     expect(valuesOf(Example).is('READY')).toBe(true);
     expect(valuesOf(Example).is('INVALID')).toBe(false);
+    expect(valuesOf(Example, 'Example').name).toBe('Example');
   });
 
   it('finds all regex matches and maps named groups', () => {

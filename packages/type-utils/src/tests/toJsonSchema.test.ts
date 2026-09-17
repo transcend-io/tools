@@ -32,7 +32,111 @@ describe('toJsonSchema', () => {
     });
   });
 
-  it('references structurally identical enum codecs when references reduce the schema size', () => {
+  it('references a reused named codec when references reduce the schema size', () => {
+    const locale = t.keyof(
+      Object.fromEntries(largeEnumValues.map((value) => [value, null])),
+      'Locale',
+    );
+    const schema = toJsonSchema(
+      t.type({
+        first: locale,
+        second: locale,
+      }),
+      false,
+      false,
+      { useReferences: true },
+    );
+    const definitions = schema.definitions as Record<string, JSONSchema7>;
+
+    expect(definitions).toEqual({
+      Locale: {
+        type: 'string',
+        enum: largeEnumValues,
+      },
+    });
+    expect(schema.properties).toEqual({
+      first: { $ref: '#/definitions/Locale' },
+      second: { $ref: '#/definitions/Locale' },
+    });
+  });
+
+  it('references reused composite codecs by identity', () => {
+    const shared = t.type(
+      {
+        firstLongProperty: t.string,
+        secondLongProperty: t.number,
+        thirdLongProperty: t.boolean,
+      },
+      'SharedConfiguration',
+    );
+    const schema = toJsonSchema(
+      t.type({
+        first: shared,
+        second: shared,
+      }),
+      false,
+      false,
+      { useReferences: true },
+    );
+
+    expect(schema.definitions).toEqual({
+      SharedConfiguration: {
+        type: 'object',
+        required: ['firstLongProperty', 'secondLongProperty', 'thirdLongProperty'],
+        properties: {
+          firstLongProperty: { type: 'string' },
+          secondLongProperty: { type: 'number' },
+          thirdLongProperty: { type: 'boolean' },
+        },
+      },
+    });
+    expect(schema.properties).toEqual({
+      first: { $ref: '#/definitions/SharedConfiguration' },
+      second: { $ref: '#/definitions/SharedConfiguration' },
+    });
+  });
+
+  it('inlines definitions that become unprofitable after nesting is considered', () => {
+    const child = t.type(
+      {
+        firstLongProperty: t.string,
+        secondLongProperty: t.number,
+      },
+      'ChildConfiguration',
+    );
+    const parent = t.type({ child }, 'ParentConfiguration');
+    const schema = toJsonSchema(
+      t.type({
+        first: parent,
+        second: parent,
+      }),
+      false,
+      false,
+      { useReferences: true },
+    );
+
+    expect(schema.definitions).toEqual({
+      ParentConfiguration: {
+        type: 'object',
+        required: ['child'],
+        properties: {
+          child: {
+            type: 'object',
+            required: ['firstLongProperty', 'secondLongProperty'],
+            properties: {
+              firstLongProperty: { type: 'string' },
+              secondLongProperty: { type: 'number' },
+            },
+          },
+        },
+      },
+    });
+    expect(schema.properties?.first).toEqual({
+      $ref: '#/definitions/ParentConfiguration',
+    });
+  });
+
+  it('does not conflate distinct codec objects with the same structure', () => {
     const schema = toJsonSchema(
       t.type({
         first: buildLargeEnum(),
@@ -42,25 +146,26 @@ describe('toJsonSchema', () => {
       false,
       { useReferences: true },
     );
-    const definitions = schema.definitions as Record<string, JSONSchema7>;
-    const definitionNames = Object.keys(definitions);
 
-    expect(definitionNames).toHaveLength(1);
-    expect(definitions[definitionNames[0]!]).toEqual({
-      type: 'string',
-      enum: largeEnumValues,
-    });
+    expect(schema.definitions).toBeUndefined();
     expect(schema.properties).toEqual({
-      first: { $ref: `#/definitions/${definitionNames[0]}` },
-      second: { $ref: `#/definitions/${definitionNames[0]}` },
+      first: {
+        type: 'string',
+        enum: largeEnumValues,
+      },
+      second: {
+        type: 'string',
+        enum: largeEnumValues,
+      },
     });
   });
 
-  it('does not reference enums that occur once or would make the schema larger', () => {
+  it('does not reference codecs that occur once or would make the schema larger', () => {
+    const shortEnum = t.keyof({ short: null, values: null });
     const schema = toJsonSchema(
       t.type({
-        first: t.keyof({ short: null, values: null }),
-        second: t.keyof({ short: null, values: null }),
+        first: shortEnum,
+        second: shortEnum,
         unique: buildLargeEnum(),
       }),
       false,
@@ -77,25 +182,28 @@ describe('toJsonSchema', () => {
   });
 
   it('preserves schema transformations applied by parent codecs before adding references', () => {
+    const locale = t.keyof(
+      Object.fromEntries(largeEnumValues.map((value) => [value, null])),
+      'Locale',
+    );
     const schema = toJsonSchema(
       t.partial({
-        first: buildLargeEnum(),
-        second: buildLargeEnum(),
+        first: locale,
+        second: locale,
       }),
       false,
       true,
       { useReferences: true },
     );
     const definitions = schema.definitions as Record<string, JSONSchema7>;
-    const definitionName = Object.keys(definitions)[0]!;
 
-    expect(definitions[definitionName]).toEqual({
+    expect(definitions.Locale).toEqual({
       type: ['string', 'null'],
       enum: largeEnumValues,
     });
     expect(schema.properties).toEqual({
-      first: { $ref: `#/definitions/${definitionName}` },
-      second: { $ref: `#/definitions/${definitionName}` },
+      first: { $ref: '#/definitions/Locale' },
+      second: { $ref: '#/definitions/Locale' },
     });
   });
 });
