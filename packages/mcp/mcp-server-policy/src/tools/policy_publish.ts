@@ -35,6 +35,12 @@ export function createPolicyPublishTool(clients: PolicyToolClients) {
       'Not live until policy_set_live activate. Requires Manage Policy scope (included in Activate).',
     category: 'Policy Engine',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Uploads a new Policy Engine version for this organization. The version stays inert ' +
+        'until activated, but the Rego and manifest in the call arguments become stored policy ' +
+        'code. Check bundleName and the files or directory before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: PolicyPublishSchema,
     handler: async ({ dir, files, bundleName, version, description }) => {
