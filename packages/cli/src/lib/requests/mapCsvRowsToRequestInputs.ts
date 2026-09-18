@@ -72,6 +72,8 @@ export const PrivacyRequestInput = t.intersection([
     dataSiloIds: t.array(t.string),
     /** Language key to map to */
     locale: valuesOf(LOCALE_KEY),
+    /** Workflow config ID to target explicitly */
+    workflowConfigId: t.string,
   }),
 ]);
 
@@ -266,6 +268,12 @@ export function mapCsvRowsToRequestInputs(
         input[getMappedName(ColumnName.DataSiloIds)]
           ? {
               dataSiloIds: splitCsvToList(input[getMappedName(ColumnName.DataSiloIds)]),
+            }
+          : {}),
+        ...(getMappedName(ColumnName.WorkflowConfigId) !== NONE &&
+        input[getMappedName(ColumnName.WorkflowConfigId)]
+          ? {
+              workflowConfigId: input[getMappedName(ColumnName.WorkflowConfigId)],
             }
           : {}),
       },
