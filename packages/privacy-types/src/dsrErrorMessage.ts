@@ -173,6 +173,10 @@ export const DSR_ERROR_MESSAGE = {
   [DsrErrorCode.DropRecordListTypeMismatch]: (
     records: readonly DropRecordListTypeMismatchMessageInput[],
   ) => {
+    const prefix =
+      records.length === 1
+        ? ''
+        : `${records.length} DROP record(s) have a list-type mismatch with this run's CPPA download: `;
     const named = records
       .slice(0, MAX_UNKNOWN_DROP_RECORDS_IN_ERROR)
       .map(
@@ -184,10 +188,6 @@ export const DSR_ERROR_MESSAGE = {
       records.length > MAX_UNKNOWN_DROP_RECORDS_IN_ERROR
         ? `; and ${records.length - MAX_UNKNOWN_DROP_RECORDS_IN_ERROR} more`
         : '';
-    const prefix =
-      records.length === 1
-        ? ''
-        : `${records.length} DROP record(s) have a list-type mismatch with this run's CPPA download: `;
     return `${prefix}${named}${remainder}. Download a fresh matched-records file and edit that.`;
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
