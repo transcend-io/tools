@@ -41,6 +41,16 @@ export interface UnknownDropRecordsMessageInput {
   dropListType: DropListType;
 }
 
+/** Inputs for the {@link DsrErrorCode.DropRecordListTypeMismatch} message builder. */
+export interface DropRecordListTypeMismatchMessageInput {
+  /** DROP record identifier from the submission payload */
+  dropRecordId: string;
+  /** List type asserted on the submission */
+  submittedListType: DropListType;
+  /** List type the record has in this run's CPPA download */
+  actualListType: DropListType;
+}
+
 /** Inputs for the {@link DsrErrorCode.DataSiloNotInWorkflow} message builder. */
 export interface DataSiloNotInWorkflowMessageInput {
   /** Workflow config the submission targeted */
@@ -90,6 +100,9 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.DropRecordsRequireDropRunId]: () => string;
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
+  [DsrErrorCode.DropRecordListTypeMismatch]: (
+    records: readonly DropRecordListTypeMismatchMessageInput[],
+  ) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
   [DsrErrorCode.DropRunNotIntakeEligible]: (dropRunState: string) => string;
   [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
@@ -156,6 +169,26 @@ export const DSR_ERROR_MESSAGE = {
       `download: ${named}${remainder}. Re-index the run's records, or ` +
       'download a fresh matched-records file and edit that.'
     );
+  },
+  [DsrErrorCode.DropRecordListTypeMismatch]: (
+    records: readonly DropRecordListTypeMismatchMessageInput[],
+  ) => {
+    const named = records
+      .slice(0, MAX_UNKNOWN_DROP_RECORDS_IN_ERROR)
+      .map(
+        ({ dropRecordId, submittedListType, actualListType }) =>
+          `${dropRecordId} is a ${actualListType} record in this run; file says ${submittedListType}`,
+      )
+      .join('; ');
+    const remainder =
+      records.length > MAX_UNKNOWN_DROP_RECORDS_IN_ERROR
+        ? `; and ${records.length - MAX_UNKNOWN_DROP_RECORDS_IN_ERROR} more`
+        : '';
+    const prefix =
+      records.length === 1
+        ? ''
+        : `${records.length} DROP record(s) have a list-type mismatch with this run's CPPA download: `;
+    return `${prefix}${named}${remainder}. Download a fresh matched-records file and edit that.`;
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,

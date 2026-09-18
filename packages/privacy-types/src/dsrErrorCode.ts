@@ -30,6 +30,11 @@ export const DsrErrorCode = makeEnum({
   MaxDropRecordsPerRequestExceeded: 'MAX_DROP_RECORDS_PER_REQUEST_EXCEEDED',
   /** One or more DROP records on this request are not part of the run's CPPA download. */
   UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
+  /**
+   * One or more DROP records on this request exist in the run's CPPA download
+   * under a different list type than the submission claims.
+   */
+  DropRecordListTypeMismatch: 'DROP_RECORD_LIST_TYPE_MISMATCH',
   /** The DROP run referenced by this request does not exist. */
   DropRunNotFound: 'DROP_RUN_NOT_FOUND',
   /** The DROP run referenced by this request is in a state that no longer accepts new DROP-linked DSRs. */
