@@ -34,7 +34,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listUsers: InstanceType<typeof AdminMixin>['listUsers'];
   declare listTeams: InstanceType<typeof AdminMixin>['listTeams'];
   declare listApiKeys: InstanceType<typeof AdminMixin>['listApiKeys'];
-  declare createApiKey: InstanceType<typeof AdminMixin>['createApiKey'];
   declare getPrivacyCenter: InstanceType<typeof AdminMixin>['getPrivacyCenter'];
 
   // DSR
