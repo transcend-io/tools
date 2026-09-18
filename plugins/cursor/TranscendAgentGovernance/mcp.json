@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "transcend-agent-governance": {
-      "url": "${GATEWAY_BASE_URL}/mcp/${TENANT_ID}/agent",
+      "url": "${GATEWAY_BASE_URL}/mcp/agent",
       "headers": {
         "Accept": "application/json, text/event-stream"
       },
