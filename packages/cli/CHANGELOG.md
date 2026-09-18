@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 12.1.1
+
+### Patch Changes
+
+- 0f58125: Add optional `workflowConfigId` CSV column support to `transcend request upload` so callers can target a workflow config explicitly.
+
 ## 12.1.0
 
 ### Minor Changes
