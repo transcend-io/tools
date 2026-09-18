@@ -333,6 +333,8 @@ Upload a set of requests from a CSV.
 
 This command prompts you to map the shape of the CSV to the shape of the Transcend API. There is no requirement for the shape of the incoming CSV, as the script will handle the mapping process.
 
+You can optionally map a `workflowConfigId` column (UUID of a published workflow config). When present on a row, that ID is sent to `POST /v1/data-subject-request` so the request targets that workflow explicitly on orgs with Workflows V2.
+
 The script will also produce a JSON cache file that allows for the mappings to be preserved between runs.
 
 FLAGS
