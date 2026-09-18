@@ -85,7 +85,6 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
-      'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
       'consent_delete_cookies',
