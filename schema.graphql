@@ -1933,25 +1933,25 @@ enum AirgapBundleType {
   TEST_ERROR
 }
 
-enum IabAgreement {
-  LSPA
-  MSPA
+enum ConsentExpiryBehavior {
+  Prompt
+  ResetOptIns
+  Reset
 }
 
 enum IABSignal {
   GPP_USP
 }
 
+enum IabAgreement {
+  LSPA
+  MSPA
+}
+
 enum ModuleKind {
   ui
   plugin
   policies
-}
-
-enum ConsentExpiryBehavior {
-  Prompt
-  ResetOptIns
-  Reset
 }
 
 enum TrackerOverrideModule {
@@ -1970,6 +1970,11 @@ enum AssessmentFormRawOrderField {
   title
 }
 
+enum AssessmentQuestionCommentType {
+  INTERNAL
+  RESPONDENT
+}
+
 enum AssessmentQuestionFileType {
   json
   pdf
@@ -1986,16 +1991,13 @@ enum AssessmentQuestionFileType {
   csv
 }
 
-enum StaticAssessmentQuestionSubType {
-  REGION
-  DATA_PROCESSING_AGREEMENT_STATUS
-  DEPRECATION_STATE
-  RECOMMENDED_FOR_CONSENT
-  RECOMMENDED_FOR_PRIVACY
-  RETENTION_TYPE
-  CONTROLLERSHIP
-  HAS_PERSONAL_DATA
-  DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS
+enum AssessmentTriggerAction {
+  SEND_TARGET_ASSESSMENT
+}
+
+enum AssessmentTriggerEvent {
+  ON_SUBMISSION
+  ON_APPROVAL
 }
 
 enum DynamicAssessmentQuestionSubType {
@@ -2014,18 +2016,16 @@ enum DynamicAssessmentQuestionSubType {
   SENSITIVE_CATEGORY
 }
 
-enum AssessmentQuestionCommentType {
-  INTERNAL
-  RESPONDENT
-}
-
-enum AssessmentTriggerAction {
-  SEND_TARGET_ASSESSMENT
-}
-
-enum AssessmentTriggerEvent {
-  ON_SUBMISSION
-  ON_APPROVAL
+enum StaticAssessmentQuestionSubType {
+  REGION
+  DATA_PROCESSING_AGREEMENT_STATUS
+  DEPRECATION_STATE
+  RECOMMENDED_FOR_CONSENT
+  RECOMMENDED_FOR_PRIVACY
+  RETENTION_TYPE
+  CONTROLLERSHIP
+  HAS_PERSONAL_DATA
+  DATA_PROTECTION_IMPACT_ASSESSMENT_STATUS
 }
 
 enum CodePackageOrderField {
@@ -2052,11 +2052,9 @@ enum SoftwareDevelopmentKitOrderField {
   updatedAt
 }
 
-enum AttributeKeyOrderField {
-  name
-  createdAt
-  updatedAt
-  isCustom
+enum AssessmentAttributeStatus {
+  NOT_NEEDED
+  NEEDED
 }
 
 enum AssessmentSecondaryType {
@@ -2065,9 +2063,11 @@ enum AssessmentSecondaryType {
   STATUS
 }
 
-enum AssessmentAttributeStatus {
-  NOT_NEEDED
-  NEEDED
+enum AttributeKeyOrderField {
+  name
+  createdAt
+  updatedAt
+  isCustom
 }
 
 enum AttributeValueOrderField {
@@ -2094,21 +2094,6 @@ enum PromptRunOrderField {
   updatedAt
 }
 
-enum ConsentTrackerFilter {
-  LIVE
-  NEEDS_REVIEW
-  ALL
-}
-
-enum BundleDeployStatus {
-  DEPLOYED
-  DEPLOY_PENDING
-  PREVIEW
-  ROLLBACK_PENDING
-  ERROR
-  TEST_ERROR
-}
-
 enum AirgapCdn {
   CLOUDFLARE
   CLOUDFRONT
@@ -2117,134 +2102,6 @@ enum AirgapCdn {
 enum AirgapIssueSeverityGQL {
   MODERATE
   HIGH
-}
-
-enum CustomDomainStatus {
-  ACTIVE
-  DEACTIVATED
-  DELETED
-}
-
-enum UiVariantStatus {
-  DRAFT
-  ACTIVE
-  PUBLISHED
-}
-
-enum ConsentUiUserFlow {
-  BANNER
-  MODAL
-  BANNER_AND_MODAL
-}
-
-enum CookieOrderField {
-  name
-  createdAt
-  updatedAt
-  lastDiscoveredAt
-  occurrences
-}
-
-enum DataFlowType {
-  URL
-  QUERY_PARAM
-  REGEX
-}
-
-enum DataFlowOrderField {
-  value
-  createdAt
-  updatedAt
-  occurrences
-  service
-  lastDiscoveredAt
-}
-
-enum DateRange {
-  SevenDays
-  ThirtyDays
-  OneYear
-}
-
-enum ExperienceOrderField {
-  isActive
-  name
-  createdAt
-  updatedAt
-  displayPriority
-}
-
-enum TranscendConsentManagerUI {
-  ui
-  tcfUi
-  uiV2
-}
-
-enum TranscendConsentManagerScript {
-  ui
-  tcfUi
-  uiV2
-  gpp
-}
-
-enum SupportedConditionals {
-  Or
-  And
-}
-
-enum PurposeOrderField {
-  isActive
-  name
-  createdAt
-  updatedAt
-}
-
-enum ConsentEvent {
-  CONSENT_CHANGED
-}
-
-enum TrafficEvent {
-  OUTGOING_REQUEST
-  COOKIE_MUTATION
-  COOKIE_MATCHER_MUTATION
-  PATH_MATCHER_REQUEST
-  PATH_REQUEST
-  PAGE_VIEWS
-  SITE_SESSIONS
-  BOUNCES
-  TELEMETRY_REQUESTS
-  INITIAL_SITE_SESSION_CONSENT
-}
-
-enum RegimeEvent {
-  REGIME_DETECTED
-}
-
-enum SignalEvent {
-  SIGNAL_DETECTED
-  INITIAL_SESSION_SIGNAL
-}
-
-enum TrackingPurposeStatsEvent {
-  TRACKING_PURPOSE_STATS
-}
-
-enum AnalyticsEvent {
-  CONSENT_CHANGED
-  OUTGOING_REQUEST
-  COOKIE_MUTATION
-  COOKIE_MATCHER_MUTATION
-  PATH_MATCHER_REQUEST
-  PATH_REQUEST
-  PAGE_VIEWS
-  SITE_SESSIONS
-  BOUNCES
-  TELEMETRY_REQUESTS
-  INITIAL_SITE_SESSION_CONSENT
-  REGIME_DETECTED
-  SIGNAL_DETECTED
-  INITIAL_SESSION_SIGNAL
-  TRACKING_PURPOSE_STATS
 }
 
 enum AnalyticsDimension {
@@ -2270,6 +2127,149 @@ enum AnalyticsDimension {
   BACKEND_SAMPLING_MULTIPLIER
 }
 
+enum AnalyticsEvent {
+  CONSENT_CHANGED
+  OUTGOING_REQUEST
+  COOKIE_MUTATION
+  COOKIE_MATCHER_MUTATION
+  PATH_MATCHER_REQUEST
+  PATH_REQUEST
+  PAGE_VIEWS
+  SITE_SESSIONS
+  BOUNCES
+  TELEMETRY_REQUESTS
+  INITIAL_SITE_SESSION_CONSENT
+  REGIME_DETECTED
+  SIGNAL_DETECTED
+  INITIAL_SESSION_SIGNAL
+  TRACKING_PURPOSE_STATS
+}
+
+enum BundleDeployStatus {
+  DEPLOYED
+  DEPLOY_PENDING
+  PREVIEW
+  ROLLBACK_PENDING
+  ERROR
+  TEST_ERROR
+}
+
+enum ConsentEvent {
+  CONSENT_CHANGED
+}
+
+enum ConsentTrackerFilter {
+  LIVE
+  NEEDS_REVIEW
+  ALL
+}
+
+enum ConsentUiUserFlow {
+  BANNER
+  MODAL
+  BANNER_AND_MODAL
+}
+
+enum CookieOrderField {
+  name
+  createdAt
+  updatedAt
+  lastDiscoveredAt
+  occurrences
+}
+
+enum CustomDomainStatus {
+  ACTIVE
+  DEACTIVATED
+  DELETED
+}
+
+enum DataFlowOrderField {
+  value
+  createdAt
+  updatedAt
+  occurrences
+  service
+  lastDiscoveredAt
+}
+
+enum DataFlowType {
+  URL
+  QUERY_PARAM
+  REGEX
+}
+
+enum DateRange {
+  SevenDays
+  ThirtyDays
+  OneYear
+}
+
+enum ExperienceOrderField {
+  isActive
+  name
+  createdAt
+  updatedAt
+  displayPriority
+}
+
+enum PurposeOrderField {
+  isActive
+  name
+  createdAt
+  updatedAt
+}
+
+enum RegimeEvent {
+  REGIME_DETECTED
+}
+
+enum SignalEvent {
+  SIGNAL_DETECTED
+  INITIAL_SESSION_SIGNAL
+}
+
+enum SupportedConditionals {
+  Or
+  And
+}
+
+enum TrackingPurposeStatsEvent {
+  TRACKING_PURPOSE_STATS
+}
+
+enum TrafficEvent {
+  OUTGOING_REQUEST
+  COOKIE_MUTATION
+  COOKIE_MATCHER_MUTATION
+  PATH_MATCHER_REQUEST
+  PATH_REQUEST
+  PAGE_VIEWS
+  SITE_SESSIONS
+  BOUNCES
+  TELEMETRY_REQUESTS
+  INITIAL_SITE_SESSION_CONSENT
+}
+
+enum TranscendConsentManagerScript {
+  ui
+  tcfUi
+  uiV2
+  gpp
+}
+
+enum TranscendConsentManagerUI {
+  ui
+  tcfUi
+  uiV2
+}
+
+enum UiVariantStatus {
+  DRAFT
+  ACTIVE
+  PUBLISHED
+}
+
 enum UsageMart {
   PREFERENCE_RECORDS
   WORKFLOW_RUNS
@@ -2284,14 +2284,14 @@ enum ActionOrderField {
   type
 }
 
-enum PostCompileStatus {
-  VIEW_CATEGORIES
-  DOWNLOADABLE
-}
-
 enum AiBaseModelDeveloperEvidenceSourceType {
   NAMED_SUB_PROCESSOR
   OTHER_PUBLIC_DOCUMENTATION
+}
+
+enum AiDocumentationLinkTarget {
+  VENDOR
+  INTEGRATION
 }
 
 enum AiDocumentationLinkType {
@@ -2304,30 +2304,50 @@ enum AiDocumentationLinkType {
   OTHER
 }
 
-enum AiDocumentationLinkTarget {
-  VENDOR
-  INTEGRATION
-}
-
 enum BusinessEntityOrderField {
   title
   createdAt
   updatedAt
 }
 
-enum IntegrationStatus {
-  BETA
-  ONLINE
+enum CatalogOrderField {
+  title
+  createdAt
+  updatedAt
+  integrationName
 }
 
-enum PrivacyRequestConnectionStatus {
+enum ClassificationBrowseListQuickFilter {
+  RECURRING_SCANS_ON
+  RECURRING_SCANS_OFF
+  DISCONNECTED
+  NOT_CONFIGURED
+  ERROR
+}
+
+enum ClassificationPluginType {
+  CONTENT_CLASSIFICATION
+  UNSTRUCTURED_DATA_SAMPLING
+}
+
+enum ClassificationSiloConnectionState {
   CONNECTED
-  PENDING_CONNECTION
-  VERY_LIKELY
-  LIKELY
-  POSSIBLE
-  NOT_RECOMMENDED
-  UNDETERMINED
+  DISCONNECTED
+  NOT_CONFIGURED
+  ERROR
+}
+
+enum ComplianceReportSnapshotType {
+  INITIAL
+  MANUAL_SAVE
+  AUTO_SAVE
+  REPROCESS_SAVE
+  PROMOTE_SAVE
+}
+
+enum ConnectorType {
+  AVC
+  API
 }
 
 enum ConsentManagerConnectionStatus {
@@ -2341,32 +2361,16 @@ enum ConsentManagerConnectionStatus {
   UNDETERMINED
 }
 
-enum HasPersonalDataStatus {
-  YES
+enum ContainsSensitiveData {
   LIKELY
   UNLIKELY
-  NO
-  UNSPECIFIED
+  UNKNOWN
 }
 
-enum ConnectorType {
-  AVC
-  API
-}
-
-enum CatalogOrderField {
-  title
-  createdAt
-  updatedAt
-  integrationName
-}
-
-enum ComplianceReportSnapshotType {
-  INITIAL
-  MANUAL_SAVE
-  AUTO_SAVE
-  REPROCESS_SAVE
-  PROMOTE_SAVE
+enum ContentClassificationDataPointOrderField {
+  totalSubDataPointsCount
+  confirmedSubDataPointsPercent
+  name
 }
 
 enum DataCollectionStaticType {
@@ -2395,6 +2399,12 @@ enum DataCollectionStaticType {
   UNASSIGNED
 }
 
+enum DataPointCreatedBy {
+  SCHEMA_DISCOVERY
+  MANUAL
+  HARD_CODED
+}
+
 enum DataPointExportMode {
   FULL_DATA
   COUNTS_ONLY
@@ -2408,16 +2418,12 @@ enum DataPointOrderField {
   name
 }
 
-enum DataPointCreatedBy {
-  SCHEMA_DISCOVERY
-  MANUAL
-  HARD_CODED
-}
-
-enum ContentClassificationDataPointOrderField {
-  totalSubDataPointsCount
-  confirmedSubDataPointsPercent
-  name
+enum DataProcessingAgreementStatus {
+  ONLINE_DPA
+  CUSTOM_DPA
+  REQUIRES_UPDATE
+  NOT_REQUIRED
+  MISSING
 }
 
 enum DataReportExportableTables {
@@ -2432,25 +2438,6 @@ enum DataReportExportableTables {
 
 enum DataReportRawOrderField {
   title
-}
-
-enum DisconnectedSiloState {
-  EXPIRED
-  NOT_CONFIGURED
-}
-
-enum NotDisconnectedSiloState {
-  CONNECTED
-  PERMISSIONS_UPDATED
-  PARTIAL
-  INDEXING
-}
-
-enum ClassificationSiloConnectionState {
-  CONNECTED
-  DISCONNECTED
-  NOT_CONFIGURED
-  ERROR
 }
 
 enum DataSiloBulkPreviewOrderField {
@@ -2469,16 +2456,13 @@ enum DataSiloDeprecationState {
   IMPLEMENTATION
 }
 
-enum DataSiloNullableFilters {
-  OWNERS
+enum DataSiloDiscoveryPluginType {
+  DATA_SILO_DISCOVERY
 }
 
-enum SimplifiedPluginStatus {
-  RECURRING_SCANS_ON
-  RECURRING_SCANS_OFF
-  DISCONNECTED
-  NOT_CONFIGURED
-  ERROR
+enum DataSiloErrorRollupGroupBy {
+  ERROR_MESSAGE
+  DATA_POINT
 }
 
 enum DataSiloErrorRollupQueueModel {
@@ -2487,9 +2471,8 @@ enum DataSiloErrorRollupQueueModel {
   RequestFile
 }
 
-enum DataSiloErrorRollupGroupBy {
-  ERROR_MESSAGE
-  DATA_POINT
+enum DataSiloNullableFilters {
+  OWNERS
 }
 
 enum DataSubjectClass {
@@ -2499,12 +2482,11 @@ enum DataSubjectClass {
   OTHER
 }
 
-enum ClassificationBrowseListQuickFilter {
-  RECURRING_SCANS_ON
-  RECURRING_SCANS_OFF
-  DISCONNECTED
-  NOT_CONFIGURED
-  ERROR
+enum DiscoClassPluginType {
+  CONTENT_CLASSIFICATION
+  UNSTRUCTURED_DATA_SAMPLING
+  SCHEMA_DISCOVERY
+  UNSTRUCTURED_DATA_DISCOVERY
 }
 
 enum DiscoClassScanPhase {
@@ -2513,9 +2495,13 @@ enum DiscoClassScanPhase {
   CLASSIFICATION
 }
 
-enum ScanRunStatus {
-  SUCCESS
-  ERROR
+enum DisconnectedSiloState {
+  EXPIRED
+  NOT_CONFIGURED
+}
+
+enum DsrAutomationPluginType {
+  SCHEMA_DISCOVERY
 }
 
 enum EnricherOrderField {
@@ -2524,10 +2510,12 @@ enum EnricherOrderField {
   updatedAt
 }
 
-enum ModeOption {
-  tags
-  multiple
-  combobox
+enum HasPersonalDataStatus {
+  YES
+  LIKELY
+  UNLIKELY
+  NO
+  UNSPECIFIED
 }
 
 enum IdentifierOrderField {
@@ -2560,6 +2548,11 @@ enum IntegrationCategory {
   OTHER
 }
 
+enum IntegrationStatus {
+  BETA
+  ONLINE
+}
+
 enum LookupProcessOrderField {
   name
   createdAt
@@ -2571,6 +2564,24 @@ enum LookupProcessOrderField {
 enum LookupProcessStatusSuccess {
   RESOLVED
   SKIPPED
+}
+
+enum MetadataDiscoveryPluginType {
+  SCHEMA_DISCOVERY
+  UNSTRUCTURED_DATA_DISCOVERY
+}
+
+enum ModeOption {
+  tags
+  multiple
+  combobox
+}
+
+enum NotDisconnectedSiloState {
+  CONNECTED
+  PERMISSIONS_UPDATED
+  PARTIAL
+  INDEXING
 }
 
 enum PluginQueueStatus {
@@ -2588,39 +2599,19 @@ enum PluginQueueStatusSuccess {
   SKIPPED
 }
 
-enum StructuredDiscoveryPluginType {
-  SCHEMA_DISCOVERY
-  CONTENT_CLASSIFICATION
+enum PostCompileStatus {
+  VIEW_CATEGORIES
+  DOWNLOADABLE
 }
 
-enum UnstructuredDiscoveryPluginType {
-  UNSTRUCTURED_DATA_DISCOVERY
-  UNSTRUCTURED_DATA_SAMPLING
-}
-
-enum DsrAutomationPluginType {
-  SCHEMA_DISCOVERY
-}
-
-enum DataSiloDiscoveryPluginType {
-  DATA_SILO_DISCOVERY
-}
-
-enum ClassificationPluginType {
-  CONTENT_CLASSIFICATION
-  UNSTRUCTURED_DATA_SAMPLING
-}
-
-enum MetadataDiscoveryPluginType {
-  SCHEMA_DISCOVERY
-  UNSTRUCTURED_DATA_DISCOVERY
-}
-
-enum DiscoClassPluginType {
-  CONTENT_CLASSIFICATION
-  UNSTRUCTURED_DATA_SAMPLING
-  SCHEMA_DISCOVERY
-  UNSTRUCTURED_DATA_DISCOVERY
+enum PrivacyRequestConnectionStatus {
+  CONNECTED
+  PENDING_CONNECTION
+  VERY_LIKELY
+  LIKELY
+  POSSIBLE
+  NOT_RECOMMENDED
+  UNDETERMINED
 }
 
 enum ProcessingActivityOrderField {
@@ -2629,10 +2620,20 @@ enum ProcessingActivityOrderField {
   updatedAt
 }
 
+enum RefetchSampleMethod {
+  DEFAULT
+  FILTER_NON_NULL
+}
+
 enum SaaSCategoryOrderField {
   title
   createdAt
   updatedAt
+}
+
+enum ScanRunStatus {
+  SUCCESS
+  ERROR
 }
 
 enum SdkOrderField {
@@ -2655,10 +2656,12 @@ enum SiloDiscoveryResultStatus {
   ADDED
 }
 
-enum ContainsSensitiveData {
-  LIKELY
-  UNLIKELY
-  UNKNOWN
+enum SimplifiedPluginStatus {
+  RECURRING_SCANS_ON
+  RECURRING_SCANS_OFF
+  DISCONNECTED
+  NOT_CONFIGURED
+  ERROR
 }
 
 enum StepStatus {
@@ -2668,9 +2671,9 @@ enum StepStatus {
   error
 }
 
-enum RefetchSampleMethod {
-  DEFAULT
-  FILTER_NON_NULL
+enum StructuredDiscoveryPluginType {
+  SCHEMA_DISCOVERY
+  CONTENT_CLASSIFICATION
 }
 
 enum SubDataPointClassificationStatus {
@@ -2686,6 +2689,11 @@ enum SubDataPointSubCategorySource {
   CONTENTFUL
 }
 
+enum UnstructuredDiscoveryPluginType {
+  UNSTRUCTURED_DATA_DISCOVERY
+  UNSTRUCTURED_DATA_SAMPLING
+}
+
 enum UnstructuredSubDataPointRecommendationOrderField {
   name
 }
@@ -2694,14 +2702,6 @@ enum VendorOrderField {
   title
   createdAt
   updatedAt
-}
-
-enum DataProcessingAgreementStatus {
-  ONLINE_DPA
-  CUSTOM_DPA
-  REQUIRES_UPDATE
-  NOT_REQUIRED
-  MISSING
 }
 
 enum DropBrokerEnvironment {
@@ -2740,6 +2740,9 @@ enum DsrErrorCode {
   TYPE_NOT_MATCHING_WORKFLOW
   SUBJECT_TYPE_NOT_MATCHING_WORKFLOW
   REGION_NOT_IN_WORKFLOW
+  INVALID_REQUEST_INPUT
+  INVALID_IDENTIFIER_JWT
+  DRAFT_WORKFLOW_CONFIG
 }
 
 enum DsrRequestOutcome {
@@ -2758,33 +2761,17 @@ enum CppaWireListType {
   CTVID
 }
 
-enum DropSubmissionDiscrepancyResult {
-  failed
-  missing
-}
-
-enum DropRunState {
-  DOWNLOADED
-  STARTER_DOWNLOADED
-  INTAKE_IN_PROGRESS
-  DSRS_CREATED
-  REPORT_GENERATED
-  REPORT_SUBMITTED
-  AMENDED
-  FORCE_FINALIZED
-  FAILED
-}
-
-enum DropRunMode {
-  LIVE
-  SANDBOX
-}
-
 enum DropAccessCadenceStatus {
   NEVER_ACCESSED
   OK
   DUE_SOON
   OVERDUE
+}
+
+enum DropArtifactAuthorKind {
+  USER
+  DAEMON
+  CPPA
 }
 
 enum DropArtifactType {
@@ -2796,21 +2783,13 @@ enum DropArtifactType {
   RESPONSE_MANIFEST
 }
 
-enum DropArtifactAuthorKind {
-  USER
-  DAEMON
-  CPPA
-}
-
-enum DropSampleRowStatus {
-  OK
-  WARNING
-  ERROR
-}
-
-enum DropSessionIssueLevel {
-  WARNING
-  ERROR
+enum DropIntakePhase {
+  IDLE
+  PARSING
+  AWAITING_CONFIRMATION
+  SUBMITTING
+  DONE
+  FAILED
 }
 
 enum DropPollInterval {
@@ -2819,6 +2798,11 @@ enum DropPollInterval {
   EVERY_12_HOURS
   DAILY
   WEEKLY
+}
+
+enum DropRunMode {
+  LIVE
+  SANDBOX
 }
 
 enum DropRunRecordsMaterializationStatus {
@@ -2835,12 +2819,15 @@ enum DropRunReportGenerationStatus {
   FAILED
 }
 
-enum DropIntakePhase {
-  IDLE
-  PARSING
-  AWAITING_CONFIRMATION
-  SUBMITTING
-  DONE
+enum DropRunState {
+  DOWNLOADED
+  STARTER_DOWNLOADED
+  INTAKE_IN_PROGRESS
+  DSRS_CREATED
+  REPORT_GENERATED
+  REPORT_SUBMITTED
+  AMENDED
+  FORCE_FINALIZED
   FAILED
 }
 
@@ -2851,6 +2838,22 @@ enum DropRunStep {
   SUBMIT
   WAITING_ON_DSRS
   DONE
+}
+
+enum DropSampleRowStatus {
+  OK
+  WARNING
+  ERROR
+}
+
+enum DropSessionIssueLevel {
+  WARNING
+  ERROR
+}
+
+enum DropSubmissionDiscrepancyResult {
+  failed
+  missing
 }
 
 enum ActivityCode {
@@ -2954,6 +2957,8 @@ enum DownloadAndDecryptError {
   AUTH_TOKEN_MISSING
   AUTH_KEY_EXCHANGE_FAILED
   METADATA_FETCH_FAILED
+  REQUEST_NOT_DOWNLOADABLE
+  SESSION_EXPIRED
   URL_REFRESH_FAILED
   S3_FETCH_FAILED
   DECRYPTION_FAILED
@@ -2982,13 +2987,6 @@ enum DownloadAndDecryptError {
   WASM_UNAVAILABLE
   WASM_LOAD_FAILED
   UNKNOWN
-}
-
-enum DownloadDeliveryVerification {
-  OS_CONFIRMED
-  BROWSER_CONFIRMED
-  STORAGE_CONFIRMED
-  UNCONFIRMED
 }
 
 enum DownloadAndDecryptErrorClass {
@@ -3037,6 +3035,13 @@ enum DownloadBrowserFamily {
   OTHER
 }
 
+enum DownloadDeliveryVerification {
+  OS_CONFIRMED
+  BROWSER_CONFIRMED
+  STORAGE_CONFIRMED
+  UNCONFIRMED
+}
+
 enum DownloadDeviceClass {
   DESKTOP
   MOBILE
@@ -3050,6 +3055,13 @@ enum DownloadDocumentVisibilityState {
   prerender
 }
 
+enum DownloadFileOrderField {
+  createdAt
+  updatedAt
+  size
+  ProfileDataPointId
+}
+
 enum DownloadOsFamily {
   IOS
   MACOS
@@ -3057,6 +3069,18 @@ enum DownloadOsFamily {
   ANDROID
   LINUX
   OTHER
+}
+
+enum DownloadSinkMode {
+  FILE_SYSTEM_ACCESS
+  STREAM_SAVER
+  IN_MEMORY_BLOB
+  OPFS
+}
+
+enum DownloadSinkVariant {
+  STREAM_SAVER_SW
+  STREAM_SAVER_BLOB
 }
 
 enum LegalHoldOrderField {
@@ -3078,9 +3102,15 @@ enum MockDataSubjectClass {
   OTHER
 }
 
-enum ProfileOrderField {
-  id
+enum PrivacyCenterDeployStatus {
+  DEPLOYED
+  NOT_DEPLOYED
+  FAILED
+}
+
+enum ProfileDataPointOrderField {
   createdAt
+  updatedAt
 }
 
 enum ProfileDataPointStatusSuccess {
@@ -3090,29 +3120,19 @@ enum ProfileDataPointStatusSuccess {
   SKIPPED_DUE_TO_EXCEPTION
 }
 
-enum ProfileDataPointOrderField {
-  createdAt
-  updatedAt
-}
-
-enum PrivacyCenterDeployStatus {
-  DEPLOYED
-  NOT_DEPLOYED
-  FAILED
-}
-
-enum RequestOrderField {
-  createdAt
-  updatedAt
+enum ProfileOrderField {
   id
-  lastTransitionTime
-  successfullyCompletedAt
-  daysRemaining
+  createdAt
 }
 
-enum RequestHistoryOrderField {
+enum RequestAttachmentOrderField {
   createdAt
-  updatedAt
+  id
+}
+
+enum RequestAttachmentSource {
+  PRIVACY_CENTER
+  ADMIN_DASHBOARD
 }
 
 enum RequestAttachmentStatus {
@@ -3121,14 +3141,20 @@ enum RequestAttachmentStatus {
   FAILED
 }
 
-enum RequestAttachmentSource {
-  PRIVACY_CENTER
-  ADMIN_DASHBOARD
+enum RequestDataSiloOrderField {
+  createdAt
+  updatedAt
+  title
 }
 
-enum RequestAttachmentOrderField {
-  createdAt
-  id
+enum RequestDataSiloSortAssociation {
+  dataSilo
+}
+
+enum RequestDataSiloStatusSuccess {
+  RESOLVED
+  SKIPPED
+  SKIPPED_DUE_TO_EXCEPTION
 }
 
 enum RequestDownloadAttemptOrderField {
@@ -3154,8 +3180,90 @@ enum RequestDownloadOutcomeBucket {
   NEVER_ATTEMPTED
 }
 
-enum RequestDataSiloStatusSuccess {
+enum RequestEnricherOrderField {
+  createdAt
+  updatedAt
+  title
+  status
+}
+
+enum RequestEnricherSortAssociation {
+  enricher
+}
+
+enum RequestEnricherStatusSuccess {
   RESOLVED
+  SKIPPED
+}
+
+enum RequestExpirationBucket {
+  ZERO_TO_FIVE
+  FIVE_TO_FIFTEEN
+  FIFTEEN_TO_THIRTY
+  THIRTY_TO_FIFTY
+  FIFTY_TO_SEVENTY_FIVE
+  SEVENTY_FIVE_PLUS
+}
+
+enum RequestFileOrderField {
+  createdAt
+  updatedAt
+  size
+  status
+  id
+  ProfileDataPointId
+}
+
+enum RequestFileQueueType {
+  SECONDARY
+  REDACT
+  DISCLUDE
+}
+
+enum RequestFileStatusCompleted {
+  RESOLVED
+  ENCRYPTED_COPY
+}
+
+enum RequestFileStatusSuccess {
+  RESOLVED
+  ENCRYPTED_COPY
+  SKIPPED
+}
+
+enum RequestHistoryOrderField {
+  createdAt
+  updatedAt
+}
+
+enum RequestIdentifierOrderField {
+  name
+  createdAt
+  updatedAt
+  id
+  value
+  verifiedAtLeastOnce
+}
+
+enum RequestIdentifierSource {
+  INPUT
+  ENRICHER
+  DATA_SILO
+}
+
+enum RequestOrderField {
+  createdAt
+  updatedAt
+  id
+  lastTransitionTime
+  successfullyCompletedAt
+  daysRemaining
+}
+
+enum UpdateRequestDataSiloStatus {
+  WAITING
+  RESOLVED
+  ACTION_REQUIRED
   SKIPPED
   SKIPPED_DUE_TO_EXCEPTION
 }
@@ -3180,109 +3288,6 @@ enum VisualRequestDataSiloStatus {
   MANUAL
 }
 
-enum UpdateRequestDataSiloStatus {
-  WAITING
-  RESOLVED
-  ACTION_REQUIRED
-  SKIPPED
-  SKIPPED_DUE_TO_EXCEPTION
-}
-
-enum RequestDataSiloOrderField {
-  createdAt
-  updatedAt
-  title
-}
-
-enum RequestDataSiloSortAssociation {
-  dataSilo
-}
-
-enum RequestEnricherStatusSuccess {
-  RESOLVED
-  SKIPPED
-}
-
-enum RequestEnricherOrderField {
-  createdAt
-  updatedAt
-  title
-  status
-}
-
-enum RequestEnricherSortAssociation {
-  enricher
-}
-
-enum RequestExpirationBucket {
-  ZERO_TO_FIVE
-  FIVE_TO_FIFTEEN
-  FIFTEEN_TO_THIRTY
-  THIRTY_TO_FIFTY
-  FIFTY_TO_SEVENTY_FIVE
-  SEVENTY_FIVE_PLUS
-}
-
-enum RequestFileStatusCompleted {
-  RESOLVED
-  ENCRYPTED_COPY
-}
-
-enum RequestFileStatusSuccess {
-  RESOLVED
-  ENCRYPTED_COPY
-  SKIPPED
-}
-
-enum RequestFileQueueType {
-  SECONDARY
-  REDACT
-  DISCLUDE
-}
-
-enum RequestFileOrderField {
-  createdAt
-  updatedAt
-  size
-  status
-  id
-  ProfileDataPointId
-}
-
-enum DownloadFileOrderField {
-  createdAt
-  updatedAt
-  size
-  ProfileDataPointId
-}
-
-enum RequestIdentifierOrderField {
-  name
-  createdAt
-  updatedAt
-  id
-  value
-  verifiedAtLeastOnce
-}
-
-enum RequestIdentifierSource {
-  INPUT
-  ENRICHER
-  DATA_SILO
-}
-
-enum DownloadSinkMode {
-  FILE_SYSTEM_ACCESS
-  STREAM_SAVER
-  IN_MEMORY_BLOB
-  OPFS
-}
-
-enum DownloadSinkVariant {
-  STREAM_SAVER_SW
-  STREAM_SAVER_BLOB
-}
-
 enum CollectDataSubjectRegions {
   DO_NOT_COLLECT
   COLLECT
@@ -3303,7 +3308,6 @@ enum WorkflowCommunicationTemplateType {
   ACTIONS_SUCCESS
   ACTIONS_NOT_FOUND
   ACTIONS_SECONDARY
-  OTHER
 }
 
 enum WorkflowInstanceStatus {
@@ -3371,9 +3375,17 @@ enum WorkflowConfigVisibility {
   PUBLISHED
 }
 
-enum TemplateType {
-  EMAIL
-  TEXT
+enum AssessmentActionType {
+  FORM_ASSIGNED
+  SECTIONS_ASSIGNED
+  SUBMITTED
+  SECTIONS_SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  FORM_CHANGES_REQUESTED
+  SECTIONS_CHANGES_REQUESTED
+  COMMENT_REPLY
 }
 
 enum DefaultTemplateType {
@@ -3400,54 +3412,9 @@ enum TemplateProduct {
   ROPA
 }
 
-enum AssessmentActionType {
-  FORM_ASSIGNED
-  SECTIONS_ASSIGNED
-  SUBMITTED
-  SECTIONS_SUBMITTED
-  IN_REVIEW
-  APPROVED
-  REJECTED
-  FORM_CHANGES_REQUESTED
-  SECTIONS_CHANGES_REQUESTED
-  COMMENT_REPLY
-}
-
-enum RateLimitSource {
-  TRANSCEND
-  USER_DEFINED
-}
-
-enum RateLimitType {
-  PER_SECOND
-  PER_TEN_SECONDS
-  PER_MINUTE
-  PER_HOUR
-  PER_DAY
-  PER_MONTH
-}
-
-enum FormType {
-  boolean
-  group
-  string
-  array
-  select
-  textArea
-  json
-  password
-  file
-  SelectApiKeys
-  SelectUsers
-  SelectTeams
-  SelectTemplate
-}
-
-enum SiloFormType {
-  OAUTH
-  STANDARD
-  CHOOSE_AUTHENTICATION_METHOD
-  CHOOSE_CONNECTION_FLOW
+enum TemplateType {
+  EMAIL
+  TEXT
 }
 
 enum AuthenticationMethod {
@@ -3461,82 +3428,9 @@ enum AuthenticationMethod {
   Jwt
 }
 
-enum SnippetLanguage {
-  js
-  json
-}
-
-enum PlaintextReasonStaticType {
-  RETRIEVE_QUERY_METADATA
-  SEEDING
-  TESTING
-  ERROR_HANDLING
-  RESOLVE_IDENTIFIERS
-  PAGINATION
-  CONFIRM_SUCCESS
-  REFRESH_ACCESS_TOKEN
-  DISCO_IDENTIFIERS
-  DISCO_METADATA
-  SCHEMA_DISCOVERY_METADATA
-  UNSTRUCTURED_DATA_DISCOVERY_METADATA
-  UNSTRUCTURED_DATA_SAMPLING_METADATA
-}
-
-enum CustomFunctionSource {
-  UI
-  API
-}
-
-enum CustomFunctionType {
-  DSR
-  GENERAL
-}
-
-enum CustomFunctionLifecycleState {
-  INACTIVE
-  ACTIVE
-  ARCHIVED
-}
-
-enum CustomFunctionVersionLifecycleState {
-  ACTIVE
-  DRAFT
-  INACTIVE
-}
-
-enum CustomFunctionRunLifecycleState {
-  QUEUED
-  IN_PROGRESS
-  COMPLETE_SUCCESS
-  COMPLETE_FAILURE_CUSTOMER_EXECUTION_ERROR
-  COMPLETE_FAILURE_TRANSCEND_ERROR
-}
-
-enum CustomFunctionRunFailureAttribution {
-  CUSTOMER_EXECUTION_ERROR
-  TRANSCEND_ERROR
-}
-
-enum ErasureRedactionMethod {
-  REQUIRED_REVIEW
-  AUTO_REDACT_IDENTIFIERS_ONLY
-  AUTO_REDACT_ENTIRE_MESSAGE
-}
-
-enum LookupProcessAlgorithm {
-  CHRONOLOGICAL
-  REVERSE_CHRONOLOGICAL
-}
-
-enum LookupProcessStatus {
-  QUEUED
-  WAITING
-  SKIPPED
-  ERROR
-  RESOLVED
-  ACTION_REQUIRED
-  REMOTE_PROCESSING
-  INACTIVE
+enum CommonLambdaStatus {
+  SILO_CREDENTIALS_EXPIRED
+  SILO_CREDENTIALS_UPDATED
 }
 
 enum ContentClassificationStatus {
@@ -3550,16 +3444,48 @@ enum ContentClassificationStatus {
   CLASSIFIED
 }
 
-enum UnstructuredDataSamplingStatus {
-  UNSAMPLED
-  REFETCH_SAMPLES
-  ERROR
-  NON_RETRYABLE_ERROR
-  REMOTE_PROCESSING
-  NO_SAMPLE_DATA
-  SAMPLED
-  SKIP_SAMPLING
-  NOT_SUPPORTED
+enum CustomFunctionLifecycleState {
+  INACTIVE
+  ACTIVE
+  ARCHIVED
+}
+
+enum CustomFunctionRunFailureAttribution {
+  CUSTOMER_EXECUTION_ERROR
+  TRANSCEND_ERROR
+}
+
+enum CustomFunctionRunLifecycleState {
+  QUEUED
+  IN_PROGRESS
+  COMPLETE_SUCCESS
+  COMPLETE_FAILURE_CUSTOMER_EXECUTION_ERROR
+  COMPLETE_FAILURE_TRANSCEND_ERROR
+}
+
+enum CustomFunctionSource {
+  UI
+  API
+}
+
+enum CustomFunctionStatus {
+  CUSTOM_FUNCTION_RETURNED
+}
+
+enum CustomFunctionType {
+  DSR
+  GENERAL
+}
+
+enum CustomFunctionVersionLifecycleState {
+  ACTIVE
+  DRAFT
+  INACTIVE
+}
+
+enum CustomSiloConnectionStrategy {
+  WEBHOOK
+  CUSTOM_FUNCTION
 }
 
 enum DataPointTypeDisplayName {
@@ -3600,29 +3526,31 @@ enum DataPointTypeDisplayName {
   USER_LIST
 }
 
-enum ScanObject {
-  CATALOG
-  COLLECTION
-  DATABASE
-  DATASET
-  DATA_SOURCE
-  DIMENSION
-  DOCUMENT
-  INDEX
-  ISSUE_TYPE
-  KEY
-  PROJECT
-  RECORD_TYPE
-  REPORT_SUITE
-  SCHEMA
-  TABLE
-  TABLE_TYPE
+enum DataSiloConnectionState {
+  EXPIRED
+  NOT_CONFIGURED
+  CONNECTED
+  PERMISSIONS_UPDATED
+  PARTIAL
+  INDEXING
 }
 
-enum DiscoClassScanType {
-  SCHEMA_ONLY
-  FULL_SCAN
-  CLASSIFICATION_ONLY
+enum DataSiloDiscoPluginRecommendationStatus {
+  PENDING
+  IGNORED
+}
+
+enum DataSiloScanType {
+  STRUCTURED_DISCOVERY
+  UNSTRUCTURED_DISCOVERY
+}
+
+enum DiscoClassScanAction {
+  START
+  PAUSE
+  RESUME
+  STOP
+  RESTART
 }
 
 enum DiscoClassScanStatus {
@@ -3634,40 +3562,69 @@ enum DiscoClassScanStatus {
   STOPPED
 }
 
-enum ScanPhaseStatus {
-  IN_PROGRESS
-  STOPPED
-  COMPLETE
-  ERROR
-  NON_RETRYABLE_ERROR
+enum DiscoClassScanType {
+  SCHEMA_ONLY
+  FULL_SCAN
+  CLASSIFICATION_ONLY
+}
+
+enum ErasureRedactionMethod {
+  REQUIRED_REVIEW
+  AUTO_REDACT_IDENTIFIERS_ONLY
+  AUTO_REDACT_ENTIRE_MESSAGE
+}
+
+enum FormType {
+  boolean
+  group
+  string
+  array
+  select
+  textArea
+  json
+  password
+  file
+  SelectApiKeys
+  SelectUsers
+  SelectTeams
+  SelectTemplate
+}
+
+enum LookupProcessAlgorithm {
+  CHRONOLOGICAL
+  REVERSE_CHRONOLOGICAL
+}
+
+enum LookupProcessStatus {
+  QUEUED
+  WAITING
   SKIPPED
+  ERROR
+  RESOLVED
+  ACTION_REQUIRED
+  REMOTE_PROCESSING
+  INACTIVE
 }
 
-enum DiscoClassScanAction {
-  START
-  PAUSE
-  RESUME
-  STOP
-  RESTART
+enum PlaintextReasonStaticType {
+  RETRIEVE_QUERY_METADATA
+  SEEDING
+  TESTING
+  ERROR_HANDLING
+  RESOLVE_IDENTIFIERS
+  PAGINATION
+  CONFIRM_SUCCESS
+  REFRESH_ACCESS_TOKEN
+  DISCO_IDENTIFIERS
+  DISCO_METADATA
+  SCHEMA_DISCOVERY_METADATA
+  UNSTRUCTURED_DATA_DISCOVERY_METADATA
+  UNSTRUCTURED_DATA_SAMPLING_METADATA
 }
 
-enum DataSiloConnectionState {
-  EXPIRED
-  NOT_CONFIGURED
-  CONNECTED
-  PERMISSIONS_UPDATED
-  PARTIAL
-  INDEXING
-}
-
-enum CustomSiloConnectionStrategy {
-  WEBHOOK
-  CUSTOM_FUNCTION
-}
-
-enum DataSiloScanType {
-  STRUCTURED_DISCOVERY
-  UNSTRUCTURED_DISCOVERY
+enum ProfileDataPointQueueType {
+  PRIMARY
+  SECONDARY
 }
 
 enum ProfileDataPointStatus {
@@ -3688,13 +3645,18 @@ enum ProfileDataPointStatus {
   FINISHED
 }
 
-enum ProfileDataPointQueueType {
-  PRIMARY
-  SECONDARY
+enum RateLimitSource {
+  TRANSCEND
+  USER_DEFINED
 }
 
-enum CustomFunctionStatus {
-  CUSTOM_FUNCTION_RETURNED
+enum RateLimitType {
+  PER_SECOND
+  PER_TEN_SECONDS
+  PER_MINUTE
+  PER_HOUR
+  PER_DAY
+  PER_MONTH
 }
 
 enum RequestDataSiloQueueType {
@@ -3717,14 +3679,63 @@ enum RequestFileStatus {
   VENDOR_RATE_LIMITED
 }
 
-enum CommonLambdaStatus {
-  SILO_CREDENTIALS_EXPIRED
-  SILO_CREDENTIALS_UPDATED
+enum ScanObject {
+  CATALOG
+  COLLECTION
+  DATABASE
+  DATASET
+  DATA_SOURCE
+  DIMENSION
+  DOCUMENT
+  INDEX
+  ISSUE_TYPE
+  KEY
+  PROJECT
+  RECORD_TYPE
+  REPORT_SUITE
+  SCHEMA
+  TABLE
+  TABLE_TYPE
 }
 
-enum DataSiloDiscoPluginRecommendationStatus {
-  PENDING
-  IGNORED
+enum ScanPhaseStatus {
+  IN_PROGRESS
+  STOPPED
+  COMPLETE
+  ERROR
+  NON_RETRYABLE_ERROR
+  SKIPPED
+}
+
+enum SiloFormType {
+  OAUTH
+  STANDARD
+  CHOOSE_AUTHENTICATION_METHOD
+  CHOOSE_CONNECTION_FLOW
+}
+
+enum SnippetLanguage {
+  js
+  json
+}
+
+enum UnstructuredDataSamplingStatus {
+  UNSAMPLED
+  REFETCH_SAMPLES
+  ERROR
+  NON_RETRYABLE_ERROR
+  REMOTE_PROCESSING
+  NO_SAMPLE_DATA
+  SAMPLED
+  SKIP_SAMPLING
+  NOT_SUPPORTED
+}
+
+enum AutomationRulePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 enum AutomationRuleStatus {
@@ -3735,11 +3746,40 @@ enum AutomationRuleStatus {
   DELETED
 }
 
-enum AutomationRulePriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+enum MaestroHmacAlgorithm {
+  sha256
+  sha1
+}
+
+enum MaestroHmacSignatureEncoding {
+  hex
+  base64
+}
+
+enum MaestroHmacTimestampFormat {
+  unix_seconds
+  unix_millis
+  rfc3339
+  http_date
+}
+
+enum MaestroRuleActionType {
+  CUSTOM_FUNCTION
+  SEND_ASSESSMENT
+}
+
+enum MaestroRuleExecutionOrderField {
+  createdAt
+  updatedAt
+  startedAt
+  status
+}
+
+enum MaestroRuleExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILURE
 }
 
 enum MaestroRuleOrderField {
@@ -3750,56 +3790,15 @@ enum MaestroRuleOrderField {
   PRIORITY
 }
 
-enum MaestroRuleActionType {
-  CUSTOM_FUNCTION
-  SEND_ASSESSMENT
-}
-
-enum MaestroSendAssessmentMode {
-  NEW_ASSESSMENT
-  EXISTING_ASSESSMENT
-}
-
-enum MaestroRuleExecutionStatus {
-  PENDING
-  RUNNING
-  SUCCESS
-  FAILURE
-}
-
-enum MaestroRuleExecutionOrderField {
-  createdAt
-  updatedAt
-  startedAt
-  status
+enum MaestroRuleTriggerLogicOperator {
+  AND
+  OR
 }
 
 enum MaestroRuleTriggerType {
   WEBHOOK
   GROUP
   SCHEDULE
-}
-
-enum MaestroRuleTriggerLogicOperator {
-  AND
-  OR
-}
-
-enum MaestroHmacAlgorithm {
-  sha256
-  sha1
-}
-
-enum MaestroHmacTimestampFormat {
-  unix_seconds
-  unix_millis
-  rfc3339
-  http_date
-}
-
-enum MaestroHmacSignatureEncoding {
-  hex
-  base64
 }
 
 enum MaestroScheduleCadence {
@@ -3817,10 +3816,20 @@ enum MaestroScheduleCustomIntervalUnit {
   years
 }
 
+enum MaestroSendAssessmentMode {
+  NEW_ASSESSMENT
+  EXISTING_ASSESSMENT
+}
+
 enum AssetFileOrderField {
   createdAt
   updatedAt
   size
+}
+
+enum AuthenticatedSaleOfInfoPreferenceMode {
+  OPT_IN_AND_OPT_OUT
+  OPT_OUT_ONLY
 }
 
 enum CertificateStatus {
@@ -3849,9 +3858,22 @@ enum PolicyType {
   CUSTOM
 }
 
-enum PrivacyCenterType {
-  DEPLOYED
-  PREVIEW
+enum PrivacyCenterAssetName {
+  logo
+  favicon
+  logoOnSolid
+  logoOnFooter
+  hero
+  widgetBg
+}
+
+enum PrivacyCenterEmailLoginState {
+  SALES_OPT_OUT
+}
+
+enum PrivacyCenterFooterLayout {
+  DEFAULT
+  GRID
 }
 
 enum PrivacyCenterModule {
@@ -3865,27 +3887,9 @@ enum PrivacyCenterModule {
   TRACKING_TECHNOLOGY
 }
 
-enum PrivacyCenterAssetName {
-  logo
-  favicon
-  logoOnSolid
-  logoOnFooter
-  hero
-  widgetBg
-}
-
-enum PrivacyCenterFooterLayout {
-  DEFAULT
-  GRID
-}
-
-enum AuthenticatedSaleOfInfoPreferenceMode {
-  OPT_IN_AND_OPT_OUT
-  OPT_OUT_ONLY
-}
-
-enum PrivacyCenterEmailLoginState {
-  SALES_OPT_OUT
+enum PrivacyCenterType {
+  DEPLOYED
+  PREVIEW
 }
 
 enum RequestsProcessedDisclosureStatsTableHeaders {
@@ -3912,6 +3916,20 @@ enum ActionItemSubscriptionNotificationMethod {
   SLACK
 }
 
+enum ActionItemsColumnName {
+  task
+  type
+  productAreas
+  teams
+  users
+  dueDate
+  createdAt
+  priority
+  notes
+  links
+  documentationLink
+}
+
 enum ApiKeyOrderField {
   title
   createdAt
@@ -3926,6 +3944,71 @@ enum ApiKeyStatus {
   expired
 }
 
+enum AssessmentFormTemplatesColumnName {
+  creator
+  description
+  lastEditor
+  source
+  status
+  title
+  updatedAt
+}
+
+enum AssessmentFormsColumnName {
+  assessmentGroup
+  assignees
+  sectionAssignees
+  createdAt
+  assignedAt
+  submittedAt
+  approvedAt
+  rejectedAt
+  dueDate
+  resources
+  reviewers
+  status
+  id
+  syncedRows
+  title
+  titleIsInternal
+  triggeredForms
+}
+
+enum AssessmentGroupsColumnName {
+  createdAt
+  description
+  dueDate
+  creator
+  lastEditor
+  status
+  id
+  assessmentFormTemplate
+  title
+  updatedAt
+}
+
+enum BusinessEntitiesColumnName {
+  address
+  businessEntityId
+  catalogRecipients
+  dataProtectionOfficerEmail
+  dataProtectionOfficerName
+  dataSilos
+  dataSubCategories
+  description
+  headquarterCountry
+  processingPurposeSubCategories
+  title
+  vendors
+  teams
+  owners
+}
+
+enum ComplianceReportGeneralFieldType {
+  shortText
+  longText
+}
+
 enum ComplianceReportMetaField {
   teams
   owners
@@ -3936,124 +4019,14 @@ enum ComplianceReportMetaField {
   coversheetTitle
 }
 
-enum ComplianceReportGeneralFieldType {
-  shortText
-  longText
-}
-
-enum EmailDomainVerificationStatus {
-  Success
-  Failed
-  Pending
-  TemporaryFailure
-  NotStarted
-}
-
-enum ExternalOauthServiceCode {
-  SLACK_NOTIFICATIONS
-}
-
-enum FeatureStatus {
-  BETA
-  ALPHA
-  GENERAL_AVAILABILITY
-}
-
-enum FeatureType {
-  BOOLEAN
-  FEATURE_GATE
-  NUMBER
-  STRING_LIST
-  SUPPORT_TIER
-}
-
-enum FeatureDefinitionName {
-  ACTION_ITEM_CHECKLISTS
-  AGENTIC_ASSIST
-  AIRGAP_ALLOWED_VERSION_TAGS
-  AIRGAP_PREFIX_MODULES
-  AGENTIC_ASSIST_TOTAL_USD_COST_LIMIT
-  ALLOW_PRIVATE_DOCKER_REGISTRY_ACCESS
-  ASSESSMENTS
-  ASSESSMENTS_MAX_FILE_SIZE
-  AUDITOR_MONTHLY_USAGE_LIMIT
-  CONSENT_WORKFLOWS
-  CUSTOM_DOMAIN_UI
-  DATA_LINEAGE
-  DATA_BROKER_DROP
-  DISABLED_PRIVACY_CENTER_ABOUT_TRANSCEND
-  DSR_AUTOMATION
-  EMAIL_SENDING_ENABLED
-  INTEGRATION_ERROR_RETRY_DELAY_HOURS
-  IS_SANDBOX
-  LLM_CLASSIFIER
-  STRUCTURED_CLASSIFICATION_MODELS
-  LLM_UNSTRUCTURED
-  MAX_SYNC_DOMAIN_COUNT
-  MOBILE_CONSENT_APPS
-  PREFERENCE_STORE
-  PRIVACY_CENTER
-  PROMPTS
-  RULES_AUTOMATION
-  SELF_HOSTED_SOMBRA
-  SILO_DISCOVERY
-  SOMBRA_JOB_QUEUE
-  STRUCTURED_DATA_DISCOVERY
-  SUPPORT_TIER
-  TRANSCEND_HOSTED_PROMPT_MANAGER_MONTHLY_USAGE_LIMIT
-  UNSTRUCTURED_DATA_DISCOVERY
-  WEB_CONSENT
-  WHITE_LABEL_PRIVACY_CENTER
-  WHITE_LABEL_PRIVACY_REQUEST_EMAILS
-  WORKFLOWS_V2
-  PRIVACY_CENTER_DOMAIN_CUTOVER
-}
-
-enum FeatureGate {
-  ALLOWED
-  TRIAL_EXPIRING
-  BLOCKED
-}
-
-enum FeatureName {
-  webConsent
-  dataMapping
-}
-
-enum SupportTier {
-  ESSENTIAL
-  PRO
-  PREMIER
-}
-
-enum GlobalActionItemOrderField {
-  type
+enum ComplianceReportsColumnName {
+  title
+  description
+  dataProtectionOfficer
+  owners
+  teams
+  updatedAt
   createdAt
-  dueDate
-  priority
-}
-
-enum OAuthEntityType {
-  User
-  Organization
-  DataSilo
-}
-
-enum OidcProviderModel {
-  AccessToken
-  AuthorizationCode
-  BackchannelAuthenticationRequest
-  Client
-  ClientCredentials
-  DeviceCode
-  Grant
-  InitialAccessToken
-  Interaction
-  PushedAuthorizationRequest
-  RefreshToken
-  RegistrationAccessToken
-  ReplayDetection
-  Session
 }
 
 enum ConsentManagerOnboardingStatus {
@@ -4063,76 +4036,87 @@ enum ConsentManagerOnboardingStatus {
   DONE
 }
 
-enum PreferenceManagementOnboardingStatus {
-  STARTED
-  DONE
+enum ConsentUserPreferencesColumnName {
+  partitionType
+  partitionName
+  decryptionStatus
+  timestamp
 }
 
-enum OrganizationTier {
-  FREE
-  PAID
-  PARTNERSHIPS
-  INTERNAL
-}
-
-enum TestEmailFailurePoint {
-  INITIAL_BACKEND
-  SOMBRA
-  SOMBRA_INTERNAL
-  EMAIL_OUTBOX
-  EMAIL_SENDER
-  FINAL_BACKEND
-}
-
-enum ThemePreference {
-  SYSTEM
-  LIGHT
-  DARK
-}
-
-enum TableId {
-  DATA_INVENTORY_DATA_SILOS
-  DATA_INVENTORY_DATA_POINTS
-  DATA_INVENTORY_VENDORS
-  DATA_INVENTORY_DATA_CATEGORIES
-  DATA_INVENTORY_PROCESSING_ACTIVITIES
-  DATA_INVENTORY_PURPOSES
-  DATA_INVENTORY_BUSINESS_ENTITIES
-  COMPLIANCE_REPORTS
-  COMPLIANCE_REPORT_DATA_ROWS
-  COMPLIANCE_REPORT_TOKEN_DATA_ROWS
-  CONSENT_DATA_FLOWS_TRIAGE
-  CONSENT_DATA_FLOWS_APPROVED
-  CONSENT_DATA_FLOWS_JUNK
-  CONSENT_COOKIES_TRIAGE
-  CONSENT_COOKIES_APPROVED
-  CONSENT_COOKIES_JUNK
-  CONSENT_SITES
-  DATA_MAP_BROWSE_LIST
-  INTEGRATIONS_MANAGE_DATA_POINTS
-  INTEGRATIONS_DATA_SILOS
-  PREFERENCE_MAPPINGS
-  PURPOSE_LEVEL_RULES
-  CONSENT_USER_PREFERENCES
-  RISK_INTELLIGENCE_ASSESSMENTS
-  DSR_AUTOMATION_INCOMING_REQUESTS
-  DROP_RUN_DSRS
-  DATA_INVENTORY_SENSITIVE_CATEGORIES
-  MAESTRO_RULE_EXECUTION_HISTORY
-  MAESTRO_RULES
-  ACTION_ITEMS
-  CUSTOM_FUNCTION_ACTIVITY
-}
-
-enum IntegrationsDataSilosColumnName {
-  category
+enum CookiesColumnName {
+  activity
+  consentDoNotSellIntegration
+  domains
+  encounters
+  hasUspApiSupport
+  isRegex
   createdAt
-  connectionState
-  description
-  errorCount
+  lastDiscoveredAt
+  name
+  notes
   owners
+  updatedAt
+  lastChangedBy
+  rowActions
+  purpose
+  serviceCategoriesOfRecipients
+  serviceDescription
+  serviceName
+  serviceWebsite
+  status
+  statusJunk
   teams
-  title
+  siteOwners
+  siteTeams
+  occurrences
+  maxAge
+  consentSiteCountLastWeek
+}
+
+enum DataCategoriesColumnName {
+  catalogRecipients
+  category
+  dataPointCount
+  dataSiloRegions
+  dataSilos
+  dataSubCategoryId
+  description
+  owners
+  identifier
+  subDataPointRetentionSchedules
+  teams
+  vendorHeadquarterLocations
+  regex
+  sensitiveCategories
+}
+
+enum DataFlowsColumnName {
+  actions
+  activity
+  connectionsMadeTo
+  consentDoNotSellIntegration
+  encounters
+  hasUspApiSupport
+  createdAt
+  lastDiscoveredAt
+  notes
+  owners
+  updatedAt
+  lastChangedBy
+  rowActions
+  purpose
+  serviceCategoriesOfRecipients
+  serviceDescription
+  serviceName
+  serviceWebsite
+  status
+  statusJunk
+  teams
+  siteOwners
+  siteTeams
+  type
+  occurrences
+  consentSiteCountLastWeek
 }
 
 enum DataSilosColumnName {
@@ -4190,227 +4174,6 @@ enum DataSilosColumnName {
   websiteUrl
 }
 
-enum SubDataPointsColumnName {
-  accessRequestVisibilityEnabled
-  categories
-  column
-  contentClassificationStatus
-  controllership
-  createdAt
-  dataPointOwners
-  dataPointTeams
-  dataPointTitle
-  dataSilo
-  dataSiloOwners
-  dataSiloTeams
-  dataSiloVendor
-  description
-  erasureRequestRedactionEnabled
-  name
-  processingActivities
-  purposes
-  table
-  subjects
-  systemId
-  retentionType
-  vendorId
-}
-
-enum DataCategoriesColumnName {
-  catalogRecipients
-  category
-  dataPointCount
-  dataSiloRegions
-  dataSilos
-  dataSubCategoryId
-  description
-  owners
-  identifier
-  subDataPointRetentionSchedules
-  teams
-  vendorHeadquarterLocations
-  regex
-  sensitiveCategories
-}
-
-enum PurposesColumnName {
-  businessEntities
-  catalogRecipients
-  controllerships
-  dataSilos
-  dataSiloDataSubjects
-  dataSiloOwners
-  dataSiloRegions
-  dataSubCategories
-  description
-  owners
-  purpose
-  purposeCategory
-  purposeSubCategoryId
-  subCategoryName
-  subDataPointCount
-  subDataPointRetentionSchedules
-  teams
-  vendors
-  vendorHeadquarterLocations
-  vendorOwners
-  sensitiveCategories
-}
-
-enum VendorsColumnName {
-  address
-  businessEntity
-  catalogRecipients
-  contactEmail
-  contactName
-  contactPhone
-  controllerships
-  dataProcessingAgreementLink
-  dataProcessingAgreementStatus
-  dataSiloRegions
-  dataSilos
-  dataSubCategories
-  description
-  headquarterCountry
-  owners
-  processingPurposeSubCategories
-  subDataPointCount
-  teams
-  title
-  vendorId
-  websiteUrl
-  aiFeatures
-  highRiskAiFeatures
-  aiBaseModelDevelopers
-  aiDocumentation
-}
-
-enum BusinessEntitiesColumnName {
-  address
-  businessEntityId
-  catalogRecipients
-  dataProtectionOfficerEmail
-  dataProtectionOfficerName
-  dataSilos
-  dataSubCategories
-  description
-  headquarterCountry
-  processingPurposeSubCategories
-  title
-  vendors
-  teams
-  owners
-}
-
-enum CookiesColumnName {
-  activity
-  consentDoNotSellIntegration
-  domains
-  encounters
-  hasUspApiSupport
-  isRegex
-  createdAt
-  lastDiscoveredAt
-  name
-  notes
-  owners
-  updatedAt
-  lastChangedBy
-  rowActions
-  purpose
-  serviceCategoriesOfRecipients
-  serviceDescription
-  serviceName
-  serviceWebsite
-  status
-  statusJunk
-  teams
-  siteOwners
-  siteTeams
-  occurrences
-  maxAge
-  consentSiteCountLastWeek
-}
-
-enum DataFlowsColumnName {
-  actions
-  activity
-  connectionsMadeTo
-  consentDoNotSellIntegration
-  encounters
-  hasUspApiSupport
-  createdAt
-  lastDiscoveredAt
-  notes
-  owners
-  updatedAt
-  lastChangedBy
-  rowActions
-  purpose
-  serviceCategoriesOfRecipients
-  serviceDescription
-  serviceName
-  serviceWebsite
-  status
-  statusJunk
-  teams
-  siteOwners
-  siteTeams
-  type
-  occurrences
-  consentSiteCountLastWeek
-}
-
-enum AssessmentFormTemplatesColumnName {
-  creator
-  description
-  lastEditor
-  source
-  status
-  title
-  updatedAt
-}
-
-enum AssessmentFormsColumnName {
-  assessmentGroup
-  assignees
-  sectionAssignees
-  createdAt
-  assignedAt
-  submittedAt
-  approvedAt
-  rejectedAt
-  dueDate
-  resources
-  reviewers
-  status
-  id
-  syncedRows
-  title
-  titleIsInternal
-  triggeredForms
-}
-
-enum AssessmentGroupsColumnName {
-  createdAt
-  description
-  dueDate
-  creator
-  lastEditor
-  status
-  id
-  assessmentFormTemplate
-  title
-  updatedAt
-}
-
-enum ConsentUserPreferencesColumnName {
-  partitionType
-  partitionName
-  decryptionStatus
-  timestamp
-}
-
 enum DsrIncomingRequestColumnName {
   email
   coreIdentifier
@@ -4444,6 +4207,138 @@ enum DsrIncomingRequestColumnName {
   dropRecordCount
 }
 
+enum EmailDomainVerificationStatus {
+  Success
+  Failed
+  Pending
+  TemporaryFailure
+  NotStarted
+}
+
+enum ExternalOauthServiceCode {
+  SLACK_NOTIFICATIONS
+}
+
+enum FeatureDefinitionName {
+  ACTION_ITEM_CHECKLISTS
+  AGENTIC_ASSIST
+  AIRGAP_ALLOWED_VERSION_TAGS
+  AIRGAP_PREFIX_MODULES
+  AGENTIC_ASSIST_TOTAL_USD_COST_LIMIT
+  ALLOW_PRIVATE_DOCKER_REGISTRY_ACCESS
+  ASSESSMENTS
+  ASSESSMENTS_MAX_FILE_SIZE
+  AUDITOR_MONTHLY_USAGE_LIMIT
+  CONSENT_WORKFLOWS
+  CUSTOM_DOMAIN_UI
+  DATA_LINEAGE
+  DATA_BROKER_DROP
+  DISABLED_PRIVACY_CENTER_ABOUT_TRANSCEND
+  DSR_AUTOMATION
+  EMAIL_SENDING_ENABLED
+  INTEGRATION_ERROR_RETRY_DELAY_HOURS
+  IS_SANDBOX
+  LLM_CLASSIFIER
+  STRUCTURED_CLASSIFICATION_MODELS
+  LLM_UNSTRUCTURED
+  MAX_SYNC_DOMAIN_COUNT
+  MOBILE_CONSENT_APPS
+  PREFERENCE_STORE
+  PRIVACY_CENTER
+  PROMPTS
+  RULES_AUTOMATION
+  SELF_HOSTED_SOMBRA
+  SILO_DISCOVERY
+  SOMBRA_JOB_QUEUE
+  STRUCTURED_DATA_DISCOVERY
+  SUPPORT_TIER
+  TRANSCEND_HOSTED_PROMPT_MANAGER_MONTHLY_USAGE_LIMIT
+  UNSTRUCTURED_DATA_DISCOVERY
+  WEB_CONSENT
+  WHITE_LABEL_PRIVACY_CENTER
+  WHITE_LABEL_PRIVACY_REQUEST_EMAILS
+  WORKFLOWS_V2
+  PRIVACY_CENTER_DOMAIN_CUTOVER
+}
+
+enum FeatureGate {
+  ALLOWED
+  TRIAL_EXPIRING
+  BLOCKED
+}
+
+enum FeatureName {
+  webConsent
+  dataMapping
+}
+
+enum FeatureStatus {
+  BETA
+  ALPHA
+  GENERAL_AVAILABILITY
+}
+
+enum FeatureType {
+  BOOLEAN
+  FEATURE_GATE
+  NUMBER
+  STRING_LIST
+  SUPPORT_TIER
+}
+
+enum GlobalActionItemOrderField {
+  type
+  createdAt
+  dueDate
+  priority
+}
+
+enum IntegrationsDataSilosColumnName {
+  category
+  createdAt
+  connectionState
+  description
+  errorCount
+  owners
+  teams
+  title
+}
+
+enum OAuthEntityType {
+  User
+  Organization
+  DataSilo
+}
+
+enum OidcProviderModel {
+  AccessToken
+  AuthorizationCode
+  BackchannelAuthenticationRequest
+  Client
+  ClientCredentials
+  DeviceCode
+  Grant
+  InitialAccessToken
+  Interaction
+  PushedAuthorizationRequest
+  RefreshToken
+  RegistrationAccessToken
+  ReplayDetection
+  Session
+}
+
+enum OrganizationTier {
+  FREE
+  PAID
+  PARTNERSHIPS
+  INTERNAL
+}
+
+enum PreferenceManagementOnboardingStatus {
+  STARTED
+  DONE
+}
+
 enum ProcessingActivitiesColumnName {
   title
   description
@@ -4467,35 +4362,6 @@ enum ProcessingActivitiesColumnName {
   subDataPointsCount
 }
 
-enum SensitiveCategoriesColumnName {
-  title
-  description
-}
-
-enum ComplianceReportsColumnName {
-  title
-  description
-  dataProtectionOfficer
-  owners
-  teams
-  updatedAt
-  createdAt
-}
-
-enum ActionItemsColumnName {
-  task
-  type
-  productAreas
-  teams
-  users
-  dueDate
-  createdAt
-  priority
-  notes
-  links
-  documentationLink
-}
-
 enum ProductArea {
   ADMINISTRATION
   DATA_MAPPING
@@ -4503,6 +4369,30 @@ enum ProductArea {
   DSR_AUTOMATION
   PRIVACY_CENTER
   ASSESSMENTS
+}
+
+enum PurposesColumnName {
+  businessEntities
+  catalogRecipients
+  controllerships
+  dataSilos
+  dataSiloDataSubjects
+  dataSiloOwners
+  dataSiloRegions
+  dataSubCategories
+  description
+  owners
+  purpose
+  purposeCategory
+  purposeSubCategoryId
+  subCategoryName
+  subDataPointCount
+  subDataPointRetentionSchedules
+  teams
+  vendors
+  vendorHeadquarterLocations
+  vendorOwners
+  sensitiveCategories
 }
 
 enum ResourceType {
@@ -4516,6 +4406,11 @@ enum ScopeOrderField {
   updatedAt
 }
 
+enum SensitiveCategoriesColumnName {
+  title
+  description
+}
+
 enum SombraOrderField {
   hostedMethod
   title
@@ -4524,10 +4419,97 @@ enum SombraOrderField {
   updatedAt
 }
 
+enum SubDataPointsColumnName {
+  accessRequestVisibilityEnabled
+  categories
+  column
+  contentClassificationStatus
+  controllership
+  createdAt
+  dataPointOwners
+  dataPointTeams
+  dataPointTitle
+  dataSilo
+  dataSiloOwners
+  dataSiloTeams
+  dataSiloVendor
+  description
+  erasureRequestRedactionEnabled
+  name
+  processingActivities
+  purposes
+  table
+  subjects
+  systemId
+  retentionType
+  vendorId
+}
+
+enum SupportTier {
+  ESSENTIAL
+  PRO
+  PREMIER
+}
+
+enum TableId {
+  DATA_INVENTORY_DATA_SILOS
+  DATA_INVENTORY_DATA_POINTS
+  DATA_INVENTORY_VENDORS
+  DATA_INVENTORY_DATA_CATEGORIES
+  DATA_INVENTORY_PROCESSING_ACTIVITIES
+  DATA_INVENTORY_PURPOSES
+  DATA_INVENTORY_BUSINESS_ENTITIES
+  COMPLIANCE_REPORTS
+  COMPLIANCE_REPORT_DATA_ROWS
+  COMPLIANCE_REPORT_TOKEN_DATA_ROWS
+  CONSENT_DATA_FLOWS_TRIAGE
+  CONSENT_DATA_FLOWS_APPROVED
+  CONSENT_DATA_FLOWS_JUNK
+  CONSENT_COOKIES_TRIAGE
+  CONSENT_COOKIES_APPROVED
+  CONSENT_COOKIES_JUNK
+  CONSENT_SITES
+  DATA_MAP_BROWSE_LIST
+  INTEGRATIONS_MANAGE_DATA_POINTS
+  INTEGRATIONS_DATA_SILOS
+  PREFERENCE_MAPPINGS
+  PURPOSE_LEVEL_RULES
+  CONSENT_USER_PREFERENCES
+  RISK_INTELLIGENCE_ASSESSMENTS
+  DSR_AUTOMATION_INCOMING_REQUESTS
+  DROP_RUN_DSRS
+  DATA_INVENTORY_SENSITIVE_CATEGORIES
+  MAESTRO_RULE_EXECUTION_HISTORY
+  MAESTRO_RULES
+  ACTION_ITEMS
+  CUSTOM_FUNCTION_ACTIVITY
+}
+
 enum TeamOrderField {
   name
   createdAt
   updatedAt
+}
+
+enum TestEmailFailurePoint {
+  INITIAL_BACKEND
+  SOMBRA
+  SOMBRA_INTERNAL
+  EMAIL_OUTBOX
+  EMAIL_SENDER
+  FINAL_BACKEND
+}
+
+enum ThemePreference {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
+enum UserLoginMethod {
+  LOCAL
+  SSO
+  ROLE
 }
 
 enum UserOrderField {
@@ -4536,10 +4518,121 @@ enum UserOrderField {
   updatedAt
 }
 
-enum UserLoginMethod {
-  LOCAL
-  SSO
-  ROLE
+enum VendorsColumnName {
+  address
+  businessEntity
+  catalogRecipients
+  contactEmail
+  contactName
+  contactPhone
+  controllerships
+  dataProcessingAgreementLink
+  dataProcessingAgreementStatus
+  dataSiloRegions
+  dataSilos
+  dataSubCategories
+  description
+  headquarterCountry
+  owners
+  processingPurposeSubCategories
+  subDataPointCount
+  teams
+  title
+  vendorId
+  websiteUrl
+  aiFeatures
+  highRiskAiFeatures
+  aiBaseModelDevelopers
+  aiDocumentation
+}
+
+enum AiFeatureAuditChangeKind {
+  REPORTED_AS_INACCURATE
+  REPORTED_AS_INACCURATE_AND_HIDDEN
+  MARKED_HIGH_RISK
+  CLEARED_HIGH_RISK
+  VISIBILITY_SHOWN
+  VISIBILITY_HIDDEN
+}
+
+enum AuditEventBaseModelCode {
+  ACTION_ITEM
+  ASSESSMENT_ANSWER
+  ASSESSMENT_FORM
+  ASSESSMENT_FORM_COMMENT
+  ASSESSMENT_FORM_TEMPLATE
+  ASSESSMENT_GROUP
+  ASSESSMENT_QUESTION
+  ASSESSMENT_QUESTION_COMMENT
+  ASSESSMENT_SECTION_COMMENT
+  ASSESSMENT_SECTION
+  ASSESSMENT_EMAIL_SET
+  CUSTOM_FUNCTION
+  DATA_POINT
+  DATA_POINT_LEVEL
+  DATA_SILO_RATE_LIMIT
+  DATA_REPORT
+  DATA_SILO
+  DATA_SILO_PLUGIN
+  LOOKUP_PROCESS
+  AIRGAP_BUNDLE
+  AIRGAP_BUNDLE_DEPLOYMENT
+  AIRGAP_COOKIE
+  AIRGAP_DATA_FLOW
+  AIRGAP_THEME
+  VENDOR
+  SAAS_VENDOR
+  BUSINESS_ENTITY
+  DATA_SUB_CATEGORY
+  IDENTIFIER
+  PROCESSING_ACTIVITY
+  PROCESSING_PURPOSE_SUB_CATEGORY
+  SUB_DATA_POINT
+  MESSAGE
+  PRIVACY_CENTER
+  EMAIL_SENDER_ADDRESS
+  THEME
+  DATA_COLLECTION
+  ASSET_FILE
+  POLICY
+  EXPERIENCE
+  TRACKING_PURPOSE
+  PREFERENCE
+  SCANNED_OBJECT
+  UNSTRUCTURED_SUB_DATA_POINT_RECOMMENDATION
+  SOMBRA
+  ORG_TCF_PURPOSE
+  ORG_TCF_SPECIAL_FEATURE
+  CONSENT_APPLICATION
+  CONSENT_SDK
+  CONSENT_SERVICE
+  CONSENT_SITE
+  AIRGAP_BUNDLE_TCF_STACK
+  AIRGAP_PARTITION
+  AIRGAP_PREFIX_MODULE
+  RISK_FRAMEWORK
+  RISK_LEVEL
+  RISK_CATEGORY
+  RISK_MATRIX_COLUMN
+  RISK_MATRIX_ROW
+  PREFERENCE_OPTION
+  PREFERENCE_TOPIC
+  CONSENT_WORKFLOW_TRIGGER
+  PURPOSE_DATA_POINT
+  PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
+  FEATURE
+  USER
+  DATA_SUBJECT
+  VENDOR_LIST
+  CONSENT_UI_VARIANT
+  CONSENT_UI_THEME
+  WORKFLOW_CONFIG
+  MAESTRO_RULE
+  MAESTRO_CUSTOM_FUNCTION
+  MAESTRO_RULE_TRIGGER
+  MAESTRO_SECRET
+  DROP_RUN
+  DROP_BROKER_CREDENTIAL
 }
 
 enum AuditEventCode {
@@ -4681,6 +4774,8 @@ enum AuditEventCode {
   PREFERENCE_OPTION
   PREFERENCE_TOPIC
   CONSENT_WORKFLOW_TRIGGER
+  PURPOSE_DATA_POINT
+  PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
   FEATURE
   USER
   USER_TEAM
@@ -4704,116 +4799,6 @@ enum AuditEventCode {
   MAESTRO_RULE_EXECUTION
   MAESTRO_SECRET
   MAESTRO_CUSTOM_FUNCTION
-  DROP_RUN
-  DROP_BROKER_CREDENTIAL
-}
-
-enum AiFeatureAuditChangeKind {
-  REPORTED_AS_INACCURATE
-  REPORTED_AS_INACCURATE_AND_HIDDEN
-  MARKED_HIGH_RISK
-  CLEARED_HIGH_RISK
-  VISIBILITY_SHOWN
-  VISIBILITY_HIDDEN
-}
-
-enum DropRunLifecycleKind {
-  RUN_INGESTED
-  CPPA_DOWNLOADED
-  RECORDS_MATERIALIZED
-  STARTER_DOWNLOADED
-  INTAKE_STARTED
-  DSRS_CREATED
-  RECORD_MATCHED
-  RECORD_UNMATCHED
-  SUPPRESSION_APPLIED
-  REPORT_GENERATED
-  REPORT_SUBMITTED
-  REPORT_AMENDED
-  SUBMISSION_SUMMARY_RECEIVED
-  SUBMISSION_DISCREPANCY_FLAGGED
-  RUN_FORCE_FINALIZED
-}
-
-enum RuleExecutionAuditKind {
-  SUCCEEDED
-  FAILED
-}
-
-enum AuditEventBaseModelCode {
-  ACTION_ITEM
-  ASSESSMENT_ANSWER
-  ASSESSMENT_FORM
-  ASSESSMENT_FORM_COMMENT
-  ASSESSMENT_FORM_TEMPLATE
-  ASSESSMENT_GROUP
-  ASSESSMENT_QUESTION
-  ASSESSMENT_QUESTION_COMMENT
-  ASSESSMENT_SECTION_COMMENT
-  ASSESSMENT_SECTION
-  ASSESSMENT_EMAIL_SET
-  CUSTOM_FUNCTION
-  DATA_POINT
-  DATA_POINT_LEVEL
-  DATA_SILO_RATE_LIMIT
-  DATA_REPORT
-  DATA_SILO
-  DATA_SILO_PLUGIN
-  LOOKUP_PROCESS
-  AIRGAP_BUNDLE
-  AIRGAP_BUNDLE_DEPLOYMENT
-  AIRGAP_COOKIE
-  AIRGAP_DATA_FLOW
-  AIRGAP_THEME
-  VENDOR
-  SAAS_VENDOR
-  BUSINESS_ENTITY
-  DATA_SUB_CATEGORY
-  IDENTIFIER
-  PROCESSING_ACTIVITY
-  PROCESSING_PURPOSE_SUB_CATEGORY
-  SUB_DATA_POINT
-  MESSAGE
-  PRIVACY_CENTER
-  EMAIL_SENDER_ADDRESS
-  THEME
-  DATA_COLLECTION
-  ASSET_FILE
-  POLICY
-  EXPERIENCE
-  TRACKING_PURPOSE
-  PREFERENCE
-  SCANNED_OBJECT
-  UNSTRUCTURED_SUB_DATA_POINT_RECOMMENDATION
-  SOMBRA
-  ORG_TCF_PURPOSE
-  ORG_TCF_SPECIAL_FEATURE
-  CONSENT_APPLICATION
-  CONSENT_SDK
-  CONSENT_SERVICE
-  CONSENT_SITE
-  AIRGAP_BUNDLE_TCF_STACK
-  AIRGAP_PARTITION
-  AIRGAP_PREFIX_MODULE
-  RISK_FRAMEWORK
-  RISK_LEVEL
-  RISK_CATEGORY
-  RISK_MATRIX_COLUMN
-  RISK_MATRIX_ROW
-  PREFERENCE_OPTION
-  PREFERENCE_TOPIC
-  CONSENT_WORKFLOW_TRIGGER
-  FEATURE
-  USER
-  DATA_SUBJECT
-  VENDOR_LIST
-  CONSENT_UI_VARIANT
-  CONSENT_UI_THEME
-  WORKFLOW_CONFIG
-  MAESTRO_RULE
-  MAESTRO_CUSTOM_FUNCTION
-  MAESTRO_RULE_TRIGGER
-  MAESTRO_SECRET
   DROP_RUN
   DROP_BROKER_CREDENTIAL
 }
@@ -4859,15 +4844,27 @@ enum CONSENT_AUDIT_EVENTS {
   CONSENT_UI_THEME
 }
 
-enum PREFERENCE_STORE_AUDIT_EVENTS {
-  PREFERENCE_OPTION
-  PREFERENCE_TOPIC
-  CONSENT_WORKFLOW_TRIGGER
-}
-
 enum DROP_AUDIT_EVENTS {
   DROP_RUN
   DROP_BROKER_CREDENTIAL
+}
+
+enum DropRunLifecycleKind {
+  RUN_INGESTED
+  CPPA_DOWNLOADED
+  RECORDS_MATERIALIZED
+  STARTER_DOWNLOADED
+  INTAKE_STARTED
+  DSRS_CREATED
+  RECORD_MATCHED
+  RECORD_UNMATCHED
+  SUPPRESSION_APPLIED
+  REPORT_GENERATED
+  REPORT_SUBMITTED
+  REPORT_AMENDED
+  SUBMISSION_SUMMARY_RECEIVED
+  SUBMISSION_DISCREPANCY_FLAGGED
+  RUN_FORCE_FINALIZED
 }
 
 enum MessageProperties {
@@ -4878,6 +4875,19 @@ enum MessageProperties {
   identifierId
   subjectId
   policyId
+}
+
+enum PREFERENCE_STORE_AUDIT_EVENTS {
+  PREFERENCE_OPTION
+  PREFERENCE_TOPIC
+  CONSENT_WORKFLOW_TRIGGER
+  PURPOSE_DATA_POINT
+  PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
+}
+
+enum RuleExecutionAuditKind {
+  SUCCEEDED
+  FAILED
 }
 
 enum AnalyticsDataSource {
@@ -4948,6 +4958,24 @@ enum BaseCacheKey {
   DROP_RUN_DSR_PROGRESS
 }
 
+enum AuditorGQLRegionEnum {
+  California
+  Ireland
+}
+
+enum AuditorRunStatus {
+  Queued
+  Processing
+  Skipped
+  Error
+  Complete
+}
+
+enum ColorScheme {
+  light
+  dark
+}
+
 enum FindingClass {
   AirgapNotFound
   UnexpectedCookieStored
@@ -4973,70 +5001,10 @@ enum FindingSeverity {
   Critical
 }
 
-enum AuditorGQLRegionEnum {
-  California
-  Ireland
-}
-
-enum AuditorRunStatus {
-  Queued
-  Processing
-  Skipped
-  Error
-  Complete
-}
-
 enum SameSite {
   Strict
   Lax
   None
-}
-
-enum ColorScheme {
-  light
-  dark
-}
-
-enum PrivacyCenterIntlMessageType {
-  ACTION_SECONDARY_DESCRIPTION
-  ACTION_SUBJECT_TITLE
-  ACTION_DESCRIPTION
-  ACTION_FORM_ITEM
-  DATA_SUBJECT_LOGIN_INSTRUCTIONS
-  DATA_SUBJECT_DISABLED_INSTRUCTIONS
-  IDENTIFIER_TITLE
-  IDENTIFIER_DESCRIPTION
-  IDENTIFIER_VALIDATION_ERROR_MESSAGE
-  DATA_SUBJECT_TITLE
-  DATA_SUBJECT_DESCRIPTION
-  DATA_SUBJECT_REDIRECT_URL
-  POLICY_TITLE
-  PRIVACY_CENTER_FOOTER_LINK_TITLE
-  PRIVACY_CENTER_FOOTER_LINK_URL
-  POLICY_CONTENT
-  ASSET_FILE_ALT
-  TEMPLATE_SUBJECT
-  TEMPLATE_TEMPLATE
-  DATA_COLLECTION_TITLE
-  DATA_POINT_TITLE
-  DATA_POINT_DESCRIPTION
-  LOOSE_MESSAGE
-  PRIVACY_CENTER_HOME_URL
-  WORKFLOW_TITLE
-  WORKFLOW_SUBTITLE
-  WORKFLOW_DESCRIPTION
-  FILE_UPLOAD_LABEL
-  FILE_UPLOAD_INFO
-  CONSENT_PURPOSE_TITLE
-  CONSENT_PURPOSE_DISCLOSURE_TITLE
-  CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
-  CONSENT_PURPOSE_DISCLOSURE_MODAL_MESSAGE
-  PREFERENCE_TOPIC_TITLE
-  PREFERENCE_TOPIC_DESCRIPTION
-  PREFERENCE_OPTION_TITLE
-  SUB_DATA_POINT_TITLE
-  ATTRIBUTE_KEY_NAME
-  ATTRIBUTE_VALUE_NAME
 }
 
 enum ConsentManagerIntlMessageType {
@@ -5094,6 +5062,48 @@ enum IntlMessageType {
   CONSENT_PURPOSE_DESCRIPTION
   CONSENT_MANAGER_TCF_MESSAGE
   CONSENT_MANAGER_VARIANT
+}
+
+enum PrivacyCenterIntlMessageType {
+  ACTION_SECONDARY_DESCRIPTION
+  ACTION_SUBJECT_TITLE
+  ACTION_DESCRIPTION
+  ACTION_FORM_ITEM
+  DATA_SUBJECT_LOGIN_INSTRUCTIONS
+  DATA_SUBJECT_DISABLED_INSTRUCTIONS
+  IDENTIFIER_TITLE
+  IDENTIFIER_DESCRIPTION
+  IDENTIFIER_VALIDATION_ERROR_MESSAGE
+  DATA_SUBJECT_TITLE
+  DATA_SUBJECT_DESCRIPTION
+  DATA_SUBJECT_REDIRECT_URL
+  POLICY_TITLE
+  PRIVACY_CENTER_FOOTER_LINK_TITLE
+  PRIVACY_CENTER_FOOTER_LINK_URL
+  POLICY_CONTENT
+  ASSET_FILE_ALT
+  TEMPLATE_SUBJECT
+  TEMPLATE_TEMPLATE
+  DATA_COLLECTION_TITLE
+  DATA_POINT_TITLE
+  DATA_POINT_DESCRIPTION
+  LOOSE_MESSAGE
+  PRIVACY_CENTER_HOME_URL
+  WORKFLOW_TITLE
+  WORKFLOW_SUBTITLE
+  WORKFLOW_DESCRIPTION
+  FILE_UPLOAD_LABEL
+  FILE_UPLOAD_INFO
+  CONSENT_PURPOSE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_MESSAGE
+  PREFERENCE_TOPIC_TITLE
+  PREFERENCE_TOPIC_DESCRIPTION
+  PREFERENCE_OPTION_TITLE
+  SUB_DATA_POINT_TITLE
+  ATTRIBUTE_KEY_NAME
+  ATTRIBUTE_VALUE_NAME
 }
 
 type Query {
@@ -13732,6 +13742,7 @@ input EmployeeRequestInput {
   idempotencyKey: String
   subjectType: String!
   type: RequestAction!
+  workflowConfigId: ID
 }
 
 type EmployeeReSignEncryptedCekContextsPayload {
@@ -14952,6 +14963,7 @@ input MaestroRulesFilterInput {
   ruleId: ID
   statuses: [AutomationRuleStatus!]
   ownerIds: [ID!]
+  includeNulls: [String!]
   triggerType: MaestroRuleTriggerType
   actionType: MaestroRuleActionType
   text: String
@@ -22521,7 +22533,6 @@ type UpdateWorkflowCommunicationSettingsPayload {
 input UpdateWorkflowCommunicationSettingsInput {
   id: ID!
   templateId: ID
-  description: String
   enabled: Boolean
 }
 
@@ -22820,7 +22831,6 @@ type WiredIdentifier implements IdentifierInterface {
 type WorkflowCommunicationSettings {
   id: ID!
   templateId: ID
-  description: String
   type: WorkflowCommunicationMethod!
   enabled: Boolean!
   templateType: WorkflowCommunicationTemplateType!
