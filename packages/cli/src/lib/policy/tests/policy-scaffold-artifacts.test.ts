@@ -71,6 +71,8 @@ describe('Policy Engine GitHub Actions workflow', () => {
         };
         /** Push trigger. */
         push: {
+          /** Branches that trigger on push (avoids duplicate PR runs). */
+          branches: string[];
           /** Watched push paths. */
           paths: string[];
         };
@@ -99,6 +101,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
     ];
 
     expect(parsed.on.pull_request.paths).toEqual(expectedPaths);
+    expect(parsed.on.push.branches).toEqual(['main']);
     expect(parsed.on.push.paths).toEqual(expectedPaths);
     expect(parsed.jobs.lint.steps.at(-1)?.env).toEqual({
       POLICY_DIRECTORY: `${workspace}/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
