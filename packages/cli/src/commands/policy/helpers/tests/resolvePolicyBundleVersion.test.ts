@@ -75,7 +75,7 @@ describe('resolvePolicyBundleVersion', () => {
     });
   });
 
-  it('resolves a version by UUID via the direct version endpoint', async () => {
+  it('resolves a version by UUID via the nested bundle version endpoint', async () => {
     const versionDetail = {
       versionId: 'version-id',
       version: 'v1',
@@ -89,21 +89,9 @@ describe('resolvePolicyBundleVersion', () => {
       downloadUrl: 'https://example.com/download',
     } satisfies GetPolicyBundleVersionResponse;
 
-    const get = vi.fn((url: string) => ({
-      json: vi.fn().mockResolvedValue(
-        url.startsWith('v1/policy-engine/policy-bundle-versions/')
-          ? versionDetail
-          : {
-              id: 'bundle-id',
-              bundleName: 'main',
-              description: null,
-              activeVersionId: null,
-              lastActivatedAt: null,
-              createdAt: '2026-01-01',
-              updatedAt: '2026-01-01',
-            },
-      ),
-    }));
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue(versionDetail),
+    });
 
     await expect(
       resolvePolicyBundleVersion({ get } as never, 'bundle-id', { versionId: 'version-id' }),
@@ -111,8 +99,9 @@ describe('resolvePolicyBundleVersion', () => {
       id: 'version-id',
       version: 'v1',
     });
-    expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundle-versions/version-id');
-    expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/bundle-id');
+    expect(get).toHaveBeenCalledWith(
+      'v1/policy-engine/policy-bundles/bundle-id/versions/version-id',
+    );
   });
 
   it('throws when no versions exist', async () => {
