@@ -18,7 +18,7 @@ export function createAdminListScopesTool(_clients?: ToolClients) {
   return defineTool({
     name: 'admin_list_scopes',
     description:
-      'List valid ScopeName values for admin_create_api_key. Default rows are compact ' +
+      'List valid ScopeName values for API keys and user permissions. Default rows are compact ' +
       '(name, title, type, dependencies). Filter with text; set includeDetails only when titles are not enough.',
     category: 'Admin',
     readOnly: true,

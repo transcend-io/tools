@@ -1,6 +1,5 @@
 import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
-import { createAdminCreateApiKeyTool } from './admin_create_api_key.js';
 import { createAdminGetCurrentUserTool } from './admin_get_current_user.js';
 import { createAdminGetOrganizationTool } from './admin_get_organization.js';
 import { createAdminGetPrivacyCenterTool } from './admin_get_privacy_center.js';
@@ -18,7 +17,6 @@ export function getAdminTools(clients: ToolClients): ToolDefinition[] {
     createAdminListTeamsTool(clients),
     createAdminListApiKeysTool(clients),
     createAdminListScopesTool(clients),
-    createAdminCreateApiKeyTool(clients),
     createAdminGetPrivacyCenterTool(clients),
     createAdminTestConnectionTool(clients),
   ];
