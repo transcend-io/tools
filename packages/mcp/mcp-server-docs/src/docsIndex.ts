@@ -1,5 +1,10 @@
 import { LRUCache } from 'lru-cache';
 
+import {
+  isApiReferenceUrl,
+  renderApiReferenceMarkdown,
+  resetOpenApiCacheForTests,
+} from './apiReferenceMarkdown.js';
 import { clearSearchIndexCache } from './docsSearch.js';
 
 /** Public docs index URL (llms.txt). */
@@ -40,7 +45,7 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
     }
 
     const linkMatch = /^- \[(.+)\]\((.+)\)\s*$/.exec(line);
-    if (linkMatch?.[1] && linkMatch[2] && currentSection) {
+    if (linkMatch?.[1] && linkMatch?.[2] && currentSection) {
       const title = linkMatch[1].trim();
       if (!title) {
         continue;
@@ -54,6 +59,33 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
   }
 
   return entries;
+}
+
+function looksLikeHtml(body: string, contentType: string | null): boolean {
+  if (contentType?.includes('text/html')) {
+    return true;
+  }
+  const trimmed = body.trimStart().slice(0, 32).toLowerCase();
+  return trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
+}
+
+async function fetchArticleMarkdown(url: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(url, {
+    headers: { Accept: 'text/markdown, text/plain' },
+    signal: signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
+  }
+  const body = await response.text();
+  if (looksLikeHtml(body, response.headers.get('content-type'))) {
+    throw new Error(
+      `Documentation at ${url} returned HTML instead of markdown. ` +
+        'Use a docs_list URL that serves markdown, or an /docs/api-reference/ URL ' +
+        '(resolved via OpenAPI).',
+    );
+  }
+  return body;
 }
 
 async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
@@ -82,8 +114,12 @@ const bodyCache = new LRUCache<string, string>({
   max: MAX_BODY_CACHE_ENTRIES,
   ttl: DEFAULT_BODY_TTL_MS,
   allowStale: true,
-  allowStaleOnFetchRejection: true,
-  fetchMethod: async (url, _stale, { signal }) => fetchText(url, signal),
+  fetchMethod: async (url, _stale, { signal }) => {
+    if (isApiReferenceUrl(url)) {
+      return renderApiReferenceMarkdown(url, signal);
+    }
+    return fetchArticleMarkdown(url, signal);
+  },
 });
 
 /** Returns the parsed llms.txt index (cached with TTL). */
@@ -122,5 +158,6 @@ export function assertDocsHost(url: string): void {
 export function resetDocsCachesForTests(): void {
   indexCache.clear();
   bodyCache.clear();
+  resetOpenApiCacheForTests();
   clearSearchIndexCache();
 }

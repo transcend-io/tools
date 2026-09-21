@@ -36,21 +36,34 @@ configurations for each URL/key pair.
 The normal agent loop is:
 
 ```text
-upsert (omit sombraId / dataSiloId, unique name)
+upsert (omit sombraId / dataSiloId, unique name, envVarNames for needed secrets)
+  → user fills Environment Variable values in the dashboard
   → test_run({ id })
-  → upsert (draft, promote false)
+  → upsert (draft, promote false)  // preserves dashboard env values
   → promote_version
 ```
+
+Do **not** pass secret values through MCP. Pass `envVarNames` (e.g. `["API_KEY"]`) to create
+Environment Variable placeholders (signed as `${API_KEY}` so Sombra persists the name; empty
+strings are dropped on merge-on-sign). The user replaces those values in the dashboard.
+Updates keep stored secret values and only add missing names from `envVarNames`.
 
 Successful responses include a `nextStep` string naming the following tool call. Or one-shot
 create-and-test with `custom_functions_upsert` `testPayloads` (sets `successfulTestRun` if they
 pass; failed tests never block save; Activity is not bound).
 
 Creating a DSR function without `dataSiloId` also creates a `customFunction` data silo on the
-resolved Sombra gateway. Pass an existing Custom Function silo ID only when you already have one.
-Creating a GENERAL function (and a new DSR integration) omits `sombraId` unless the tool errors
-with a list of gateway IDs; never pass `sombraId` on DSR create. Use a unique `name` so
-`custom_functions_list` `text` can find the row.
+resolved Sombra gateway. Pass an existing Custom Function silo ID only when it is still
+`NOT_CONFIGURED` (one DSR function per silo; `CONNECTED` silos reject attach). Creating a
+GENERAL function (and a new DSR integration) omits `sombraId` unless the tool errors with a
+list of gateway IDs; never pass `sombraId` on DSR create. Use a unique `name` so
+`custom_functions_list` `text` can find the row. On update, omit `code` to keep stored code
+when only changing env names, hosts, or other metadata.
+
+`custom_functions_upsert` returns `envVarNames` from a post-write unwrap of the readable
+version (pending draft if any, else active), not from the request echo. When a pending draft
+exists, `custom_functions_get_code` prefers that draft so recent env scaffolding is visible
+before promote.
 
 DSR code must expose callable default and `enricher` exports. GENERAL code must expose a callable
 default export.
@@ -67,9 +80,10 @@ a specific body. GENERAL payloads default to `{ "message": "hello world!" }` (th
 `coreIdentifier`). DSR uses a stub ACCESS payload and injects the silo id — do not hand-build
 `extras`. Responses include `passed`, `exitCode`, `logs`, `error`, and `timeMs`.
 
-`custom_functions_get_code` is read-only but sensitive because its `userDefinedEnv` response may
-contain secrets. It returns `version.successfulTestRun`. The current API exposes the active
-version, or the latest draft when there is no active version; arbitrary historic versions cannot
-be unwrapped through this tool.
+`custom_functions_get_code` returns plaintext code and runtime context with environment-variable
+**names** only (values are redacted). Set secrets in the Admin Dashboard Environment Variables
+tab. It returns `version.successfulTestRun`. The readable version is the pending draft when one
+exists, otherwise the active version; arbitrary historic versions cannot be unwrapped through
+this tool.
 
 See the [Custom Functions documentation](https://docs.transcend.io/docs/integrations/custom-functions).

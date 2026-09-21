@@ -18,7 +18,8 @@ export const ListDataSilosSchema = OffsetPaginationSchema.extend({
     .enum(['WEBHOOK', 'CUSTOM_FUNCTION'])
     .optional()
     .describe(
-      'Filter by connection strategy. Use CUSTOM_FUNCTION to list silos eligible for DSR Custom Functions',
+      'Filter by connection strategy. CUSTOM_FUNCTION silos with connectionState=NOT_CONFIGURED ' +
+        'can accept a new DSR Custom Function (one per silo)',
     ),
 });
 export type ListDataSilosInput = z.infer<typeof ListDataSilosSchema>;
@@ -30,9 +31,11 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
     description:
       'List data silos (data systems and integrations) in your organization. ' +
       'Pass `text` or `titles` to search/filter, or `customSiloConnectionStrategy=CUSTOM_FUNCTION` ' +
-      'to find silos that can host a DSR Custom Function. Each row includes connectionState and ' +
-      'customSiloConnectionStrategy; call inventory_get_data_silo for sombraId. `totalCount` is the ' +
-      'full match count, not the size of this page.',
+      'to find silos that can host a DSR Custom Function. Attach only when connectionState is ' +
+      'NOT_CONFIGURED (one function per silo); CONNECTED means a function is already linked. ' +
+      'Each row includes connectionState and customSiloConnectionStrategy; call ' +
+      'inventory_get_data_silo for sombraId. `totalCount` is the full match count, not the size ' +
+      'of this page.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

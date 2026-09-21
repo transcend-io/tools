@@ -378,14 +378,20 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
       throw new Error(`No custom function found with id ${id}.`);
     }
 
-    const selectedVersion = node.activeVersion ?? node.draftVersion;
+    // Prefer draft when pending so reads match the JWTs GraphQL returns on the
+    // parent (draft if pending, else active) — same as the SDK preferred version.
+    const selectedVersion =
+      node.hasPendingDraft && node.draftVersion
+        ? node.draftVersion
+        : (node.activeVersion ?? node.draftVersion);
     if (!selectedVersion) {
       throw new Error(`Custom function ${id} has no readable version.`);
     }
     if (versionId && selectedVersion.id !== versionId) {
       throw new Error(
         `Version ${versionId} cannot be read through the current GraphQL API. ` +
-          `The readable version for custom function ${id} is ${selectedVersion.id}.`,
+          `The readable version for custom function ${id} is ${selectedVersion.id} ` +
+          `(draft when a pending draft exists, otherwise active).`,
       );
     }
 

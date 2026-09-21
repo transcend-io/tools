@@ -8,6 +8,12 @@ export {
   parseLlmsTxt,
   resetDocsCachesForTests,
 } from './docsIndex.js';
+export {
+  docsPathToOpenApiPath,
+  isApiReferenceUrl,
+  OAS_JSON_URL,
+  parseApiReferenceUrl,
+} from './apiReferenceMarkdown.js';
 export { type DocsSearchHit, searchDocs } from './docsSearch.js';
 export { getDocsTools } from './tools/index.js';
 

@@ -5,6 +5,10 @@ import type { CustomFunctionsMixin } from '../graphql.js';
 import { executeCustomFunctionTestRun } from '../helpers/customFunctionTestRun.js';
 import { customFunctionNextStep } from '../helpers/nextStep.js';
 
+const PAYLOAD_OMIT_GUIDANCE =
+  'Strongly prefer omitting — type-specific defaults are used; a hand-built DSR payload ' +
+  'missing nested fields fails with an opaque decode error, not helpful validation';
+
 export const CustomFunctionsTestRunSchema = z
   .object({
     id: z
@@ -20,10 +24,7 @@ export const CustomFunctionsTestRunSchema = z
       .min(1)
       .optional()
       .describe('Unsaved TypeScript trial; required without id. DSR also needs dataSiloId'),
-    payload: z
-      .record(z.string(), z.unknown())
-      .optional()
-      .describe('Optional JSON body; omit for type-specific defaults'),
+    payload: z.record(z.string(), z.unknown()).optional().describe(PAYLOAD_OMIT_GUIDANCE),
     payloadType: z
       .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
       .optional()
@@ -36,12 +37,13 @@ export const CustomFunctionsTestRunSchema = z
       .string()
       .optional()
       .describe('DSR silo; omit with id. Required for unsaved DSR tests'),
-    userDefinedEnv: z
-      .record(z.string(), z.string())
+    allowedHosts: z
+      .array(z.string())
       .optional()
-      .default({})
-      .describe('Runtime env vars'),
-    allowedHosts: z.array(z.string()).optional().default([]).describe('Allowed hosts'),
+      .describe(
+        "Hosts for unsaved code trials only. Empty = localhost only; include 'localhost' " +
+          'with sdk.fetch. Stored runs use the saved allowlist. Secrets/env are dashboard-only.',
+      ),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
   })
@@ -83,15 +85,16 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
     name: 'custom_functions_test_run',
     description:
       'Test a Custom Function (saved or unsaved TypeScript). Pass { id } alone for the stored ' +
-      'version; pass code for a trial. DSR or GENERAL.',
+      'version (uses dashboard env); pass code for a trial without secrets. Prefer omitting ' +
+      'payload. DSR or GENERAL.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
     confirmation: {
       hint:
         'Runs Custom Function code on your Sombra gateway with the payload in the call ' +
-        'arguments. That can call allowed hosts and use runtime env vars. Check id or code, ' +
-        'type, payload, and env before agreeing.',
+        'arguments. Stored runs use dashboard Environment Variables; unsaved trials have no ' +
+        'secrets. Check id or code, type, payload, and allowedHosts before agreeing.',
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsTestRunSchema,
@@ -103,7 +106,6 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       payloadType,
       sombraId,
       dataSiloId,
-      userDefinedEnv,
       allowedHosts,
       allowThirdPartyImports,
       timeoutMs,
@@ -117,8 +119,9 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
         payloadType,
         sombraId,
         dataSiloId,
-        userDefinedEnv,
-        allowedHosts,
+        // Unsaved trials never take agent-supplied secrets; stored runs use signed JWTs.
+        userDefinedEnv: {},
+        allowedHosts: allowedHosts ?? [],
         allowThirdPartyImports,
         timeoutMs,
         markSuccessfulTestRun: storedRun,

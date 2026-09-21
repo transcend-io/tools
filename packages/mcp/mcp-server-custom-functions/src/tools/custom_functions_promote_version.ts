@@ -1,7 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
-import { customFunctionDashboardUrl, customFunctionNextStep } from '../helpers/nextStep.js';
+import { customFunctionDashboardHint, customFunctionNextStep } from '../helpers/nextStep.js';
 
 export const CustomFunctionsPromoteVersionSchema = z.object({
   customFunctionId: z.string().describe('Custom function ID'),
@@ -33,7 +33,7 @@ export function createCustomFunctionsPromoteVersionTool(clients: ToolClients) {
       return createToolResult(true, {
         customFunction: result.customFunction,
         dependencyWarnings: result.dependencyWarnings,
-        dashboardHint: `Review this function at ${customFunctionDashboardUrl(clients.dashboardUrl, result.customFunction.id)}.`,
+        dashboardHint: customFunctionDashboardHint(clients.dashboardUrl, result.customFunction.id),
         nextStep: customFunctionNextStep({
           kind: 'promoted',
           id: result.customFunction.id,
