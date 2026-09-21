@@ -5,10 +5,7 @@ import type {
   PolicyBundleVersion,
   PolicyBundleVersionListResponse,
 } from '../types.js';
-import {
-  policyEngineRequest,
-  throwPolicyEngineRequestError,
-} from './formatPolicyEngineRequestError.js';
+import { throwPolicyEngineRequestError } from './formatPolicyEngineRequestError.js';
 
 /** Options for resolving a policy bundle version. */
 export interface ResolvePolicyBundleVersionOptions {
@@ -54,15 +51,16 @@ async function fetchPolicyBundleVersionPage(
   bundleId: string,
   searchParams: Record<string, string | number>,
 ): Promise<PolicyBundleVersion | undefined> {
-  const body = await policyEngineRequest(
-    client
+  try {
+    const body = await client
       .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
         searchParams,
       })
-      .json<PolicyBundleVersionListResponse>(),
-  );
-
-  return body.nodes[0];
+      .json<PolicyBundleVersionListResponse>();
+    return body.nodes[0];
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
 }
 
 /**

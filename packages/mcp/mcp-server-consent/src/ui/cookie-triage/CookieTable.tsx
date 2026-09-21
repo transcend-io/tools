@@ -17,7 +17,7 @@ interface CookieTableProps {
   footer?: ReactNode;
 }
 
-const HEADER_CELL = 'px-4 py-2.5 text-left text-sm font-semibold uppercase text-on-card';
+const HEADER_CELL = 'bg-card px-4 py-2.5 text-left text-sm font-semibold uppercase text-on-card';
 
 /** Triage table for one purpose category. */
 export const CookieTable = memo(function CookieTable({
@@ -29,6 +29,7 @@ export const CookieTable = memo(function CookieTable({
   const { singularTitle } = triageCopy(triageType);
 
   return (
+    // Single scrollport for thead + tbody so the scrollbar gutter spans the header.
     <div className="min-h-0 min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden">
       {/* Fixed layout keeps columns inside the shell — no horizontal scroll on narrow hosts. */}
       <table className="w-full table-fixed border-collapse">
@@ -39,7 +40,7 @@ export const CookieTable = memo(function CookieTable({
           <col className="w-[34%]" />
         </colgroup>
         <thead className="sticky top-0 z-10">
-          <tr className="border-b border-card-line bg-card">
+          <tr className="border-b border-card-line">
             <th scope="col" className={HEADER_CELL}>
               <span className="block">{singularTitle}</span>
               <span className="block font-normal text-on-card-subtle">Service</span>

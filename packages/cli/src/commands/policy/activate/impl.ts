@@ -18,7 +18,7 @@ import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {
   /** Logical bundle name to activate */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Caller-supplied version label to activate */
   version?: string;
   /** Transcend API key */
@@ -36,7 +36,7 @@ export interface ActivateCommandFlags {
 /**
  * Activate an uploaded policy bundle version.
  *
- * Resolves `--bundle-name` to the parent bundle UUID internally, then calls the
+ * Resolves `--remote-bundle-name` to the parent bundle UUID internally, then calls the
  * Policy Engine activate endpoint. The bundle is addressed by name only -- the
  * UUID is never exposed to the operator.
  *
@@ -46,7 +46,7 @@ export interface ActivateCommandFlags {
 export async function activate(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     version,
     auth,
     'transcend-url': transcendUrl,

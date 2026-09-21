@@ -39,6 +39,8 @@ export enum ColumnName {
   CreatedAt = 'createdAt',
   /** The title of the dataSiloIds column */
   DataSiloIds = 'dataSiloIds',
+  /** The title of the workflowConfigId column */
+  WorkflowConfigId = 'workflowConfigId',
 }
 
 /** These parameters are required in the Transcend DSR API */
@@ -53,6 +55,7 @@ export const IS_REQUIRED: { [k in ColumnName]: boolean } = {
   [ColumnName.Locale]: false,
   [ColumnName.Country]: false,
   [ColumnName.CountrySubDivision]: false,
+  [ColumnName.WorkflowConfigId]: false,
 };
 
 /** These parameters can be specified for the entire CSV set if needed */

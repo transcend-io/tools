@@ -20,7 +20,7 @@ import type { GetPolicyBundleVersionResponse } from '../types.js';
 /** CLI flags for `transcend policy download`. */
 export interface DownloadCommandFlags {
   /** Tenant-unique bundle name */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /**
    * Caller-supplied version label to download.
    * When omitted, downloads the bundle's currently active version.
@@ -71,7 +71,7 @@ function formatDownloadSummary(body: GetPolicyBundleVersionResponse, outputPath:
 /**
  * Download a compiled policy bundle version to disk.
  *
- * Resolves `--bundle-name` and an optional `--version` to IDs, fetches a
+ * Resolves `--remote-bundle-name` and an optional `--version` to IDs, fetches a
  * short-lived presigned S3 URL from the monolith, then downloads the `.tar.gz`
  * bytes directly from S3 (the monolith does not proxy the artifact).
  *
@@ -84,7 +84,7 @@ function formatDownloadSummary(body: GetPolicyBundleVersionResponse, outputPath:
 export async function download(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     version,
     output,
     auth,

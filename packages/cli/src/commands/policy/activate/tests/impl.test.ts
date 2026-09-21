@@ -59,7 +59,7 @@ describe('activate', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await activate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       version: 'abc123',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
@@ -90,7 +90,7 @@ describe('activate', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await activate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       'dry-run': false,
@@ -114,7 +114,7 @@ describe('activate', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await activate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       version: 'abc123',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
@@ -135,7 +135,7 @@ describe('activate', () => {
 
     await expect(
       activate.call(context, {
-        'bundle-name': 'missing',
+        'remote-bundle-name': 'missing',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         'dry-run': false,
@@ -156,7 +156,7 @@ describe('activate', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await activate.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       version: 'abc123',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
@@ -187,7 +187,7 @@ describe('activate', () => {
 
     await expect(
       activate.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         version: 'abc123',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',

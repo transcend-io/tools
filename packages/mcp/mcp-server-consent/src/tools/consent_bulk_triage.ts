@@ -61,7 +61,9 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.trackingPurposes ? { trackingPurposes: item.trackingPurposes } : {}),
+          ...(item.trackingPurposes !== undefined
+            ? { trackingPurposes: item.trackingPurposes }
+            : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
@@ -84,7 +86,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.trackingPurposes ? { trackingType: item.trackingPurposes } : {}),
+          ...(item.trackingPurposes !== undefined ? { trackingType: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         const dfResult = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(

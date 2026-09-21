@@ -39,7 +39,7 @@ interface CookieRowProps {
 
 /** One cookie/data-flow triage table row. */
 export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProps) {
-  const { triageType, purposeOptions } = useCookieTriageMeta();
+  const { triageType, purposeOptions, supportsPermanentDelete } = useCookieTriageMeta();
   const { decide, undo, askOpinion, updateNotes, updatePurpose } = useCookieTriageActions();
   const requestDelete = useRequestDelete();
   const [asking, setAsking] = useState(false);
@@ -143,7 +143,9 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
       >
         <td className="min-w-0 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-sm font-medium text-on-card break-all">{cookie.name}</span>
+            <span className="block truncate text-sm font-medium text-on-card" title={cookie.name}>
+              {cookie.name}
+            </span>
             <span className="text-sm text-on-card-muted break-words">
               {cookie.service ?? 'Unknown'}
             </span>
@@ -246,23 +248,25 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   >
                     <CancelIcon />
                   </Button>
-                  <Button
-                    variant={ButtonVariant.Icon}
-                    aria-label="Delete"
-                    disabled={busy}
-                    aria-busy={mutating}
-                    title={`Permanently delete this ${singular}`}
-                    onClick={() => {
-                      setNotesOpen(false);
-                      requestDelete({
-                        purpose,
-                        name: row.name,
-                        itemLabel: cookie.name,
-                      });
-                    }}
-                  >
-                    <TrashIcon />
-                  </Button>
+                  {supportsPermanentDelete ? (
+                    <Button
+                      variant={ButtonVariant.Icon}
+                      aria-label="Delete"
+                      disabled={busy}
+                      aria-busy={mutating}
+                      title={`Permanently delete this ${singular}`}
+                      onClick={() => {
+                        setNotesOpen(false);
+                        requestDelete({
+                          purpose,
+                          name: row.name,
+                          itemLabel: cookie.name,
+                        });
+                      }}
+                    >
+                      <TrashIcon />
+                    </Button>
+                  ) : null}
                 </>
               )}
             </div>

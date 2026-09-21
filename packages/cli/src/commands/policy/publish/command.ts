@@ -8,7 +8,7 @@ import {
 import {
   createPolicyDebugParameter,
   policyBundleDirectoryParameter,
-  policyBundleNameParameter,
+  policyRemoteBundleNameParameter,
   policyJsonParameter,
 } from '../helpers/policyCommandParameters.js';
 
@@ -19,7 +19,7 @@ export const publishCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': policyBundleNameParameter,
+      'remote-bundle-name': policyRemoteBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ManagePolicyEngineBundles],
       }),

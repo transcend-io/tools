@@ -1,0 +1,389 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+import { ErrorCode } from '@transcend-io/mcp-server-base';
+import { MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import {
+  assertSafePolicyBundleRelativePath,
+  packPolicyBundleTarball,
+  packPolicyBundleTarballFromFiles,
+} from '../src/helpers/packPolicyBundleTarball.js';
+import {
+  activatePolicyBundleVersion,
+  deactivatePolicyBundle,
+  listPolicyBundleVersions,
+  listPolicyBundles,
+  publishPolicyBundle,
+} from '../src/helpers/policyCliOperations.js';
+import { POLICY_TEMPLATES } from '../src/templates/index.js';
+import { getPolicyTools } from '../src/tools/index.js';
+import { PolicyPublishSchema } from '../src/tools/policy_publish.js';
+
+const EXPECTED_TOOL_NAMES = [
+  'policy_get_templates',
+  'policy_list_bundles',
+  'policy_publish',
+  'policy_set_live',
+] as const;
+
+const STARTER_FILES = POLICY_TEMPLATES.starter.files;
+
+function writeStarterBundle(dir: string): void {
+  fs.mkdirSync(path.join(dir, 'policy_engine'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
+  fs.writeFileSync(
+    path.join(dir, 'policy_engine', 'decision.rego'),
+    'package policy_engine\n\ndefault decision := "deny"\n',
+  );
+}
+
+describe('Policy MCP tools', () => {
+  const mockClient = {
+    get: vi.fn(),
+    post: vi.fn(),
+  };
+
+  const clients = {
+    rest: {} as never,
+    graphql: {} as never,
+    dashboardUrl: 'https://app.transcend.io',
+    transcendApiUrl: 'https://api.transcend.io',
+    auth: { type: 'apiKey' as const, apiKey: 'test-key' },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('registers exactly 4 tools with expected names', () => {
+    const tools = getPolicyTools(clients);
+    expect(tools).toHaveLength(4);
+    expect(tools.map((tool) => tool.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('policy_get_templates', () => {
+    it('returns template list by default', async () => {
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
+      const result = await tool.handler({});
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          templates: expect.arrayContaining([expect.objectContaining({ id: 'starter' })]),
+        },
+      });
+      expect(result.data).not.toHaveProperty('guide');
+    });
+
+    it('returns template files when templateId is set', async () => {
+      const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_get_templates')!;
+      const result = await tool.handler({ templateId: 'starter' });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          templateFiles: {
+            files: expect.objectContaining({
+              '.manifest': expect.any(String),
+              'policy_engine/decision.rego': expect.any(String),
+            }),
+          },
+        },
+      });
+      expect(result.data).not.toHaveProperty('guide');
+      expect(result.data).not.toHaveProperty('templates');
+    });
+  });
+
+  describe('PolicyPublishSchema', () => {
+    it('accepts dir without files', () => {
+      expect(
+        PolicyPublishSchema.safeParse({ dir: '/tmp/bundle', bundleName: 'main' }).success,
+      ).toBe(true);
+    });
+
+    it('accepts files without dir', () => {
+      expect(
+        PolicyPublishSchema.safeParse({ files: STARTER_FILES, bundleName: 'main' }).success,
+      ).toBe(true);
+    });
+
+    it('rejects when both dir and files are set', () => {
+      const result = PolicyPublishSchema.safeParse({
+        dir: '/tmp/bundle',
+        files: STARTER_FILES,
+        bundleName: 'main',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects when neither dir nor files is set', () => {
+      const result = PolicyPublishSchema.safeParse({ bundleName: 'main' });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('packPolicyBundleTarball', () => {
+    it('rejects directories without .manifest', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
+      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/\.manifest/);
+    });
+
+    it('rejects legacy manifest.json with a rename hint', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
+      fs.writeFileSync(
+        path.join(dir, 'manifest.json'),
+        JSON.stringify({ roots: ['policy_engine'] }),
+      );
+      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/rename it to \.manifest/);
+    });
+
+    it('rejects directories without publishable rego', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
+      fs.writeFileSync(path.join(dir, '.manifest'), JSON.stringify({ roots: ['policy_engine'] }));
+      await expect(packPolicyBundleTarball(dir)).rejects.toThrow(/at least one .rego/);
+    });
+
+    it('packs manifest and rego without test files', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-pack-'));
+      writeStarterBundle(dir);
+      fs.writeFileSync(
+        path.join(dir, 'policy_engine', 'decision_test.rego'),
+        'package policy_engine\n',
+      );
+
+      const tarball = await packPolicyBundleTarball(dir);
+      expect(fs.existsSync(tarball)).toBe(true);
+      fs.unlinkSync(tarball);
+    });
+
+    it('packs from an in-memory files map including sample-input.json', async () => {
+      const tarball = await packPolicyBundleTarballFromFiles(STARTER_FILES);
+      expect(fs.existsSync(tarball)).toBe(true);
+      fs.unlinkSync(tarball);
+    });
+
+    it('rejects path traversal in file keys', async () => {
+      expect(() => assertSafePolicyBundleRelativePath('../etc/passwd')).toThrow(/\.\./);
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          '../etc/passwd': 'nope',
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
+          'policy_engine/decision.rego': 'package policy_engine\n',
+        }),
+      ).rejects.toThrow(/\.\./);
+    });
+
+    it('rejects absolute file paths', async () => {
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          '/tmp/evil.rego': 'package policy_engine\n',
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
+        }),
+      ).rejects.toThrow(/relative/);
+    });
+
+    it('rejects oversize bundles as non-retryable ToolError with shrink guidance', async () => {
+      // Highly compressible text can still pass the compressed check; blow the
+      // decompressed limit so the recovery path is exercised deterministically.
+      const oversizedRego =
+        'package policy_engine\n\n' + `${'x'.repeat(MAX_BUNDLE_DECOMPRESSED_BYTES)}\n`;
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          '.manifest': JSON.stringify({ roots: ['policy_engine'] }),
+          'policy_engine/decision.rego': oversizedRego,
+        }),
+      ).rejects.toMatchObject({
+        name: 'ToolError',
+        code: ErrorCode.VALIDATION_ERROR,
+        retryable: false,
+        message: expect.stringMatching(/Shrink the \.rego policies/),
+      });
+    });
+  });
+
+  describe('policyCliOperations', () => {
+    it('listPolicyBundles calls the bundles endpoint', async () => {
+      const json = vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockClient.get.mockReturnValue({ json });
+
+      await listPolicyBundles(mockClient as never, { limit: 10, offset: 0 });
+
+      expect(mockClient.get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
+        searchParams: { limit: 10, offset: 0 },
+      });
+    });
+
+    it('listPolicyBundleVersions marks cursor pagination', async () => {
+      const json = vi.fn().mockResolvedValue({
+        nodes: [{ id: 'v1', version: 'main-2026-01-01', createdAt: '2026-01-01T00:00:00Z' }],
+        pageInfo: { hasNextPage: true, hasPreviousPage: false, endCursor: 'cursor-1' },
+      });
+      mockClient.get.mockReturnValue({ json });
+
+      const result = await listPolicyBundleVersions(mockClient as never, 'bundle-1', {
+        after: 'cursor-0',
+      });
+
+      expect(result.pageInfo.endCursor).toBe('cursor-1');
+      expect(mockClient.get).toHaveBeenCalledWith(
+        'v1/policy-engine/policy-bundles/bundle-1/versions',
+        { searchParams: { limit: 50, after: 'cursor-0' } },
+      );
+    });
+
+    it('publishPolicyBundle creates a bundle when none exists', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-publish-'));
+      writeStarterBundle(dir);
+
+      mockClient.get.mockReturnValue({
+        json: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          bundle: { id: 'b1', bundleName: 'main' },
+          version: { id: 'v1', version: 'main-2026-01-01' },
+        }),
+      });
+
+      const result = await publishPolicyBundle(mockClient as never, {
+        dir,
+        bundleName: 'main',
+        version: 'main-2026-01-01',
+      });
+
+      expect(result).toMatchObject({
+        bundle: { id: 'b1' },
+        version: { id: 'v1' },
+      });
+      expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
+        body: expect.any(FormData),
+      });
+    });
+
+    it('publishPolicyBundle accepts an in-memory files map', async () => {
+      mockClient.get.mockReturnValue({
+        json: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          bundle: { id: 'b1', bundleName: 'main' },
+          version: { id: 'v1', version: 'main-2026-01-01' },
+        }),
+      });
+
+      const result = await publishPolicyBundle(mockClient as never, {
+        files: STARTER_FILES,
+        bundleName: 'main',
+        version: 'main-2026-01-01',
+      });
+
+      expect(result).toMatchObject({
+        bundle: { id: 'b1' },
+        version: { id: 'v1' },
+      });
+      expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
+        body: expect.any(FormData),
+      });
+    });
+
+    it('publishPolicyBundle rejects when both dir and files are set', async () => {
+      await expect(
+        publishPolicyBundle(mockClient as never, {
+          dir: '/tmp/bundle',
+          files: STARTER_FILES,
+          bundleName: 'main',
+        }),
+      ).rejects.toThrow(/exactly one of dir or files/);
+    });
+
+    it('publishPolicyBundle appends a version when bundle exists', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-publish-'));
+      writeStarterBundle(dir);
+
+      mockClient.get.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          nodes: [{ id: 'b1', bundleName: 'main' }],
+          totalCount: 1,
+        }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          version: { id: 'v2', version: 'main-2026-01-02' },
+        }),
+      });
+
+      await publishPolicyBundle(mockClient as never, {
+        dir,
+        bundleName: 'main',
+        version: 'main-2026-01-02',
+      });
+
+      expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/b1/versions', {
+        body: expect.any(FormData),
+      });
+    });
+
+    it('activatePolicyBundleVersion posts to activate endpoint', async () => {
+      mockClient.get.mockReturnValue({
+        json: vi
+          .fn()
+          // listPolicyBundles by name
+          .mockResolvedValueOnce({
+            nodes: [{ id: 'b1', bundleName: 'main', activeVersionId: null }],
+            totalCount: 1,
+          })
+          // GET /policy-bundles/:id/versions/:versionId
+          .mockResolvedValueOnce({
+            versionId: 'v1',
+            version: 'main-2026-01-01',
+            bundleName: 'main',
+            uploadedAt: '2026-01-01T00:00:00Z',
+            activatedAt: null,
+            deactivatedAt: null,
+            description: null,
+            sha256: 'abc',
+            sizeBytes: 100,
+            downloadUrl: 'https://example.com/bundle.tar.gz',
+          }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          bundle: { id: 'b1', bundleName: 'main', activeVersionId: 'v1' },
+          version: { id: 'v1', version: 'main-2026-01-01' },
+        }),
+      });
+
+      await activatePolicyBundleVersion(mockClient as never, {
+        bundleName: 'main',
+        versionId: 'v1',
+      });
+
+      expect(mockClient.get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/b1/versions/v1');
+      expect(mockClient.post).toHaveBeenCalledWith(
+        'v1/policy-engine/policy-bundles/b1/versions/v1/activate',
+        { json: {} },
+      );
+    });
+
+    it('deactivatePolicyBundle posts to deactivate endpoint', async () => {
+      mockClient.get.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          nodes: [{ id: 'b1', bundleName: 'main', activeVersionId: 'v1' }],
+          totalCount: 1,
+        }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          bundle: { id: 'b1', bundleName: 'main', activeVersionId: null },
+          version: { id: 'v1', version: 'main-2026-01-01' },
+        }),
+      });
+
+      await deactivatePolicyBundle(mockClient as never, 'main');
+
+      expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles/b1/deactivate');
+    });
+  });
+});

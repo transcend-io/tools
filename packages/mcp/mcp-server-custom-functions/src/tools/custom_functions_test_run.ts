@@ -87,6 +87,12 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
+    confirmation: {
+      hint:
+        'Runs Custom Function code on your Sombra gateway with the payload in the call ' +
+        'arguments. That can call allowed hosts and use runtime env vars. Check id or code, ' +
+        'type, payload, and env before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsTestRunSchema,
     handler: async ({

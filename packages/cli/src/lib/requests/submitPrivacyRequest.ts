@@ -119,6 +119,7 @@ export async function submitPrivacyRequest(
             : {}),
           ...(input.createdAt ? { createdAt: input.createdAt } : {}),
           ...(input.dataSiloIds ? { dataSiloIds: input.dataSiloIds } : {}),
+          ...(input.workflowConfigId ? { workflowConfigId: input.workflowConfigId } : {}),
           ...(input.status ? { completedRequestStatus: input.status } : {}),
         },
       })

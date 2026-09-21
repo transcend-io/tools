@@ -19,7 +19,15 @@ export const newCommand = buildCommand({
       name: {
         kind: 'parsed',
         parse: String,
-        brief: 'Package root name (used as {name}-bundle/ directory)',
+        brief:
+          'Rego / .manifest package root (not the remote --remote-bundle-name); default folder is {name}-bundle/',
+        optional: true,
+      },
+      'bundle-dir': {
+        kind: 'parsed',
+        parse: String,
+        brief:
+          'Local publish folder basename under the workspace (default: {name}-bundle; not --remote-bundle-name)',
         optional: true,
       },
       template: {
@@ -44,7 +52,9 @@ export const newCommand = buildCommand({
   docs: {
     brief: 'Scaffold one policy bundle from a template',
     fullDescription:
-      'Adds a publishable `{name}-bundle/` directory to an initialized policy workspace. ' +
+      'Adds a publishable bundle directory to an initialized policy workspace. ' +
+      '`--name` is the Rego package root; `--bundle-dir` is the local folder basename under the workspace ' +
+      '(defaults to `{name}-bundle`). This is not the remote Policy Engine `--remote-bundle-name` used at publish time. ' +
       'Requires `.regal/config.yaml` (run `transcend policy init` first). ' +
       'Creates bundle files, merges the root into Regal config, and updates editor setup when present.',
   },

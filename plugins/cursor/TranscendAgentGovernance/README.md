@@ -1,13 +1,13 @@
 # Transcend Agent Governance
 
-Cursor plugin for [Transcend Agent Governance](https://transcend.io). Install it, sign in with your browser, and use governed MCP tools from your organization's Agent Governance tenant — without pasting tokens.
+Cursor plugin for [Transcend Agent Governance](https://transcend.io). Install it, sign in with your browser, and use governed MCP tools from your organization — without pasting tokens.
 
 ## What it does
 
 - Surfaces **Transcend Agent Governance** inside Cursor as an installable plugin
-- Connects Cursor to your tenant's MCP gateway over Streamable HTTP
+- Connects Cursor to the Agent Governance MCP gateway over Streamable HTTP
 - Uses Cursor-native **browser OAuth** (public client + PKCE) so credentials stay in the IDE session
-- Keeps environment-specific values (gateway URL, tenant ID) out of the repo — you supply them as plugin variables at install time
+- Lets you choose your organization at consent — install needs no org identifier
 
 This plugin does **not** bundle Transcend's separate DD&C MCP packages, and it does **not** reuse `app.transcend.io` OAuth. Sign-in is against your Agent Governance authorization server discovered from the gateway URL.
 
@@ -15,16 +15,15 @@ This plugin does **not** bundle Transcend's separate DD&C MCP packages, and it d
 
 You need:
 
-1. An active **Transcend Agent Governance** tenant
-2. The **gateway base URL** and **tenant ID** from the **Connect Cursor** panel in the Agent Governance dashboard
-3. Cursor Desktop with plugin / marketplace support and remote MCP OAuth enabled
-4. A deployed Agent Governance environment that supports delegated OAuth (authorization code + PKCE), gateway discovery metadata, and — for session durability past the access-token TTL — refresh tokens
+1. An active **Transcend Agent Governance** organization
+2. Cursor Desktop with plugin / marketplace support and remote MCP OAuth enabled
+3. A deployed Agent Governance environment that supports delegated OAuth (authorization code + PKCE), gateway discovery metadata, and — for session durability past the access-token TTL — refresh tokens
 
-Ask your Agent Governance administrator for the Connect Cursor values if you do not already have them.
+Ask your Agent Governance administrator if you are unsure which environment to use.
 
 ## Install → sign in → tools
 
-Prefer a **Team Marketplace** (or later public Marketplace) install. That path needs **no** repo clone and **no** `mcp.json` editing. Admins: see [Team Marketplace rollout](../TEAM_MARKETPLACE.md).
+Prefer a **Team Marketplace** (or public Marketplace) install. That path needs **no** repo clone and **no** `mcp.json` editing. Admins: see [Team Marketplace rollout](../TEAM_MARKETPLACE.md).
 
 ### Team Marketplace (dogfood / design partners)
 
@@ -32,18 +31,16 @@ Your Cursor team admin imports [`transcend-io/tools`](https://github.com/transce
 
 1. Open **Customize** in the Cursor sidebar.
 2. Find **Transcend Agent Governance** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
-3. When prompted, set:
-   - `GATEWAY_BASE_URL` — scheme + host only (no `/mcp/...` path)
-   - `TENANT_ID` — your organization identifier
+3. Accept the default gateway settings. Do **not** paste a full MCP path into any base URL field — the plugin appends `/mcp/agent`.
 4. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
-5. Complete sign-in and consent in the browser (pick your tenant if asked). Cursor receives tokens; no client secret is involved.
+5. Complete sign-in and consent in the browser (pick your organization if asked). Cursor receives tokens; no client secret is involved.
 6. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
 
-The plugin builds the MCP endpoint as `{gateway}/mcp/{tenant_id}/agent` and declares the published public OAuth client id `myelin_cursor_plugin` with scopes `mcp` and `offline_access`. Cursor discovers the authorization server from the gateway (Protected Resource Metadata → Authorization Server Metadata) and performs PKCE.
+The plugin connects to `{gateway}/mcp/agent` and declares the published public OAuth client id `myelin_cursor_plugin` with scopes `mcp` and `offline_access`. Cursor discovers the authorization server from the gateway (Protected Resource Metadata → Authorization Server Metadata) and performs PKCE. Your organization is bound in the OAuth grant after consent.
 
-### Public Marketplace (when listed)
+### Public Marketplace
 
-Same Customize → Install flow as Team Marketplace once the plugin is listed at [cursor.com/marketplace](https://cursor.com/marketplace). Until then, use Team Marketplace for real installs.
+Same Customize → Install flow as Team Marketplace once the plugin is listed at [cursor.com/marketplace](https://cursor.com/marketplace).
 
 ### Local development (engineers only)
 
@@ -58,11 +55,11 @@ Use this only while developing the plugin itself — not for teammates or design
    ```
 
 3. Reload Cursor (**Developer: Reload Window**).
-4. Set `GATEWAY_BASE_URL` and `TENANT_ID`, then complete the browser sign-in flow above.
+4. Complete the browser sign-in flow above.
 
 ### After first sign-in
 
-First successful authorization auto-registers a **connected agent** for your user in the tenant (empty MCP server assignment by default — fail-closed). An administrator must assign MCP servers / policy before tools appear. Repeat authorizations for the same user + client reuse that agent; they do not mint duplicates.
+First successful authorization auto-registers a **connected agent** for your user in the organization (empty MCP server assignment by default — fail-closed). An administrator must assign MCP servers / policy before tools appear. Repeat authorizations for the same user + client reuse that agent; they do not mint duplicates.
 
 ## Session durability and revoke
 
@@ -82,17 +79,16 @@ Token TTLs and refresh windows are owned by the Agent Governance issuer (short-l
 Live Cursor against a deployed environment may be unavailable in CI. Use this checklist on a clean machine (or a profile with no prior Agent Governance credentials):
 
 1. **Clean state** — Remove any existing Agent Governance MCP entries and local plugin symlink/credentials for this server. Quit and relaunch Cursor. Do **not** leave a `~/.cursor/plugins/local` symlink if you are verifying the Team Marketplace path.
-2. **Install** — Prefer Team Marketplace install from Customize ([rollout runbook](../TEAM_MARKETPLACE.md)). Confirm install prompts ask only for `GATEWAY_BASE_URL` and `TENANT_ID` (no credential paste, no `mcp.json` edit, no repo clone).
-3. **Configure** — Enter gateway + tenant from the Connect Cursor panel of a deployed-dev (or staging) tenant that has 3LO + discovery enabled.
-4. **Browser sign-in** — Trigger Connect; browser opens to the Agent Governance consent / sign-in UI; complete consent. Confirm redirect returns to Cursor (`http://localhost:8787/callback` or the Cursor deep-link / web callback).
-5. **Auto-register** — In the dashboard, confirm a connected agent appeared for your user (display name like `Cursor — {user}`) with no MCP servers until an admin assigns them.
-6. **Assign tools** — Admin assigns at least one MCP server / allow policy to that agent.
-7. **Tools load** — Cursor lists `{slug}__{tool}` tools under MCP.
-8. **Allowed call** — Invoke an allowed tool; confirm success and an audit / decision log entry attributing tenant, agent, and tool (e.g. `mcp.authz.allowed`).
-9. **Denied call** — Invoke a policy-denied tool; confirm an inline error **without** MCP disconnect; retry an allowed tool.
-10. **Restart** — Quit Cursor fully and reopen; confirm tools still work without a new browser consent (refresh path).
-11. **Revoke** — From the dashboard, revoke credentials on the connected agent; confirm the next tool call surfaces an auth failure and re-auth is required (not a generic silent hang).
-12. **Friction** — File follow-up tickets for any Cursor `auth`-block or issuer/discovery blockers rather than adding a second primary credential path in the plugin.
+2. **Install** — Prefer Team Marketplace install from Customize ([rollout runbook](../TEAM_MARKETPLACE.md)). Confirm install asks for no credentials and needs no `mcp.json` edit or repo clone.
+3. **Browser sign-in** — Trigger Connect; browser opens to the Agent Governance consent / sign-in UI; complete consent (pick the org if asked). Confirm redirect returns to Cursor (`http://localhost:8787/callback` or the Cursor deep-link / web callback).
+4. **Auto-register** — In the dashboard, confirm a connected agent appeared for your user (display name like `Cursor — {user}`) with no MCP servers until an admin assigns them.
+5. **Assign tools** — Admin assigns at least one MCP server / allow policy to that agent.
+6. **Tools load** — Cursor lists `{slug}__{tool}` tools under MCP.
+7. **Allowed call** — Invoke an allowed tool; confirm success and an audit / decision log entry attributing organization, agent, and tool (e.g. `mcp.authz.allowed`).
+8. **Denied call** — Invoke a policy-denied tool; confirm an inline error **without** MCP disconnect; retry an allowed tool.
+9. **Restart** — Quit Cursor fully and reopen; confirm tools still work without a new browser consent (refresh path).
+10. **Revoke** — From the dashboard, revoke credentials on the connected agent; confirm the next tool call surfaces an auth failure and re-auth is required (not a generic silent hang).
+11. **Friction** — File follow-up tickets for any Cursor `auth`-block or issuer/discovery blockers rather than adding a second primary credential path in the plugin.
 
 **Escalate as a design blocker only if** Cursor's native `auth` block cannot complete against the Agent Governance issuer after discovery and redirect allowlist are correct (then consider a stdio-bridge fallback in a follow-up).
 
@@ -104,12 +100,12 @@ If you must use a static Bearer credential (automation, demos without OAuth, or 
 
 ## Troubleshooting
 
-- **Browser never opens / Connect stuck:** confirm Cursor remote MCP OAuth is available in your build; confirm `GATEWAY_BASE_URL` has no trailing path and points at the MCP gateway host (not the dashboard origin).
+- **Browser never opens / Connect stuck:** confirm Cursor remote MCP OAuth is available in your build; confirm any gateway base URL has no trailing path and points at the MCP gateway host (not the dashboard origin).
 - **Discovery / authorize errors:** the gateway must advertise Protected Resource Metadata and the issuer must advertise Authorization Server Metadata (including PKCE S256). Ask your admin whether delegated OAuth is enabled for the environment.
 - **Redirect URI mismatch:** the platform public client allowlists `http://localhost:8787/callback` (host must be `localhost`, not `127.0.0.1`), plus Cursor deep-link and web callbacks.
 - **Tools missing after sign-in:** the auto-registered agent starts with **no** MCP servers. An administrator must assign servers / policy.
 - **Auth errors after revoke or long idle:** re-run Connect / authenticate; do not paste a credential into the plugin as a workaround unless you intentionally use the operator fallback above.
-- **Tenant mismatch:** the `TENANT_ID` in the MCP URL must match the tenant chosen at consent; mismatch fails closed.
+- **Wrong organization after sign-in:** organization comes from consent. Re-run Connect and pick the correct org.
 
 ## License
 

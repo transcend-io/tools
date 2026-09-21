@@ -8,7 +8,7 @@ import {
 import { parseLimitParam } from '../helpers/index.js';
 import {
   createPolicyDebugParameter,
-  policyBundleNameParameter,
+  policyRemoteBundleNameParameter,
   policyJsonParameter,
 } from '../helpers/policyCommandParameters.js';
 
@@ -19,7 +19,7 @@ export const versionsCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': policyBundleNameParameter,
+      'remote-bundle-name': policyRemoteBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),

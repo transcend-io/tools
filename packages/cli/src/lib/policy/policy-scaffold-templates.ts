@@ -13,12 +13,16 @@ export const POLICY_STARTER_OPA_VERSION = '1.18.2';
  * Package-path prefix for the disposable starter bundle.
  *
  * Matches OPA `.manifest` `roots` and Regal `project.roots` (not a filesystem
- * folder name by itself). The publish directory is `{root}-bundle/`.
+ * folder name by itself). The default publish directory is `{root}-bundle/`;
+ * `policy new --bundle-dir` can override that basename.
  */
 export const POLICY_STARTER_ROOT = 'example';
 
 /** Publish directory name for the disposable starter (`{root}-bundle`). */
 export const POLICY_STARTER_BUNDLE_DIRECTORY = `${POLICY_STARTER_ROOT}-bundle`;
+
+/** Input JSON Schema filename written beside each publish directory's fixtures. */
+export const POLICY_INPUT_SCHEMA_FILENAME = 'input.schema.json';
 
 /** One deterministic file in the safe policy starter. */
 export interface PolicyStarterFile {
@@ -44,11 +48,17 @@ export const PERMISSIONS_POLICY_BUNDLE_NAME = 'permissions';
 /** OPA `.manifest` `metadata` key for Transcend authoring hints. */
 export const POLICY_MANIFEST_TRANSCEND_METADATA_KEY = 'transcend.io';
 
+/** Supported policy bundle templates (enum-style constants). */
+export const PolicyTemplate = {
+  Generic: 'generic',
+  Permissions: 'permissions',
+} as const;
+
 /** Supported policy bundle template names. */
-export const POLICY_TEMPLATE_NAMES = ['generic', 'permissions'] as const;
+export const POLICY_TEMPLATE_NAMES = [PolicyTemplate.Generic, PolicyTemplate.Permissions] as const;
 
 /** A supported policy bundle template name. */
-export type PolicyTemplateName = (typeof POLICY_TEMPLATE_NAMES)[number];
+export type PolicyTemplateName = (typeof PolicyTemplate)[keyof typeof PolicyTemplate];
 
 /**
  * OPA `.manifest` `metadata.transcend.io` key for the CLI version that
@@ -71,7 +81,7 @@ export const POLICY_MANIFEST_TEMPLATE_VERSION_KEY = 'templateVersion';
  */
 export function buildPolicyManifestTemplate(
   root: string,
-  template: PolicyTemplateName = 'generic',
+  template: PolicyTemplateName = PolicyTemplate.Generic,
 ): string {
   return `{
   "$schema": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json",
@@ -89,7 +99,10 @@ export function buildPolicyManifestTemplate(
 }
 
 /** OPA bundle manifest for the disposable starter publish directory. */
-export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(POLICY_STARTER_ROOT, 'generic');
+export const POLICY_MANIFEST_TEMPLATE = buildPolicyManifestTemplate(
+  POLICY_STARTER_ROOT,
+  PolicyTemplate.Generic,
+);
 
 /**
  * Build workspace-level Regal configuration for given roots.
@@ -230,8 +243,6 @@ export const POLICY_RESULT_REGO_TEMPLATE = `# METADATA
 #   A fail-closed teaching entrypoint. Replace this example with the document
 #   tree and result contract required by your application.
 # scope: package
-# schemas:
-#   - input: schema.${POLICY_STARTER_ROOT}.input
 # entrypoint: true
 package ${POLICY_STARTER_ROOT}.result
 
@@ -311,7 +322,7 @@ export const POLICY_GITIGNORE_TEMPLATE = `# Local policy evaluation input (VS Co
 /** Concise workspace-local authoring guide (multi-bundle, empty workspace). */
 export const POLICY_README_TEMPLATE = `# Transcend Policy
 
-Multi-bundle workspace for [Transcend Policy Engine](https://docs.transcend.io) bundles
+Multi-bundle workspace for Transcend Policy Engine bundles
 (OPA / Rego v1). Requires **Transcend CLI ≥ 11** (\`transcend policy --help\`
 should list \`init\`, \`new\`, and positional \`[directory]\` args).
 
@@ -331,8 +342,8 @@ transcend policy new --template generic # add a bundle from a template
 transcend policy lint --noInteractive
 transcend policy test
 transcend policy eval transcend/policy/example-bundle \\
-  --package data.example.result \\
-  --input transcend/policy/example-bundle/input.json
+  --package=data.example.result \\
+  --input=transcend/policy/example-bundle/input.json
 \`\`\`
 
 \`policy new\` also writes a gitignored \`input.json\` (copy of \`input.example.json\`)
@@ -348,28 +359,43 @@ transcend/policy/
     example/                    # package root (matches .manifest roots)
     input.example.json
     input.json                  # local only (gitignored)
-  schemas/                      # input JSON Schemas (editor + opa check -s)
+    input.schema.json           # input JSON Schema (editor + opa --schema)
   .regal/config.yaml
 \`\`\`
 
 Replace or delete example bundles when you have a real policy. Publish each
-bundle separately (\`transcend policy publish --bundle-name … <dir>\`).
+bundle separately (\`transcend policy publish --remote-bundle-name … <dir>\`).
 
-## Bundle names and Permissions
+## Permissions API
+
+Scaffold the Permissions starter, then simulate the query Sombra runs:
+
+\`\`\`sh
+transcend policy new \\
+  --template permissions \\
+  --name ${PERMISSIONS_POLICY_BUNDLE_NAME} \\
+  --bundle-dir ${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle \\
+  --yes
+
+transcend policy eval transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle \\
+  --package=data.${PERMISSIONS_POLICY_BUNDLE_NAME}.purposes \\
+  --input=transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle/input.json \\
+  --schema=transcend/policy/${PERMISSIONS_POLICY_BUNDLE_NAME}-bundle/input.schema.json
+\`\`\`
 
 Upload does **not** distinguish bundle kinds. What makes a bundle “Permissions”
 is the remote name plus where Sombra queries it:
 
 - **Permissions API** always loads the fixed remote bundle name
   \`${PERMISSIONS_POLICY_BUNDLE_NAME}\`. Publish that starter with
-  \`--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
-- **Generic / decide** bundles use any other \`--bundle-name\` and the decide
+  \`--remote-bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME}\`.
+- **Generic / decide** bundles use any other \`--remote-bundle-name\` and the decide
   path.
 
 Scaffolded \`.manifest\` files may include \`metadata.transcend.io.template\`
 (\`generic\` or \`permissions\`) and \`templateVersion\` (the \`@transcend-io/cli\`
 version that generated the scaffold) as authoring hints. Upload ignores them;
-\`policy publish\` may warn when the template hint and \`--bundle-name\` disagree.
+\`policy publish\` may warn when the template hint and \`--remote-bundle-name\` disagree.
 `;
 
 /** Workspace-relative path to the disposable example entrypoint. */
@@ -391,7 +417,7 @@ const POLICY_STARTER_FILES: readonly PolicyStarterFile[] = [
     description: `Pin strict Rego v1 linting to OPA ${POLICY_STARTER_OPA_VERSION} capabilities`,
   },
   {
-    path: `schemas/${POLICY_STARTER_ROOT}/input.json`,
+    path: `${POLICY_STARTER_BUNDLE_DIRECTORY}/${POLICY_INPUT_SCHEMA_FILENAME}`,
     contents: POLICY_INPUT_SCHEMA_TEMPLATE,
     description: 'Create the input JSON Schema for the example bundle',
   },
@@ -464,14 +490,14 @@ export function generatePolicyWorkspaceFiles(): PolicyStarterFile[] {
 
 /** Interactive labels for each policy template. */
 export const POLICY_TEMPLATE_PROMPT_LABELS: Record<PolicyTemplateName, string> = {
-  generic: 'Generic example',
-  permissions: 'Permission API starter',
+  [PolicyTemplate.Generic]: 'Generic example',
+  [PolicyTemplate.Permissions]: 'Permission API starter',
 };
 
 /** Default root names for each template. */
 export const POLICY_TEMPLATE_DEFAULT_ROOTS: Record<PolicyTemplateName, string> = {
-  generic: 'example',
-  permissions: PERMISSIONS_POLICY_BUNDLE_NAME,
+  [PolicyTemplate.Generic]: 'example',
+  [PolicyTemplate.Permissions]: PERMISSIONS_POLICY_BUNDLE_NAME,
 };
 
 /**
@@ -485,21 +511,47 @@ export function buildBundleDirectoryName(root: string): string {
 }
 
 /**
+ * Validate a local bundle directory basename (under the policy workspace).
+ *
+ * @param value - Proposed directory basename
+ * @returns True or error message
+ */
+export function validateBundleDirectoryName(value: string): true | string {
+  if (!value) {
+    return 'Enter a bundle directory name.';
+  }
+  if (value === '.' || value === '..' || value.includes('/') || value.includes('\\')) {
+    return 'Bundle directory must be a single path segment (no slashes).';
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(value)) {
+    return 'Bundle directory must be alphanumeric (plus ., _, -), e.g. "my-bundle".';
+  }
+  if (value.length > 128) {
+    return 'Bundle directory cannot exceed 128 characters.';
+  }
+  return true;
+}
+
+/**
  * Generate bundle files for the generic template.
  *
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
-export function generateGenericBundleFiles(root: string): PolicyStarterFile[] {
-  const bundle = buildBundleDirectoryName(root);
+export function generateGenericBundleFiles(
+  root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
+): PolicyStarterFile[] {
+  const bundle = bundleDir;
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root, 'generic'),
+      contents: buildPolicyManifestTemplate(root, PolicyTemplate.Generic),
       description: 'Create the OPA bundle .manifest',
     },
     {
-      path: `schemas/${root}/input.json`,
+      path: `${bundle}/${POLICY_INPUT_SCHEMA_FILENAME}`,
       contents: `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://transcend.io/policy-schemas/${root}/input.json",
@@ -531,8 +583,6 @@ export function generateGenericBundleFiles(root: string): PolicyStarterFile[] {
 #   A fail-closed ${root === 'example' ? 'teaching ' : ''}entrypoint. Replace this ${root === 'example' ? 'example ' : ''}with the document
 #   tree and result contract required by your application.
 # scope: package
-# schemas:
-#   - input: schema.${root}.input
 # entrypoint: true
 package ${root}.result
 
@@ -601,10 +651,10 @@ test_allows_trusted_subject if {
  * @returns Bundle files relative to the workspace
  */
 /**
- * Serialize the published Permissions input schema for a local OPA schema path.
+ * Serialize the published Permissions input schema for the local bundle path.
  *
- * OPA maps `schemas/{root}/input.json` → `schema.{root}.input`; the file is a
- * copy of the published schema so type-checking works offline.
+ * Written as `{bundle}/input.schema.json` so editors and `opa --schema` can
+ * type-check the envelope offline without a workspace `schemas/` directory.
  *
  * @returns Schema file contents ending in a trailing newline
  */
@@ -629,19 +679,23 @@ export function buildPermissionsInputExampleContents(): string {
  * Generate bundle files for the permissions template.
  *
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
-export function generatePermissionsBundleFiles(root: string): PolicyStarterFile[] {
-  const bundle = buildBundleDirectoryName(root);
+export function generatePermissionsBundleFiles(
+  root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
+): PolicyStarterFile[] {
+  const bundle = bundleDir;
   const inputExample = buildPermissionsInputExampleContents();
   return [
     {
       path: `${bundle}/${POLICY_MANIFEST_FILENAME}`,
-      contents: buildPolicyManifestTemplate(root, 'permissions'),
+      contents: buildPolicyManifestTemplate(root, PolicyTemplate.Permissions),
       description: 'Create the OPA bundle .manifest',
     },
     {
-      path: `schemas/${root}/input.json`,
+      path: `${bundle}/${POLICY_INPUT_SCHEMA_FILENAME}`,
       contents: buildPermissionsInputSchemaContents(),
       description: `Create the input JSON Schema for the ${root} bundle (from published permissions-policy-input.json)`,
     },
@@ -663,9 +717,7 @@ import rego.v1
   "default_consent_allowed": true,
   "purposes": [
     "Analytics",
-    "SaleOfInfo",
-    "Marketing",
-    "Personalization"
+    "SaleOfInfo"
   ],
   "default_consent": {}
 }
@@ -743,18 +795,18 @@ test_treats_an_absent_preferences_array_as_no_recorded_choices if {
 \tfixture := {}
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_accepts_an_empty_preferences_array if {
 \tfixture := given([])
 
 \tpreference.source_available with input as fixture
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_reports_a_non_array_preferences_as_unavailable if {
-\tnot preference.source_available with input as {"preferences": {"Marketing": true}}
+\tnot preference.source_available with input as {"preferences": {"Analytics": true}}
 }
 
 test_reports_entries_without_a_usable_name_as_unavailable if {
@@ -765,35 +817,35 @@ test_reports_entries_without_a_usable_name_as_unavailable if {
 
 test_distinguishes_enabled_and_disabled_choices if {
 \tfixture := given([
-\t\t{"name": "Marketing", "choice": true},
-\t\t{"name": "Analytics", "choice": false},
+\t\t{"name": "Analytics", "choice": true},
+\t\t{"name": "SaleOfInfo", "choice": false},
 \t])
 
-\tpreference.enabled("Marketing") with input as fixture
-\tpreference.disabled("Analytics") with input as fixture
-\tpreference.decided("Marketing") with input as fixture
+\tpreference.enabled("Analytics") with input as fixture
+\tpreference.disabled("SaleOfInfo") with input as fixture
 \tpreference.decided("Analytics") with input as fixture
-\tnot preference.undecided("Marketing") with input as fixture
+\tpreference.decided("SaleOfInfo") with input as fixture
+\tnot preference.undecided("Analytics") with input as fixture
 }
 
 test_treats_a_null_choice_as_undecided if {
-\tfixture := given([{"name": "Marketing", "choice": null}])
+\tfixture := given([{"name": "Analytics", "choice": null}])
 
-\tpreference.undecided("Marketing") with input as fixture
-\tnot preference.decided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
+\tnot preference.decided("Analytics") with input as fixture
 }
 
 test_treats_an_absent_choice_key_as_undecided if {
-\tfixture := given([{"name": "Marketing", "channel": "email"}])
+\tfixture := given([{"name": "Analytics", "channel": "email"}])
 
-\tpreference.undecided("Marketing") with input as fixture
+\tpreference.undecided("Analytics") with input as fixture
 }
 
 test_treats_a_non_boolean_choice_as_undecided if {
-\tfixture := given([{"name": "Personalization", "choice": "Daily"}])
+\tfixture := given([{"name": "SaleOfInfo", "choice": "Daily"}])
 
-\tpreference.undecided("Personalization") with input as fixture
-\tnot preference.decided("Personalization") with input as fixture
+\tpreference.undecided("SaleOfInfo") with input as fixture
+\tnot preference.decided("SaleOfInfo") with input as fixture
 }
 
 # Sombra dedupes by purpose before sending; last-wins keeps the bundle correct
@@ -812,33 +864,17 @@ test_last_wins_on_duplicate_entries if {
 # rather than treated as a choice.
 test_ignores_fields_beyond_the_recorded_choice if {
 \tfixture := given([{
-\t\t"name": "Marketing",
+\t\t"name": "Analytics",
 \t\t"choice": true,
 \t\t"evidence": "consent_banner",
 \t\t"days_since_choice": 45,
 \t\t"channel": "email",
 \t}])
 
-\tpreference.enabled("Marketing") with input as fixture
+\tpreference.enabled("Analytics") with input as fixture
 }
 `,
       description: 'Create preference resolution tests',
-    },
-    {
-      path: `${bundle}/${root}/main.rego`,
-      contents: `# METADATA
-# title: Permissions bundle root
-# description: |
-#   Declares the Permissions envelope schema for this package and all
-#   subpackages (helpers, purposes, and static config data).
-# scope: subpackages
-# schemas:
-#   - input: schema.${root}.input
-package ${root}
-
-import rego.v1
-`,
-      description: 'Create the bundle root package with schema declaration',
     },
     {
       path: `${bundle}/${root}/purposes/analytics/analytics.rego`,
@@ -980,18 +1016,45 @@ import rego.v1
  *
  * @param template - Template name
  * @param root - Package root name
+ * @param bundleDir - Publish directory basename under the workspace
  * @returns Bundle files relative to the workspace
  */
 export function generatePolicyBundleFiles(
   template: PolicyTemplateName,
   root: string,
+  bundleDir: string = buildBundleDirectoryName(root),
 ): PolicyStarterFile[] {
   switch (template) {
-    case 'generic':
-      return generateGenericBundleFiles(root);
-    case 'permissions':
-      return generatePermissionsBundleFiles(root);
+    case PolicyTemplate.Generic:
+      return generateGenericBundleFiles(root, bundleDir);
+    case PolicyTemplate.Permissions:
+      return generatePermissionsBundleFiles(root, bundleDir);
     default:
       throw new Error(`Unknown policy template: ${String(template)}`);
   }
+}
+
+/**
+ * Build the suggested `policy eval` follow-up after `policy new`.
+ *
+ * @param options - Bundle display path, package root, and template
+ * @returns Multi-line shell command ready to paste
+ */
+export function buildPolicyBundleEvalNextStep(options: {
+  /** Workspace-relative publish directory (e.g. `transcend/policy/permissions-bundle`). */
+  bundleDirectory: string;
+  /** Rego / `.manifest` package root. */
+  root: string;
+  /** Scaffold template that determined the query path. */
+  template: PolicyTemplateName;
+}): string {
+  const { bundleDirectory, root, template } = options;
+  const packagePath =
+    template === PolicyTemplate.Permissions ? `data.${root}.purposes` : `data.${root}.result`;
+  return [
+    `transcend policy eval ${bundleDirectory} \\`,
+    `  --package=${packagePath} \\`,
+    `  --input=${bundleDirectory}/input.json \\`,
+    `  --schema=${bundleDirectory}/${POLICY_INPUT_SCHEMA_FILENAME}`,
+  ].join('\n');
 }

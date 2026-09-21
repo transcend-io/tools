@@ -10,7 +10,10 @@ import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),
-  trackingPurposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
+  trackingPurposes: z
+    .array(z.string())
+    .optional()
+    .describe('Tracking purpose slugs. Pass an empty array to clear all purposes.'),
   description: z.string().optional().describe('Data flow description'),
   service: z.string().optional().describe('Service/integration name'),
   isJunk: z.boolean().optional().describe('Mark as junk'),
@@ -40,7 +43,9 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const dfInputs: TranscendUpdateDataFlowInputGql[] = dataFlows.map((df) => ({
         id: df.id,
-        ...(df.trackingPurposes ? { trackingType: df.trackingPurposes } : {}),
+        // Use !== undefined so an empty array (clear all purposes) is sent to the API.
+        // Truthiness would drop `[]` and leave server purposes unchanged.
+        ...(df.trackingPurposes !== undefined ? { trackingType: df.trackingPurposes } : {}),
         ...(df.description !== undefined ? { description: df.description } : {}),
         ...(df.service !== undefined ? { service: df.service } : {}),
         ...(df.isJunk !== undefined ? { isJunk: df.isJunk } : {}),

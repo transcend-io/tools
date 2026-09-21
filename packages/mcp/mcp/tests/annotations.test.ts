@@ -7,6 +7,7 @@ import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPolicyTools } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
@@ -19,6 +20,8 @@ const mockClients: ToolClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
   dashboardUrl: 'https://app.transcend.io',
+  transcendApiUrl: 'https://api.transcend.io',
+  auth: { type: 'apiKey', apiKey: 'test-key' },
 };
 
 const allTools = [
@@ -30,7 +33,8 @@ const allTools = [
   ...getDiscoveryTools(mockClients),
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
-  ...getWorkflowTools(mockClients),
+  ...getWorkflowTools(mockClients as never),
+  ...getPolicyTools(mockClients as never),
   ...getAdminTools(mockClients),
 ];
 
@@ -81,16 +85,17 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
-      'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
       'consent_delete_cookies',
       'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
+      'custom_functions_promote_version',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
+      'policy_set_live',
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
@@ -122,9 +127,14 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'custom_functions_promote_version',
+      'custom_functions_test_run',
+      'custom_functions_upsert',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
+      'policy_publish',
+      'policy_set_live',
       'preferences_append_identifiers',
       'preferences_delete',
       'preferences_delete_identifiers',
@@ -132,7 +142,13 @@ describe('MCP Tool Annotations', () => {
       'preferences_upsert',
     ];
 
-    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
+    const expectedGatedNonDestructive = [
+      'custom_functions_test_run',
+      'custom_functions_upsert',
+      'policy_publish',
+      'preferences_append_identifiers',
+      'preferences_upsert',
+    ];
 
     // Exact in both directions: adding a gate makes a tool refuse on hosts that
     // cannot ask, and dropping one silently un-guards an irreversible action.

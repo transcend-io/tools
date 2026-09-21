@@ -36,6 +36,8 @@ After initializing the workspace, add bundles with `transcend policy new`:
 ```sh
 transcend policy new --template generic --name example --yes
 transcend policy new --template permissions --name permissions --yes
+# optional: different local folder than {name}-bundle
+transcend policy new --template permissions --name permissions --bundle-dir my-bundle --yes
 ```
 
 Templates available:
@@ -43,7 +45,18 @@ Templates available:
 - `generic` — A fail-closed teaching entrypoint (default root: `example`)
 - `permissions` — A Permission API starter with purpose preferences (default root: `permissions`)
 
-`policy new` creates the `{name}-bundle/` directory, its `.manifest`, Rego tree,
+Naming triad (keep these distinct):
+
+- `--name` — Rego / `.manifest` package root
+- `--bundle-dir` — local publish folder basename under the workspace (default
+  `{name}-bundle`)
+- `--remote-bundle-name` — remote Policy Engine name at upload time; unrelated to
+  the local folder
+
+Each publish directory includes its own `input.schema.json` beside the input
+fixtures.
+
+`policy new` creates the publish directory, its `.manifest`, Rego tree,
 input fixtures, and input schema. It also merges the root into Regal config and
 updates VS Code settings/tasks when `.vscode` is present.
 
@@ -64,9 +77,9 @@ Repository-level VS Code settings should include:
 
 - `opa.roots` — one entry per `{root}-bundle/` publish directory
 - `opa.bundleMode: true` — avoid loading fixture JSON as data
-- `opa.schema` — directory of input JSON Schemas (shared when multiple bundles
-  need different envelopes)
-- `json.schemas` — optional validation of `input.json` / `input.example.json`
+- `json.schemas` — validates `input.json` / `input.example.json`; Permissions
+  templates point at the published schema `$id`, generic bundles use the local
+  `input.schema.json`
 
 Preserve custom settings and tasks when adapting generated editor files.
 

@@ -44,7 +44,7 @@ describe('versions', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
     await versions.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
@@ -71,7 +71,7 @@ describe('versions', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
     await versions.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
@@ -98,7 +98,7 @@ describe('versions', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
     await versions.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
@@ -119,7 +119,7 @@ describe('versions', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
     await versions.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
@@ -140,7 +140,7 @@ describe('versions', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
     await versions.call(context, {
-      'bundle-name': 'main',
+      'remote-bundle-name': 'main',
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
@@ -157,7 +157,7 @@ describe('versions', () => {
 
     await expect(
       versions.call(context, {
-        'bundle-name': 'missing',
+        'remote-bundle-name': 'missing',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         limit: 50,
@@ -182,7 +182,7 @@ describe('versions', () => {
 
     await expect(
       versions.call(context, {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
         limit: 50,

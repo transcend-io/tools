@@ -1,5 +1,32 @@
 # @transcend-io/mcp-server-consent
 
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [3ae909e]
+  - @transcend-io/privacy-types@6.2.0
+  - @transcend-io/sdk@2.1.13
+
+## 1.2.5
+
+### Patch Changes
+
+- 8ad30d3: Clearing all purposes on a cookie or data flow in consent triage now persists correctly after approve and refresh.
+- 8ad30d3: When assigning purposes in the consent triage app, the cookie or data flow now appears immediately at the top of every newly matching purpose tab. Tabs that no longer match keep showing the item until you refresh.
+- 8ad30d3: Refreshing consent triage now reloads tab lists from the API instead of keeping approved or junked rows on screen. Your Triaged count for the session is preserved.
+
+## 1.2.4
+
+### Patch Changes
+
+- 83d8033: Polish the consent triage review UI: cleaner header, truncated names and purpose tags with hover tooltips, and a table scrollbar that spans the sticky header.
+- f3a7dc8: Hide the permanent-delete control in the consent triage UI on Cursor, where that action cannot run. Mark items as Junk instead.
+- aef6694: Fix consent triage overview Pending and Dormant counts so they match the Consent Manager Needs Review table, including never-seen items counted as dormant.
+- Updated dependencies [f3a7dc8]
+  - @transcend-io/mcp-server-base@2.5.1
+  - @transcend-io/sdk@2.1.12
+
 ## 1.2.3
 
 ### Patch Changes

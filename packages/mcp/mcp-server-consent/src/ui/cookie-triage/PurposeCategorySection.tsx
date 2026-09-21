@@ -123,7 +123,8 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
           <div className="flex flex-wrap items-baseline gap-2.5">
             <h2
               id={`cookie-triage-group-${purpose}`}
-              className="text-heading-sm font-semibold text-on-card"
+              className="min-w-0 truncate text-heading-sm font-semibold text-on-card"
+              title={purpose}
             >
               {purpose}
             </h2>

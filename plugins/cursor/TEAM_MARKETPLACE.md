@@ -12,13 +12,14 @@ This is the dogfood / design-partner path while the public Cursor Marketplace re
 
 ## Status / blockers
 
-| Item                                 | State                                                                                                                                                       |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plugin stack in `transcend-io/tools` | Single consolidated PR onto **`main`**; Team Marketplace import should track **`main` after merge**                                                         |
-| Partnership / listing questions      | [LINK-7701](https://linear.app/transcend/issue/LINK-7701) is **Blocked** — confirm whether any Cursor partnership constraint affects Team Marketplace usage |
-| This registration                    | **Requires a Transcend Cursor team admin** — engineering cannot finish the dashboard import without that role                                               |
+| Item                                 | State                                                                                                                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plugin stack in `transcend-io/tools` | On **`main`**; Team Marketplace import should track **`main`**. Version **`0.5.0+`** uses the tenantless Meta entry (`/mcp/agent`) — no install-time `TENANT_ID`                                                        |
+| Public Marketplace listing           | Listed, but may lag Team Marketplace (pinned commit). Re-submit / refresh after `0.5.0` merges so public installs stop prompting for a dead `TENANT_ID` (see [LINK-7809](https://linear.app/transcend/issue/LINK-7809)) |
+| Partnership / listing questions      | [LINK-7701](https://linear.app/transcend/issue/LINK-7701) / [LINK-7714](https://linear.app/transcend/issue/LINK-7714) — keep for partnership process; Team Marketplace is the dogfood path                              |
+| This registration                    | **Requires a Transcend Cursor team admin** — engineering cannot finish the dashboard import without that role                                                                                                           |
 
-If Team Marketplace is unavailable on the Transcend plan until partnership answers land, keep this runbook and escalate (see bottom).
+Prefer Team Marketplace (Auto Refresh on `main`) for dogfood until the public pin is refreshed to `0.5.0+`.
 
 ---
 
@@ -90,8 +91,8 @@ For **Transcend Agent Governance** during dogfood:
 1. In Cursor Desktop, open **Customize** in the sidebar.
 2. Find **Transcend Agent Governance** under the team marketplace (not only `~/.cursor/plugins/local`).
 3. Install (or confirm Default On / Required already applied).
-4. Set only `GATEWAY_BASE_URL` and `TENANT_ID` when prompted — **no** credential paste.
-5. Complete browser Connect / OAuth; confirm tools load after an Agent Governance admin assigns MCP servers to the auto-registered agent.
+4. Accept the default gateway (or set optional `GATEWAY_BASE_URL` for self-host only) — **no** `TENANT_ID`, **no** credential paste.
+5. Complete browser Connect / OAuth (org chosen at consent); confirm tools load after an Agent Governance admin assigns MCP servers to the auto-registered agent.
 
 ### A5. Independent clean-machine verification (acceptance)
 
@@ -101,7 +102,7 @@ Have **someone who did not build the plugin** on a machine/profile with:
 - No hand-edited Agent Governance entry in `mcp.json`
 - No leftover OAuth tokens for this server
 
-They should only: join the Transcend Cursor team → Customize → Install → set gateway + tenant → browser sign-in.  
+They should only: join the Transcend Cursor team → Customize → Install → (optional self-host gateway override) → browser sign-in with org at consent.  
 Record pass/fail and any friction as follow-up tickets (Part E).
 
 ---
@@ -114,11 +115,9 @@ Record pass/fail and any friction as follow-up tickets (Part E).
 2. Open **Customize** in the sidebar.
 3. Locate **Transcend Agent Governance** (team marketplace section).
 4. Click **Install** (skip if your admin set **Default On** / **Required**).
-5. When prompted for plugin variables, enter:
-   - `GATEWAY_BASE_URL` — scheme + host only (from Agent Governance **Connect Cursor**)
-   - `TENANT_ID` — tenant identifier from the same panel
+5. When prompted for plugin variables (self-host only), enter `GATEWAY_BASE_URL` — scheme + host only. SaaS / Dev dogfood should need no prompt; do **not** paste `/mcp/...` into the base URL. There is no `TENANT_ID` variable.
 6. Open **Settings → Tools & MCP** if Connect did not start automatically; authenticate / **Connect**.
-7. Complete browser sign-in and consent.
+7. Complete browser sign-in and consent (pick your organization if asked).
 8. Ask an Agent Governance administrator to assign MCP servers / policy to your auto-registered connected agent (starts empty — fail-closed).
 9. Confirm `{slug}__{tool}` tools appear and an allowed call succeeds.
 
@@ -138,9 +137,7 @@ Share this checklist (email / Notion / ticket):
 2. **Marketplace source:** `https://github.com/transcend-io/tools` (branch `main` unless Transcend names a release branch).
 3. **Plugin id / name:** `transcend-agent-governance` / **Transcend Agent Governance**.
 4. **Install mode recommendation:** **Default Off** for the first pilot cohort.
-5. **Per-developer values** from their Agent Governance tenant (**Connect Cursor** panel):
-   - Gateway base URL
-   - Tenant ID
+5. **Environment:** SaaS / Dev uses the plugin default gateway. Self-host partners need their `mcp.*` origin as optional `GATEWAY_BASE_URL` (scheme + host only). Organization is chosen at consent — no `TENANT_ID`.
 6. **Post-auth admin step in Agent Governance:** assign MCP servers / policy to each auto-registered Cursor agent.
 7. **Link** to [Transcend Agent Governance plugin README](./TranscendAgentGovernance/README.md) (sign-in, revoke, troubleshooting) and this document.
 
@@ -156,7 +153,7 @@ Share this checklist (email / Notion / ticket):
 
 ### C3. Partner developer steps
 
-Same as **Part B**, using Connect Cursor values for **their** tenant.
+Same as **Part B**, using their environment's gateway (default or self-host override). Org is chosen at consent.
 
 ### C4. Admin permissions summary
 
@@ -165,7 +162,7 @@ Same as **Part B**, using Connect Cursor values for **their** tenant.
 | Cursor Dashboard → Plugins (add/import marketplace) | Cursor **team admin** (Enterprise: admin-only) |
 | Cursor Integrations → GitHub App                    | Cursor admin + GitHub org admin                |
 | Marketplace Access / install mode / Refresh         | Cursor team admin                              |
-| Agent Governance Connect Cursor values              | Tenant operator / admin                        |
+| Agent Governance gateway / environment              | Tenant operator / admin                        |
 | Assign MCP servers after first OAuth                | Agent Governance administrator                 |
 | Install from Customize (Default Off)                | Any team member with marketplace access        |
 
@@ -238,8 +235,9 @@ Please import our Team Marketplace so teammates can install without cloning or e
 4) Installation mode for transcend-agent-governance
    - Start with Default Off
 
-5) Reply when saved. We will have a non-author verify Install → variables → browser OAuth
+5) Reply when saved. We will have a non-author verify Install → (no TENANT_ID) → browser OAuth
    on a clean machine (no ~/.cursor/plugins/local symlink, no mcp.json edits).
+   Confirm org is chosen at consent and tools load after MCP server assignment.
 
 Runbook: plugins/cursor/TEAM_MARKETPLACE.md in transcend-io/tools
 Plugin README: plugins/cursor/TranscendAgentGovernance/README.md

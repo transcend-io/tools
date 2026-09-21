@@ -37,30 +37,37 @@ async function getExampleCommands(): Promise<{
     const actual = await importOriginal();
     const mockBuildExampleCommand = vi
       .fn()
-      .mockImplementation((commandPath: string[], flags: Record<string, string>) => {
-        const command = commandPath.join(' ');
-        const flagList = actual.getFlagList(flags);
+      .mockImplementation(
+        (
+          commandPath: string[],
+          flags: Record<string, string>,
+          options?: { positionals?: string[] },
+        ) => {
+          const command = [...commandPath, ...(options?.positionals ?? [])].join(' ');
+          const flagList = actual.getFlagList(flags);
 
-        // Replace bash variables
-        const flagListWithReplacedVariables = flagList.map((flag) =>
-          flag.replace(
-            // Replace bash variables with "TEST_VALUE"
-            /\$\{?\w+}?/g,
-            'TEST_VALUE',
-          ),
-        );
+          // Replace bash variables
+          const flagListWithReplacedVariables = flagList.map((flag) =>
+            flag.replace(
+              // Replace bash variables with "TEST_VALUE"
+              /\$\{?\w+}?/g,
+              'TEST_VALUE',
+            ),
+          );
 
-        // Add the command to `commandsToTest` list
-        const commandWithoutName = `${command} ${flagListWithReplacedVariables.join(' ')}`;
-        commandsToTest.push(commandWithoutName);
+          // Add the command to `commandsToTest` list
+          const commandWithoutName = `${command} ${flagListWithReplacedVariables.join(' ')}`.trim();
+          commandsToTest.push(commandWithoutName);
 
-        const unalteredCommand = actual.buildExampleCommand<Record<string, string>>(
-          commandPath,
-          flags,
-        );
-        unalteredCommands.push(unalteredCommand);
-        return unalteredCommand;
-      });
+          const unalteredCommand = actual.buildExampleCommand<Record<string, string>>(
+            commandPath,
+            flags,
+            options,
+          );
+          unalteredCommands.push(unalteredCommand);
+          return unalteredCommand;
+        },
+      );
 
     return {
       ...actual,
@@ -69,7 +76,9 @@ async function getExampleCommands(): Promise<{
         .mockImplementation((commandPath: string[], examples: Example<unknown>[]) =>
           examples
             .map((example) => {
-              const exampleCommand = mockBuildExampleCommand(commandPath, example.flags);
+              const exampleCommand = mockBuildExampleCommand(commandPath, example.flags, {
+                positionals: example.positionals,
+              });
               return `**${example.description}**\n\n\`\`\`sh\n${exampleCommand}\n\`\`\``;
             })
             .join('\n\n'),

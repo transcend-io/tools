@@ -6,7 +6,7 @@ transcend policy init
 
 This creates a multi-bundle Policy Engine workspace under \`transcend/policy\` with shared Regal config (\`project.roots: []\`) and a README. No bundles or Rego are created — add them with \`transcend policy new\`.
 
-The interactive checklist selects repository-level VS Code setup, the \`transcend-policy-engine\` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, configures strict Rego v1 formatting, and sets \`opa.schema\` to the workspace schemas directory.
+The interactive checklist selects repository-level VS Code setup, the \`transcend-policy-engine\` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension and configures strict Rego v1 formatting.
 
 To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
 

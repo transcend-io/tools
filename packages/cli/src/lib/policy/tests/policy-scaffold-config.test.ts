@@ -6,12 +6,16 @@ import {
   mergePolicyEditorExtensions,
   mergePolicyEditorSettings,
   mergePolicyEditorTasks,
+  policyBundleRef,
   POLICY_VSCODE_EXTENSION,
 } from '../policy-scaffold-config.js';
-import { POLICY_STARTER_BUNDLE_DIRECTORY } from '../policy-scaffold-templates.js';
+import {
+  PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+  POLICY_STARTER_BUNDLE_DIRECTORY,
+} from '../policy-scaffold-templates.js';
 
 describe('Policy Engine VS Code setup', () => {
-  it('merges authoritative OPA settings with comments and idempotence when bundleRoots provided', () => {
+  it('merges authoritative OPA settings with comments and idempotence when bundles provided', () => {
     const existing = `{
   // Keep this repository-wide preference.
   "files.trimTrailingWhitespace": true,
@@ -20,13 +24,13 @@ describe('Policy Engine VS Code setup', () => {
 `;
 
     const first = mergePolicyEditorSettings(existing, '/repo', "/repo/policies/customer's policy", [
-      'example',
+      policyBundleRef('example'),
     ]);
     const second = mergePolicyEditorSettings(
       first.contents,
       '/repo',
       "/repo/policies/customer's policy",
-      ['example'],
+      [policyBundleRef('example')],
     );
 
     expect(first.warnings).toEqual([]);
@@ -38,7 +42,6 @@ describe('Policy Engine VS Code setup', () => {
         '${workspaceFolder}/shared',
         `\${workspaceFolder}/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
       ],
-      'opa.schema': "${workspaceFolder}/policies/customer's policy/schemas",
       'opa.checkOnSave': true,
       'opa.strictMode': true,
       'opa.bundleMode': true,
@@ -52,7 +55,7 @@ describe('Policy Engine VS Code setup', () => {
             `/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`,
             `/policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.example.json`,
           ],
-          url: "./policies/customer's policy/schemas/example/input.json",
+          url: `./policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.schema.json`,
         },
       ],
       '[rego]': {
@@ -64,33 +67,167 @@ describe('Policy Engine VS Code setup', () => {
     });
   });
 
-  it('omits opa.roots and json.schemas when no bundleRoots provided (init)', () => {
+  it('omits opa.roots and json.schemas when no bundles provided (init)', () => {
     const result = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy');
     const parsed = parse(result.contents) as Record<string, unknown>;
 
     expect(parsed['opa.roots']).toBeUndefined();
     expect(parsed['json.schemas']).toBeUndefined();
-    expect(parsed['opa.schema']).toBe('${workspaceFolder}/transcend/policy/schemas');
+    expect(parsed['opa.schema']).toBeUndefined();
     expect(parsed['opa.bundleMode']).toBe(true);
   });
 
   it('scopes the .manifest association to nested bundles under the workspace', () => {
-    const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy', ['example']);
-    const rooted = mergePolicyEditorSettings(null, '/repo', '/repo', ['example']);
+    const nested = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy', [
+      policyBundleRef('example'),
+    ]);
+    const rooted = mergePolicyEditorSettings(null, '/repo', '/repo', [policyBundleRef('example')]);
+    const customDir = mergePolicyEditorSettings(null, '/repo', '/repo/transcend/policy', [
+      { root: 'permissions', bundleDir: 'my-bundle', template: 'permissions' },
+    ]);
 
     expect(parse(nested.contents)).toMatchObject({
       'opa.roots': [`\${workspaceFolder}/transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`],
-      'opa.schema': '${workspaceFolder}/transcend/policy/schemas',
       'files.associations': {
         '**/transcend/policy/**/.manifest': 'json',
       },
+      'json.schemas': [
+        {
+          fileMatch: [
+            `/transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`,
+            `/transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.example.json`,
+          ],
+          url: `./transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.schema.json`,
+        },
+      ],
     });
     expect(parse(rooted.contents)).toMatchObject({
       'opa.roots': [`\${workspaceFolder}/${POLICY_STARTER_BUNDLE_DIRECTORY}`],
-      'opa.schema': '${workspaceFolder}/schemas',
       'files.associations': {
         '**/.manifest': 'json',
       },
+      'json.schemas': [
+        {
+          fileMatch: [
+            `/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.json`,
+            `/${POLICY_STARTER_BUNDLE_DIRECTORY}/input.example.json`,
+          ],
+          url: `./${POLICY_STARTER_BUNDLE_DIRECTORY}/input.schema.json`,
+        },
+      ],
+    });
+    expect(parse(customDir.contents)).toMatchObject({
+      'opa.roots': ['${workspaceFolder}/transcend/policy/my-bundle'],
+      'json.schemas': [
+        {
+          fileMatch: [
+            '/transcend/policy/my-bundle/input.json',
+            '/transcend/policy/my-bundle/input.example.json',
+          ],
+          url: PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+        },
+      ],
+    });
+  });
+
+  it('unions json.schemas fileMatch when the same schema URL already exists', () => {
+    const existing = `{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/transcend/policy/example-bundle/input.json"
+      ],
+      "url": "./transcend/policy/example-bundle/input.schema.json"
+    }
+  ]
+}
+`;
+    const result = mergePolicyEditorSettings(existing, '/repo', '/repo/transcend/policy', [
+      policyBundleRef('example'),
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(parse(result.contents)).toMatchObject({
+      'json.schemas': [
+        {
+          fileMatch: [
+            '/transcend/policy/example-bundle/input.json',
+            '/transcend/policy/example-bundle/input.example.json',
+          ],
+          url: './transcend/policy/example-bundle/input.schema.json',
+        },
+      ],
+    });
+  });
+
+  it('points permissions bundles at the published schema and unions fileMatch across dirs', () => {
+    const existing = `{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/transcend/policy/permissions-bundle/input.json",
+        "/transcend/policy/permissions-bundle/input.example.json"
+      ],
+      "url": ${JSON.stringify(PERMISSIONS_POLICY_INPUT_SCHEMA_ID)}
+    }
+  ]
+}
+`;
+    const result = mergePolicyEditorSettings(existing, '/repo', '/repo/transcend/policy', [
+      { root: 'permissions', bundleDir: 'xyz', template: 'permissions' },
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(parse(result.contents)).toMatchObject({
+      'json.schemas': [
+        {
+          fileMatch: [
+            '/transcend/policy/permissions-bundle/input.json',
+            '/transcend/policy/permissions-bundle/input.example.json',
+            '/transcend/policy/xyz/input.json',
+            '/transcend/policy/xyz/input.example.json',
+          ],
+          url: PERMISSIONS_POLICY_INPUT_SCHEMA_ID,
+        },
+      ],
+    });
+  });
+
+  it('adds a separate json.schemas entry for each generic publish directory', () => {
+    const existing = `{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/transcend/policy/example-bundle/input.json",
+        "/transcend/policy/example-bundle/input.example.json"
+      ],
+      "url": "./transcend/policy/example-bundle/input.schema.json"
+    }
+  ]
+}
+`;
+    const result = mergePolicyEditorSettings(existing, '/repo', '/repo/transcend/policy', [
+      { root: 'payments', bundleDir: 'xyz' },
+    ]);
+
+    expect(result.warnings).toEqual([]);
+    expect(parse(result.contents)).toMatchObject({
+      'json.schemas': [
+        {
+          fileMatch: [
+            '/transcend/policy/example-bundle/input.json',
+            '/transcend/policy/example-bundle/input.example.json',
+          ],
+          url: './transcend/policy/example-bundle/input.schema.json',
+        },
+        {
+          fileMatch: [
+            '/transcend/policy/xyz/input.json',
+            '/transcend/policy/xyz/input.example.json',
+          ],
+          url: './transcend/policy/xyz/input.schema.json',
+        },
+      ],
     });
   });
 
@@ -156,7 +293,7 @@ describe('Policy Engine VS Code setup', () => {
 `,
       '/repo',
       workspace,
-      ['example'],
+      [policyBundleRef('example')],
     );
     const parsed = parse(result.contents) as {
       /** VS Code tasks. */
@@ -184,7 +321,7 @@ describe('Policy Engine VS Code setup', () => {
     });
   });
 
-  it('skips task creation when no bundleRoots provided (init)', () => {
+  it('skips task creation when no bundles provided (init)', () => {
     const result = mergePolicyEditorTasks(null, '/repo', '/repo/policy');
     const parsed = parse(result.contents) as Record<string, unknown>;
 
@@ -196,8 +333,8 @@ describe('Policy Engine VS Code setup', () => {
     const existing =
       '{"version":"2.0.0","tasks":[{"label":"policy: lint","dependsOn":["policy: lint example"],"group":{"kind":"test","isDefault":true},"problemMatcher":[]}]}\n';
     const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', [
-      'example',
-      'permissions',
+      policyBundleRef('example'),
+      policyBundleRef('permissions'),
     ]);
     const parsed = parse(result.contents) as {
       /** VS Code tasks. */
@@ -213,7 +350,9 @@ describe('Policy Engine VS Code setup', () => {
 
   it('preserves non-managed custom tasks', () => {
     const existing = '{"version":"2.0.0","tasks":[{"label":"build","command":"pnpm build"}]}\n';
-    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', ['example']);
+    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', [
+      policyBundleRef('example'),
+    ]);
     const parsed = parse(result.contents) as {
       /** VS Code tasks. */
       tasks: Record<string, unknown>[];

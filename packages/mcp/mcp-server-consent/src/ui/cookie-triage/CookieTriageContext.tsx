@@ -45,9 +45,10 @@ export interface CookieTriageActions {
    */
   updateNotes: (purpose: CookieTriagePurposeCategory, name: string, notes: string) => Promise<void>;
   /**
-   * Persist tracking purposes via the update tool, then update local row state
-   * in place (the row stays on its current purpose tab until refresh).
-   * Rejects if the tool call fails (local state is left unchanged).
+   * Persist tracking purposes via the update tool, then update local row state.
+   * Prepends onto newly matching purpose tabs; leaves the row on tabs that no
+   * longer match until refresh. Rejects if the tool call fails (local state is
+   * left unchanged).
    */
   updatePurpose: (
     purpose: CookieTriagePurposeCategory,
@@ -60,8 +61,8 @@ export interface CookieTriageActions {
   loadMore: (purpose: CookieTriagePurposeCategory) => void;
   /**
    * Refresh every purpose tab: full list replay for the active tab, count-only
-   * for the rest (rows reload when those tabs are selected). Keeps decided
-   * rows as undoable overlays.
+   * for the rest (rows reload when those tabs are selected). Clears local rows
+   * and reloads from the API; session Triaged count is preserved.
    */
   refresh: () => void;
   /**
@@ -84,6 +85,11 @@ export interface CookieTriageMeta {
   dashboardUrl: string;
   /** Org tracking-purpose slugs for the per-row purpose select */
   purposeOptions: string[];
+  /**
+   * Whether permanent delete is offered. False on Cursor (and any host with
+   * `appOnlyToolsUnreachable`), where the delete companion is not callable.
+   */
+  supportsPermanentDelete: boolean;
 }
 
 /** Badge + load chrome for one purpose tab. */

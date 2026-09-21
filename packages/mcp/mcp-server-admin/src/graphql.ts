@@ -2,7 +2,6 @@ import {
   derivePageInfo,
   TranscendGraphQLBase,
   type ApiKey,
-  type ApiKeyCreateInput,
   type ListOptions,
   type Organization,
   type PaginatedResponse,
@@ -12,7 +11,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import { graphql } from './__generated__/gql.js';
-import type { ScopeName, UserFiltersInput, UserOrder } from './__generated__/graphql.js';
+import type { UserFiltersInput, UserOrder } from './__generated__/graphql.js';
 
 /**
  * User row returned by {@link AdminMixin.listUsers}, matching Admin Users fields.
@@ -127,24 +126,6 @@ const ListApiKeysDoc = graphql(/* GraphQL */ `
   }
 `);
 
-const CreateApiKeyDoc = graphql(/* GraphQL */ `
-  mutation AdminCreateApiKey($input: ApiKeyInput!) {
-    createApiKey(input: $input) {
-      apiKey {
-        id
-        title
-        apiKey
-        preview
-        scopes {
-          id
-          name
-        }
-        createdAt
-      }
-    }
-  }
-`);
-
 const GetPrivacyCenterDoc = graphql(/* GraphQL */ `
   query AdminGetPrivacyCenter($lookup: PrivacyCenterLookupInput) {
     privacyCenter(lookup: $lookup) {
@@ -152,19 +133,6 @@ const GetPrivacyCenterDoc = graphql(/* GraphQL */ `
     }
   }
 `);
-
-/**
- * The plain-text token returned by `createApiKey`. Exposed once -- the
- * server never returns this value again, so callers must persist it
- * immediately.
- */
-export interface CreatedApiKey extends ApiKey {
-  /**
-   * The plain-text bearer token. Only returned by `createApiKey`/`duplicateApiKey`;
-   * re-fetching the API key later returns the `preview` instead.
-   */
-  token: string;
-}
 
 export class AdminMixin extends TranscendGraphQLBase {
   async getOrganization(): Promise<Organization> {
@@ -280,37 +248,6 @@ export class AdminMixin extends TranscendGraphQLBase {
         totalCount: data.apiKeys.totalCount,
       }),
       totalCount: data.apiKeys.totalCount,
-    };
-  }
-
-  /**
-   * Create a new API key. The returned `token` is the plain-text bearer the
-   * caller must surface to the user immediately -- the API key endpoint never
-   * returns it again. The token is on `createApiKey.apiKey.apiKey` (a sibling
-   * of `id`/`title`/`scopes`), not a top-level `token` field.
-   */
-  async createApiKey(input: ApiKeyCreateInput): Promise<CreatedApiKey> {
-    const data = await this.makeRequest(CreateApiKeyDoc, {
-      input: {
-        title: input.title,
-        // The manual ApiKeyCreateInput type accepts string[] for backwards
-        // compatibility; the GraphQL schema expects the ScopeName enum, which
-        // codegen emits as a string-valued TS enum. Cast at the boundary --
-        // invalid scopes still surface as a server-side validation error.
-        scopes: input.scopes as ScopeName[],
-        dataSilos: input.dataSilos ?? null,
-      },
-    });
-    const created = data.createApiKey.apiKey;
-    return {
-      id: created.id,
-      title: created.title,
-      scopes: created.scopes.map((scope) => ({
-        id: scope.id,
-        name: scope.name,
-      })),
-      createdAt: created.createdAt,
-      token: created.apiKey,
     };
   }
 

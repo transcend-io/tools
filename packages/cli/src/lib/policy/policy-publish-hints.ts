@@ -1,5 +1,6 @@
 import {
   PERMISSIONS_POLICY_BUNDLE_NAME,
+  PolicyTemplate,
   type PolicyTemplateName,
 } from './policy-scaffold-templates.js';
 
@@ -21,10 +22,10 @@ export interface PolicyPublishBundleNameHintInput {
  * @returns Whether the local tree looks Permissions-oriented
  */
 function looksLikePermissionsBundle(input: PolicyPublishBundleNameHintInput): boolean {
-  if (input.template === 'permissions') {
+  if (input.template === PolicyTemplate.Permissions) {
     return true;
   }
-  if (input.template === 'generic') {
+  if (input.template === PolicyTemplate.Generic) {
     return false;
   }
   return input.roots.some(
@@ -35,12 +36,12 @@ function looksLikePermissionsBundle(input: PolicyPublishBundleNameHintInput): bo
 }
 
 /**
- * Soft-warning when `--bundle-name` disagrees with Permissions conventions.
+ * Soft-warning when `--remote-bundle-name` disagrees with Permissions conventions.
  *
  * Upload does not enforce bundle kinds. Permissions API only loads the
  * remote bundle named {@link PERMISSIONS_POLICY_BUNDLE_NAME}.
  *
- * @param bundleName - Value of `--bundle-name`
+ * @param bundleName - Value of `--remote-bundle-name`
  * @param input - Local manifest template/roots
  * @returns Warning text, or undefined when names align
  */
@@ -53,16 +54,16 @@ export function formatPolicyPublishBundleNameHint(
 
   if (permissionsLocal && !permissionsRemote) {
     return (
-      `This directory looks like a Permissions API policy, but --bundle-name is ` +
+      `This directory looks like a Permissions API policy, but --remote-bundle-name is ` +
       `"${bundleName}". Permissions API only loads the remote bundle named ` +
       `"${PERMISSIONS_POLICY_BUNDLE_NAME}". Upload still succeeds; pass ` +
-      `--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} if that is the intended path.`
+      `--remote-bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} if that is the intended path.`
     );
   }
 
   if (!permissionsLocal && permissionsRemote) {
     return (
-      `--bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} reserves the Permissions API ` +
+      `--remote-bundle-name=${PERMISSIONS_POLICY_BUNDLE_NAME} reserves the Permissions API ` +
       `path. Upload treats all bundles the same; only that fixed name is queried by ` +
       `the Permissions API. Continue only if you intend this bundle for the Permissions API.`
     );

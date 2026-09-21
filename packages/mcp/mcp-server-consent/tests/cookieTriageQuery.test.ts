@@ -11,13 +11,14 @@ import {
 } from '../src/lib/cookieTriageConfig.js';
 import {
   buildTriageBulkUpdateArgs,
-  buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriageNotesUpdateArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
   buildTriagePurposesUpdateArgs,
+  buildTriageRecentActiveCountArgs,
   buildTriageUpdateArgs,
+  deriveOverviewDormantTotal,
   dormantCutoffIso,
 } from '../src/lib/cookieTriageQuery.js';
 import { ConsentTriageType, CookieTriageDecision } from '../src/lib/cookieTriageTypes.js';
@@ -69,7 +70,6 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
     expect(
@@ -82,7 +82,6 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: ['Loyalty'],
     });
     expect(
@@ -93,14 +92,16 @@ describe('buildTriageListArgs', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Unknown],
     });
   });
 
-  it('omits showZeroActivity for cookie triage list args', () => {
+  it('omits showZeroActivity so triage lists match the Consent Manager table', () => {
     expect(
       buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Advertising, 0),
+    ).not.toHaveProperty('showZeroActivity');
+    expect(
+      buildTriageListArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Analytics, 0),
     ).not.toHaveProperty('showZeroActivity');
   });
 
@@ -152,30 +153,49 @@ describe('purpose count args', () => {
       offset: 0,
       orderField: CookieOrderField.Occurrences,
       orderDirection: OrderDirection.Desc,
-      showZeroActivity: true,
       trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
   });
 });
 
 describe('summary count args', () => {
-  it('requests a single-row NEEDS_REVIEW page for the pending total', () => {
-    expect(buildTriagePendingCountArgs()).toEqual({
+  it('requests a single-row NEEDS_REVIEW page for pending totals', () => {
+    expect(buildTriagePendingCountArgs(ConsentTriageType.Cookies)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
     });
+    expect(buildTriagePendingCountArgs(ConsentTriageType.DataFlows)).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
+      offset: 0,
+    });
+    expect(buildTriagePendingCountArgs(ConsentTriageType.DataFlows)).not.toHaveProperty(
+      'showZeroActivity',
+    );
   });
 
-  it('filters dormant counts to lastDiscoveredAt before the 30-day cutoff', () => {
+  it('filters recent-active counts to lastDiscoveredAt after the 30-day cutoff', () => {
     const now = Date.parse('2026-09-03T12:00:00.000Z');
-    expect(buildTriageDormantCountArgs(now)).toEqual({
+    expect(buildTriageRecentActiveCountArgs(ConsentTriageType.Cookies, now)).toEqual({
       status: ConsentTrackerStatus.NeedsReview,
       limit: 1,
       offset: 0,
-      lastDiscoveredAtBefore: dormantCutoffIso(now),
+      lastDiscoveredAtAfter: dormantCutoffIso(now),
+    });
+    expect(buildTriageRecentActiveCountArgs(ConsentTriageType.DataFlows, now)).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
+      offset: 0,
+      lastDiscoveredAtAfter: dormantCutoffIso(now),
     });
     expect(dormantCutoffIso(now)).toBe('2026-08-04T12:00:00.000Z');
+  });
+
+  it('derives overview dormant as pending minus recent-active', () => {
+    expect(deriveOverviewDormantTotal(100, 40)).toBe(60);
+    expect(deriveOverviewDormantTotal(10, 10)).toBe(0);
+    expect(deriveOverviewDormantTotal(5, 8)).toBe(0);
   });
 });
 
@@ -201,6 +221,43 @@ describe('buildTriageUpdateArgs', () => {
           status: ConsentTrackerStatus.Live,
           isJunk: false,
           trackingPurposes: [CookieTriagePurposeCategory.Analytics],
+        },
+      ],
+    });
+  });
+
+  it('approves cookies with an empty trackingPurposes array so cleared purposes persist', () => {
+    expect(
+      buildTriageUpdateArgs(
+        ConsentTriageType.Cookies,
+        { name: '_ga', id: 'cookie-1', trackingPurposes: [] },
+        CookieTriageDecision.Approve,
+      ),
+    ).toEqual({
+      cookies: [
+        {
+          name: '_ga',
+          status: ConsentTrackerStatus.Live,
+          isJunk: false,
+          trackingPurposes: [],
+        },
+      ],
+    });
+  });
+
+  it('omits trackingPurposes on approve when the field is absent', () => {
+    expect(
+      buildTriageUpdateArgs(
+        ConsentTriageType.Cookies,
+        { name: '_ga', id: 'cookie-1' },
+        CookieTriageDecision.Approve,
+      ),
+    ).toEqual({
+      cookies: [
+        {
+          name: '_ga',
+          status: ConsentTrackerStatus.Live,
+          isJunk: false,
         },
       ],
     });

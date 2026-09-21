@@ -157,4 +157,30 @@ describe('DSR_ERROR_MESSAGE', () => {
         )} and 1 more. Re-index the run's records, or download a fresh matched-records file and edit that.`,
     );
   });
+
+  it('renders DropRecordListTypeMismatch with the actual and submitted list types', () => {
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordListTypeMismatch]([
+        {
+          dropRecordId: '6axVJ35vPfBa',
+          submittedListType: DropListType.Phone,
+          actualListType: DropListType.Email,
+        },
+      ]),
+    ).toBe(
+      '6axVJ35vPfBa is a email record in this run; file says phone. Download a fresh matched-records file and edit that.',
+    );
+
+    const records = Array.from({ length: MAX_UNKNOWN_DROP_RECORDS_IN_ERROR }, (_, index) => ({
+      dropRecordId: `record-${index}`,
+      submittedListType: DropListType.Phone,
+      actualListType: DropListType.Email,
+    }));
+
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordListTypeMismatch](records)).toBe(
+      `${MAX_UNKNOWN_DROP_RECORDS_IN_ERROR} DROP record(s) have a list-type mismatch with this run's CPPA download: ${records
+        .map(({ dropRecordId }) => `${dropRecordId} is a email record in this run; file says phone`)
+        .join('; ')}. Download a fresh matched-records file and edit that.`,
+    );
+  });
 });

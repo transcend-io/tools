@@ -39,7 +39,7 @@ describe('policy routes', () => {
     expect(output).toContain('Defaults to the policy workspace');
     expect(output).toContain('Policy workspace or bundle directory');
     expect(output).toContain('every .manifest child');
-    expect(output).toContain('[directory]');
+    expect(output).toContain('[workspace|bundle]');
     expect(output).toContain('transcend/policy');
     expect(output).toContain('--fix');
     expect(output).toContain('--noInteractive');
@@ -59,7 +59,7 @@ describe('policy routes', () => {
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Policy workspace or bundle directory');
     expect(output).toContain('every .manifest child');
-    expect(output).toContain('[directory]');
+    expect(output).toContain('[workspace|bundle]');
     expect(output).toContain('transcend/policy');
     expect(output).not.toContain('--dir');
     expect(output).not.toContain('example-bundle');
@@ -75,7 +75,9 @@ describe('policy routes', () => {
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Policy workspace directory');
+    expect(output).toContain('[workspace]');
     expect(output).toContain('transcend/policy');
+    expect(output).toContain('--bundle-dir');
   });
 
   it.each(['eval', 'publish'])(
@@ -89,8 +91,8 @@ describe('policy routes', () => {
       await run(app, ['policy', command, '--help'], context);
 
       const output = `${context.stdout}\n${context.stderr}`;
-      expect(output).toContain('<directory>');
-      expect(output).toContain('Policy bundle directory containing a .manifest');
+      expect(output).toContain('<bundle>');
+      expect(output).toContain('Local policy bundle directory containing a .manifest');
       expect(output).not.toContain('[directory]');
       expect(output).not.toContain('example-bundle');
       expect(output).not.toContain('--dir');
@@ -120,7 +122,7 @@ describe('policy routes', () => {
       await run(app, ['policy', command, '--help'], context);
 
       const output = `${context.stdout}\n${context.stderr}`;
-      expect(output).toContain('--bundle-name');
+      expect(output).toContain('--remote-bundle-name');
     },
   );
 });

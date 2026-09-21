@@ -16,6 +16,7 @@ export const PurposeTabs = memo(function PurposeTabs() {
         return {
           id: purpose,
           label: purpose,
+          title: purpose,
           count: tab?.totalCount ?? 0,
           countBusy: tab?.countBusy === true,
         };

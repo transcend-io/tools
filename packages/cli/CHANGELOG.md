@@ -1,5 +1,58 @@
 # @transcend-io/cli
 
+## 12.1.3
+
+### Patch Changes
+
+- eb1f9bc: Generated Policy Engine and Custom Functions GitHub Actions workflows no longer double-run on pull request updates. `push` is limited to `main`; PR validation still runs via `pull_request`.
+
+  If you already have a generated workflow, update its `push` trigger to include `branches: [main]`, or remove the workflow and re-run `policy init` / `custom-functions init` with CI enabled.
+
+## 12.1.2
+
+### Patch Changes
+
+- Updated dependencies [3ae909e]
+  - @transcend-io/privacy-types@6.2.0
+  - @transcend-io/airgap.js-types@14.2.45
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.13
+
+## 12.1.1
+
+### Patch Changes
+
+- 0f58125: Add optional `workflowConfigId` CSV column support to `transcend request upload` so callers can target a workflow config explicitly.
+
+## 12.1.0
+
+### Minor Changes
+
+- 8e496d4: `policy new` writes each bundle's input JSON Schema as `input.schema.json` inside the publish directory (for example `permissions-bundle/input.schema.json`) instead of a shared workspace `schemas/` folder. VS Code setup no longer sets `opa.schema`; Permissions templates point `json.schemas` at the published schema URL so editor validation tracks the live contract. Pass `--schema` with the local file path when type-checking input during `policy eval` / `policy test`.
+- 08e6e29: `policy new` can set a local publish folder with `--bundle-dir` independently of the package root (`--name`). Defaults remain `{name}-bundle/`. Help text clarifies workspace vs local bundle path vs remote `--remote-bundle-name`.
+- b5690fd: Policy Engine API commands rename `--bundle-name` to `--remote-bundle-name` so it is clearly distinct from the local bundle directory path (and from `policy new --bundle-dir`).
+
+  ### Migration
+
+  Replace `--bundle-name` with `--remote-bundle-name` on:
+  - `policy publish`
+  - `policy activate`
+  - `policy deactivate`
+  - `policy download`
+  - `policy versions`
+
+### Patch Changes
+
+- 4726631: Scaffold `@transcend-io/mcp-server-policy` and share Policy Engine bundle size limits from `@transcend-io/utils`.
+
+  The new MCP package provides the Policy Engine server shell (OAuth scopes, client helpers, and error formatting). Bundle upload limits (`MAX_BUNDLE_COMPRESSED_BYTES` / `MAX_BUNDLE_DECOMPRESSED_BYTES`) now live in `@transcend-io/utils` so the CLI and MCP server share one source of truth.
+
+- 7d1754d: `policy eval` now ignores local `*_test.rego` files by default (same as lint/publish), so local Evaluate matches production bundles that do not ship tests.
+- 7d1754d: Scaffolded policy `.manifest` files now record `metadata.transcend.io.templateVersion` with the `@transcend-io/cli` version that generated the template.
+- Updated dependencies [4726631]
+  - @transcend-io/utils@0.3.0
+  - @transcend-io/sdk@2.1.12
+
 ## 12.0.0
 
 ### Major Changes

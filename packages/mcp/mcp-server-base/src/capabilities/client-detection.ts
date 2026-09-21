@@ -68,6 +68,12 @@ export interface HostQuirks {
    * and a soft confirmation exists to fall back on — see `confirmation.ts`.
    */
   mayDeclineWithoutAsking?: boolean;
+  /**
+   * Host cannot `callServerTool` for tools with `visibility: ['app']` that are
+   * omitted from the model-facing `tools/list`. App views that rely on those
+   * companions (e.g. permanent delete) must hide the UI rather than error.
+   */
+  appOnlyToolsUnreachable?: boolean;
 }
 
 /** Known workarounds keyed by host. Absent means the host needs none. */
@@ -83,7 +89,17 @@ export const HOST_QUIRKS: Readonly<Partial<Record<McpHostClient, HostQuirks>>> =
   // https://forum.cursor.com/t/mcp-elicitation-create-hangs-agent-on-windows-in-cursor-3-10-20-but-works-on-macos/165391
   // TODO: https://linear.app/transcend/issue/ZEL-8311 - remove when Cursor's
   // multi-window elicitation support is ready.
-  [McpHostClient.Cursor]: { mayDeclineWithoutAsking: true },
+  //
+  // Separately, Cursor cannot callServerTool for app-only tools we hide from
+  // tools/list (`visibility: ['app']`); the triage delete button fails with
+  // "tool not found". We hide that UI on Cursor rather than listing deletes to
+  // the agent.
+  // TODO: https://linear.app/transcend/issue/ZEL-8402 - remove appOnlyToolsUnreachable
+  // when Cursor routes callServerTool for app-only companions.
+  [McpHostClient.Cursor]: {
+    mayDeclineWithoutAsking: true,
+    appOnlyToolsUnreachable: true,
+  },
 };
 
 /** Returns the workarounds needed for a host, or an empty object when none apply. */

@@ -74,13 +74,19 @@ export interface CookieTriageSessionState {
    */
   purposeOptionsLoaded: boolean;
   /**
+   * Session Triaged KPI: unique entities handled this session (decide or delete).
+   * Survives refresh (which clears local rows) so progress is not lost.
+   */
+  triagedCount: number;
+  /**
    * API totalCount for all NEEDS_REVIEW items (overview Pending).
    * Undefined until the count tool call succeeds.
    */
   pendingTotal?: number;
   /**
-   * API totalCount for NEEDS_REVIEW items last seen before the dormant cutoff.
-   * Undefined until the count tool call succeeds.
+   * API-derived total for NEEDS_REVIEW items with no recent telemetry
+   * (Pending minus recent-active, including never-seen rows).
+   * Undefined until the summary count tool calls succeed.
    */
   dormantTotal?: number;
   /** Fetch status for overview pending/dormant totals */
@@ -91,9 +97,9 @@ export interface CookieTriageSessionState {
 export interface CookieTriageSummary {
   /** API totalCount for all NEEDS_REVIEW items */
   pendingCount: number;
-  /** API totalCount for NEEDS_REVIEW items last seen before the dormant cutoff */
+  /** API-derived dormant total (Pending minus recent-active) */
   dormantCount: number;
-  /** Unique cookies/data flows with a user decision in this session */
+  /** Cookies/data flows handled this session via decide or delete (survives refresh) */
   triagedCount: number;
   /** True while overview pending/dormant counts are fetching */
   summaryBusy: boolean;
@@ -132,7 +138,8 @@ export type CookieTriageAction =
   | {
       /**
        * Persist tracking purposes for one row after a successful update.
-       * Leaves the row on its current purpose tab until the user refreshes.
+       * Prepends the row onto newly matching tabs; leaves it on tabs that no
+       * longer match until the user refreshes.
        */
       type: 'setTrackingPurposes';
       /** Purpose tab the row currently lives under */
@@ -162,8 +169,8 @@ export type CookieTriageAction =
     }
   | {
       /**
-       * Begin an explicit tab refresh: drop pending rows, keep decided overlays,
-       * and reset pagination so the list query can be replayed.
+       * Begin an explicit tab refresh: drop all local rows (pending and decided),
+       * and reset pagination so the list query can be replayed from the API.
        */
       type: 'refreshStart';
       /** Purpose tab being refreshed */
@@ -349,6 +356,7 @@ export function createEmptySession(triageType: ConsentTriageType): CookieTriageS
     selectedPurpose: CookieTriagePurposeCategory.Essential,
     purposeOptions: defaultPurposeOptions(),
     purposeOptionsLoaded: false,
+    triagedCount: 0,
     summaryLoadStatus: CookieTriageLoadStatus.Loading,
   };
 }
@@ -363,32 +371,15 @@ export function selectPurposes(state: CookieTriageSessionState): CookieTriagePur
   return [...COOKIE_TRIAGE_PURPOSE_ORDER];
 }
 
-/** Stable identity for a cookie/data-flow across purpose tabs. */
-function rowEntityKey(row: Pick<CookieRowState, 'name' | 'initial'>): string {
-  return row.initial.id || row.name;
-}
-
-/** Count unique entities with a session decision (overview Triaged). */
-export function selectTriagedCount(categories: CookieTriageCategoriesState): number {
-  const seen = new Set<string>();
-  for (const category of Object.values(categories)) {
-    for (const row of category.cookies) {
-      if (row.decision !== undefined) {
-        seen.add(rowEntityKey(row));
-      }
-    }
-  }
-  return seen.size;
-}
-
 /**
- * Overview KPIs: pending/dormant from API count calls, triaged from session decisions.
+ * Overview KPIs: pending/dormant from API count calls, triaged from the session
+ * counter (survives refresh).
  */
 export function selectSummary(state: CookieTriageSessionState): CookieTriageSummary {
   return {
     pendingCount: state.pendingTotal ?? 0,
     dormantCount: state.dormantTotal ?? 0,
-    triagedCount: selectTriagedCount(state.categories),
+    triagedCount: state.triagedCount,
     summaryBusy: state.summaryLoadStatus === CookieTriageLoadStatus.Loading,
   };
 }
@@ -586,17 +577,6 @@ function rowMatchesEntity(row: CookieRowState, name: string, id: string | undefi
   return row.name === name || (id !== undefined && row.initial.id === id);
 }
 
-function updateCategoryRow(
-  category: CookieTriageCategoryState,
-  name: string,
-  patch: Partial<Pick<CookieRowState, 'decision' | 'notes' | 'initial'>>,
-): CookieTriageCategoryState {
-  return {
-    ...category,
-    cookies: category.cookies.map((row) => (row.name === name ? { ...row, ...patch } : row)),
-  };
-}
-
 /**
  * Patch every loaded instance of the same cookie/data-flow across purpose tabs.
  * Mixed-purpose items appear on each matching tab as separate row instances.
@@ -768,8 +748,10 @@ export function cookieTriageReducer(
         return state;
       }
 
+      const wasDecided = row.decision !== undefined;
       return {
         ...state,
+        ...(wasDecided ? {} : { triagedCount: state.triagedCount + 1 }),
         categories: updateMatchingRowsAcrossCategories(
           state.categories,
           action.name,
@@ -786,6 +768,7 @@ export function cookieTriageReducer(
 
       return {
         ...state,
+        triagedCount: Math.max(0, state.triagedCount - 1),
         categories: updateMatchingRowsAcrossCategories(
           state.categories,
           action.name,
@@ -811,24 +794,60 @@ export function cookieTriageReducer(
       };
     }
     case 'setTrackingPurposes': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || samePurposeList(row.initial.trackingPurposes, action.trackingPurposes)) {
         return state;
       }
 
-      return {
-        ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: updateCategoryRow(category, action.name, {
-            initial: {
-              ...row.initial,
-              trackingPurposes: [...action.trackingPurposes],
-            },
-          }),
+      const trackingPurposes = [...action.trackingPurposes];
+      const id = row.initial.id;
+      const categories: CookieTriageCategoriesState = { ...state.categories };
+      const movedRow: CookieRowState = {
+        name: row.name,
+        initial: {
+          ...structuredClone(row.initial),
+          trackingPurposes,
         },
+        decision: row.decision,
+        notes: row.notes,
       };
+
+      // Patch every loaded instance (including tabs that no longer match — those
+      // stay until refresh) and prepend onto newly matching tabs that lack a row.
+      for (const purpose of COOKIE_TRIAGE_PURPOSE_ORDER) {
+        const category = getCategory(state.categories, purpose);
+        const existingIndex = category.cookies.findIndex((candidate) =>
+          rowMatchesEntity(candidate, action.name, id),
+        );
+
+        if (existingIndex >= 0) {
+          const cookies = category.cookies.map((candidate, index) =>
+            index === existingIndex
+              ? {
+                  ...candidate,
+                  initial: {
+                    ...candidate.initial,
+                    trackingPurposes,
+                  },
+                }
+              : candidate,
+          );
+          categories[purpose] = { ...category, cookies };
+          continue;
+        }
+
+        if (!itemBelongsOnPurposeTab(purpose, trackingPurposes)) {
+          continue;
+        }
+
+        categories[purpose] = {
+          ...category,
+          cookies: [{ ...movedRow }, ...category.cookies],
+          totalCount: category.totalCount + 1,
+        };
+      }
+
+      return { ...state, categories };
     }
     case 'setPurposeOptions': {
       if (action.purposeOptions.length === 0) {
@@ -881,15 +900,13 @@ export function cookieTriageReducer(
         return state;
       }
 
-      const decided = category.cookies.filter((row) => row.decision !== undefined);
-
       return {
         ...state,
         categories: {
           ...state.categories,
           [action.purpose]: {
             ...category,
-            cookies: decided,
+            cookies: [],
             nextOffset: 0,
             hasNextPage: true,
             loadStatus: CookieTriageLoadStatus.Loading,
@@ -1041,6 +1058,8 @@ export function cookieTriageReducer(
       return {
         ...state,
         categories,
+        // Pending delete counts as handled; already-decided rows were counted on decide.
+        ...(wasPending ? { triagedCount: state.triagedCount + 1 } : {}),
         ...(wasPending && state.pendingTotal !== undefined
           ? { pendingTotal: Math.max(0, state.pendingTotal - 1) }
           : {}),

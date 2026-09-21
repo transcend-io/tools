@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.2.0
+
+### Minor Changes
+
+- 3ae909e: Add `DROP_RECORD_LIST_TYPE_MISMATCH` DSR error code and message for DROP submissions whose record id exists in the run under a different list type.
+
 ## 6.1.0
 
 ### Minor Changes

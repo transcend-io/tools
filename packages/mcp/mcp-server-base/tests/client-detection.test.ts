@@ -115,6 +115,10 @@ describe('quirksFor', () => {
     expect(quirksFor(McpHostClient.Cursor).mayDeclineWithoutAsking).toBe(true);
   });
 
+  it('reports that Cursor cannot reach app-only tools from MCP Apps', () => {
+    expect(quirksFor(McpHostClient.Cursor).appOnlyToolsUnreachable).toBe(true);
+  });
+
   it('gives no other host the decline workaround', () => {
     // Cursor's cross-window routing failure is Cursor's. A second host answering
     // `decline` means the user said no until someone proves otherwise for it too.
@@ -122,6 +126,14 @@ describe('quirksFor', () => {
 
     for (const host of others) {
       expect(quirksFor(host).mayDeclineWithoutAsking, host).toBeUndefined();
+    }
+  });
+
+  it('gives no other host the app-only tools workaround', () => {
+    const others = Object.values(McpHostClient).filter((host) => host !== McpHostClient.Cursor);
+
+    for (const host of others) {
+      expect(quirksFor(host).appOnlyToolsUnreachable, host).toBeUndefined();
     }
   });
 });

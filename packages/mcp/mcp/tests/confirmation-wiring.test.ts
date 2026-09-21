@@ -34,6 +34,8 @@ const mockClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({}, { get: stubFn }),
   dashboardUrl: 'https://app.transcend.io',
+  transcendApiUrl: 'https://api.transcend.io',
+  auth: { type: 'apiKey', apiKey: 'test-key' },
 } as unknown as UmbrellaToolClients;
 
 function umbrellaTools(): ToolDefinition[] {
@@ -42,6 +44,18 @@ function umbrellaTools(): ToolDefinition[] {
 
 /** Minimal valid args so widened schemas can be parsed with an approval token. */
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  custom_functions_promote_version: {
+    customFunctionId: 'cf-1',
+    versionId: 'ver-1',
+  },
+  custom_functions_test_run: {
+    id: 'cf-1',
+  },
+  custom_functions_upsert: {
+    type: 'GENERAL',
+    name: 'example',
+    code: 'export default async () => ({ ok: true });',
+  },
   dsr_cancel: { requestId: 'req-1' },
   dsr_submit: {
     workflowConfigId: '00000000-0000-4000-8000-000000000001',
@@ -50,6 +64,17 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
   dsr_enrich_identifiers: {
     nonce: 'nonce',
     identifiers: { email: 'a@example.com' },
+  },
+  policy_publish: {
+    bundleName: 'example-bundle',
+    files: {
+      '.manifest': 'package example\n',
+      'policy.rego': 'package example\n',
+    },
+  },
+  policy_set_live: {
+    action: 'deactivate',
+    bundleId: '00000000-0000-4000-8000-000000000001',
   },
   preferences_append_identifiers: {
     partition: 'default',
