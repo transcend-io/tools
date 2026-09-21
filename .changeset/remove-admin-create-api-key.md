@@ -1,6 +1,6 @@
 ---
-'@transcend-io/mcp-server-admin': major
-'@transcend-io/mcp': major
+'@transcend-io/mcp-server-admin': minor
+'@transcend-io/mcp': minor
 ---
 
 Remove `admin_create_api_key`.
