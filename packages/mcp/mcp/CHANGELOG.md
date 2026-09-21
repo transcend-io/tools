@@ -1,5 +1,18 @@
 # @transcend-io/mcp
 
+## 1.5.0
+
+### Minor Changes
+
+- ab5b612: Remove `admin_create_api_key`.
+
+  API key creation is no longer available through the Admin MCP. Use the Transcend Dashboard or CLI to create keys; `admin_list_api_keys` and `admin_list_scopes` remain for inspection.
+
+### Patch Changes
+
+- Updated dependencies [ab5b612]
+  - @transcend-io/mcp-server-admin@1.1.0
+
 ## 1.4.2
 
 ### Patch Changes
