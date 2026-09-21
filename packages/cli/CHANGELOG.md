@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 12.1.4
+
+### Patch Changes
+
+- 1919505: Resolve Policy Engine bundles and versions by name via list filters instead of paginating full listings. Look up versions by UUID on the nested bundle route used by download (not the flat policy-bundle-versions path).
+
 ## 12.1.3
 
 ### Patch Changes
