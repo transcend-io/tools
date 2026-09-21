@@ -2785,6 +2785,7 @@ enum DropArtifactType {
 
 enum DropIntakePhase {
   IDLE
+  PREPARING
   PARSING
   AWAITING_CONFIRMATION
   SUBMITTING
@@ -16983,6 +16984,7 @@ input ReleaseAirgapPrefixModuleVersionInput {
   version: String!
   releaseNotes: String!
   source: String!
+  configSchema: String
 }
 
 type ReleaseAirgapPrefixModuleVersionResult {
