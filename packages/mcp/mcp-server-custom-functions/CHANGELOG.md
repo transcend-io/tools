@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-custom-functions
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/privacy-types@6.2.1
+
 ## 0.2.3
 
 ### Patch Changes

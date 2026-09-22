@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-inventory
 
+## 1.0.14
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/privacy-types@6.2.1
+
 ## 1.0.13
 
 ### Patch Changes
