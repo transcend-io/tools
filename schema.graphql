@@ -2730,6 +2730,7 @@ enum DsrErrorCode {
   DROP_RECORDS_REQUIRE_DROP_RUN_ID
   MAX_DROP_RECORDS_PER_REQUEST_EXCEEDED
   UNKNOWN_DROP_RECORDS
+  DROP_RECORD_LIST_TYPE_MISMATCH
   DROP_RUN_NOT_FOUND
   DROP_RUN_NOT_INTAKE_ELIGIBLE
   IDENTIFIER_VALIDATION_FAILED
@@ -4074,6 +4075,16 @@ enum CookiesColumnName {
   consentSiteCountLastWeek
 }
 
+enum CustomFunctionOrderField {
+  NAME
+  TYPE
+  LIFECYCLE_STATE
+  CREATED_AT
+  RUNS_LAST_7_DAYS
+  LAST_RUN_DATE
+  REFERENCED_BY_COUNT
+}
+
 enum DataCategoriesColumnName {
   catalogRecipients
   category
@@ -4621,6 +4632,7 @@ enum AuditEventBaseModelCode {
   CONSENT_WORKFLOW_TRIGGER
   PURPOSE_DATA_POINT
   PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
+  WORKFLOW_PREFERENCE_MAPPING_CONFIG
   FEATURE
   USER
   DATA_SUBJECT
@@ -4777,6 +4789,7 @@ enum AuditEventCode {
   CONSENT_WORKFLOW_TRIGGER
   PURPOSE_DATA_POINT
   PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
+  WORKFLOW_PREFERENCE_MAPPING_CONFIG
   FEATURE
   USER
   USER_TEAM
@@ -4884,6 +4897,7 @@ enum PREFERENCE_STORE_AUDIT_EVENTS {
   CONSENT_WORKFLOW_TRIGGER
   PURPOSE_DATA_POINT
   PREFERENCE_TOPIC_OPTION_VALUE_DATA_POINT
+  WORKFLOW_PREFERENCE_MAPPING_CONFIG
 }
 
 enum RuleExecutionAuditKind {
@@ -5190,7 +5204,7 @@ type Query {
   currentEmailSenderAddresses(input: CurrentEmailSenderAddressesInput!): CurrentEmailSenderAddressesPayload!
   customFunctionRunFileLink(input: CustomFunctionRunFileLinkInput!): CustomFunctionRunFileLinkPayload!
   customFunctionRuns(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionRunFilterInput): CustomFunctionRunsPayload!
-  customFunctions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionFilterInput): CustomFunctionsPayload!
+  customFunctions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionFilterInput, orderBy: [CustomFunctionOrder!]): CustomFunctionsPayload!
   customFunctionVersions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionVersionsFilterInput!): CustomFunctionVersionsPayload!
   customSyncEndpoints(id: ID!): CustomSyncEndpointsPayload!
   dataCategories(first: Int, offset: Int = 0, last: Int, filterBy: DataCategoryFiltersInput): DataCategoriesPayload!
@@ -5369,7 +5383,7 @@ type Mutation {
   addTCFStacksToBundle(input: SetTCFStacksInput!): AddTcfStacksToBundlePayload!
   addUser(input: AddUserInput!): AddUserPayload!
   adminUpsertPreferences(input: AdminUpsertPreferenceRecordsInput!): AdminUpsertPreferencesPayload!
-  approveRequest(input: CommunicationInput!): ApproveRequestPayload!
+  approveRequest(input: ApproveRequestInput!): ApproveRequestPayload!
   approveRequests(input: ApproveRequestsInput!): ApproveRequestsPayload!
   approveRequestSecondary(input: CommunicationInput!): ApproveRequestSecondaryPayload!
   archiveCustomFunction(input: ArchiveCustomFunctionInput!): ArchiveCustomFunctionPayload!
@@ -6637,6 +6651,13 @@ type ApproveRequestPayload {
   request: Request!
 }
 
+input ApproveRequestInput {
+  requestId: ID!
+  template: String
+  subject: String
+  acknowledgeNoIntegrations: Boolean
+}
+
 type ApproveRequestsPayload {
   clientMutationId: String
   requests: [Request!]!
@@ -6652,6 +6673,7 @@ input ApproveRequestsInput {
   template: String
   subject: String
   isSilent: Boolean
+  acknowledgeNoIntegrations: Boolean
 }
 
 input ApproveVendorAiDraftInput {
@@ -11144,6 +11166,11 @@ type CustomFunctionLifecycleDependencyWarning {
   dependencyTitle: String!
   dependencyStatus: String!
   message: String!
+}
+
+input CustomFunctionOrder {
+  field: CustomFunctionOrderField!
+  direction: OrderDirection!
 }
 
 type CustomFunctionReference {
@@ -15889,6 +15916,7 @@ type PreferenceTopicOptionValueDataPoint {
   preferenceOptionValue: PreferenceOptionValuePreview!
   dataPoint: DataPointPreviewWithDataSilo!
   action: ActionPreview!
+  preferenceManagementOperationType: PreferenceManagementOperationType!
   preferenceState: PreferenceSelectionState!
   mappings: String!
   name: String!
@@ -16667,6 +16695,7 @@ type PurposeDataPoint {
   purpose: TrackingPurposePreview!
   dataPoint: DataPointPreviewWithDataSilo!
   action: ActionPreview!
+  preferenceManagementOperationType: PreferenceManagementOperationType!
   purposeState: PreferenceSelectionState!
   mappings: String!
   name: String!
@@ -17169,6 +17198,7 @@ type Request implements RequestInterface {
   isClosed: Boolean!
   isArchived: Boolean!
   isActiveDataSubject: Boolean!
+  expectedDataSiloCount: Int!
   email: String
   coreIdentifier: String!
   isContextExpired: Boolean!
@@ -17276,6 +17306,7 @@ type RequestDataSiloDataPointsPayload {
 input RequestDataSiloFiltersInput {
   dataSiloId: ID
   requestId: ID
+  requestIds: [ID!]
   status: [RequestDataSiloStatus!]
   visualStatus: VisualRequestDataSiloStatus
   requestStatus: [RequestStatus!]
@@ -17647,6 +17678,7 @@ type RequestHistory implements RequestInterface {
   isClosed: Boolean!
   isArchived: Boolean!
   isActiveDataSubject: Boolean!
+  expectedDataSiloCount: Int!
   email: String
   coreIdentifier: String!
   isContextExpired: Boolean!
@@ -17797,6 +17829,7 @@ interface RequestInterface {
   isClosed: Boolean!
   isArchived: Boolean!
   isActiveDataSubject: Boolean!
+  expectedDataSiloCount: Int!
   email: String
   coreIdentifier: String!
   isContextExpired: Boolean!
