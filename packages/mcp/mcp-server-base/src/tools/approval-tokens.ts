@@ -11,7 +11,7 @@ export const APPROVAL_TOKEN_TTL_MS = 10 * 60 * 1000;
 export const MAX_PENDING_APPROVALS = 64;
 
 /** Outcome of attempting to redeem an approval token. */
-export const ApprovalTokenOutcome = makeEnum({
+export const ApprovalTokenOutcome = {
   /** Matched and spent */
   Claimed: 'CLAIMED',
   /** Never issued, already spent, or lost to a restart */
@@ -20,7 +20,7 @@ export const ApprovalTokenOutcome = makeEnum({
   Expired: 'EXPIRED',
   /** Bound to a different tool, args, or login */
   Mismatch: 'MISMATCH',
-});
+} as const;
 
 export type ApprovalTokenOutcome = (typeof ApprovalTokenOutcome)[keyof typeof ApprovalTokenOutcome];
 

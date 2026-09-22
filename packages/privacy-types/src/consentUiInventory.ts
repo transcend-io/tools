@@ -3,27 +3,27 @@ import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 /** Status of a consent UI variant */
-export const UiVariantStatus = makeEnum({
+export const UiVariantStatus = {
   /** Variant is in draft */
   Draft: 'DRAFT',
   /** Variant is active */
   Active: 'ACTIVE',
   /** Variant is published */
   Published: 'PUBLISHED',
-});
+} as const;
 
 /** Type override */
 export type UiVariantStatus = (typeof UiVariantStatus)[keyof typeof UiVariantStatus];
 
 /** User flow for a consent UI variant */
-export const ConsentUiUserFlow = makeEnum({
+export const ConsentUiUserFlow = {
   /** Banner-only flow */
   Banner: 'BANNER',
   /** Modal-only flow */
   Modal: 'MODAL',
   /** Banner and modal flow */
   BannerAndModal: 'BANNER_AND_MODAL',
-});
+} as const;
 
 /** Type override */
 export type ConsentUiUserFlow = (typeof ConsentUiUserFlow)[keyof typeof ConsentUiUserFlow];

@@ -4,7 +4,7 @@ import { makeEnum } from '@transcend-io/type-utils';
 /**
  * The attributes of the DataSilo model.
  */
-export const DataSiloAttribute = makeEnum({
+export const DataSiloAttribute = {
   Description: 'description',
   Title: 'title',
   Slug: 'slug',
@@ -55,7 +55,7 @@ export const DataSiloAttribute = makeEnum({
   TransferRegions: 'transferRegions',
   Controllerships: 'controllerships',
   CustomSiloConnectionStrategy: 'customSiloConnectionStrategy',
-});
+} as const;
 
 /** Type override */
 export type DataSiloAttribute = (typeof DataSiloAttribute)[keyof typeof DataSiloAttribute];
@@ -215,7 +215,7 @@ type SubDataPointAttributeImmutable =
 /**
  * The attributes of the SubDataPoint model.
  */
-export const SubDataPointAttribute = makeEnum({
+export const SubDataPointAttribute = {
   Name: 'name',
   Slug: 'slug',
   DataPointId: 'dataPointId',
@@ -240,7 +240,7 @@ export const SubDataPointAttribute = makeEnum({
   IsPrimaryKey: 'isPrimaryKey',
   Metadata: 'metadata',
   SchedulingPriority: 'schedulingPriority',
-});
+} as const;
 
 /** Type override */
 export type SubDataPointAttribute =
@@ -305,7 +305,7 @@ type VendorAttributeImmutable =
 /**
  * The attributes of the Vendor model.
  */
-export const VendorAttribute = makeEnum({
+export const VendorAttribute = {
   Title: 'title',
   Slug: 'slug',
   Description: 'description',
@@ -319,7 +319,7 @@ export const VendorAttribute = makeEnum({
   HeadquarterSubDivision: 'headquarterSubDivision',
   WebsiteUrl: 'websiteUrl',
   PrivacyPolicyUrl: 'privacyPolicyUrl',
-});
+} as const;
 
 /** Type override */
 export type VendorAttribute = (typeof VendorAttribute)[keyof typeof VendorAttribute];
@@ -365,14 +365,14 @@ type DataSubCategoryAttributeImmutable =
 /**
  * The attributes of the DataSubCategory model.
  */
-export const DataSubCategoryAttribute = makeEnum({
+export const DataSubCategoryAttribute = {
   Name: 'name',
   Slug: 'slug',
   Description: 'description',
   Category: 'category',
   IsDefault: 'isDefault',
   Regex: 'regex',
-});
+} as const;
 
 /** Type override */
 export type DataSubCategoryAttribute =
@@ -411,13 +411,13 @@ type ProcessingPurposeSubCategoryAttributeImmutable =
 /**
  * The attributes of the ProcessingPurposeSubCategory model.
  */
-export const ProcessingPurposeSubCategoryAttribute = makeEnum({
+export const ProcessingPurposeSubCategoryAttribute = {
   Name: 'name',
   Slug: 'slug',
   Description: 'description',
   Purpose: 'purpose',
   IsDefault: 'isDefault',
-});
+} as const;
 
 /** Type override */
 export type ProcessingPurposeSubCategoryAttribute =
@@ -460,7 +460,7 @@ type BusinessEntityAttributeImmutable =
 /**
  * The attributes of the BusinessEntity model.
  */
-export const BusinessEntityAttribute = makeEnum({
+export const BusinessEntityAttribute = {
   Title: 'title',
   Slug: 'slug',
   Description: 'description',
@@ -469,7 +469,7 @@ export const BusinessEntityAttribute = makeEnum({
   Address: 'address',
   DataProtectionOfficerEmail: 'dataProtectionOfficerEmail',
   DataProtectionOfficerName: 'dataProtectionOfficerName',
-});
+} as const;
 
 /** Type override */
 export type BusinessEntityAttribute =
@@ -517,7 +517,7 @@ type ProcessingActivityAttributeImmutable =
 /**
  * The attributes of the ProcessingActivity model.
  */
-export const ProcessingActivityAttribute = makeEnum({
+export const ProcessingActivityAttribute = {
   Title: 'title',
   Description: 'description',
   SecurityMeasureDetails: 'securityMeasureDetails',
@@ -528,7 +528,7 @@ export const ProcessingActivityAttribute = makeEnum({
   RetentionPeriod: 'retentionPeriod',
   DataProtectionImpactAssessmentLink: 'dataProtectionImpactAssessmentLink',
   DataProtectionImpactAssessmentStatus: 'dataProtectionImpactAssessmentStatus',
-});
+} as const;
 
 /** Type override */
 export type ProcessingActivityAttribute =
@@ -681,7 +681,7 @@ export const AssessmentSyncColumn = makeEnum<
 export type AssessmentSyncColumn = (typeof AssessmentSyncColumn)[keyof typeof AssessmentSyncColumn];
 
 /** The data inventory models that can be synced from an Assessment Form */
-export const AssessmentSyncModel = makeEnum({
+export const AssessmentSyncModel = {
   /** DataSilo model */
   DataSilo: 'dataSilo',
   /** SubDataPoint model */
@@ -696,7 +696,7 @@ export const AssessmentSyncModel = makeEnum({
   BusinessEntity: 'businessEntity',
   /** ProcessingActivity model */
   ProcessingActivity: 'processingActivity',
-});
+} as const;
 
 /** Type overrides */
 export type AssessmentSyncModel = (typeof AssessmentSyncModel)[keyof typeof AssessmentSyncModel];

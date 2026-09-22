@@ -13,7 +13,7 @@ import { PersonalizationPurposeSubCategory } from './personalization.js';
 import { SalePurposeSubCategory } from './sale.js';
 import { TransferPurposeSubCategory } from './transfer.js';
 
-export const DefaultPurposeSubCategoryType = makeEnum({
+export const DefaultPurposeSubCategoryType = {
   ...AdditionalPurposeSubCategory,
   ...AdvertisingPurposeSubCategory,
   ...AnalyticsPurposeSubCategory,
@@ -26,7 +26,7 @@ export const DefaultPurposeSubCategoryType = makeEnum({
   ...PersonalizationPurposeSubCategory,
   ...SalePurposeSubCategory,
   ...TransferPurposeSubCategory,
-});
+} as const;
 
 /**
  * Overload type

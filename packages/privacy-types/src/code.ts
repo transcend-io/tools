@@ -3,7 +3,7 @@ import { makeEnum } from '@transcend-io/type-utils';
 /**
  * The types of files that can be used to detect a code package
  */
-export const CodePackageType = makeEnum({
+export const CodePackageType = {
   PackageJson: 'PACKAGE_JSON',
   RequirementsTxt: 'REQUIREMENTS_TXT',
   Gradle: 'GRADLE',
@@ -13,7 +13,7 @@ export const CodePackageType = makeEnum({
   Pubspec: 'PUBSPEC',
   Gemfile: 'GEMFILE',
   ComposerJson: 'COMPOSER_JSON',
-});
+} as const;
 
 /** Overrides type */
 export type CodePackageType = (typeof CodePackageType)[keyof typeof CodePackageType];

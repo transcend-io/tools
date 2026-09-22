@@ -32,7 +32,7 @@ export const COOKIE_TRIAGE_MIN_OCCURRENCES = 5;
 export const COOKIE_TRIAGE_UNKNOWN_PURPOSE_SLUG = 'Unknown';
 
 /** Built-in tracking-purpose slugs used by the default triage tabs (rank order) */
-export const CookieTriageDefaultPurpose = makeEnum({
+export const CookieTriageDefaultPurpose = {
   /** Strictly necessary */
   Essential: 'Essential',
   /** Functional / preference */
@@ -43,20 +43,20 @@ export const CookieTriageDefaultPurpose = makeEnum({
   Analytics: 'Analytics',
   /** Sale of personal information */
   SaleOfInfo: 'SaleOfInfo',
-});
+} as const;
 
 /** Override type */
 export type CookieTriageDefaultPurpose =
   (typeof CookieTriageDefaultPurpose)[keyof typeof CookieTriageDefaultPurpose];
 
 /** Primary purpose bucket used when grouping cookies for triage */
-export const CookieTriagePurposeCategory = makeEnum({
+export const CookieTriagePurposeCategory = {
   ...CookieTriageDefaultPurpose,
   /** No assigned tracking purpose */
   Unknown: 'Unknown',
   /** Org-defined non-default purposes */
   Custom: 'Custom',
-});
+} as const;
 
 /** Override type */
 export type CookieTriagePurposeCategory =

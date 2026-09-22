@@ -4,7 +4,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * Permanent (e.g., device IDs, MAC address) or temporary (e.g., IP address)
  * identifiers needed to establish a connection for the current browsing session.
  */
-export const ConnectionSubCategory = makeEnum({
+export const ConnectionSubCategory = {
   /** A Media Access Control address */
   MACAddress: 'MAC_ADDRESS',
   /** An internet protocol address */
@@ -13,7 +13,7 @@ export const ConnectionSubCategory = makeEnum({
   UserAgent: 'USER_AGENT',
   /** Fallback subcategory */
   Connection: 'CONNECTION',
-});
+} as const;
 
 /**
  * Overload with type of integration
