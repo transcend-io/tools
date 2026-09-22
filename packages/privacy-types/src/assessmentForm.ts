@@ -30,14 +30,14 @@ export enum AssessmentFormTemplateStatus {
 }
 
 /** How an assessment form template was created */
-export const AssessmentFormTemplateSource = makeEnum({
+export const AssessmentFormTemplateSource = {
   /** The template was created manually by a user creating sections, questions, etc in the AD or via API  */
   Manual: 'MANUAL',
   /** The template was auto-generated as a side effect of kicking off assessments from the Data Inventory */
   DataInventory: 'DATA_INVENTORY',
   /** The template was auto-generated as a side effect of importing OneTrust assessments */
   Import: 'IMPORT',
-});
+} as const;
 
 /**
  * Overload type
@@ -46,7 +46,7 @@ export type AssessmentFormTemplateSource =
   (typeof AssessmentFormTemplateSource)[keyof typeof AssessmentFormTemplateSource];
 
 /** The types of the assessment question */
-export const AssessmentQuestionType = makeEnum({
+export const AssessmentQuestionType = {
   /** A long-answer text question */
   LongAnswer: 'LONG_ANSWER_TEXT',
   /** A short-answer text question */
@@ -63,7 +63,7 @@ export const AssessmentQuestionType = makeEnum({
   File: 'FILE',
   /** A static text field that has no answer field */
   Description: 'DESCRIPTION',
-});
+} as const;
 
 /**
  * Overload type
@@ -76,7 +76,7 @@ export type AssessmentQuestionType =
  * TODO: https://transcend.height.app/T-36999 - migrate keys to equal values, just like
  *       StaticAssessmentQuestionSubType and DynamicAssessmentQuestionSubType
  */
-export const AssessmentQuestionSubType = makeEnum({
+export const AssessmentQuestionSubType = {
   /** A None subType for types that do not accept subTypes */
   None: 'NONE',
   /** A Custom subType for user-defined select types */
@@ -125,7 +125,7 @@ export const AssessmentQuestionSubType = makeEnum({
   AttributeKey: 'ATTRIBUTE_KEY',
   /** A sensitive category */
   SensitiveCategory: 'SENSITIVE_CATEGORY',
-});
+} as const;
 
 /**
  * Overload type
@@ -134,12 +134,12 @@ export type AssessmentQuestionSubType =
   (typeof AssessmentQuestionSubType)[keyof typeof AssessmentQuestionSubType];
 
 /** The possible actions within an assessment question's display logic */
-export const AssessmentsDisplayLogicAction = makeEnum({
+export const AssessmentsDisplayLogicAction = {
   /** Display the question */
   Show: 'SHOW',
   /** Skip the question */
   Skip: 'SKIP',
-});
+} as const;
 
 /**
  * Overload type
@@ -148,7 +148,7 @@ export type AssessmentsDisplayLogicAction =
   (typeof AssessmentsDisplayLogicAction)[keyof typeof AssessmentsDisplayLogicAction];
 
 /** The comparison operators to use in an assessment question's display logic  */
-export const ComparisonOperator = makeEnum({
+export const ComparisonOperator = {
   /** is equal to */
   IsEqualTo: 'IS_EQUAL_TO',
   /** is not equal to */
@@ -165,7 +165,7 @@ export const ComparisonOperator = makeEnum({
   IsNotShown: 'IS_NOT_SHOWN',
   /** does not contain */
   DoesNotContain: 'DOES_NOT_CONTAIN',
-});
+} as const;
 
 /**
  * Overload type
@@ -173,12 +173,12 @@ export const ComparisonOperator = makeEnum({
 export type ComparisonOperator = (typeof ComparisonOperator)[keyof typeof ComparisonOperator];
 
 /** The logic operators to use in an assessment question's display logic  */
-export const LogicOperator = makeEnum({
+export const LogicOperator = {
   /** and */
   And: 'AND',
   /** or */
   Or: 'OR',
-});
+} as const;
 
 /**
  * Overload type

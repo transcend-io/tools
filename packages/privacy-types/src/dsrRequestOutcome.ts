@@ -6,7 +6,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * Returned on successful bulk submissions so callers can branch without parsing
  * error messages. Failures continue to use {@link DsrErrorCode}.
  */
-export const DsrRequestOutcome = makeEnum({
+export const DsrRequestOutcome = {
   /** A new request was created. */
   Created: 'CREATED',
   /** An equivalent open request already exists for this submission. */
@@ -15,7 +15,7 @@ export const DsrRequestOutcome = makeEnum({
   DropRecordsLinked: 'DROP_RECORDS_LINKED',
   /** An existing request was restarted. */
   Restarted: 'RESTARTED',
-});
+} as const;
 
 /** Type override */
 export type DsrRequestOutcome = (typeof DsrRequestOutcome)[keyof typeof DsrRequestOutcome];

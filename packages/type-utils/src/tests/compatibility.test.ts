@@ -33,10 +33,10 @@ describe('monorepo compatibility helpers', () => {
   });
 
   it('maps enum values with applyEnum', () => {
-    const Example = makeEnum({
+    const Example = {
       Ready: 'READY',
       Pending: 'PENDING',
-    });
+    } as const;
 
     expect(applyEnum(Example, (value, key) => `${key}:${value}`)).toEqual({
       READY: 'READY:READY',
@@ -59,10 +59,10 @@ describe('monorepo compatibility helpers', () => {
   });
 
   it('returns typed values from enum-like objects', () => {
-    const Example = makeEnum({
+    const Example = {
       Ready: 'READY',
       Pending: 'PENDING',
-    });
+    } as const;
 
     expect(getValues(Example)).toEqual(['READY', 'PENDING']);
     expect(valuesOf(Example).is('READY')).toBe(true);

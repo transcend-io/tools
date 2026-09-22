@@ -7,7 +7,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * Returned on one failed input so callers can branch without parsing the error
  * message. Failures about the bulk call as a whole use {@link DsrBulkErrorCode}.
  */
-export const DsrErrorCode = makeEnum({
+export const DsrErrorCode = {
   /** This request has an invalid or missing workflowConfigId. */
   InvalidWorkflowConfigId: 'INVALID_WORKFLOW_CONFIG_ID',
   /** This request is missing a core identifier. */
@@ -88,7 +88,7 @@ export const DsrErrorCode = makeEnum({
    * submit requests.
    */
   DraftWorkflowConfig: 'DRAFT_WORKFLOW_CONFIG',
-});
+} as const;
 
 /** Type override */
 export type DsrErrorCode = (typeof DsrErrorCode)[keyof typeof DsrErrorCode];
