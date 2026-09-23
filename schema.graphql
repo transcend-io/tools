@@ -1021,6 +1021,7 @@ enum DatabaseModelName {
   consentWorkflowTrigger
   consentWorkflowTriggerPurpose
   workflowConfig
+  migrateRequestConfigurationsToWorkflowsRun
   fileUpload
   workflowInstance
   workflowJob
@@ -3375,6 +3376,13 @@ enum WorkflowConfigVisibility {
   DRAFT
   INTERNAL
   PUBLISHED
+}
+
+enum WorkflowMigrationRunStatus {
+  QUEUED
+  EXECUTING
+  SUCCEEDED
+  FAILED
 }
 
 enum AssessmentActionType {
@@ -6447,6 +6455,7 @@ type AirgapPrefixModuleRelease {
   id: ID!
   version: String!
   releaseNotes: String!
+  configSchema: String
   createdAt: String!
 }
 
@@ -22987,6 +22996,7 @@ type WorkflowConfigPreview {
   title: LocalizedMessage!
   internalName: String!
   description: LocalizedMessage
+  deletedAt: Date
 }
 
 type WorkflowDataPoint {
