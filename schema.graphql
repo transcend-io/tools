@@ -2947,6 +2947,7 @@ enum ActivityCode {
   REQUEST_DOWNLOAD_EXPIRATION_UPDATED
   REQUEST_ADDITIONAL_TIME_GRANTED
   REQUEST_REVERTED_FROM_DOWNLOADABLE
+  REQUEST_DOWNLOAD_RESTORED
   REPORT_OPENED
   REPORT_DOWNLOADED
 }
@@ -4225,6 +4226,7 @@ enum DsrIncomingRequestColumnName {
   details
   dropRunId
   dropRecordCount
+  workflowConfig
 }
 
 enum EmailDomainVerificationStatus {
@@ -4808,6 +4810,7 @@ enum AuditEventCode {
   CONSENT_UI_VARIANT
   CONSENT_UI_THEME
   WORKFLOW_CONFIG
+  REQUEST_CONFIGURATIONS_TO_WORKFLOWS_MIGRATION
   WORKFLOW_CONFIG_DATA_SILO
   WORKFLOW_CONFIG_ENRICHER
   WORKFLOW_CONFIG_COMMUNICATION
@@ -4864,6 +4867,11 @@ enum CONSENT_AUDIT_EVENTS {
   VENDOR_LIST
   CONSENT_UI_VARIANT
   CONSENT_UI_THEME
+}
+
+enum CredentialRefreshAuditKind {
+  REFRESHED
+  REFRESH_FAILED
 }
 
 enum DROP_AUDIT_EVENTS {
@@ -4935,6 +4943,7 @@ enum AnalyticsDataSource {
   REQUEST_VOLUME_OVER_TIME
   REQUEST_DOWNLOAD_OUTCOMES
   REQUEST_DATA_SILOS_BY_BLOCKER
+  PROFILE_DATA_POINTS_BY_DATA_POINT_BLOCKER
   PRIVACY_RISKS
   HISTORICAL_REQUESTS_BY_STATUS
   VISITOR_CHOICES
@@ -5376,6 +5385,7 @@ type Query {
   workflowConfigFileUploads(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsPayload!
   workflowEnrichers(first: Int, offset: Int = 0, last: Int, input: WorkflowEnrichersInput!): WorkflowEnrichersPayload!
   workflowIdentifiers(first: Int, offset: Int = 0, last: Int, input: WorkflowConfigIdInput!): WorkflowIdentifiersPayload!
+  workflowMigrationRun(filterBy: WorkflowMigrationRunFiltersInput!): WorkflowMigrationRunPayload!
   workflows(first: Int, offset: Int = 0, last: Int, filterBy: WorkflowFilterInput): WorkflowsResponse!
 }
 
@@ -5615,6 +5625,7 @@ type Mutation {
   markDataSiloNotConfigured(id: ID!): MarkDataSiloNotConfiguredPayload!
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
+  migrateRequestConfigurationsToWorkflows(input: MigrateRequestConfigurationsToWorkflowsInput!): MigrateRequestConfigurationsToWorkflowsPayload!
   notifyAdditionalTime(input: AdditionalTimeInput!): NotifyAdditionalTimePayload!
   notifyAdditionalTimes(input: NotifyAdditionalTimesInput!): NotifyAdditionalTimesPayload!
   oauthLink(input: OAuthLinkInput!): OauthLinkPayload!
@@ -9198,6 +9209,7 @@ type ConfiguredSombra implements SombraInterface {
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
+  odbcPooling: SombraOdbcPooling
   jobScheduler: SombraJobSchedulerInfo
   dataSilos: [Resource!]!
 }
@@ -12211,6 +12223,7 @@ type DataSiloReduced {
   type: String!
   dsrProcessingDocumentation: String!
   catalog: Catalog!
+  connectedActions: [RequestActionObjectResolver!]!
   sombra: SombraPreview!
 }
 
@@ -15213,6 +15226,15 @@ type MessageWithLocalized {
   translations: [MessageTranslation!]!
 }
 
+type MigrateRequestConfigurationsToWorkflowsPayload {
+  clientMutationId: String
+  migrationRunId: ID!
+}
+
+input MigrateRequestConfigurationsToWorkflowsInput {
+  dryRun: Boolean!
+}
+
 input MigrateSSOInput {
   organizationId: ID!
 }
@@ -17520,6 +17542,7 @@ input RequestFileFiltersInput {
   requestId: ID
   dataSiloId: ID
   exportMode: [DataPointExportMode!]
+  isArchived: Boolean
 }
 
 interface RequestFileInterface {
@@ -17580,6 +17603,7 @@ input RequestFiltersForDataSiloInput {
   hasProfiles: Boolean
   visualStatus: VisualRequestDataSiloStatus
   requestHasSilo: Boolean
+  dataPointIds: [ID!]
 }
 
 input RequestFiltersInput {
@@ -19438,6 +19462,7 @@ type Sombra implements SombraInterface {
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
+  odbcPooling: SombraOdbcPooling
   jobScheduler: SombraJobSchedulerInfo
 }
 
@@ -19513,6 +19538,7 @@ interface SombraInterface {
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
+  odbcPooling: SombraOdbcPooling
   jobScheduler: SombraJobSchedulerInfo
 }
 
@@ -19564,6 +19590,26 @@ type SombraKMSKeysMetadata {
   keySets: [SombraKMSKeySetOutput!]!
 }
 
+type SombraOdbcPooling {
+  enabled: Boolean!
+  poolCacheSize: Int
+  poolCacheTtlMs: Int!
+  maxPoolSize: Int!
+  initialPoolSize: Int!
+  incrementSize: Int!
+  shrink: Boolean!
+}
+
+input SombraOdbcPoolingInput {
+  enabled: Boolean!
+  poolCacheSize: Int
+  poolCacheTtlMs: Int!
+  maxPoolSize: Int!
+  initialPoolSize: Int!
+  incrementSize: Int!
+  shrink: Boolean!
+}
+
 input SombraOrder {
   field: SombraOrderField!
   direction: OrderDirection!
@@ -19576,6 +19622,7 @@ type SombraPreview {
   title: String
   hostedMethod: SombraHostedMethod!
   publicKeyECDH: String
+  odbcPooling: SombraOdbcPooling
 }
 
 type SombraProfile {
@@ -19634,6 +19681,7 @@ input SombraSingleTenantConfigSyncInput {
   configJwt: String!
   kmsProvider: String
   keySets: [SombraKMSKeySetInput!]
+  odbcPooling: SombraOdbcPoolingInput
 }
 
 type SsoProvider {
@@ -23106,6 +23154,28 @@ type WorkflowInstance {
   phase: WorkflowPhase!
   triggeredBy: WorkflowTrigger!
   scheduledAt: Date!
+}
+
+type WorkflowMigrationRunPayload {
+  clientMutationId: String
+  migrationRun: WorkflowMigrationRun!
+}
+
+type WorkflowMigrationRun {
+  id: ID!
+  user: UserPreview
+  dryRun: Boolean!
+  status: WorkflowMigrationRunStatus!
+  result: String
+  errorMessage: String
+  startedAt: Date
+  finishedAt: Date
+  createdAt: Date!
+  updatedAt: Date!
+}
+
+input WorkflowMigrationRunFiltersInput {
+  ids: [ID!]
 }
 
 input WorkflowRequestInput {
