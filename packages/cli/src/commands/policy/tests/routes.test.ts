@@ -27,13 +27,13 @@ describe('policy routes', () => {
     expect(output).not.toContain('--preset');
   });
 
-  it('documents policy lint as the verification gate with its workspace default', async () => {
+  it('documents policy check as the verification gate with its workspace default', async () => {
     const context = buildContextForTest({
       exitBehavior: 'record',
       stdinIsTTY: false,
     });
 
-    await run(app, ['policy', 'lint', '--help'], context);
+    await run(app, ['policy', 'check', '--help'], context);
 
     const output = `${context.stdout}\n${context.stderr}`;
     expect(output).toContain('Defaults to the policy workspace');
@@ -48,7 +48,26 @@ describe('policy routes', () => {
     expect(output).not.toContain('example-bundle');
   });
 
-  it('documents policy test with the same workspace default as lint', async () => {
+  it('documents policy lint as format and Regal only', async () => {
+    const context = buildContextForTest({
+      exitBehavior: 'record',
+      stdinIsTTY: false,
+    });
+
+    await run(app, ['policy', 'lint', '--help'], context);
+
+    const output = `${context.stdout}\n${context.stderr}`;
+    expect(output).toContain('checks or repairs OPA formatting');
+    expect(output).toContain('policy check');
+    expect(output).toContain('Policy workspace or bundle directory');
+    expect(output).toContain('[workspace|bundle]');
+    expect(output).toContain('--fix');
+    expect(output).toContain('--noInteractive');
+    expect(output).toContain('--json');
+    expect(output).not.toContain('non-empty OPA tests');
+  });
+
+  it('documents policy test with the same workspace default as check', async () => {
     const context = buildContextForTest({
       exitBehavior: 'record',
       stdinIsTTY: false,

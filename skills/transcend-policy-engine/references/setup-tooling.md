@@ -68,7 +68,7 @@ updates VS Code settings/tasks when `.vscode` is present.
 
 The generated Regal configuration targets OPA 1.18.2 capabilities. Generated CI
 installs OPA 1.18.2 and Regal 0.42.0; local tools only need to satisfy the
-compatible versions reported by `policy init` and `policy lint`. Follow their
+compatible versions reported by `policy init` and `policy check`. Follow their
 official installation links when a compatible tool is missing.
 
 ## Editor and CI
@@ -84,14 +84,14 @@ Repository-level VS Code settings should include:
 Preserve custom settings and tasks when adapting generated editor files.
 
 Generated GitHub Actions CI is read-only and credential-free: it installs pinned
-tools and the pinned Transcend CLI, then runs `transcend policy lint` per
+tools and the pinned Transcend CLI, then runs `transcend policy check` per
 publish directory (matrix when multiple bundles exist). Locally, bare
-`transcend policy lint` verifies every child under the workspace that contains
+`transcend policy check` verifies every child under the workspace that contains
 a `.manifest`:
 
 ```sh
-transcend policy lint --noInteractive --json
-transcend policy lint transcend/policy/example-bundle --noInteractive --json
+transcend policy check --noInteractive --json
+transcend policy check transcend/policy/example-bundle --noInteractive --json
 ```
 
 Adapt triggers, runner labels, dependency installation, and caching to

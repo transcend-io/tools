@@ -535,14 +535,14 @@ export function mergePolicyEditorExtensions(contents: string | null): PolicyEdit
 }
 
 /**
- * Build a VS Code lint task for one bundle.
+ * Build a VS Code check task for one bundle.
  *
  * @param repositoryRoot - Root that owns `.vscode`
  * @param workspaceDirectory - Selected policy workspace directory
  * @param bundle - Package root and local directory basename
  * @returns VS Code task object
  */
-export function buildPolicyLintTask(
+export function buildPolicyCheckTask(
   repositoryRoot: string,
   workspaceDirectory: string,
   bundle: PolicyBundleRef = policyBundleRef(POLICY_STARTER_ROOT),
@@ -550,10 +550,10 @@ export function buildPolicyLintTask(
   const workspace = repositoryRelativePosix(repositoryRoot, workspaceDirectory);
   const path = workspace === '.' ? bundle.bundleDir : `${workspace}/${bundle.bundleDir}`;
   return {
-    label: `policy: lint ${bundle.root}`,
+    label: `policy: check ${bundle.root}`,
     type: 'process',
     command: 'transcend',
-    args: ['policy', 'lint', path, '--noInteractive'],
+    args: ['policy', 'check', path, '--noInteractive'],
     group: {
       kind: 'test',
       isDefault: false,
@@ -563,17 +563,17 @@ export function buildPolicyLintTask(
 }
 
 /**
- * Build the aggregate "policy: lint" task (runs all bundles).
+ * Build the aggregate "policy: check" task (runs all bundles).
  *
  * @param bundles - Local publish units
  * @returns VS Code task object
  */
-export function buildPolicyAggregateLintTask(
+export function buildPolicyAggregateCheckTask(
   bundles: readonly PolicyBundleRef[],
 ): Record<string, unknown> {
   return {
-    label: 'policy: lint',
-    dependsOn: bundles.map((bundle) => `policy: lint ${bundle.root}`),
+    label: 'policy: check',
+    dependsOn: bundles.map((bundle) => `policy: check ${bundle.root}`),
     dependsOrder: 'sequence',
     group: {
       kind: 'test',
@@ -584,11 +584,31 @@ export function buildPolicyAggregateLintTask(
 }
 
 /**
- * Merge policy lint tasks while preserving custom tasks.
+ * Whether a VS Code task label is a managed policy verification task.
+ *
+ * Includes legacy `policy: lint*` labels so re-running editor setup migrates
+ * them to `policy: check*`.
+ *
+ * @param label - Task label
+ * @returns True when the task is managed by policy scaffolding
+ */
+function isManagedPolicyVerificationTaskLabel(label: unknown): boolean {
+  return (
+    typeof label === 'string' &&
+    (label === 'policy: check' ||
+      label.startsWith('policy: check ') ||
+      label === 'policy: lint' ||
+      label.startsWith('policy: lint '))
+  );
+}
+
+/**
+ * Merge policy check tasks while preserving custom tasks.
  *
  * When `bundles` is provided, creates per-bundle tasks and an aggregate.
- * Managed `policy: lint*` tasks are updated in place as roots grow. When
- * omitted, skips task creation (init without bundles).
+ * Managed `policy: check*` tasks are updated in place as roots grow. Legacy
+ * `policy: lint*` tasks are removed so editor setup migrates to `check`.
+ * When omitted, skips task creation (init without bundles).
  *
  * @param contents - Existing `.vscode/tasks.json` JSONC
  * @param repositoryRoot - Root that owns `.vscode`
@@ -621,17 +641,23 @@ export function mergePolicyEditorTasks(
   }
 
   const desiredPerBundleTasks = bundles.map((bundle) =>
-    buildPolicyLintTask(repositoryRoot, workspaceDirectory, bundle),
+    buildPolicyCheckTask(repositoryRoot, workspaceDirectory, bundle),
   );
-  const desiredAggregateTask = buildPolicyAggregateLintTask(bundles);
+  const desiredAggregateTask = buildPolicyAggregateCheckTask(bundles);
   const desiredTasks = [...desiredPerBundleTasks, desiredAggregateTask];
   const managedLabels = new Set(desiredTasks.map((task) => task.label as string));
   const tasks = current.tasks;
   if (tasks === undefined) {
     updates.push({ path: ['tasks'], value: desiredTasks });
   } else if (Array.isArray(tasks)) {
-    let merged = [...tasks];
-    let changed = false;
+    let merged = tasks.filter((task) => {
+      if (task === null || typeof task !== 'object' || Array.isArray(task)) {
+        return true;
+      }
+      const label = (task as Record<string, unknown>).label;
+      return !isManagedPolicyVerificationTaskLabel(label) || managedLabels.has(label as string);
+    });
+    let changed = merged.length !== tasks.length;
     desiredTasks.forEach((desired) => {
       const label = desired.label as string;
       const matchingIndex = merged.findIndex(

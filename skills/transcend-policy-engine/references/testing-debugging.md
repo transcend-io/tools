@@ -28,7 +28,7 @@ Cover at least:
 - important result fields and reason codes;
 - interactions between packages when one policy reads another document.
 
-`transcend policy lint` requires a non-empty test suite.
+`transcend policy check` requires a non-empty test suite.
 
 ## Use local inputs safely
 
@@ -39,25 +39,26 @@ Regal Evaluate work immediately. Customize `input.json` locally; keep
 
 ## Run the complete gate
 
-With no directory argument, `policy lint` and `policy test` verify every
+With no directory argument, `policy check` and `policy test` verify every
 immediate child under the workspace (`transcend/policy`) that contains a
 `.manifest`. Pass one bundle path to target a single unit:
 
 ```sh
-transcend policy lint --noInteractive
+transcend policy check --noInteractive
 transcend policy test
-transcend policy lint transcend/policy/permissions-bundle --noInteractive
+transcend policy check transcend/policy/permissions-bundle --noInteractive
 transcend policy test transcend/policy/permissions-bundle
 opa check --strict -b transcend/policy/permissions-bundle -s transcend/policy/permissions-bundle/input.schema.json
 ```
 
-`policy lint` and `policy test` run `opa test -b` (bundle mode) so a local
+`policy check` and `policy test` run `opa test -b` (bundle mode) so a local
 gitignored `input.json` beside `input.example.json` does not cause a merge
 error. Prefer the CLI over raw directory-mode `opa test`. Strict OPA checks use
 Rego v1 (no `--v0-compatible`).
 
-Use `transcend policy lint --help` for formatter flags. Review Regal findings
-deliberately instead of applying broad rewrites.
+Use `transcend policy lint` for OPA formatting and Regal only (with `--fix` to
+repair formatting). Use `transcend policy check --help` for the full gate.
+Review Regal findings deliberately instead of applying broad rewrites.
 
 ## Evaluate a query
 
