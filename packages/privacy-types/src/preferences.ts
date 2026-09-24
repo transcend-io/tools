@@ -6,10 +6,10 @@ import { IsoCountryCode, IsoCountrySubdivisionCode } from './isoRegion.js';
 /**
  * Types of decryption status
  */
-export const DecryptionStatus = makeEnum({
+export const DecryptionStatus = {
   DECRYPTED: 'DECRYPTED',
   ERROR: 'ERROR',
-});
+} as const;
 
 /** Type overrides */
 export type DecryptionStatus = (typeof DecryptionStatus)[keyof typeof DecryptionStatus];
@@ -286,11 +286,11 @@ export type PreferenceUpdateItem = t.TypeOf<typeof PreferenceUpdateItem>;
 /**
  * The supported preference topic types
  */
-export const PreferenceTopicType = makeEnum({
+export const PreferenceTopicType = {
   Select: 'SELECT',
   MultiSelect: 'MULTI_SELECT',
   Boolean: 'BOOLEAN',
-});
+} as const;
 
 /** Override type */
 export type PreferenceTopicType = (typeof PreferenceTopicType)[keyof typeof PreferenceTopicType];
@@ -298,23 +298,23 @@ export type PreferenceTopicType = (typeof PreferenceTopicType)[keyof typeof Pref
 /**
  * The authentication level required for updating a purpose on preference store
  */
-export const PreferenceStoreAuthLevel = makeEnum({
+export const PreferenceStoreAuthLevel = {
   Required: 'REQUIRED',
   Optional: 'OPTIONAL',
   AllowOptOut: 'ALLOW_OPT_OUT',
-});
+} as const;
 
 /** Override type */
 export type PreferenceStoreAuthLevel =
   (typeof PreferenceStoreAuthLevel)[keyof typeof PreferenceStoreAuthLevel];
 
 /** The standard scopes which are used to access the Sombra APIs */
-export const SombraStandardScope = makeEnum({
+export const SombraStandardScope = {
   /** Access to Preference Management APIs */
   PreferenceManagement: 'preferenceManagement',
   /** DSR Automation APIs */
   DSRAutomation: 'dsrAutomation',
-});
+} as const;
 
 /** Type override */
 export type SombraStandardScope = (typeof SombraStandardScope)[keyof typeof SombraStandardScope];

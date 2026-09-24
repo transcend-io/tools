@@ -94,6 +94,31 @@ describe('Consent Tools', () => {
         expect.arrayContaining(['cookies']),
       );
     });
+
+    it('forwards an empty trackingPurposes array so purposes can be cleared', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({ updateOrCreateCookies: { clientMutationId: null } });
+
+      const tool = getTools().find((t) => t.name === 'consent_update_cookies')!;
+      const result = await tool.handler(
+        tool.zodSchema.parse({
+          cookies: [{ name: '_ga', trackingPurposes: [] }],
+        }),
+      );
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        airgapBundleId: 'bundle-1',
+        cookies: [{ name: '_ga', trackingPurposes: [] }],
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          updated: 1,
+          cookies: [{ name: '_ga', trackingPurposes: [] }],
+        },
+      });
+    });
   });
 
   describe('consent_delete_cookies', () => {
@@ -193,6 +218,41 @@ describe('Consent Tools', () => {
       expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
         airgapBundleId: 'bundle-1',
         dataFlows: [{ id: 'df-1', trackingType: ['Analytics'], status: 'LIVE' }],
+      });
+    });
+
+    it('forwards an empty trackingPurposes array as trackingType so purposes can be cleared', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({
+          updateDataFlows: {
+            dataFlows: [
+              {
+                id: 'df-1',
+                value: 'example.com',
+                status: 'NEEDS_REVIEW',
+                isJunk: false,
+                purposes: [],
+                service: null,
+              },
+            ],
+          },
+        });
+
+      const tool = getTools().find((t) => t.name === 'consent_update_data_flows')!;
+      const result = await tool.handler(
+        tool.zodSchema.parse({
+          dataFlows: [{ id: 'df-1', trackingPurposes: [] }],
+        }),
+      );
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        airgapBundleId: 'bundle-1',
+        dataFlows: [{ id: 'df-1', trackingType: [] }],
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: { updated: 1 },
       });
     });
   });

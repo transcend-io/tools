@@ -1,9 +1,9 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
-export const AdditionalPurposeSubCategory = makeEnum({
+export const AdditionalPurposeSubCategory = {
   /** Fallback sub purpose */
   Additional: 'ADDITIONAL',
-});
+} as const;
 
 /**
  * Overload with type of integration

@@ -7,7 +7,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * Surfaced on `POST /v1/data-subject-request-bulk` when the payload or its
  * preconditions are invalid before per-input processing completes.
  */
-export const DsrBulkErrorCode = makeEnum({
+export const DsrBulkErrorCode = {
   /** The bulk submission included no request inputs. */
   NoInputsProvided: 'NO_INPUTS_PROVIDED',
   /** The bulk submission exceeds the maximum number of inputs. */
@@ -31,7 +31,7 @@ export const DsrBulkErrorCode = makeEnum({
    * before per-item processing).
    */
   InvalidBulkInput: 'INVALID_BULK_INPUT',
-});
+} as const;
 
 /** Type override */
 export type DsrBulkErrorCode = (typeof DsrBulkErrorCode)[keyof typeof DsrBulkErrorCode];

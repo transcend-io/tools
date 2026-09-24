@@ -3,7 +3,7 @@ import { makeEnum } from './enum.js';
 /**
  * The HTTP method types.
  */
-export const HttpMethod = makeEnum({
+export const HttpMethod = {
   /** A GET request. */
   Get: 'GET',
   /** A POST request. */
@@ -14,7 +14,7 @@ export const HttpMethod = makeEnum({
   Put: 'PUT',
   /** A PATCH request. */
   Patch: 'PATCH',
-});
+} as const;
 
 /**
  * The HTTP method string union.

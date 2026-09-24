@@ -4,29 +4,29 @@ import * as t from 'io-ts';
 import { LocaleCodec } from './locale.js';
 
 /** Actions for buttons in modals */
-export const ModalButtonActions = makeEnum({
+export const ModalButtonActions = {
   SaveAndClose: 'SaveAndClose',
   AcceptAllAndClose: 'AcceptAllAndClose',
   RejectAllAndClose: 'RejectAllAndClose',
-});
+} as const;
 
 /** Type override */
 export type ModalButtonActions = (typeof ModalButtonActions)[keyof typeof ModalButtonActions];
 
 /** All action types for buttons */
-export const ButtonAction = makeEnum({
+export const ButtonAction = {
   ...ModalButtonActions,
   OpenModal: 'OpenModal',
-});
+} as const;
 
 /** Type override */
 export type ButtonAction = (typeof ButtonAction)[keyof typeof ButtonAction];
 
 /** Button Type */
-export const ButtonType = makeEnum({
+export const ButtonType = {
   Default: 'default',
   Link: 'link',
-});
+} as const;
 
 /** Type override */
 export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];

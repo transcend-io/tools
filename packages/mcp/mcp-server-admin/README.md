@@ -109,8 +109,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `admin_list_users` — List organization users
 - `admin_list_teams` — List teams
 - `admin_list_api_keys` — List API keys
-- `admin_list_scopes` — List valid API-key scope names (compact catalog; use before creating a key)
-- `admin_create_api_key` — Create a new API key (call `admin_list_scopes` for valid scope names)
+- `admin_list_scopes` — List valid API-key scope names (compact catalog)
 
 ## Related packages
 

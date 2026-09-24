@@ -20,7 +20,13 @@ export function createCustomFunctionsPromoteVersionTool(clients: ToolClients) {
       'dependencyWarnings when follow-up may be needed.',
     category: 'Custom Functions',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    confirmation: {
+      hint:
+        'Makes this draft Custom Function version the live one. Traffic that runs this ' +
+        'function starts using the new code immediately. Check customFunctionId and versionId ' +
+        'in the call arguments before agreeing.',
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: CustomFunctionsPromoteVersionSchema,
     handler: async ({ customFunctionId, versionId }) => {
       const result = await graphql.promoteCustomFunctionVersion(customFunctionId, versionId);

@@ -48,12 +48,12 @@ export type SemicolonDelimitedRegimeKeyString = t.TypeOf<typeof SemicolonDelimit
 /**
  * Autofocus toggle values ("on" / "off").
  */
-export const AutofocusToggle = makeEnum({
+export const AutofocusToggle = {
   /** Enable autofocus */
   On: 'on',
   /** Disable autofocus */
   Off: 'off',
-});
+} as const;
 
 /** Override type */
 export type AutofocusToggle = (typeof AutofocusToggle)[keyof typeof AutofocusToggle];
@@ -71,14 +71,14 @@ export type AutofocusValues = t.TypeOf<typeof AutofocusValues>;
 /**
  * Shadow root options ("open" / "closed" / "none").
  */
-export const ShadowRootOptions = makeEnum({
+export const ShadowRootOptions = {
   /** Enable shadow root */
   Open: 'open',
   /** Disable shadow root */
   Closed: 'closed',
   /** Disable shadow root */
   None: 'none',
-});
+} as const;
 
 /** Override type */
 export type ShadowRootOptions = (typeof ShadowRootOptions)[keyof typeof ShadowRootOptions];

@@ -24,6 +24,7 @@ describe('generateGithubActionsWorkflow', () => {
     expect(workflow).not.toContain('--auth=');
     expect(workflow).not.toContain('custom-functions push');
     expect(workflow).toContain('--variables=TRANSCEND_API_KEY:placeholder');
+    expect(workflow).toContain('push:\n    branches:\n      - main\n    paths:');
     expect(isUnmodifiedCustomFunctionWorkflow(workflow)).toBe(true);
     expect(isUnmodifiedCustomFunctionWorkflow(workflow.replace('--json', '--fix'))).toBe(false);
   });

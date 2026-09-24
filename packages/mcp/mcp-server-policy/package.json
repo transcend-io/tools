@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-policy",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Transcend MCP Server — Policy Engine tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-policy",
   "license": "Apache-2.0",

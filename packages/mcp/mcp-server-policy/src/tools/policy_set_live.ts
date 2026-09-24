@@ -38,6 +38,12 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
       'Mirrors transcend policy activate / deactivate. Requires Activate Policy scope.',
     category: 'Policy Engine',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Changes which Policy Engine version is live for this organization. Activate puts a ' +
+        'version into effect for agent and tool traffic; deactivate clears the live version. ' +
+        'Check action, bundle, and version in the call arguments before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: PolicySetLiveSchema,
     handler: async ({ action, bundleId, bundleName, versionId, version }) => {

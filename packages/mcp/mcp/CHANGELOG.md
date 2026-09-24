@@ -1,5 +1,46 @@
 # @transcend-io/mcp
 
+## 1.5.0
+
+### Minor Changes
+
+- ab5b612: Remove `admin_create_api_key`.
+
+  API key creation is no longer available through the Admin MCP. Use the Transcend Dashboard or CLI to create keys; `admin_list_api_keys` and `admin_list_scopes` remain for inspection.
+
+### Patch Changes
+
+- Updated dependencies [ab5b612]
+  - @transcend-io/mcp-server-admin@1.1.0
+
+## 1.4.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.0.13
+- @transcend-io/mcp-server-assessment@2.1.10
+- @transcend-io/mcp-server-consent@1.2.6
+- @transcend-io/mcp-server-custom-functions@0.2.3
+- @transcend-io/mcp-server-discovery@1.0.13
+- @transcend-io/mcp-server-dsr@2.0.10
+- @transcend-io/mcp-server-inventory@1.0.13
+- @transcend-io/mcp-server-policy@0.2.2
+- @transcend-io/mcp-server-preferences@0.7.17
+- @transcend-io/mcp-server-workflows@1.0.13
+
+## 1.4.1
+
+### Patch Changes
+
+- 9331229: Require human confirmation before Policy Engine publish/go-live and Custom Function upsert, promote, and test-run actions so those changes cannot run without your approval.
+- Updated dependencies [8ad30d3]
+- Updated dependencies [8ad30d3]
+- Updated dependencies [8ad30d3]
+- Updated dependencies [9331229]
+  - @transcend-io/mcp-server-consent@1.2.5
+  - @transcend-io/mcp-server-policy@0.2.1
+  - @transcend-io/mcp-server-custom-functions@0.2.2
+
 ## 1.4.0
 
 ### Minor Changes
