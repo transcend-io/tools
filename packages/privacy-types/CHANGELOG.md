@@ -1,5 +1,14 @@
 # @transcend-io/privacy-types
 
+## 6.2.1
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+
 ## 6.2.0
 
 ### Minor Changes
