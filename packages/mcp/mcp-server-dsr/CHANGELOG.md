@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.0.12
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/mcp-server-base@2.5.3
+
 ## 2.0.11
 
 ### Patch Changes

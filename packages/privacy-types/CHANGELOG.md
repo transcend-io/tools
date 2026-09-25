@@ -1,5 +1,16 @@
 # @transcend-io/privacy-types
 
+## 6.3.0
+
+### Minor Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
 ## 6.2.1
 
 ### Patch Changes

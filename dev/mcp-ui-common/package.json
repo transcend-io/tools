@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-ui-common",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Shared presentational components for Transcend MCP App views. Development only, never published.",
   "license": "Apache-2.0",

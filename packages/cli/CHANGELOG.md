@@ -1,5 +1,27 @@
 # @transcend-io/cli
 
+## 13.0.0
+
+### Major Changes
+
+- 8d8efe3: **Breaking:** Rename the Policy Engine verification gate from `transcend policy lint` to `transcend policy check`. Use `transcend policy lint` for OPA formatting and Regal only.
+
+  Migration:
+  - Replace `transcend policy lint` (CI, scripts, VS Code tasks) with `transcend policy check` for the full gate (manifest, formatting, strict OPA check, Regal, and tests).
+  - Keep or switch to `transcend policy lint` when you only want formatting + Regal (`--fix` still repairs OPA formatting).
+  - Re-run `transcend policy init --editor` / `--ci` (or `policy new`) to refresh generated VS Code tasks and GitHub Actions; legacy `policy: lint*` tasks are migrated to `policy: check*`.
+
+### Patch Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/airgap.js-types@14.2.47
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.15
+  - @transcend-io/utils@0.3.2
+
 ## 12.1.5
 
 ### Patch Changes
