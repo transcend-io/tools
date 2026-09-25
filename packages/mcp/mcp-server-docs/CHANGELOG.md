@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-docs
 
+## 0.4.14
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@2.5.3
+
 ## 0.4.13
 
 ### Patch Changes

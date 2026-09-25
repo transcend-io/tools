@@ -1,5 +1,15 @@
 # @transcend-io/sdk
 
+## 2.1.15
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/airgap.js-types@14.2.47
+  - @transcend-io/utils@0.3.2
+
 ## 2.1.14
 
 ### Patch Changes

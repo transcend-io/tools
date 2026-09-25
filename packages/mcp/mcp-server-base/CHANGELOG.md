@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.3
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
 ## 2.5.2
 
 ### Patch Changes
