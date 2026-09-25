@@ -62,6 +62,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
   - [`transcend policy activate`](#transcend-policy-activate)
+  - [`transcend policy check`](#transcend-policy-check)
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
@@ -4188,6 +4189,55 @@ transcend policy activate --remote-bundle-name=main
 
 Requires the **Activate Policy** scope on your API key.
 
+### `transcend policy check`
+
+```txt
+USAGE
+  transcend policy check [--fix] [--noInteractive] [--json] [<workspace|bundle>]
+  transcend policy check --help
+
+Defaults to the policy workspace (`transcend/policy`) and verifies every publishable child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
+
+FLAGS
+     [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation           [default = false]
+     [--json]           Emit stable JSON output and disable prompts            [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [workspace|bundle]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
+```
+
+#### Examples
+
+**Verify every bundle under the default workspace**
+
+```sh
+transcend policy check
+```
+
+**Verify and format every bundle under the default workspace**
+
+```sh
+transcend policy check --fix
+```
+
+**Run the verification gate in CI or an editor**
+
+```sh
+transcend policy check --noInteractive --json
+```
+
+**Verify a single local publish directory**
+
+```sh
+transcend policy check transcend/policy/example-bundle --fix
+```
+
+With no directory argument, `policy check` verifies every immediate child under the default
+workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a
+single unit.
+
 ### `transcend policy deactivate`
 
 ```txt
@@ -4295,7 +4345,7 @@ USAGE
   transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <bundle>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as lint/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as check/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
       --package               OPA query path to evaluate (e.g. data.example.result)
@@ -4355,13 +4405,13 @@ USAGE
 Probes OPA and Regal, previews one safe transactional plan, and creates an empty multi-bundle workspace with shared Regal config and README. Add bundles with `transcend policy new`. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
 
 FLAGS
-     [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and lint task
+     [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and check task
      [--skill/--noSkill]    Install the canonical Policy Engine coding-agent skill
      [--ci/--noCi]          Generate credential-free validation-only GitHub Actions
-     [--noInteractive]      Disable prompts and enable optional setup only through explicit flags  [default = false]
-     [--dryRun]             Preview changes without applying them                                  [default = false]
-     [--yes]                Skip only the final plan confirmation                                  [default = false]
-     [--json]               Emit stable JSON output and disable prompts                            [default = false]
+     [--noInteractive]      Disable prompts and enable optional setup only through explicit flags   [default = false]
+     [--dryRun]             Preview changes without applying them                                   [default = false]
+     [--yes]                Skip only the final plan confirmation                                   [default = false]
+     [--json]               Emit stable JSON output and disable prompts                             [default = false]
   -h  --help                Print help information and exit
 
 ARGUMENTS
@@ -4402,7 +4452,7 @@ USAGE
   transcend policy lint [--fix] [--noInteractive] [--json] [<workspace|bundle>]
   transcend policy lint --help
 
-Defaults to the policy workspace (`transcend/policy`) and verifies every publishable child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and lints every publishable child directory that contains a `.manifest`. Pass one bundle path to lint a single unit. Verifies OPA 1.x and Regal, checks or repairs OPA formatting, and treats Regal warnings as failures. For the full verification gate (manifest, strict OPA check, and tests), use `transcend policy check`. No Transcend API key is needed.
 
 FLAGS
      [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
@@ -4416,33 +4466,33 @@ ARGUMENTS
 
 #### Examples
 
-**Verify every bundle under the default workspace**
+**Lint every bundle under the default workspace**
 
 ```sh
 transcend policy lint
 ```
 
-**Verify and format every bundle under the default workspace**
+**Lint and format every bundle under the default workspace**
 
 ```sh
 transcend policy lint --fix
 ```
 
-**Run the verification gate in CI or an editor**
+**Run lint in CI or an editor**
 
 ```sh
 transcend policy lint --noInteractive --json
 ```
 
-**Verify a single local publish directory**
+**Lint a single local publish directory**
 
 ```sh
 transcend policy lint transcend/policy/example-bundle --fix
 ```
 
-With no directory argument, `policy lint` verifies every immediate child under the default
-workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a
-single unit.
+With no directory argument, `policy lint` lints every immediate child under the default
+workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to lint a
+single unit. Use `policy check` for the full verification gate.
 
 ### `transcend policy new`
 

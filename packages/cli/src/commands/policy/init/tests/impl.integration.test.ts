@@ -16,8 +16,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
 import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import { check } from '../../check/impl.js';
 import { buildOpaBundleTarball } from '../../helpers/buildOpaBundleTarball.js';
-import { lint } from '../../lint/impl.js';
 import { _new } from '../../new/impl.js';
 import { init, type PolicyInitFlags } from '../impl.js';
 
@@ -88,13 +88,13 @@ describe('policy init + new with pinned OPA and Regal', () => {
     expect(newResult.applied).toBe(true);
     expect(newResult.root).toBe('example');
 
-    const lintContext = buildContextForTest({
+    const checkContext = buildContextForTest({
       cwd: root,
       stdinIsTTY: false,
     });
     const bundleDirectory = join(policyDirectory, 'example-bundle');
-    await lint.call(
-      lintContext,
+    await check.call(
+      checkContext,
       {
         fix: false,
         noInteractive: true,
@@ -104,14 +104,14 @@ describe('policy init + new with pinned OPA and Regal', () => {
       runCapturedProcess,
     );
 
-    const lintResult = JSON.parse(lintContext.stdout);
-    expect(lintResult.status, JSON.stringify(lintResult, null, 2)).toBe('passed');
-    expect(lintResult.tools).toEqual({
+    const checkResult = JSON.parse(checkContext.stdout);
+    expect(checkResult.status, JSON.stringify(checkResult, null, 2)).toBe('passed');
+    expect(checkResult.tools).toEqual({
       opa: expect.stringMatching(/^\d+\.\d+\.\d+/u),
       regal: expect.stringMatching(/^\d+\.\d+\.\d+/u),
     });
-    expect(lintResult.unformattedFiles).toEqual([]);
-    expect(lintResult.checks).toEqual([
+    expect(checkResult.unformattedFiles).toEqual([]);
+    expect(checkResult.checks).toEqual([
       { name: 'manifest', status: 'passed' },
       { name: 'opa-version', status: 'passed' },
       { name: 'regal-version', status: 'passed' },

@@ -2,6 +2,7 @@ import { buildRouteMap } from '@stricli/core';
 
 import { activateCommand } from './activate/command.js';
 import { bundlesCommand } from './bundles/command.js';
+import { checkCommand } from './check/command.js';
 import { deactivateCommand } from './deactivate/command.js';
 import { downloadCommand } from './download/command.js';
 import { evalCommand } from './eval/command.js';
@@ -15,6 +16,7 @@ import { versionsCommand } from './versions/command.js';
 export const policyRoutes = buildRouteMap({
   routes: {
     activate: activateCommand,
+    check: checkCommand,
     deactivate: deactivateCommand,
     download: downloadCommand,
     eval: evalCommand,

@@ -17,7 +17,7 @@ export const initCommand = buildCommand({
     flags: {
       editor: {
         kind: 'boolean',
-        brief: 'Merge strict target-scoped VS Code settings, extensions, and lint task',
+        brief: 'Merge strict target-scoped VS Code settings, extensions, and check task',
         optional: true,
       },
       skill: {
