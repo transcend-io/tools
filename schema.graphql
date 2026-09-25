@@ -816,6 +816,7 @@ enum DatabaseModelName {
   AuditorScheduleAttributeValue
   WorkflowConfigDataSilo
   WorkflowConfigIdentifier
+  WorkflowConfigIngressDataSilo
   WorkflowConfigDataPoint
   WorkflowConfigCommunication
   WorkflowConfigEnricher
