@@ -1,9 +1,9 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 import { AbsoluteUrlString, UIConfiguration, URLHostString } from './consentUiConfiguration.js';
 import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
+import { LocaleCodec } from './locale.js';
 
 /**
  * Types representing the top-level consent UI configuration
@@ -101,7 +101,7 @@ const SharedLoadOptions = t.intersection([
     // if css is defined and cssFolder is not, CSS will be fetched from the css load option
     css: AbsoluteUrlString,
     // if message map is defined, it will be used to retrieve localized messages
-    messageMap: t.record(valuesOf(LOCALE_KEY), AbsoluteUrlString),
+    messageMap: t.record(LocaleCodec, AbsoluteUrlString),
     forceTheme: ThemeKey,
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,

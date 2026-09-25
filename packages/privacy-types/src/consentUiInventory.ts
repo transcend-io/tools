@@ -1,6 +1,7 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
+
+import { LocaleCodec } from './locale.js';
 
 /** Status of a consent UI variant */
 export const UiVariantStatus = {
@@ -40,7 +41,7 @@ export const ConsentVariantInput = t.intersection([
     /** Status of variant */
     status: valuesOf(UiVariantStatus),
     /** Locales of variant */
-    locales: t.array(valuesOf(LOCALE_KEY)),
+    locales: t.array(LocaleCodec),
     /** Configuration of variant */
     configuration: t.string,
   }),
