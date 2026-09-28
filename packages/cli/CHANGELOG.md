@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 13.0.4
+
+### Patch Changes
+
+- 325a9c5: Remove query-string in favor of URLSearchParams
+
 ## 13.0.3
 
 ### Patch Changes
