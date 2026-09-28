@@ -129,4 +129,11 @@ jobs:
       - name: Verify generated CLI files are up to date
         run: |
           pnpm --dir packages/cli genfiles
-          git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)
+          # Use porcelain status (not `git diff`) so new untracked major-version
+          # schema files like transcend-yml-schema-vN.json are detected too.
+          if [ -n "$(git status --porcelain -- packages/cli)" ]; then
+            git status --porcelain -- packages/cli
+            git diff -- packages/cli
+            echo "Detected git changes after regenerating CLI files"
+            exit 1
+          fi
