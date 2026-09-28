@@ -1,5 +1,11 @@
 # @transcend-io/mcp-ui-common
 
+## 0.0.3
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
 ## 0.0.2
 
 ### Patch Changes
