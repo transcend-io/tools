@@ -57,6 +57,7 @@
     "husky": "9.1.7",
     "oxfmt": "0.54.0",
     "oxlint": "1.69.0",
+    "pkg-pr-new": "0.0.88",
     "syncpack": "15.3.3",
     "tailwindcss": "4.3.3",
     "tsdown": "0.21.10",
