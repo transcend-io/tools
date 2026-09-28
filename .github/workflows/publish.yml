@@ -100,7 +100,7 @@ jobs:
         run: pnpm exec turbo run build --filter="@transcend-io/mcp..."
 
       - name: Regenerate MCP docs
-        run: pnpm --dir packages/mcp/mcp genfiles
+        run: pnpm --dir packages/mcp/mcp generate:sanity-sync
 
       - name: Sync and publish tool counts to Sanity
         id: sync_sanity
@@ -130,7 +130,7 @@ jobs:
             echo ""
             echo '```bash'
             echo 'export SANITY_API_TOKEN=...   # Editor token for project 1ievmmav'
-            echo 'pnpm --dir packages/mcp/mcp genfiles'
+            echo 'pnpm --dir packages/mcp/mcp generate:sanity-sync'
             echo 'pnpm --dir packages/mcp/mcp sync:sanity -- --publish'
             echo '```'
             echo ""

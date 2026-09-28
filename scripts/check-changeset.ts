@@ -72,7 +72,7 @@ const releaseRelevantPackageJsonKeys = [
   'type',
   'types',
 ] as const;
-const releaseRelevantPackageJsonScriptKeys = ['build', 'start'] as const;
+const releaseRelevantPackageJsonScriptKeys = ['build', 'generate', 'start'] as const;
 
 const baseRef = resolveChangesetBaseRef();
 
@@ -232,6 +232,9 @@ function isRelevantPackageChange(filePath: string, base: string): boolean {
     relativePath.endsWith('.test.tsx') ||
     relativePath.endsWith('.spec.ts') ||
     relativePath.endsWith('.spec.tsx') ||
+    // Generated output changes alongside its (changeset-covered) inputs, which may
+    // live in another package or be driven by `changeset version` itself.
+    isGeneratedFile(relativePath) ||
     // *.md files on package roots (e.g. README.md files)
     relativePath.split('/')[0]?.endsWith('.md')
   ) {
@@ -239,6 +242,10 @@ function isRelevantPackageChange(filePath: string, base: string): boolean {
   }
 
   return true;
+}
+
+function isGeneratedFile(relativePath: string): boolean {
+  return relativePath.split('/').includes('__generated__') || /\.gen\.[^/]+$/.test(relativePath);
 }
 
 function hasRelevantPackageJsonChange(filePath: string, base: string): boolean {

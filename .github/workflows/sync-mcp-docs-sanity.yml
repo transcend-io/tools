@@ -34,7 +34,7 @@ jobs:
         run: pnpm exec turbo run build --filter="@transcend-io/mcp..."
 
       - name: Regenerate MCP docs
-        run: pnpm --dir packages/mcp/mcp genfiles
+        run: pnpm --dir packages/mcp/mcp generate:sanity-sync
 
       - name: Sync tool counts to Sanity
         run: |

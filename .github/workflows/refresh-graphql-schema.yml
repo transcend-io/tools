@@ -35,7 +35,7 @@ jobs:
         # Run codegen so the resulting PR exposes any drift the new schema
         # introduces (TS errors, missing fields, etc.) rather than failing
         # silently downstream.
-        run: pnpm codegen
+        run: pnpm generate:root
 
       - name: Detect changes
         id: diff
@@ -65,7 +65,7 @@ jobs:
           commit-message: 'chore(MCP): Refresh staging GraphQL schema'
           title: 'chore(MCP): Refresh staging GraphQL schema'
           body: |
-            Automated refresh of schema, plus a re-run of `pnpm codegen`.
+            Automated refresh of schema, plus a re-run of `pnpm generate:root`.
 
             * If CI passes, this PR is safe to merge as-is.
             * If CI fails, the staging schema has drifted in a way that

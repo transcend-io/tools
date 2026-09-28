@@ -194,6 +194,7 @@ Update privacy types.
 
   it.each([
     ['build', 'tsdown --watch'],
+    ['generate', 'node scripts/generate.ts'],
     ['start', './dist/bin/alt-cli.mjs'],
   ])(
     'fails when package.json scripts.%s changes without a changeset',
@@ -215,6 +216,23 @@ Update privacy types.
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('No changeset was found');
       expect(result.stderr).toContain('@transcend-io/cli');
+    },
+  );
+
+  it.each(['packages/cli/src/__generated__/graphql.ts', 'packages/cli/src/schema.gen.json'])(
+    'ignores generated file %s',
+    (filePath) => {
+      const repository = createRepository({
+        packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+      });
+
+      writeRepositoryFile(repository.path, filePath, '{}\n');
+      commitAll(repository.path, 'regenerate files');
+
+      const result = runCheckChangeset(repository.path, repository.baseSha);
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
     },
   );
 

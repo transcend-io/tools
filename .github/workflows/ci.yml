@@ -62,6 +62,16 @@ jobs:
       - name: Check publish compatibility
         run: pnpm check:publint
 
+      - name: Check generated files are up to date
+        run: |
+          pnpm generate
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            git diff
+            echo "::error::Generated files are out of date. Run \`pnpm generate\` and commit the result."
+            exit 1
+          fi
+
   integration:
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -109,24 +119,3 @@ jobs:
         run: |
           test "$GLOBAL_CHECKS_RESULT" = "success"
           test "$INTEGRATION_RESULT" = "success"
-
-  cli:
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Bootstrap
-        uses: ./.github/commands/bootstrap
-
-      - name: Build
-        run: pnpm build
-
-      - name: Check package quality
-        run: pnpm quality
-
-      - name: Verify generated CLI files are up to date
-        run: |
-          pnpm --dir packages/cli genfiles
-          git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)

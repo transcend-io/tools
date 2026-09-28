@@ -46,7 +46,7 @@ jobs:
       # Only bother regenerating + typechecking when the schema drifted.
       - name: Regenerate codegen against live schema
         if: steps.drift.outputs.drifted == 'true'
-        run: pnpm codegen
+        run: pnpm generate:root
 
       - name: Typecheck MCP packages against live schema
         if: steps.drift.outputs.drifted == 'true'
