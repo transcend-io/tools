@@ -1,5 +1,13 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.48
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/privacy-types@6.3.1
+
 ## 14.2.47
 
 ### Patch Changes

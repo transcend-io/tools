@@ -1,5 +1,11 @@
 # @transcend-io/utils
 
+## 0.3.3
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
 ## 0.3.2
 
 ### Patch Changes

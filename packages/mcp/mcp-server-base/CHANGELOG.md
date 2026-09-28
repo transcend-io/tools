@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.4
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
 ## 2.5.3
 
 ### Patch Changes

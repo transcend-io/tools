@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.3.1
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
 ## 6.3.0
 
 ### Minor Changes
