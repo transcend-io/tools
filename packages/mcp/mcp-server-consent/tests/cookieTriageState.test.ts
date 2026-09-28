@@ -31,7 +31,8 @@ import {
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
 
-const recentActivityAt = '2026-08-26T17:22:08.000Z';
+/** Within the 30-day dormant window (relative so the fixture does not bitrot). */
+const recentActivityAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 const staleActivityAt = '2025-01-01T00:00:00.000Z';
 
 const analyticsCookies: CookieTriageAnalysis[] = [

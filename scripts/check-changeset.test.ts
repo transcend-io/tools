@@ -237,6 +237,65 @@ Update privacy types.
     expect(result.stderr).toBe('');
   });
 
+  it('ignores committed generated schema/ files', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+
+    writeRepositoryFile(
+      repository.path,
+      'packages/cli/schema/transcend-yml-schema-v13.json',
+      '{ "$id": "v13" }\n',
+    );
+    commitAll(repository.path, 'add major schema without changeset');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
+  it('allows Version Packages PRs that regenerate major-version schemas', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+
+    writeRepositoryFile(
+      repository.path,
+      '.changeset/cli.md',
+      `---
+"@transcend-io/cli": major
+---
+
+Breaking CLI change.
+`,
+    );
+    commitAll(repository.path, 'feature on main');
+
+    runGit(repository.path, ['checkout', '-b', 'changeset-release/main']);
+    rmSync(join(repository.path, '.changeset/cli.md'));
+    updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+      ...packageJson,
+      version: '2.0.0',
+    }));
+    writeRepositoryFile(
+      repository.path,
+      'packages/cli/CHANGELOG.md',
+      '## 2.0.0\n\n### Major Changes\n\n- Breaking CLI change.\n',
+    );
+    writeRepositoryFile(
+      repository.path,
+      'packages/cli/schema/transcend-yml-schema-v2.json',
+      '{ "$id": "v2" }\n',
+    );
+    commitAll(repository.path, 'Version Packages');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
   it('ignores a stale CHANGESET_BASE_SHA when HEAD is a merge commit', () => {
     const repository = createRepository({
       packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
