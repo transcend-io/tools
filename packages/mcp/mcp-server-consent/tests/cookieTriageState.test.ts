@@ -31,7 +31,8 @@ import {
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
 
-const recentActivityAt = '2026-08-26T17:22:08.000Z';
+// Keep "recent" relative to now so the 30-day dormancy threshold does not flake.
+const recentActivityAt = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const staleActivityAt = '2025-01-01T00:00:00.000Z';
 
 const analyticsCookies: CookieTriageAnalysis[] = [
