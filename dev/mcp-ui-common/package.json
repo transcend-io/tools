@@ -16,7 +16,7 @@
     "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
   },
   "dependencies": {
-    "@transcend-io/type-utils": "workspace:*"
+    "@transcend-io/type-utils": "workspace:^"
   },
   "devDependencies": {
     "@modelcontextprotocol/ext-apps": "catalog:",

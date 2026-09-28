@@ -34,11 +34,11 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/airgap.js-types": "workspace:*",
-    "@transcend-io/internationalization": "workspace:*",
-    "@transcend-io/privacy-types": "workspace:*",
-    "@transcend-io/type-utils": "workspace:*",
-    "@transcend-io/utils": "workspace:*",
+    "@transcend-io/airgap.js-types": "workspace:^",
+    "@transcend-io/internationalization": "workspace:^",
+    "@transcend-io/privacy-types": "workspace:^",
+    "@transcend-io/type-utils": "workspace:^",
+    "@transcend-io/utils": "workspace:^",
     "fp-ts": "^2.16.1",
     "got": "^15.0.0",
     "graphql": "catalog:",

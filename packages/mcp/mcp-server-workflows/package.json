@@ -39,8 +39,8 @@
   "dependencies": {
     "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-server-base": "workspace:*",
-    "@transcend-io/privacy-types": "workspace:*",
+    "@transcend-io/mcp-server-base": "workspace:^",
+    "@transcend-io/privacy-types": "workspace:^",
     "graphql": "catalog:",
     "zod": "catalog:"
   },

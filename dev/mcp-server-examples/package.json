@@ -26,7 +26,7 @@
     "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
   },
   "dependencies": {
-    "@transcend-io/mcp-server-base": "workspace:*"
+    "@transcend-io/mcp-server-base": "workspace:^"
   },
   "devDependencies": {
     "@modelcontextprotocol/ext-apps": "catalog:",

@@ -11,5 +11,19 @@
       "dependencyTypes": ["prod", "peer"],
       "range": "^"
     }
+  ],
+  "versionGroups": [
+    {
+      "label": "Use caret versions for prod and peer dependencies on workspace packages",
+      "dependencyTypes": ["prod", "peer"],
+      "specifierTypes": ["workspace-protocol"],
+      "pinVersion": "workspace:^"
+    },
+    {
+      "label": "Use exact versions for dev dependencies on workspace packages",
+      "dependencyTypes": ["dev"],
+      "specifierTypes": ["workspace-protocol"],
+      "pinVersion": "workspace:*"
+    }
   ]
 }
