@@ -38,19 +38,19 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/internationalization": "workspace:*",
-    "@transcend-io/privacy-types": "workspace:*",
-    "@transcend-io/type-utils": "workspace:*",
+    "@transcend-io/internationalization": "workspace:^",
+    "@transcend-io/privacy-types": "workspace:^",
+    "@transcend-io/type-utils": "workspace:^",
     "fp-ts": "^2.16.1",
     "io-ts": "^2.2.21"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
-    "@types/node": "catalog:",
-    "publint": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@arethetypeswrong/cli": "0.18.3",
+    "@types/node": "24.13.3",
+    "publint": "0.3.21",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=22.12.0"

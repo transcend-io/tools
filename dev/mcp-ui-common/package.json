@@ -16,20 +16,20 @@
     "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
   },
   "dependencies": {
-    "@transcend-io/type-utils": "workspace:*"
+    "@transcend-io/type-utils": "workspace:^"
   },
   "devDependencies": {
-    "@modelcontextprotocol/ext-apps": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "typescript": "catalog:"
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "6.0.3"
   },
   "peerDependencies": {
-    "@modelcontextprotocol/ext-apps": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:"
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "peerDependenciesMeta": {
     "@modelcontextprotocol/ext-apps": {

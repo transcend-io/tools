@@ -1,6 +1,10 @@
+import { subDays, subMilliseconds } from 'date-fns';
 import { describe, expect, it } from 'vitest';
 
-import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
+import {
+  COOKIE_TRIAGE_DORMANT_MS,
+  CookieTriagePurposeCategory,
+} from '../src/lib/cookieTriageConfig.js';
 import {
   ConsentTriageType,
   CookieTriageDecision,
@@ -31,9 +35,12 @@ import {
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
 
-/** Within the 30-day dormant window (relative so the fixture does not bitrot). */
-const recentActivityAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-const staleActivityAt = '2025-01-01T00:00:00.000Z';
+const testStartedAt = new Date();
+const recentActivityAt = subDays(testStartedAt, 1).toISOString();
+const staleActivityAt = subMilliseconds(
+  subDays(testStartedAt, 1),
+  COOKIE_TRIAGE_DORMANT_MS,
+).toISOString();
 
 const analyticsCookies: CookieTriageAnalysis[] = [
   {
