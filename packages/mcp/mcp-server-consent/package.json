@@ -40,30 +40,30 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "catalog:",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@transcend-io/mcp-server-base": "workspace:^",
     "@transcend-io/privacy-types": "workspace:^",
     "@transcend-io/sdk": "workspace:^",
     "@transcend-io/type-utils": "workspace:^",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
-    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@arethetypeswrong/cli": "0.18.3",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
     "@transcend-io/design-tokens": "workspace:*",
     "@transcend-io/mcp-ui-common": "workspace:*",
-    "@types/node": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "date-fns": "catalog:",
-    "publint": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "tailwindcss": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "date-fns": "4.4.0",
+    "publint": "0.3.21",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.3.3",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vite": "8.0.16",
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=22.12.0"

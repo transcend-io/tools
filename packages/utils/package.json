@@ -41,13 +41,13 @@
     "fast-csv": "^5.0.0"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
+    "@arethetypeswrong/cli": "0.18.3",
     "@types/bluebird": "3.5.42",
-    "@types/node": "catalog:",
-    "publint": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/node": "24.13.3",
+    "publint": "0.3.21",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=22.12.0"

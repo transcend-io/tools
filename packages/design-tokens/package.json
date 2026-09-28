@@ -49,18 +49,18 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
-    "@terrazzo/cli": "catalog:",
-    "@terrazzo/plugin-css": "catalog:",
-    "@types/lodash": "catalog:",
-    "@types/node": "catalog:",
-    "colorjs.io": "catalog:",
-    "lodash": "catalog:",
-    "oxfmt": "catalog:",
-    "publint": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@arethetypeswrong/cli": "0.18.3",
+    "@terrazzo/cli": "2.0.3",
+    "@terrazzo/plugin-css": "2.0.3",
+    "@types/lodash": "4.14.202",
+    "@types/node": "24.13.3",
+    "colorjs.io": "0.6.1",
+    "lodash": "4.18.1",
+    "oxfmt": "0.54.0",
+    "publint": "0.3.21",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=22.12.0"

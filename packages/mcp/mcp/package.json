@@ -40,7 +40,7 @@
     "sync:sanity": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/syncMcpGuideToSanity.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "catalog:",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@transcend-io/mcp-server-admin": "workspace:^",
     "@transcend-io/mcp-server-assessment": "workspace:^",
     "@transcend-io/mcp-server-base": "workspace:^",
@@ -53,18 +53,18 @@
     "@transcend-io/mcp-server-policy": "workspace:^",
     "@transcend-io/mcp-server-preferences": "workspace:^",
     "@transcend-io/mcp-server-workflows": "workspace:^",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
+    "@arethetypeswrong/cli": "0.18.3",
     "@sanity/client": "7.6.0",
     "@transcend-io/privacy-types": "workspace:*",
-    "@types/node": "catalog:",
-    "publint": "catalog:",
-    "tsdown": "catalog:",
+    "@types/node": "24.13.3",
+    "publint": "0.3.21",
+    "tsdown": "0.21.10",
     "tsx": "4.22.4",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=22.12.0"

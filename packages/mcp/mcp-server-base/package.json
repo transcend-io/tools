@@ -44,35 +44,35 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@graphql-typed-document-node/core": "catalog:",
-    "@modelcontextprotocol/sdk": "catalog:",
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@transcend-io/type-utils": "workspace:^",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "graphql": "catalog:",
+    "graphql": "^16.14.2",
     "open": "^11.0.0",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
-    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@arethetypeswrong/cli": "0.18.3",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
     "@transcend-io/design-tokens": "workspace:*",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
-    "@types/node": "catalog:",
-    "@types/react": "catalog:",
-    "publint": "catalog:",
-    "react": "catalog:",
-    "tailwindcss": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "publint": "0.3.21",
+    "react": "19.2.8",
+    "tailwindcss": "4.3.3",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
   },
   "peerDependencies": {
-    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@transcend-io/design-tokens": "workspace:^",
-    "react": "catalog:",
-    "tailwindcss": "catalog:"
+    "react": "^19.2.8",
+    "tailwindcss": "^4.3.3"
   },
   "peerDependenciesMeta": {
     "@modelcontextprotocol/ext-apps": {
