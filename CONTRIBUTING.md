@@ -61,7 +61,7 @@ Additional checks:
 Release and maintenance:
 
 - `pnpm changeset:version`: apply pending changesets to versions and changelogs
-- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm changeset:version:release`: apply pending changesets, regenerate CLI `transcend.yml` JSON schemas (so major bumps create `schema/transcend-yml-schema-vN.json`), and reformat the repo
 - `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
@@ -120,6 +120,7 @@ Add a changeset when changes to a package under `packages/` would require a new 
 - package `README.md` changes
 - test files
 - generated `dist/` output
+- committed generated `schema/` files (e.g. CLI `transcend.yml` JSON schemas)
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
