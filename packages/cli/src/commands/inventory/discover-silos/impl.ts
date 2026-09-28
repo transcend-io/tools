@@ -4,7 +4,6 @@ import {
   uploadSiloDiscoveryResults,
 } from '@transcend-io/sdk';
 import colors from 'colors';
-import { stringify } from 'query-string';
 
 import { ADMIN_DASH } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
@@ -60,9 +59,12 @@ export async function discoverSilos(
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/data-map/data-inventory/silo-discovery/triage';
-  newUrl.search = stringify({
-    filters: JSON.stringify({ pluginIds: [plugin.id] }),
-  });
+  newUrl.searchParams.set(
+    'filters',
+    JSON.stringify({
+      pluginIds: [plugin.id],
+    }),
+  );
 
   // Indicate success
   this.logger.info(
