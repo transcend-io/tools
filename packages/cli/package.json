@@ -146,7 +146,7 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/yargs-parser": "21.0.3",
-    "date-fns": "4.4.0",
+    "date-fns": "catalog:",
     "doctoc": "2.5.0",
     "fdir": "6.5.0",
     "publint": "catalog:",

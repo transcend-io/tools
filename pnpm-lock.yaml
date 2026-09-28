@@ -63,6 +63,9 @@ catalogs:
     colorjs.io:
       specifier: 0.6.1
       version: 0.6.1
+    date-fns:
+      specifier: 4.4.0
+      version: 4.4.0
     diff:
       specifier: ^9.0.0
       version: 9.0.0
@@ -505,7 +508,7 @@ importers:
         specifier: 21.0.3
         version: 21.0.3
       date-fns:
-        specifier: 4.4.0
+        specifier: 'catalog:'
         version: 4.4.0
       doctoc:
         specifier: 2.5.0
@@ -878,6 +881,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.4(@types/react@19.2.18)
+      date-fns:
+        specifier: 'catalog:'
+        version: 4.4.0
       publint:
         specifier: 'catalog:'
         version: 0.3.21
