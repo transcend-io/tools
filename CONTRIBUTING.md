@@ -93,6 +93,7 @@ Stable releases are driven by Changesets, the [Version workflow](.github/workflo
    In a release PR:
    - Each changeset file (at `.changeset/*.md`) is turned into a change entry in each package's `CHANGELOG.md` file, and the changeset file is deleted.
    - Package versions are bumped accordingly.
+   - The CLI `transcend.yml` JSON schema is regenerated so a new major (e.g. `transcend-yml-schema-v13.json`) is created when `@transcend-io/cli` bumps major — that only happens here, not in feature PRs.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
 3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.

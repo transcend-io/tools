@@ -27,7 +27,7 @@
     "check:publint": "turbo run check:publint",
     "check:deps": "turbo run check:deps check:deps:root",
     "changeset:version": "changeset version",
-    "changeset:version:release": "changeset version && pnpm format:root",
+    "changeset:version:release": "changeset version && pnpm --dir packages/cli script:transcend-json-schema && pnpm format:root",
     "release": "turbo run build && changeset publish",
     "test:root": "vitest run --dir scripts",
     "typecheck:root": "tsc -p scripts/tsconfig.json --noEmit",

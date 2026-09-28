@@ -82,7 +82,9 @@ This will generate the README.md file from the command documentation and the `sr
 pnpm -F cli script:transcend-json-schema
 ```
 
-This command generates the `transcend.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+This command generates the `transcend.yml` JSON schema files in `schema/` (both `latest` and the current major, e.g. `transcend-yml-schema-v13.json`). They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+
+When `@transcend-io/cli` bumps major, the new versioned schema file is created automatically by the Version Packages PR (`pnpm changeset:version:release`), because that is when the package version (and thus the major used in the filename) actually changes.
 
 ### Permissions API OPA input schema
 
