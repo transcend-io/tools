@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 13.0.3
+
+### Patch Changes
+
+- dea8763: Add integration owner-approval action item codes (`RequestDataSiloNeedsApproval` / `RequestDataSiloNeedsApprovalAssigned`) and an `ApproveAssignedIntegrationRequests` scope so assigned owners can approve or reject privacy request processing for their integrations without needing broader Manage Assigned Integrations access. Regenerate the CLI `transcend.yml` JSON schema so the new codes and scope are reflected.
+- Updated dependencies [dea8763]
+  - @transcend-io/privacy-types@6.4.0
+
 ## 13.0.2
 
 ### Patch Changes
