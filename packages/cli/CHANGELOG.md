@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 13.0.1
+
+### Patch Changes
+
+- 7140d27: Add the missing `transcend.yml` JSON schema for CLI v13. Version Packages now regenerates that versioned schema when the CLI major bumps.
+
 ## 13.0.0
 
 ### Major Changes
