@@ -85,6 +85,16 @@ export enum ActionItemCode {
    */
   RequestDataSiloError = 'REQUEST_DATA_SILO_ERROR',
   /**
+   * - A privacy request is waiting on approval before an integration processes it,
+   *   and the integration has no assigned owners
+   */
+  RequestDataSiloNeedsApproval = 'REQUEST_DATA_SILO_NEEDS_APPROVAL',
+  /**
+   * - A privacy request is waiting on approval before an integration processes it,
+   *   and the integration has one or more assigned owners (users or teams)
+   */
+  RequestDataSiloNeedsApprovalAssigned = 'REQUEST_DATA_SILO_NEEDS_APPROVAL_ASSIGNED',
+  /**
    * - enricher that has an error
    */
   RequestEnricherError = 'REQUEST_ENRICHER_ERROR',

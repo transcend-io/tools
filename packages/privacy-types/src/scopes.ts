@@ -27,6 +27,7 @@ export enum ScopeName {
   ManageBilling = 'manageBilling',
   ManageDataMap = 'manageDataMap',
   ManageAssignedIntegrations = 'managedAssignedIntegrations',
+  ApproveAssignedIntegrationRequests = 'approveAssignedIntegrationRequests',
   ManageAssignedDataInventory = 'managedAssignedDataInventory',
   ManageAssignedConsentManager = 'managedAssignedConsentManager',
   ManageAssignedRequests = 'managedAssignedRequests',
@@ -647,6 +648,14 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.SiloDiscovery,
       TranscendProduct.UnstructuredDiscovery,
     ],
+  },
+  [ScopeName.ApproveAssignedIntegrationRequests]: {
+    dependencies: [ScopeName.ViewAssignedIntegrations],
+    description:
+      'Approve or reject privacy request processing for integrations assigned to you or your team, when the integration requires owner approval.',
+    title: 'Approve Requests for Assigned Integrations',
+    type: ScopeType.Modify,
+    products: [TranscendProduct.DsrAutomation],
   },
   [ScopeName.ViewDataMap]: {
     dependencies: [ScopeName.ViewGlobalAttributes],
