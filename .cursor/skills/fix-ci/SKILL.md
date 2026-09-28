@@ -33,7 +33,7 @@ Last Edited: July 8, 2026
 | `Build`                     | Fix build errors; build affected packages in dependency order           |
 | `Check package quality`     | Fix `pnpm quality` / `quality:fix` failures                             |
 | `Check exports` / `publint` | Fix export map / publish compatibility issues                           |
-| CLI genfiles drift          | Regenerate with `pnpm --dir packages/cli genfiles` and commit           |
+| Generated files drift       | Regenerate with `pnpm generate` and commit                              |
 | Multiple failures           | Handle ALL in one efficient pass                                        |
 
 ## Git Command Rules
@@ -186,11 +186,11 @@ pnpm check:publint
 pnpm quality
 ```
 
-#### CLI Genfiles Drift (`CI / cli` job)
+#### Generated Files Drift (`CI / global` job, "Check generated files are up to date" step)
 
 ```bash
-pnpm --dir packages/cli genfiles
-tools-git diff --stat
+pnpm generate
+tools-git status --short
 # Commit regenerated files if dirty
 ```
 
@@ -222,7 +222,7 @@ Use git history when helpful: `tools-git log --oneline -20 -- path/to/failing.te
 3. Type errors
 4. Test failures
 5. Build / exports / publint issues
-6. CLI genfiles regeneration
+6. Generated files regeneration
 
 #### Fix Guidelines
 
@@ -325,7 +325,7 @@ After fixing, add a short note to the PR body or a comment:
 | Depcheck / syncpack failures   | Version mismatch       | Align catalog / package.json              |
 | Build / typecheck fails        | Compile error          | Fix TypeScript errors                     |
 | Exports / publint fails        | Bad package exports    | Fix `package.json` exports                |
-| CLI genfiles drift             | Stale generated CLI    | `pnpm --dir packages/cli genfiles`        |
+| Generated files drift          | Stale generated CLI    | `pnpm generate`                           |
 | **Job also failing on `main`** | Pre-existing failure   | Alert user — fix in a separate PR vs main |
 
 ## Related Skills/Rules

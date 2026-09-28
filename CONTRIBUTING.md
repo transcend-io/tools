@@ -39,6 +39,7 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 
 - `pnpm build`: build workspace packages with `tsdown`
 - `pnpm test`: run package tests with Vitest
+- `pnpm generate`: regenerate generated files across the repo (see [Generated Files](#generated-files))
 - `pnpm quality`: run repo-wide verification checks and typecheck
 - `pnpm quality:fix`: auto-fix formatting and lint issues where possible, then run the remaining quality checks
 - `pnpm changeset`: create a changeset file
@@ -61,7 +62,7 @@ Additional checks:
 Release and maintenance:
 
 - `pnpm changeset:version`: apply pending changesets to versions and changelogs
-- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm changeset:version:release`: apply pending changesets, regenerate generated files (some depend on package versions), and reformat the repo
 - `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
@@ -120,6 +121,7 @@ Add a changeset when changes to a package under `packages/` would require a new 
 - package `README.md` changes
 - test files
 - generated `dist/` output
+- generated files under `__generated__/` or named `*.gen.*` (the change that caused them carries the changeset)
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
@@ -143,6 +145,25 @@ version correctly but fail at publish time.
 
 `publish.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
 release path.
+
+## Generated Files
+
+Every package that generates files does so from a `generate` script in its `package.json`. The repo-level GraphQL codegen is `generate:root`. When a package generates more than one artifact, each gets its own `generate:<artifact>` script and `generate` runs them all.
+
+Turbo runs `generate` (and `generate:root`) before `build`, `typecheck`, and `test`, so you rarely need to run it by hand. To regenerate everything:
+
+```bash
+pnpm generate
+```
+
+Conventions:
+
+- Put generated output in a `__generated__/` directory. These are gitignored, so they never need to be reviewed or kept in sync by hand.
+- A generated file that has to sit next to hand-written source can use a `.gen.` infix instead (for example, `routes.gen.ts`).
+- Only commit generated files when something outside this repo reads them from GitHub. Today that is the `@transcend-io/cli` `README.md` and `packages/cli/schema/*.json`, whose raw GitHub URLs are referenced by SchemaStore and customer `transcend.yml` files, so those paths must not move.
+- `.vscode/settings.json` marks `__generated__/`, `*.gen.*`, and `packages/cli/schema/` as read-only in the editor.
+
+CI's "Check generated files are up to date" step runs `pnpm generate` and fails if it changes or adds any tracked file. If it fails, run `pnpm generate` and commit the result.
 
 ## Turborepo
 
@@ -186,8 +207,7 @@ Guidelines:
 On pull requests, GitHub Actions runs:
 
 - **`CI`**:
-  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
-  - `CI / <package-name>` jobs: some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
+  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands, and checks that [generated files](#generated-files) are up to date.
 - **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
 ### Fresh Approvals Are Required
@@ -365,19 +385,19 @@ Every MCP server's GraphQL operations are validated against the committed schema
 
 - Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the staging schema fails `tsc` rather than surfacing as a runtime error.
 - The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` (or let the scheduled `Refresh GraphQL Schema` workflow do it daily) and let CI flag any tools that break against the new shape.
-- After editing operations, run `pnpm codegen` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
+- After editing operations, run `pnpm generate:root` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
 
 ### Updating `schema.graphql`
 
 `schema.graphql` is a committed snapshot of the staging GraphQL schema (`api.staging.transcen.dental`). It is the offline source of truth so local and CI builds stay hermetic. Refresh it when:
 
 - Staging adds or removes a type/field that an MCP tool needs to consume.
-- A failing `pnpm codegen` traces back to a missing schema element.
+- A failing `pnpm generate:root` traces back to a missing schema element.
 
 To refresh:
 
 1. Run `pnpm graphql:refresh-schema`. The script anonymously introspects staging, strips type/field descriptions (so internal prose never lands in this public repo), and writes `schema.graphql`. No API key or extra tooling is required.
-2. Run `pnpm codegen && pnpm typecheck` to confirm the new shape works for every operation, then commit `schema.graphql` alongside any operation/test updates.
+2. Run `pnpm generate:root && pnpm typecheck` to confirm the new shape works for every operation, then commit `schema.graphql` alongside any operation/test updates.
 
 The scheduled `.github/workflows/refresh-graphql-schema.yml` workflow runs the same command weekly and opens a PR — let CI on that PR be your gate. Manual refreshes (e.g., when developing against a feature schema before it lands in staging) are fine; just make sure the resulting `pnpm typecheck` is green before pushing.
 

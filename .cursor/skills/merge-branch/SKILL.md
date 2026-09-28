@@ -127,9 +127,9 @@ For each conflict, classify it:
    - `pnpm install` to regenerate with both changes
    - `tools-git add pnpm-lock.yaml`
 
-2. **Generated files** (CLI genfiles, compiled assets, GraphQL codegen):
+2. **Generated files** (CLI README and schemas, compiled assets, GraphQL codegen):
    - `tools-git checkout --theirs path/to/generated/file`
-   - Re-run generation command if needed (e.g. `pnpm --dir packages/cli genfiles`, `pnpm codegen`)
+   - Re-run generation command if needed (e.g. `pnpm generate`, `pnpm generate:root`)
    - `tools-git add path/to/generated/file`
 
 3. **Whitespace/formatting only**:

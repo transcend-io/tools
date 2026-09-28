@@ -15,12 +15,12 @@ artifacts in the same change. Do not leave README or schema stale.
   `docs.brief` / `docs.fullDescription`)
 - Shared parameter objects typed as `TypedFlagParameter` / `TypedPositionalParameter`
   (and factories that return them)
-- `readme.ts` files and other docgen inputs described in `packages/cli/DEVELOPERS.md`
+- `readme.ts` files and other README generation inputs described in `packages/cli/DEVELOPERS.md`
 
 ## Action
 
-- README only: `pnpm -F cli docgen`
-- README + `transcend.yml` schema: `pnpm -F cli genfiles`
+- README only: `pnpm -F cli generate:readme`
+- README + `transcend.yml` schema: `pnpm -F cli generate`
 
 See **Generated files** in `packages/cli/DEVELOPERS.md`. Commit regenerated files with the
 command/parameter change.

@@ -65,13 +65,13 @@ For more information on the commands and routings, see [the Stricli documentatio
 To just regenerate them all:
 
 ```bash
-pnpm -F cli genfiles
+pnpm -F cli generate
 ```
 
 ### README.md
 
 ```bash
-pnpm -F cli docgen
+pnpm -F cli generate:readme
 ```
 
 This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For required positionals (e.g. a `<bundle>` directory), pass `positionals` on each example. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
@@ -79,15 +79,15 @@ This will generate the README.md file from the command documentation and the `sr
 ### transcend.yml JSON schema
 
 ```bash
-pnpm -F cli script:transcend-json-schema
+pnpm -F cli generate:transcend-yml-schema
 ```
 
-This command generates the `transcend.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+This command generates the `transcend.yml` JSON schema files in `schema/`, including one per CLI major version (so it also runs as part of the Version Packages PR). They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
 
 ### Permissions API OPA input schema
 
 ```bash
-pnpm -F cli script:permissions-policy-input-schema
+pnpm -F cli generate:permissions-policy-input-schema
 ```
 
 This command regenerates `schema/permissions-policy-input.json` from the

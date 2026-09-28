@@ -17,5 +17,11 @@
    */
   "prettier.enable": false,
   "eslint.enable": false,
-  "js/ts.tsdk.path": "node_modules/typescript/lib"
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  // Regenerate these with `pnpm generate` instead of editing them. See "Generated Files" in CONTRIBUTING.md.
+  "files.readonlyInclude": {
+    "**/*.gen.*": true,
+    "**/__generated__/**": true,
+    "packages/cli/schema/**": true
+  }
 }
