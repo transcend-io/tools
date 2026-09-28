@@ -199,7 +199,7 @@ describe('package conventions', () => {
         // Conditions mirror the `.` entry above: consumers read the built
         // stylesheet, builds inside this monorepo read source.
         expect(manifest.exports?.['./tokens.css']).toEqual({
-          '@transcend-io/source': './src/tokens.css',
+          '@transcend-io/source': './src/__generated__/tokens.css',
           default: './dist/tokens.css',
         });
         // Raw DTCG JSON is published alongside generated artifacts so consumers
@@ -436,7 +436,7 @@ function packageHasIntegrationTests(directory: string): boolean {
  */
 function buildsMcpAppView(directory: string): boolean {
   const manifest = readJsonFile<PackageManifest>(`${directory}/package.json`);
-  return manifest.scripts?.['build:ui'] !== undefined;
+  return manifest.scripts?.generate?.includes('build-mcp-views') === true;
 }
 
 /**

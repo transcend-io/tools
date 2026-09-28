@@ -2,7 +2,7 @@
  * Writes docs/mcp-guide-sync.json for Sanity sync (gitignored).
  * Generated on release / docs-sync workflows — not committed to the repo.
  *
- * Run via: pnpm --dir packages/mcp/mcp genfiles
+ * Run via: pnpm --dir packages/mcp/mcp generate:sanity-sync
  */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';

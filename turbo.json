@@ -22,15 +22,19 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "//#codegen"],
+      "dependsOn": ["^build", "//#generate:root", "generate"],
       "outputs": ["dist/**"]
     },
+    "generate": {
+      "dependsOn": ["^generate"],
+      "outputs": ["src/**/__generated__/**"]
+    },
     "test": {
-      "dependsOn": ["transit", "//#codegen"],
+      "dependsOn": ["transit", "//#generate:root", "generate"],
       "outputs": []
     },
     "test:integration": {
-      "dependsOn": ["transit", "//#codegen"],
+      "dependsOn": ["transit", "//#generate:root", "generate"],
       "cache": false,
       "outputs": []
     },
@@ -59,14 +63,14 @@
       "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root", "quality:checks"]
     },
     "typecheck": {
-      "dependsOn": ["transit", "//#codegen"],
+      "dependsOn": ["transit", "//#generate:root", "generate"],
       "outputs": []
     },
     "typecheck:ui": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "generate"],
       "outputs": []
     },
-    "//#codegen": {
+    "//#generate:root": {
       "inputs": [
         "codegen.ts",
         "schema.graphql",
@@ -104,11 +108,11 @@
       "persistent": true
     },
     "//#test:root": {
-      "dependsOn": ["//#codegen"],
+      "dependsOn": ["//#generate:root"],
       "outputs": []
     },
     "//#typecheck:root": {
-      "dependsOn": ["//#codegen"],
+      "dependsOn": ["//#generate:root"],
       "outputs": []
     },
     "//#lint:root": {},
@@ -121,60 +125,36 @@
     "//#format:check:root": {},
     "//#check:packages": {},
     "//#check:deps:root": {},
-    "@transcend-io/mcp-server-examples#build": {
-      "dependsOn": ["^build", "//#codegen"],
-      "outputs": ["dist/**", "src/ui/generated/**"]
-    },
-    "@transcend-io/mcp-server-examples#test": {
-      "dependsOn": ["build"],
-      "outputs": []
-    },
-    "@transcend-io/mcp-server-consent#build": {
-      "dependsOn": ["^build", "//#codegen"],
-      "outputs": ["dist/**", "src/ui/generated/**"]
-    },
-    "@transcend-io/mcp-server-consent#test": {
-      "dependsOn": ["build"],
-      "outputs": []
-    },
     "@transcend-io/mcp#typecheck": {
-      "dependsOn": ["^build", "//#codegen"],
+      "dependsOn": ["^build", "//#generate:root"],
       "outputs": []
     },
     "@transcend-io/mcp#test": {
-      "dependsOn": ["^build", "//#codegen"],
+      "dependsOn": ["^build", "//#generate:root"],
       "outputs": []
     },
     "@transcend-io/design-tokens#build": {
-      "dependsOn": ["^build"],
-      "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts"],
-      "outputs": [
-        "dist/**",
-        "src/primitive/**",
-        "src/semantic/**",
-        "src/index.ts",
-        "src/tokens.css"
-      ]
+      "dependsOn": ["^build", "generate"],
+      "inputs": ["src/**", "tokens/**", "package.json", "tsdown.config.ts"],
+      "outputs": ["dist/**"]
     },
     "@transcend-io/design-tokens#test": {
       "dependsOn": ["build"],
       "outputs": []
     },
-    "@transcend-io/design-tokens#typecheck": {
-      "dependsOn": ["build"],
-      "outputs": []
+    "@transcend-io/design-tokens#generate": {
+      "dependsOn": ["^generate"],
+      "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts", "package.json"],
+      "outputs": ["src/__generated__/**"]
     },
-    "@transcend-io/custom-function-types#build": {
-      "dependsOn": ["^build"],
-      "inputs": [
-        "scripts/**",
-        "src/**",
-        "!src/__generated__/**",
-        "package.json",
-        "tsconfig.json",
-        "tsdown.config.ts"
-      ],
-      "outputs": ["dist/**", "src/__generated__/**"]
+    "@transcend-io/custom-function-types#generate": {
+      "dependsOn": ["^generate"],
+      "inputs": ["scripts/**", "src/**", "!src/__generated__/**", "package.json", "tsconfig.json"],
+      "outputs": ["src/__generated__/**"]
+    },
+    "@transcend-io/cli#generate": {
+      "dependsOn": ["^generate"],
+      "outputs": ["README.md", "schema/**"]
     },
     "@transcend-io/cli#quality:checks": {
       "dependsOn": [

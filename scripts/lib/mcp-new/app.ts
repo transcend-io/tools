@@ -37,8 +37,7 @@ function viewScripts(toRepoRoot: string): {
   const buildViews = `node ${toRepoRoot}/scripts/build-mcp-views.ts`;
 
   return [
-    { name: 'prebuild', anchor: { before: 'build' }, value: buildViews },
-    { name: 'build:ui', anchor: { after: 'build' }, value: buildViews },
+    { name: 'generate', anchor: { after: 'build' }, value: buildViews },
     {
       name: 'typecheck:ui',
       anchor: { after: 'typecheck' },
@@ -123,10 +122,10 @@ function resourceSource(view: string, constant: string, uri: string): string {
   type UiResourceDefinition,
 } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/${view}/ by this package's \`prebuild\` and inlined here as a
+// Built from src/ui/${view}/ by this package's \`generate\` script and inlined here as a
 // string by tsdown's \`.html\` text loader. Self-contained, because hosts render a
 // view in a sandboxed iframe with no server to fetch anything from.
-import ${constant}_HTML from '../ui/generated/${view}.html';
+import ${constant}_HTML from '../ui/__generated__/${view}.html';
 
 /** URI hosts fetch to render the ${view} view. */
 export const ${constant}_URI = '${uri}';
@@ -293,7 +292,7 @@ function wirePackageFiles(pkg: McpPackage): void {
           $schema: 'https://json.schemastore.org/tsconfig',
           extends: `${pathToRepoRoot(pkg.dir)}/tsconfig.ui.base.json`,
           include: ['src/ui/**/*.ts', 'src/ui/**/*.tsx'],
-          exclude: ['src/ui/generated/**'],
+          exclude: ['src/ui/__generated__/**'],
         },
         null,
         2,
@@ -338,7 +337,7 @@ export function scaffoldApp(pkg: McpPackage, names: ArtifactNames): ScaffoldResu
   const manifestChanged = wirePackageManifest(pkg);
 
   const notes = [
-    `Then: pnpm --filter ${pkg.name} build:ui, and pnpm mcp:inspect ${shortName} to iterate on it.`,
+    `Then: pnpm --filter ${pkg.name} generate, and pnpm mcp:inspect ${shortName} to iterate on it.`,
   ];
   if (!hadViews) {
     notes.push(`This is ${pkg.name}'s first view, so its package-level wiring was added too.`);

@@ -23,7 +23,7 @@ const VIEWS_DIR = path.join('src', 'ui');
  * Inside `src/` rather than `dist/` because tsdown cleans `dist/` and then
  * inlines these documents as strings. Gitignored.
  */
-export const MCP_APP_OUT_DIR = path.join('src', 'ui', 'generated');
+export const MCP_APP_OUT_DIR = path.join('src', 'ui', '__generated__');
 
 /**
  * Names {@link synthesizeMcpAppViews} serves from inside each view directory.
@@ -332,7 +332,7 @@ export function mcpAppResolve(): NonNullable<UserConfig['resolve']> {
       ),
       '@transcend-io/design-tokens/tokens.css': path.join(
         repoRoot,
-        'packages/design-tokens/src/tokens.css',
+        'packages/design-tokens/src/__generated__/tokens.css',
       ),
     },
     // Resolve workspace packages to their TypeScript source, as tsdown and

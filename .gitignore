@@ -10,13 +10,10 @@ node_modules
 .worktrees
 secret.env
 
-# Codegen output. The schema.graphql at the repo root is the offline source
-# of truth (committed); the per-package generated TS lives under __generated__/
-# and is rebuilt on every `pnpm codegen`/`pnpm typecheck`/`pnpm build`.
+# Generated output. The schema.graphql at the repo root is the offline source
+# of truth for GraphQL codegen (committed); generated files live under __generated__/
+# and is rebuilt by `pnpm generate` (which Turbo runs before build/typecheck/test).
 **/__generated__/
-
-# Vite-built MCP App views, rebuilt by `pnpm prebuild` / `pnpm build:ui`.
-**/src/ui/generated/
 
 # MCP docs sync payload — generated on release / Sanity sync workflows, not committed.
 packages/mcp/mcp/docs/mcp-guide-sync.json

@@ -172,11 +172,9 @@ describe('app kind', () => {
     const pkg = fakePackage({ build: 'tsdown', typecheck: 'tsc' });
     scaffoldApp(pkg, deriveNames(pkg, 'usage-chart'));
 
-    // Order is the point: `prebuild` has to read as the step before `build`.
     expect(Object.keys(readManifest(pkg).scripts ?? {})).toEqual([
-      'prebuild',
       'build',
-      'build:ui',
+      'generate',
       'typecheck',
       'typecheck:ui',
     ]);
@@ -193,7 +191,7 @@ describe('app kind', () => {
     });
     expect(existsSync(join(pkg.dir, '.gitignore'))).toBe(false);
     expect(readFileSync(join(pkg.dir, 'tsconfig.ui.json'), 'utf8')).toContain(
-      'src/ui/generated/**',
+      'src/ui/__generated__/**',
     );
   });
 
@@ -204,7 +202,7 @@ describe('app kind', () => {
     // Both are relative paths out of the package, so a fixed number of `..`
     // segments is only right for packages at one depth.
     const toRepoRoot = pathToRepoRoot(pkg.dir);
-    expect(readManifest(pkg).scripts?.['build:ui']).toBe(
+    expect(readManifest(pkg).scripts?.generate).toBe(
       `node ${toRepoRoot}/scripts/build-mcp-views.ts`,
     );
     expect(readFileSync(join(pkg.dir, 'tsconfig.ui.json'), 'utf8')).toContain(

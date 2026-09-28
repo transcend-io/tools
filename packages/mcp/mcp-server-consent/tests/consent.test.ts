@@ -25,8 +25,8 @@ import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeserie
 import { MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS } from '../src/tools/consent_list_roc_records.js';
 import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
 import { getConsentTools } from '../src/tools/index.js';
-import cookieTriageHtml from '../src/ui/generated/cookie-triage.html';
-import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
+import cookieTriageHtml from '../src/ui/__generated__/cookie-triage.html';
+import inventoryStatsHtml from '../src/ui/__generated__/inventory-stats.html';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',

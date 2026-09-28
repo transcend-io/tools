@@ -17,7 +17,7 @@ function withRestStateAliases(contents: string): string {
 
 export default defineConfig({
   tokens: ['./tokens/tokens.resolver.json'],
-  outDir: './src',
+  outDir: './src/__generated__',
   plugins: [
     tsCodegen({ tokenDir: './tokens' }),
     css({

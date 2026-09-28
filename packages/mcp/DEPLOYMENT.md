@@ -197,7 +197,7 @@ Package tool counts and OAuth scope titles are generated from code at release ti
 ### Generate the sync payload
 
 ```bash
-pnpm --dir packages/mcp/mcp genfiles
+pnpm --dir packages/mcp/mcp generate:sanity-sync
 ```
 
 Writes `packages/mcp/mcp/docs/mcp-guide-sync.json` (local/CI only). Repo READMEs are hand-maintained; live tool counts live on the [MCP Guide](https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide).
@@ -212,14 +212,14 @@ By default creates **drafts only**. Pass `--publish` to publish after patching.
 
 ```bash
 export SANITY_API_TOKEN=...   # or omit to be prompted interactively
-pnpm --dir packages/mcp/mcp genfiles
+pnpm --dir packages/mcp/mcp generate:sanity-sync
 pnpm --dir packages/mcp/mcp sync:sanity
 # optional: -- --dry-run    (print planned patches only; cannot combine with --publish)
 # optional: -- --publish    (publish immediately after drafting)
 # optional: -- --discover   (print table/prose block keys)
 ```
 
-**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `genfiles` then `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
+**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `generate:sanity-sync` then `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
 
 4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
 

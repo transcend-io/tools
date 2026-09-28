@@ -35,8 +35,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm",
-    "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx --import ./scripts/register-asset-stubs.mjs scripts/buildMcpDocs.ts",
-    "genfiles": "pnpm docgen",
+    "generate:sanity-sync": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx --import ./scripts/register-asset-stubs.mjs scripts/buildMcpDocs.ts",
     "sync:sanity": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/syncMcpGuideToSanity.ts"
   },
   "dependencies": {

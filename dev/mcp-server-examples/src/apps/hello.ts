@@ -4,10 +4,10 @@ import {
   type UiResourceDefinition,
 } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/hello/ by `prebuild`, then inlined as a string by tsdown's
+// Built from src/ui/hello/ by `generate`, then inlined as a string by tsdown's
 // `.html` text loader. Self-contained down to React and the tokens, because hosts
 // render views in a sandboxed iframe with nothing to fetch from.
-import HELLO_APP_HTML from '../ui/generated/hello.html';
+import HELLO_APP_HTML from '../ui/__generated__/hello.html';
 
 /** URI hosts fetch to render the hello-world view. */
 export const HELLO_APP_URI = 'ui://transcend-examples/hello';

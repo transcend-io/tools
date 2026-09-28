@@ -1,7 +1,7 @@
 /**
- * Node custom loader for non-JS assets when docgen imports MCP packages via tsx.
+ * Node custom loader for non-JS assets when `generate:sanity-sync` imports MCP packages via tsx.
  *
- * - `.svg` is stubbed as an empty string (OAuth callback logo; content unused by docgen).
+ * - `.svg` is stubbed as an empty string (OAuth callback logo; content unused there).
  * - `.html` is loaded as a text module, matching tsdown / Vitest. MCP App views pass the
  *   document through `defineUiResource`, which rejects empty HTML.
  */
@@ -33,7 +33,7 @@ export async function load(url, context, nextLoad) {
     const path = fileURLToPath(url);
     // Generated MCP App views are gitignored; build first (publish / sync-mcp-docs do).
     if (!existsSync(path)) {
-      throw new Error(`${path} has not been built. Run the package view build before docgen.`);
+      throw new Error(`${path} has not been built. Run \`pnpm generate\` in that package first.`);
     }
     return {
       format: 'module',

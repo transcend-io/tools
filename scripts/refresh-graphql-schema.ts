@@ -4,7 +4,7 @@
  *
  * Run this (`pnpm graphql:refresh-schema`) when:
  *   - An MCP operation needs a type/field that staging has added since the
- *     last refresh (e.g. `pnpm codegen`/`tsc` fails on a missing element).
+ *     last refresh (e.g. `pnpm generate:root`/`tsc` fails on a missing element).
  *   - You want the committed snapshot to reflect the latest staging schema.
  */
 import { readFileSync, writeFileSync } from 'node:fs';

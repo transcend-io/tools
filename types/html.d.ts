@@ -1,7 +1,7 @@
 /**
  * Ambient module declaration for HTML files imported as text.
  *
- * Used by MCP App views, which Vite prebuilds into one self-contained document for
+ * Used by MCP App views, which Vite builds into one self-contained document for
  * a server to serve as a string over `resources/read`.
  */
 declare module '*.html' {

@@ -4,10 +4,10 @@ import {
   type UiResourceDefinition,
 } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/inventory-stats/ by this package's `prebuild` and inlined here as a
+// Built from src/ui/inventory-stats/ by this package's `generate` script and inlined here as a
 // string by tsdown's `.html` text loader. Self-contained, because hosts render a
 // view in a sandboxed iframe with no server to fetch anything from.
-import INVENTORY_STATS_APP_HTML from '../ui/generated/inventory-stats.html';
+import INVENTORY_STATS_APP_HTML from '../ui/__generated__/inventory-stats.html';
 
 /** URI hosts fetch to render the inventory-stats view. */
 export const INVENTORY_STATS_APP_URI = 'ui://transcend-consent/inventory-stats';

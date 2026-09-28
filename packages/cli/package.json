@@ -79,10 +79,10 @@
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:skill-bundle": "tsx scripts/checkAgentSkillBundles.ts",
     "check:publint": "publint --level warning --strict --pack pnpm",
-    "script:transcend-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt ./schema/transcend-yml-schema-*.json",
-    "script:permissions-policy-input-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildPermissionsPolicyInputSchema.ts && oxfmt ./schema/permissions-policy-input.json",
-    "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts",
-    "genfiles": "pnpm script:transcend-json-schema && pnpm script:permissions-policy-input-schema && pnpm docgen"
+    "generate": "pnpm generate:transcend-yml-schema && pnpm generate:permissions-policy-input-schema && pnpm generate:readme",
+    "generate:transcend-yml-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt ./schema/transcend-yml-schema-*.json",
+    "generate:permissions-policy-input-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildPermissionsPolicyInputSchema.ts && oxfmt ./schema/permissions-policy-input.json",
+    "generate:readme": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts"
   },
   "dependencies": {
     "@duckdb/node-api": "1.4.2-r.1",

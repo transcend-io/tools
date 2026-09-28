@@ -4,10 +4,10 @@ import {
   type UiResourceDefinition,
 } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/cookie-triage/ by this package's `prebuild` and inlined here as a
+// Built from src/ui/cookie-triage/ by this package's `generate` script and inlined here as a
 // string by tsdown's `.html` text loader. Self-contained, because hosts render a
 // view in a sandboxed iframe with no server to fetch anything from.
-import COOKIE_TRIAGE_APP_HTML from '../ui/generated/cookie-triage.html';
+import COOKIE_TRIAGE_APP_HTML from '../ui/__generated__/cookie-triage.html';
 
 /** URI hosts fetch to render the cookie-triage view. */
 export const COOKIE_TRIAGE_APP_URI = 'ui://transcend-consent/cookie-triage';

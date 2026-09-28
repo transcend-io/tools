@@ -23,7 +23,7 @@ function mcpAppViewLoader(): Plugin {
       // A gitignored build output, so a clean clone reaches here before anything
       // has produced it. Naming the command beats a bare ENOENT.
       if (!existsSync(id)) {
-        throw new Error(`${id} has not been built. Run \`pnpm build:ui\` in the package first.`);
+        throw new Error(`${id} has not been built. Run \`pnpm generate\` in the package first.`);
       }
 
       return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;

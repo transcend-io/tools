@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +8,6 @@ import ts from 'typescript';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const contractPath = resolve(packageRoot, 'src/contract.ts');
 const tsconfigPath = resolve(packageRoot, 'tsconfig.json');
-const checkOnly = process.argv.includes('--check');
 
 const schemaDefinitions = [
   {
@@ -148,23 +147,7 @@ ${schemaDefinitions
 
 generatedFiles.set(resolve(packageRoot, 'src/__generated__/payloadSchemas.ts'), schemaSource);
 
-const staleFiles = [];
-for (const [filename, expectedContents] of generatedFiles) {
-  if (checkOnly) {
-    if (!existsSync(filename) || readFileSync(filename, 'utf8') !== expectedContents) {
-      staleFiles.push(filename);
-    }
-    continue;
-  }
-
+for (const [filename, contents] of generatedFiles) {
   mkdirSync(dirname(filename), { recursive: true });
-  writeFileSync(filename, expectedContents);
-}
-
-if (staleFiles.length > 0) {
-  throw new Error(
-    `Generated Custom Function artifacts are stale:\n${staleFiles
-      .map((filename) => `- ${filename}`)
-      .join('\n')}\nRun \`pnpm generate\` in packages/custom-function-types.`,
-  );
+  writeFileSync(filename, contents);
 }
