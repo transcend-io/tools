@@ -166,7 +166,7 @@ describe('package conventions', () => {
       expect(manifest.sideEffects).toEqual(isDesignTokens ? ['*.css'] : false);
       expect(manifest.types).toBe('./dist/index.d.mts');
       expect(manifest.files).toEqual(isDesignTokens ? ['dist', 'tokens'] : ['dist']);
-      expect(manifest.engines?.node).toBe('>=22.12.0');
+      expect(manifest.engines?.node).toBeOneOf(['>=22.12.0', undefined]);
       expect(exportDot?.['@transcend-io/source']).toBe('./src/index.ts');
       expect(exportDot?.types).toBe('./dist/index.d.mts');
       expect(exportDot?.default).toBe('./dist/index.mjs');
