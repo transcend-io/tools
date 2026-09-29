@@ -1,10 +1,10 @@
-# Transcend Agent Governance
+# Transcend Rails Agent Controls
 
-Cursor plugin for [Transcend Agent Governance](https://transcend.io). Install it, sign in with your browser, and use governed MCP tools from your organization — without pasting tokens.
+Cursor plugin for [Transcend Rails Agent Controls](https://transcend.io). Install it, sign in with your browser, and use governed MCP tools from your organization — without pasting tokens.
 
 ## What it does
 
-- Surfaces **Transcend Agent Governance** inside Cursor as an installable plugin
+- Surfaces **Transcend Rails Agent Controls** inside Cursor as an installable plugin
 - Connects Cursor to the Agent Governance MCP gateway over Streamable HTTP
 - Uses Cursor-native **browser OAuth** (public client + PKCE) so credentials stay in the IDE session
 - Lets you choose your organization at consent — install needs no org identifier
@@ -30,7 +30,7 @@ Prefer a **Team Marketplace** (or public Marketplace) install. That path needs *
 Your Cursor team admin imports [`transcend-io/tools`](https://github.com/transcend-io/tools) once as a [Team Marketplace](https://cursor.com/docs/plugins.md#team-marketplaces) (Teams or Enterprise plan). Then:
 
 1. Open **Customize** in the Cursor sidebar.
-2. Find **Transcend Agent Governance** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
+2. Find **Transcend Rails Agent Controls** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
 3. Accept the default gateway settings. Do **not** paste a full MCP path into any base URL field — the plugin appends `/mcp/agent`.
 4. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
 5. Complete sign-in and consent in the browser (pick your organization if asked). Cursor receives tokens; no client secret is involved.

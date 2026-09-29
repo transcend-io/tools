@@ -12,7 +12,7 @@
     {
       "name": "transcend-agent-governance",
       "source": "./plugins/cursor/TranscendAgentGovernance",
-      "description": "Governed MCP access for Cursor via Transcend Agent Governance"
+      "description": "Governed MCP access for Cursor via Transcend Rails Agent Controls"
     }
   ]
 }
