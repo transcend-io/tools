@@ -50,7 +50,7 @@ Use this only while developing the plugin itself — not for teammates or design
 2. Symlink or copy this plugin into Cursor's local plugins folder:
 
    ```bash
-   ln -s "$(pwd)/plugins/cursor/TranscendAgentGovernance" \
+   ln -s "$(pwd)/plugins/cursor/TranscendRailsAgentControls" \
      ~/.cursor/plugins/local/transcend-agent-governance
    ```
 
