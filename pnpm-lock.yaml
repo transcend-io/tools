@@ -231,8 +231,8 @@ importers:
         specifier: workspace:^
         version: link:../sdk
       '@transcend-io/secret-value':
-        specifier: ^1.2.3
-        version: 1.2.3
+        specifier: workspace:^
+        version: link:../secret-value
       '@transcend-io/type-utils':
         specifier: workspace:^
         version: link:../type-utils
@@ -3018,9 +3018,6 @@ packages:
 
   '@transcend-io/persisted-state@1.0.6':
     resolution: {integrity: sha512-yqexuEznCnQaHAUjL6ktK+wYi5g5+NFKb4qoezf37uTJzBEP40FhNZTIiMBE1HG0ZgWghqyocAFz0UuVrBq6nw==}
-
-  '@transcend-io/secret-value@1.2.3':
-    resolution: {integrity: sha512-or73sJzWCJ3bvBGelL+LY/Ea/+SEvTTGVt6ZX4K5bYAfepIhNfbLbO92sQZ2O0rTakYEYEWOa35HZ/LP+XcEXQ==}
 
   '@transcend-io/type-utils@1.8.9':
     resolution: {integrity: sha512-JV+AY69Z3ANws4vQfeQ9Zczu1byBqkHq/h5IpRlfWa5U6CqkqkrHXsyzYd2e7ZzbjcKu4mzNhWq3SUQOGwEugg==}
@@ -7629,12 +7626,6 @@ snapshots:
       fp-ts: 2.16.11
       io-ts: 2.2.22(fp-ts@2.16.11)
       mkdirp: 1.0.4
-
-  '@transcend-io/secret-value@1.2.3':
-    dependencies:
-      '@transcend-io/type-utils': 1.8.9
-      fp-ts: 2.16.11
-      io-ts: 2.2.22(fp-ts@2.16.11)
 
   '@transcend-io/type-utils@1.8.9':
     dependencies:
