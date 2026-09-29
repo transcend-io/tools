@@ -1,7 +1,5 @@
-import { RTL_LANGS } from '@transcend-io/internationalization';
+import { RTL_LANGS, isRtlLocale } from '@transcend-io/internationalization';
 import { describe, expect, it } from 'vitest';
-
-import { isRtlLocale } from '../isRtlLocale.js';
 
 describe('intl.isRtlLocale', () => {
   for (const locale of RTL_LANGS) {
