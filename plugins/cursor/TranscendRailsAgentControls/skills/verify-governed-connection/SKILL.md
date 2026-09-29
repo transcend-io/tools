@@ -38,7 +38,7 @@ Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Curso
    Confirm **Transcend Rails Agent Controls** is installed. Do not ask for an org / tenant identifier or a credential variable — neither belongs in plugin configuration.
 
 2. **Gateway connection / Connect**  
-   Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-agent-governance**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.
+   Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-rails-agent-controls**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.
 
 3. **List available tools**  
    Use Cursor's MCP tool listing (or ask the agent tooling surface which MCP tools are registered for this server). Note the tool names you see.

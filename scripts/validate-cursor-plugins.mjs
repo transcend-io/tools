@@ -376,9 +376,12 @@ function validateOAuthAuthBlock(auth, serverLabel, pluginName) {
         `${serverLabel}.auth.CLIENT_ID: must be the published public client id literal, not a variable placeholder.`,
       );
     }
-    if (pluginName === 'transcend-agent-governance' && block.CLIENT_ID !== 'myelin_cursor_plugin') {
+    if (
+      pluginName === 'transcend-rails-agent-controls' &&
+      block.CLIENT_ID !== 'myelin_cursor_plugin'
+    ) {
       addError(
-        `${serverLabel}.auth.CLIENT_ID: transcend-agent-governance must use published client id "myelin_cursor_plugin".`,
+        `${serverLabel}.auth.CLIENT_ID: transcend-rails-agent-controls must use published client id "myelin_cursor_plugin".`,
       );
     }
   }
@@ -400,7 +403,7 @@ function validateOAuthAuthBlock(auth, serverLabel, pluginName) {
       for (const scope of block.scopes) {
         rejectSecretsAndInternalHosts(scope, `${serverLabel}.auth.scopes`);
       }
-      if (pluginName === 'transcend-agent-governance') {
+      if (pluginName === 'transcend-rails-agent-controls') {
         const scopeSet = new Set(block.scopes);
         if (!scopeSet.has('mcp')) {
           addError(`${serverLabel}.auth.scopes: must include "mcp".`);
@@ -551,9 +554,9 @@ async function validateMcpConfig(mcpConfig, pluginName, declaredVariables, optio
       );
     }
 
-    if (pluginName === 'transcend-agent-governance' && !hasAuth) {
+    if (pluginName === 'transcend-rails-agent-controls' && !hasAuth) {
       addError(
-        `${serverLabel}: transcend-agent-governance must declare Cursor-native "auth" (public client myelin_cursor_plugin).`,
+        `${serverLabel}: transcend-rails-agent-controls must declare Cursor-native "auth" (public client myelin_cursor_plugin).`,
       );
     }
   }

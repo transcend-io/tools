@@ -6,7 +6,7 @@ This is the dogfood / design-partner path while the public Cursor Marketplace re
 
 **Upstream docs:** [Plugins](https://cursor.com/docs/plugins.md) · [Plugins reference](https://cursor.com/docs/reference/plugins.md) · [GitHub integration](https://cursor.com/docs/integrations/github.md)
 
-**Repo packaging:** root [`.cursor-plugin/marketplace.json`](../../.cursor-plugin/marketplace.json) lists `transcend-agent-governance` → `./plugins/cursor/TranscendRailsAgentControls`.
+**Repo packaging:** root [`.cursor-plugin/marketplace.json`](../../.cursor-plugin/marketplace.json) lists `transcend-rails-agent-controls` → `./plugins/cursor/TranscendRailsAgentControls`.
 
 ---
 
@@ -47,7 +47,7 @@ Prefer Team Marketplace (Auto Refresh on `main`) for dogfood until the public pi
 ## Part A — Register in the Transcend Cursor team marketplace (admin)
 
 **Actor:** Transcend Cursor team admin  
-**Goal:** `transcend-agent-governance` appears under Customize for Transcend teammates; install requires **no** repo clone and **no** JSON edit.
+**Goal:** `transcend-rails-agent-controls` appears under Customize for Transcend teammates; install requires **no** repo clone and **no** JSON edit.
 
 ### A1. Connect GitHub (recommended once)
 
@@ -69,7 +69,7 @@ Skip is possible for a one-shot public import, but Auto Refresh and reliable re-
    ```
 
 4. Select the branch to track (**`main`** once the plugin has merged; do not point dogfood at a long-lived feature branch unless intentionally testing a pre-release).
-5. Review the parsed plugins. Confirm **`transcend-agent-governance`** appears with source `./plugins/cursor/TranscendRailsAgentControls` (display name **Transcend Rails Agent Controls**).
+5. Review the parsed plugins. Confirm **`transcend-rails-agent-controls`** appears with source `./plugins/cursor/TranscendRailsAgentControls` (display name **Transcend Rails Agent Controls**).
 6. Name the marketplace (suggestion: `Transcend plugins` / id aligned with manifest `transcend-plugins`).
 7. Under **Marketplace Settings**:
    - **Marketplace Access** — default “everyone in the team”, or restrict to an [Organization Group](https://cursor.com/docs/enterprise/organization-groups.md) for a smaller dogfood cohort.
@@ -98,7 +98,7 @@ For **Transcend Rails Agent Controls** during dogfood:
 
 Have **someone who did not build the plugin** on a machine/profile with:
 
-- No `~/.cursor/plugins/local/transcend-agent-governance` symlink
+- No `~/.cursor/plugins/local/transcend-rails-agent-controls` symlink
 - No hand-edited Agent Governance entry in `mcp.json`
 - No leftover OAuth tokens for this server
 
@@ -135,7 +135,7 @@ Share this checklist (email / Notion / ticket):
 
 1. **Cursor plan:** Teams or Enterprise; a **team admin** must perform the import.
 2. **Marketplace source:** `https://github.com/transcend-io/tools` (branch `main` unless Transcend names a release branch).
-3. **Plugin id / name:** `transcend-agent-governance` / **Transcend Rails Agent Controls**.
+3. **Plugin id / name:** `transcend-rails-agent-controls` / **Transcend Rails Agent Controls**.
 4. **Install mode recommendation:** **Default Off** for the first pilot cohort.
 5. **Environment:** SaaS / Dev uses the plugin default gateway. Self-host partners need their `mcp.*` origin as optional `GATEWAY_BASE_URL` (scheme + host only). Organization is chosen at consent — no `TENANT_ID`.
 6. **Post-auth admin step in Agent Governance:** assign MCP servers / policy to each auto-registered Cursor agent.
@@ -146,7 +146,7 @@ Share this checklist (email / Notion / ticket):
 1. Confirm Teams/Enterprise and admin access.
 2. Optionally connect GitHub at [Integrations](https://cursor.com/dashboard/integrations) and allow `transcend-io/tools` for Auto Refresh.
 3. **Dashboard → Plugins → Add Marketplace / Import from Repo** → paste `https://github.com/transcend-io/tools` → track `main`.
-4. Confirm `transcend-agent-governance` parses; set Marketplace Access (pilot group vs whole team).
+4. Confirm `transcend-rails-agent-controls` parses; set Marketplace Access (pilot group vs whole team).
 5. Enable Auto Refresh if the GitHub App is installed.
 6. Set installation mode (**Default Off** for pilot).
 7. Tell pilot users to follow **Part B**.
@@ -195,18 +195,18 @@ No — not if they already imported this repo with Auto Refresh (or they click R
 
 Capture install-path problems here as ticket seeds (do not absorb silently). This rehearsal feeds the public listing story.
 
-| Friction                                                                 | Suggested follow-up                                                                                                                         |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Transcend Cursor plan cannot add Team Marketplaces / UI missing          | Unblock [LINK-7701](https://linear.app/transcend/issue/LINK-7701); confirm Teams vs Enterprise entitlement with Cursor partnership contacts |
-| Admin-only import but no available admin                                 | Ops: grant temporary Cursor admin or pair on a recorded call; do not invent a clone-based “customer” path                                   |
-| Import succeeds but `transcend-agent-governance` missing from parse list | Engineering: marketplace.json path / branch / validate script; confirm merge to tracked branch                                              |
-| Auto Refresh never updates                                               | Confirm GitHub App installed on `transcend-io` **and** has repo access; check webhooks; fall back to Manual Refresh                         |
-| Clean-machine user still told to clone or edit JSON                      | Docs/bug: Customize discovery, Marketplace Access group exclusion, or wrong install mode                                                    |
-| Install works; OAuth / discovery fails                                   | Platform tickets (issuer, PRM/AS metadata, redirect allowlist) — not a marketplace packaging issue                                          |
-| Tools missing after OAuth                                                | Agent Governance admin assignment gap; document in partner packet (already Part B step 8)                                                   |
-| Partner on Free/Pro cannot import                                        | Product: require Teams/Enterprise in partner prerequisites; no unsupported workaround                                                       |
-| Required mode locks a bad build onto the fleet                           | Process: never use Required until clean-machine AC passes; add rollback note (Default Off + Refresh)                                        |
-| Public listing still blocked while Team path works                       | Continue dogfood on Team Marketplace; public path remains [LINK-7714](https://linear.app/transcend/issue/LINK-7714) / epic parent           |
+| Friction                                                                     | Suggested follow-up                                                                                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transcend Cursor plan cannot add Team Marketplaces / UI missing              | Unblock [LINK-7701](https://linear.app/transcend/issue/LINK-7701); confirm Teams vs Enterprise entitlement with Cursor partnership contacts |
+| Admin-only import but no available admin                                     | Ops: grant temporary Cursor admin or pair on a recorded call; do not invent a clone-based “customer” path                                   |
+| Import succeeds but `transcend-rails-agent-controls` missing from parse list | Engineering: marketplace.json path / branch / validate script; confirm merge to tracked branch                                              |
+| Auto Refresh never updates                                                   | Confirm GitHub App installed on `transcend-io` **and** has repo access; check webhooks; fall back to Manual Refresh                         |
+| Clean-machine user still told to clone or edit JSON                          | Docs/bug: Customize discovery, Marketplace Access group exclusion, or wrong install mode                                                    |
+| Install works; OAuth / discovery fails                                       | Platform tickets (issuer, PRM/AS metadata, redirect allowlist) — not a marketplace packaging issue                                          |
+| Tools missing after OAuth                                                    | Agent Governance admin assignment gap; document in partner packet (already Part B step 8)                                                   |
+| Partner on Free/Pro cannot import                                            | Product: require Teams/Enterprise in partner prerequisites; no unsupported workaround                                                       |
+| Required mode locks a bad build onto the fleet                               | Process: never use Required until clean-machine AC passes; add rollback note (Default Off + Refresh)                                        |
+| Public listing still blocked while Team path works                           | Continue dogfood on Team Marketplace; public path remains [LINK-7714](https://linear.app/transcend/issue/LINK-7714) / epic parent           |
 
 ---
 
@@ -226,13 +226,13 @@ Please import our Team Marketplace so teammates can install without cloning or e
 2) Cursor Dashboard → Plugins → Team Marketplaces → Add / Import from Repo
    - URL: https://github.com/transcend-io/tools
    - Branch: main   (only after Agent Governance plugin PRs have merged)
-   - Confirm plugin: transcend-agent-governance (Transcend Rails Agent Controls)
+   - Confirm plugin: transcend-rails-agent-controls (Transcend Rails Agent Controls)
 
 3) Marketplace Settings
    - Access: whole team OR dogfood Organization Group
    - Enable Auto Refresh: ON
 
-4) Installation mode for transcend-agent-governance
+4) Installation mode for transcend-rails-agent-controls
    - Start with Default Off
 
 5) Reply when saved. We will have a non-author verify Install → (no TENANT_ID) → browser OAuth

@@ -32,7 +32,7 @@ Your Cursor team admin imports [`transcend-io/tools`](https://github.com/transce
 1. Open **Customize** in the Cursor sidebar.
 2. Find **Transcend Rails Agent Controls** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
 3. Accept the default gateway settings. Do **not** paste a full MCP path into any base URL field — the plugin appends `/mcp/agent`.
-4. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
+4. Open **Settings → Tools & MCP**. Find **transcend-rails-agent-controls** and choose **Connect** / authenticate if Cursor has not already opened the browser.
 5. Complete sign-in and consent in the browser (pick your organization if asked). Cursor receives tokens; no client secret is involved.
 6. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
 
@@ -51,7 +51,7 @@ Use this only while developing the plugin itself — not for teammates or design
 
    ```bash
    ln -s "$(pwd)/plugins/cursor/TranscendRailsAgentControls" \
-     ~/.cursor/plugins/local/transcend-agent-governance
+     ~/.cursor/plugins/local/transcend-rails-agent-controls
    ```
 
 3. Reload Cursor (**Developer: Reload Window**).

@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "transcend-agent-governance": {
+    "transcend-rails-agent-controls": {
       "url": "${GATEWAY_BASE_URL}/mcp/agent",
       "headers": {
         "Accept": "application/json, text/event-stream"
