@@ -1,10 +1,6 @@
-// external
-import { expect } from 'chai';
+import { wrapSecrets } from '../wrapSecrets.js';
 
-// global
-import { wrapSecrets } from '..';
-
-describe('wrapSecrets', () => {
+describe(wrapSecrets, () => {
   it('wraps secrets by key name', () => {
     const obj = {
       cat: 2,
@@ -14,8 +10,8 @@ describe('wrapSecrets', () => {
 
     const secretObject = wrapSecrets(obj, ['fish']);
 
-    expect(secretObject.cat).to.equal(2);
-    expect(secretObject.moose[0]).to.equal(2);
-    expect(secretObject.fish.release()).to.equal('cow');
+    expect(secretObject.cat).toBe(2);
+    expect(secretObject.moose[0]).toBe(2);
+    expect(secretObject.fish.release()).toBe('cow');
   });
 });

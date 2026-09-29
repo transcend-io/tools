@@ -87,11 +87,6 @@ export class Secret<T> {
 /**
  * Set the type of values in an object to be Secret<value> by name of object key
  */
-export type Secretify<
-  T extends object,
-  TSecretKey extends StringKeys<T>,
-> = Identity<
-  {
-    [k in keyof T]: k extends TSecretKey ? Secret<T[k]> : T[k];
-  }
->;
+export type Secretify<T extends object, TSecretKey extends StringKeys<T>> = Identity<{
+  [k in keyof T]: k extends TSecretKey ? Secret<T[k]> : T[k];
+}>;

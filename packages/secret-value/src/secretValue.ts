@@ -1,9 +1,9 @@
-import { chain } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { decodeCodec } from '@transcend-io/type-utils';
+import { chain } from 'fp-ts/lib/Either.js';
+import { pipe } from 'fp-ts/lib/pipeable.js';
 import * as t from 'io-ts';
 
-import { Secret } from './Secret';
-import { decodeCodec } from '@transcend-io/type-utils';
+import { Secret } from './Secret.js';
 
 /**
  * Sometimes we want to add context to the event manager but not log that
@@ -51,9 +51,7 @@ export function secretValue<T extends t.Any>(
     (u, c) =>
       pipe(
         t.object.validate(u, c),
-        chain((n) =>
-          underlyingType.validate((n as Secret<t.TypeOf<T>>).release(), c),
-        ),
+        chain((n) => underlyingType.validate((n as Secret<t.TypeOf<T>>).release(), c)),
       ),
     (a) => a.toString(),
   );

@@ -1,5 +1,5 @@
 
-build/
+dist/
 
 # Secrets
 *.env.secret

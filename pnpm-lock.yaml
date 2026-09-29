@@ -1204,6 +1204,34 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.0.16(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
+  packages/secret-value:
+    dependencies:
+      '@transcend-io/type-utils':
+        specifier: workspace:^
+        version: link:../type-utils
+      fp-ts:
+        specifier: ^2.16.1
+        version: 2.16.11
+      io-ts:
+        specifier: ^2.2.21
+        version: 2.2.22(fp-ts@2.16.11)
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 0.18.3
+        version: 0.18.3
+      publint:
+        specifier: 0.3.21
+        version: 0.3.21
+      tsdown:
+        specifier: 0.21.10
+        version: 0.21.10(@arethetypeswrong/core@0.18.3)(publint@0.3.21)(typescript@6.0.3)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.0.16(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+
   packages/type-utils:
     dependencies:
       fp-ts:

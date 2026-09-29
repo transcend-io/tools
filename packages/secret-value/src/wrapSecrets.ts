@@ -1,6 +1,7 @@
 // local
-import { StringKeys, apply } from '@transcend-io/type-utils';
-import { Secretify, Secret } from './Secret';
+import { type StringKeys, apply } from '@transcend-io/type-utils';
+
+import { type Secretify, Secret } from './Secret.js';
 
 /**
  * Utility function to wrap values of an object as secrets

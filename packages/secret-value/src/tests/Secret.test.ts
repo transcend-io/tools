@@ -1,11 +1,8 @@
-// external
-import { expect } from 'chai';
-import { inspect } from 'util';
+import { inspect } from 'node:util';
 
-// global
-import { Secret } from '../Secret';
+import { Secret } from '../Secret.js';
 
-describe('Secret', () => {
+describe(Secret, () => {
   it('can wrap a string value', () => {
     const secret = new Secret('ahhhhhh');
     expect(secret.release()).to.equal('ahhhhhh');

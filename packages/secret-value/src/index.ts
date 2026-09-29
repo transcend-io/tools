@@ -1,3 +1,3 @@
-export * from './Secret';
-export * from './wrapSecrets';
-export * from './secretValue';
+export * from './Secret.js';
+export * from './wrapSecrets.js';
+export * from './secretValue.js';
