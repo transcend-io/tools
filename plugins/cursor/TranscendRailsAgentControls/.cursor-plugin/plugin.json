@@ -1,8 +1,8 @@
 {
   "name": "transcend-agent-governance",
-  "displayName": "Transcend Agent Governance",
-  "version": "0.5.0",
-  "description": "Connect Cursor to Transcend Agent Governance for policy-enforced MCP tool access via browser sign-in.",
+  "displayName": "Transcend Rails Agent Controls",
+  "version": "0.6.0",
+  "description": "Connect Cursor to Transcend Rails Agent Controls for policy-enforced MCP tool access via browser sign-in.",
   "author": {
     "name": "Transcend",
     "email": "support@transcend.io"

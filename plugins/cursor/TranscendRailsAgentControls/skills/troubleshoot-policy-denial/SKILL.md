@@ -1,7 +1,7 @@
 ---
 name: troubleshoot-policy-denial
 description: >-
-  Interpret Transcend Agent Governance MCP errors that look like policy denials
+  Interpret Transcend Rails Agent Controls MCP errors that look like policy denials
   or approval holds. Use when a governed tool call fails with deny, forbidden,
   unauthorized-for-this-action, require_approval, or similar policy language —
   or when the user asks why a tool was blocked and what to tell an admin.
@@ -48,7 +48,7 @@ If unsure, prefer: "This looks like a **policy decision**; if tools otherwise wo
 
 Give the user a short handoff they can paste to an admin:
 
-- **Product**: Transcend Agent Governance (Cursor plugin / governed MCP)
+- **Product**: Transcend Rails Agent Controls (Cursor plugin / governed MCP)
 - **Tool / action attempted** (name as shown in Cursor)
 - **Outcome**: denied vs approval required
 - **Any reason text** returned by the gateway
@@ -61,6 +61,6 @@ Never suggest or perform:
 - Adding a second, **ungoverned** MCP server for the same tools
 - Pasting a Bearer token / API key into plugin variables, or using a personal / "dev" token to skip the policy gateway
 - Replaying the denied call with altered arguments solely to evade policy wording
-- Disabling the Transcend Agent Governance plugin to "get unblocked"
+- Disabling the Transcend Rails Agent Controls plugin to "get unblocked"
 
 If the user needs the capability, the path is **policy or approval**, not a side channel.
