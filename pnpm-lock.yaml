@@ -1219,6 +1219,9 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@types/node':
+        specifier: 24.13.3
+        version: 24.13.3
       publint:
         specifier: 0.3.21
         version: 0.3.21

@@ -3,7 +3,7 @@
   "version": "1.2.3",
   "description": "Type-safe wrapper for secret values",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/secret-value",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
@@ -15,7 +15,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "build/index.js",
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
@@ -41,6 +40,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.3",
+    "@types/node": "24.13.3",
     "publint": "0.3.21",
     "tsdown": "0.21.10",
     "typescript": "6.0.3",
