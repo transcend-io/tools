@@ -3107,6 +3107,15 @@ enum MockDataSubjectClass {
   OTHER
 }
 
+enum OpfsFirstRoutingReason {
+  ANDROID_FIREFOX_OPFS_FIRST
+  ANDROID_OPFS_FIRST
+  IOS_OPFS_FIRST
+  ANDROID_STREAMSAVER_CANCEL_RETRY
+  WEBKIT_STREAM_SAVER_FAILURE_RETRY
+  LARGE_ARCHIVE_OPFS_FIRST
+}
+
 enum PrivacyCenterDeployStatus {
   DEPLOYED
   NOT_DEPLOYED
@@ -4818,6 +4827,7 @@ enum AuditEventCode {
   WORKFLOW_CONFIG_IDENTIFIER
   WORKFLOW_CONFIG_ATTRIBUTE_KEY
   WORKFLOW_CONFIG_DATA_SILO_ATTRIBUTE_VALUE
+  WORKFLOW_CONFIG_INGRESS_DATA_SILO
   MAESTRO_RULE
   MAESTRO_RULE_OWNER
   MAESTRO_RULE_TEAM
@@ -11926,6 +11936,7 @@ type DataSilo implements DatamapDataSiloInterface {
   enricherIdentifierMappings: [SignedIdentifierPath!]!
   workflowConfigId: ID
   sensitiveCategories: [SensitiveCategory!]
+  ingressDestinationWorkflowConfigs: [DataSiloIngressDestinationWorkflowConfigPreview!]!
 }
 
 type DataSiloBulkPreview implements DatamapDataSiloInterface {
@@ -12133,6 +12144,13 @@ input DataSiloFiltersInput {
   integrationCategories: [IntegrationCategory!]
   createdAtBefore: Date
   createdAtAfter: Date
+}
+
+type DataSiloIngressDestinationWorkflowConfigPreview {
+  id: ID!
+  actionType: RequestAction!
+  title: LocalizedMessage!
+  internalName: String!
 }
 
 interface DataSiloInterface {
@@ -14639,6 +14657,11 @@ type InaccurateAiFeatureReportPreview {
   reportedByUserId: ID
   reason: String
   createdAt: Date!
+}
+
+input IngressDestinationWorkflowConfigInput {
+  actionType: RequestAction!
+  workflowConfigId: ID!
 }
 
 type InspectLookupProcessesPayload {
@@ -21348,6 +21371,7 @@ input UpdateDataSiloInput {
   processingActivityIds: [ID!]
   allowDsrProcessingStartTime: String
   allowDsrProcessingEndTime: String
+  ingressDestinationWorkflowConfigs: [IngressDestinationWorkflowConfigInput!]
 }
 
 type UpdateDataSiloPluginPayload {
