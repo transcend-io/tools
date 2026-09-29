@@ -1,5 +1,11 @@
 # @transcend-io/internationalization
 
+## 4.2.0
+
+### Minor Changes
+
+- 88087f0: Add function to identify if a locale is read right to left
+
 ## 4.1.1
 
 ### Patch Changes

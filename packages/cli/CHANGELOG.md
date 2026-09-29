@@ -1,5 +1,16 @@
 # @transcend-io/cli
 
+## 13.0.5
+
+### Patch Changes
+
+- da79134: Use workspace protocol to reference secret value package
+- Updated dependencies [7441a42]
+- Updated dependencies [12989f1]
+- Updated dependencies [88087f0]
+  - @transcend-io/secret-value@2.0.0
+  - @transcend-io/internationalization@4.2.0
+
 ## 13.0.4
 
 ### Patch Changes
