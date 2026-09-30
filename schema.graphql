@@ -683,6 +683,7 @@ enum DatabaseModelName {
   AirgapCookiePurpose
   DataSiloPlugin
   DataSiloUser
+  DataSiloOwnerApprovalAction
   OrganizationSombra
   DataSiloTeam
   DataSiloDataSilo
@@ -2871,6 +2872,8 @@ enum ActivityCode {
   REQUEST_DATA_SILO_SKIPPED_DUE_TO_EXCEPTION
   REQUEST_DATA_SILO_VENDOR_RATE_LIMITED
   REQUEST_DATA_SILO_TRANSCEND_RATE_LIMITED
+  REQUEST_DATA_SILO_OWNER_APPROVED
+  REQUEST_DATA_SILO_OWNER_REJECTED
   REQUEST_FILE_ARCHIVED
   REQUEST_FILE_ENCRYPTED_MODIFIED
   REQUEST_FILE_ENCRYPTED_COPY
@@ -2890,6 +2893,7 @@ enum ActivityCode {
   PROFILE_DATA_POINT_WAITING
   PROFILE_DATA_POINT_WAITING_ON_DELETION_DEPENDENCIES
   PROFILE_DATA_POINT_WAITING_ON_OTHER_REQUESTS
+  PROFILE_DATA_POINT_WAITING_ON_OWNER_APPROVAL
   PROFILE_DATA_POINT_ERROR
   PROFILE_DATA_POINT_RESOLVED
   PROFILE_DATA_POINT_POLLING
@@ -3110,6 +3114,7 @@ enum MockDataSubjectClass {
 enum OpfsFirstRoutingReason {
   ANDROID_FIREFOX_OPFS_FIRST
   ANDROID_OPFS_FIRST
+  IOS_FIREFOX_OPFS_FIRST
   IOS_OPFS_FIRST
   ANDROID_STREAMSAVER_CANCEL_RETRY
   WEBKIT_STREAM_SAVER_FAILURE_RETRY
@@ -3161,6 +3166,11 @@ enum RequestDataSiloOrderField {
   title
 }
 
+enum RequestDataSiloOwnerApprovalStatus {
+  APPROVED
+  REJECTED
+}
+
 enum RequestDataSiloSortAssociation {
   dataSilo
 }
@@ -3169,6 +3179,11 @@ enum RequestDataSiloStatusSuccess {
   RESOLVED
   SKIPPED
   SKIPPED_DUE_TO_EXCEPTION
+}
+
+enum RequestDownloadAttemptActivity {
+  PAGE_VIEW
+  DOWNLOAD_ATTEMPT
 }
 
 enum RequestDownloadAttemptOrderField {
@@ -3294,6 +3309,7 @@ enum VisualRequestDataSiloStatus {
   TRANSCEND_RATE_LIMITED
   VENDOR_RATE_LIMITED
   WAITING_ON_DEPENDENCIES
+  WAITING_ON_OWNER_APPROVAL
   WAITING_ON_OTHER_REQUESTS
   DATA_SILO_DISCONNECTED
   DATA_SILO_PAUSED
@@ -3658,6 +3674,7 @@ enum ProfileDataPointStatus {
   REMOTE_PROCESSING
   MANUAL
   WAITING_ON_DELETION_DEPENDENCIES
+  WAITING_ON_OWNER_APPROVAL
   POLLING
   WAITING_ON_OTHER_REQUESTS
   SKIPPED_DUE_TO_EXCEPTION
@@ -4622,6 +4639,7 @@ enum AuditEventBaseModelCode {
   SUB_DATA_POINT
   MESSAGE
   PRIVACY_CENTER
+  EMAIL_DOMAIN
   EMAIL_SENDER_ADDRESS
   THEME
   DATA_COLLECTION
@@ -4765,6 +4783,7 @@ enum AuditEventCode {
   MESSAGE
   PRIVACY_CENTER
   PRIVACY_CENTER_EMAIL_SENDER_ADDRESS
+  EMAIL_DOMAIN
   EMAIL_SENDER_ADDRESS
   EMAIL_SENDER_ADDRESS_ATTRIBUTE_VALUE
   THEME
@@ -11263,6 +11282,7 @@ type CustomFunctionVersionPreview {
   lifecycleState: CustomFunctionVersionLifecycleState!
   lastModifiedAt: Date!
   signedCodeJwt: String!
+  signedCodeContextJwt: String!
   successfulTestRun: Boolean!
   author: UserPreview
   apiKey: ApiKeyPreview
@@ -14014,6 +14034,12 @@ type EnrichmentMetadata {
   identifierJsonPaths: [IdentifierJsonPath!]!
 }
 
+input EnsureTranscendEmployeeUserAsAdminInput {
+  email: String!
+  name: String!
+  organizationId: ID!
+}
+
 type EnvComparison {
   sombra: String!
   transcend: String!
@@ -14317,7 +14343,6 @@ type FormItem {
   authenticationMethods: [AuthenticationMethod!]
   jsonSchema: String
   examples: [FormItemJsonExample!]
-  example: String @deprecated(reason: "Use examples instead. Remove after deploy: https://linear.app/transcend/issue/PIK-8398")
 }
 
 type FormItemJsonExample {
@@ -17443,6 +17468,17 @@ input RequestDownloadAttemptFiltersInput {
   requestId: ID!
   ids: [ID!]
   testRunId: String
+  activities: [RequestDownloadAttemptActivity!]
+  outcomes: [RequestDownloadAttemptOutcome!]
+  errorClasses: [DownloadAndDecryptErrorClass!]
+  errorCodes: [DownloadAndDecryptError!]
+  phases: [DownloadAndDecryptPhase!]
+  deviceClasses: [DownloadDeviceClass!]
+  osFamilies: [DownloadOsFamily!]
+  browserFamilies: [DownloadBrowserFamily!]
+  sinkModes: [DownloadSinkMode!]
+  sinkVariants: [DownloadSinkVariant!]
+  deliveryVerifications: [DownloadDeliveryVerification!]
 }
 
 input RequestDownloadAttemptOrder {
@@ -18540,6 +18576,7 @@ type RunCustomFunctionPayload {
 input RunCustomFunctionInput {
   type: CustomFunctionType!
   id: ID
+  testUnsavedCode: Boolean
   sombraId: ID
   payload: String!
   isCustomFunctionTestRun: Boolean
@@ -21099,6 +21136,7 @@ input UpdateComplianceReportSnapshotInput {
 type UpdateConsentManagerPayload {
   clientMutationId: String
   consentManager: ConsentManager!
+  syncedTcfVendorCount: Int!
 }
 
 type UpdateConsentManagerDomainsPayload {
@@ -23002,6 +23040,7 @@ type WorkflowConfig {
   internalName: String!
   allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
+  isSubmittedByIntegration: Boolean!
 }
 
 type WorkflowConfigActionCount {
