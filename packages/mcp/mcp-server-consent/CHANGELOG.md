@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-consent
 
+## 1.3.0
+
+### Minor Changes
+
+- e59a2db: The consent cookie and data-flow triage review app is now generally available.
+
+  `consent_cookie_triage_review_app` no longer requires `TRANSCEND_MCP_EXPERIMENTAL=1` to appear in the tool catalog.
+
 ## 1.2.9
 
 ### Patch Changes
