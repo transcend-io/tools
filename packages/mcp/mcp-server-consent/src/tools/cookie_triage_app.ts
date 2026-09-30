@@ -145,7 +145,6 @@ export function createConsentCookieTriageAppTool(clients: ToolClients) {
     description: COOKIE_TRIAGE_APP_DESCRIPTION,
     category: 'Consent Management',
     readOnly: true,
-    experimental: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: CookieTriageAppSchema,
     handler: async (input) => createToolResult(true, await buildPayload(input)),
