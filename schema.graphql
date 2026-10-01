@@ -709,6 +709,7 @@ enum DatabaseModelName {
   EnricherAction
   EnricherCrossReferenceIdentifier
   EnricherSubject
+  EnricherTeam
   IdentifierSubject
   IdentifierDataSilo
   IdentifierAction
@@ -5977,6 +5978,7 @@ type ActionInternal implements ActionInterface {
   steps: [Step!]!
   expiryTimeRegions: [ExpiryTime!]!
   downloadAvailabilityDuration: Int!
+  archiveDurationDays: Int!
   waitingPeriod: Int!
 }
 
@@ -6286,10 +6288,9 @@ type AirgapBundleAggregateAnalyticsResult {
 type AirgapBundleAirgapPrefixModule {
   id: ID!
   airgapBundleId: ID!
-  airgapPrefixModuleId: ID!
-  organizationId: ID!
-  version: String!
+  airgapPrefixModuleRelease: AirgapPrefixModuleRelease!
   config: String
+  createdAt: Date!
 }
 
 input AirgapBundleInput {
@@ -6488,16 +6489,21 @@ type AirgapPrefixModule {
   id: ID!
   organizationId: ID
   name: String!
-  createdAt: String!
   releases: [AirgapPrefixModuleRelease!]!
+}
+
+type AirgapPrefixModulePreview {
+  id: ID!
+  organizationId: ID
+  name: String!
 }
 
 type AirgapPrefixModuleRelease {
   id: ID!
+  airgapPrefixModule: AirgapPrefixModulePreview!
   version: String!
   releaseNotes: String!
   configSchema: String
-  createdAt: String!
 }
 
 type AirgapVersion {
@@ -12782,6 +12788,7 @@ input DeleteConsentWorkflowTriggersInput {
 type DeleteCookiesPayload {
   clientMutationId: String
   success: Boolean!
+  orphanedTcfVendors: [OrphanedTcfVendor!]!
 }
 
 input DeleteCookiesInput {
@@ -12793,6 +12800,7 @@ input DeleteCookiesInput {
 type DeleteDataFlowsPayload {
   clientMutationId: String
   success: Boolean!
+  orphanedTcfVendors: [OrphanedTcfVendor!]!
 }
 
 input DeleteDataFlowsInput {
@@ -13911,6 +13919,7 @@ type Enricher {
   description: String!
   logo: String!
   user: UserPreview
+  teams: [TeamPreview!]!
   identifiers: [DsrFormIdentifier!]!
   headers: [CustomHeader!]!
   signedIdentifierPaths: [SignedIdentifierPath!]!
@@ -13992,6 +14001,7 @@ input EnricherInput {
   allowDsrProcessingStartTime: String
   allowDsrProcessingEndTime: String
   userId: ID
+  teamIds: [ID!]
   inputIdentifier: ID!
   headers: [CustomHeaderInput!]
   identifiers: [ID!]!
@@ -14686,7 +14696,7 @@ type InaccurateAiFeatureReportPreview {
 
 input IngressDestinationWorkflowConfigInput {
   actionType: RequestAction!
-  workflowConfigId: ID!
+  workflowConfigId: ID
 }
 
 type InspectLookupProcessesPayload {
@@ -20683,6 +20693,7 @@ input UpdateActionInput {
   icon: String
   expiryTimeRegions: [ExpiryTimeInput!]
   downloadAvailabilityDuration: Int
+  archiveDurationDays: Int
   confirmations: [ActionConfirmationInput!]
   fileFormItems: [ActionFileFormItemInput!]
   skipPublish: Boolean
@@ -21515,6 +21526,7 @@ input UpdateEnricherInput {
   title: String
   description: String
   userId: ID
+  teamIds: [ID!]
   dataSiloId: ID
   dataSubjectIds: [ID!]
   signedIdentifierInputs: [SignedIdentifierPathInput!]
