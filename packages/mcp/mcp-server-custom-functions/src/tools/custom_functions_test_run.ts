@@ -41,8 +41,10 @@ export const CustomFunctionsTestRunSchema = z
       .array(z.string())
       .optional()
       .describe(
-        "Hosts for unsaved code trials only. Empty = localhost only; include 'localhost' " +
-          'with sdk.fetch. Stored runs use the saved allowlist. Secrets/env are dashboard-only.',
+        'Hosts for unsaved code trials only (when code is passed). Ignored for stored runs ' +
+          '({ id } without code) — those use the saved allowlist. To change hosts, call ' +
+          "custom_functions_upsert. Empty = localhost only; include 'localhost' with " +
+          'sdk.fetch. Secrets/env are dashboard-only.',
       ),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
@@ -111,6 +113,7 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       timeoutMs,
     }) => {
       const storedRun = Boolean(id) && !code;
+      const hostsIgnoredOnStoredRun = storedRun && allowedHosts !== undefined;
       const { result, customFunction } = await executeCustomFunctionTestRun(graphql, clients.rest, {
         type,
         id,
@@ -142,6 +145,14 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
         ...result,
         customFunction,
         nextStep,
+        ...(hostsIgnoredOnStoredRun
+          ? {
+              allowedHostsIgnoredWarning:
+                'allowedHosts was ignored for this stored run ({ id } without code). The ' +
+                'saved allowlist was used. Call custom_functions_upsert with allowedHosts to ' +
+                'persist changes, or pass code for an unsaved trial that uses these hosts.',
+            }
+          : {}),
       });
     },
   });

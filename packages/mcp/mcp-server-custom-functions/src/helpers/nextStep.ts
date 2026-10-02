@@ -21,7 +21,9 @@ export function customFunctionDashboardHint(dashboardUrl: string, functionId: st
   const url = customFunctionDashboardUrl(dashboardUrl, functionId);
   return (
     `Review this function at ${url}. Fill Environment Variable values there — MCP only ` +
-    'creates empty name placeholders; do not pass credentials through tools.'
+    'creates empty name placeholders; do not pass credentials through tools. Allowed hosts ' +
+    'are not shown in the Admin Dashboard; confirm them via upsert response or ' +
+    'custom_functions_get_code.'
   );
 }
 

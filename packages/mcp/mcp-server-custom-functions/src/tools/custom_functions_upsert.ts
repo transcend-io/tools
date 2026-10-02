@@ -63,9 +63,11 @@ export const CustomFunctionsUpsertSchema = z
       .array(z.string())
       .optional()
       .describe(
-        'Allowed hosts. Empty = localhost only; any explicit list drops implicit localhost ' +
-          "(include 'localhost' if using sdk.fetch). On update, omit keeps existing; " +
-          'provided list fully replaces.',
+        'Hostname allowlist (no scheme), e.g. pokeapi.co. Empty [] = localhost only; any ' +
+          "explicit list drops implicit localhost (include 'localhost' if using sdk.fetch). " +
+          'On update, omit to keep existing hosts — never pass [] unless you intend to wipe ' +
+          'to localhost-only. Provided list fully replaces. Response returns verified hosts ' +
+          'from a post-write read (not shown in the Admin Dashboard).',
       ),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
@@ -148,6 +150,51 @@ function envPersistWarningFor(
   );
 }
 
+/**
+ * Whether two host lists match ignoring order.
+ *
+ * @param left - First host list
+ * @param right - Second host list
+ * @returns True when both lists contain the same hosts
+ */
+function sameHostSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const sortedLeft = [...left].sort();
+  const sortedRight = [...right].sort();
+  return sortedLeft.every((host, index) => host === sortedRight[index]);
+}
+
+/**
+ * Declared allowedHosts that did not match the post-write readable version.
+ *
+ * @param declared - Hosts the agent asked to set (omit = no check)
+ * @param verified - Hosts present on the readable version after write
+ * @returns Warning string or undefined when hosts match (order-insensitive)
+ */
+function allowedHostsPersistWarningFor(
+  declared: string[] | undefined,
+  verified: string[],
+): string | undefined {
+  if (declared === undefined) {
+    return undefined;
+  }
+  if (sameHostSet(declared, verified)) {
+    return undefined;
+  }
+  const declaredLabel = declared.length > 0 ? declared.join(', ') : '(empty = localhost only)';
+  const verifiedLabel = verified.length > 0 ? verified.join(', ') : '(empty = localhost only)';
+  return (
+    `Declared allowedHosts did not match the readable version after save. Declared: ` +
+    `${declaredLabel}. Verified: ${verifiedLabel}. Do not tell the user hosts were updated. ` +
+    'Retry custom_functions_upsert with allowedHosts (omit code on update to keep stored ' +
+    'code). On update, omit allowedHosts to preserve existing hosts — [] wipes to ' +
+    'localhost-only. Confirm with custom_functions_get_code (hosts are not shown in the ' +
+    'Admin Dashboard).'
+  );
+}
+
 export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   const graphql = clients.graphql as CustomFunctionsMixin;
   return defineTool({
@@ -155,11 +202,13 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
     description:
       'Create or update a Custom Function from plaintext TypeScript. Pass envVarNames to ' +
       'create empty env placeholders; never pass secret values — the user fills them in the ' +
-      'dashboard. Updates preserve stored secret values. Save does not require a passing test. ' +
-      'On create, omit sombraId and dataSiloId unless an error requires them; pass a unique ' +
-      'name for list search. DSR create without dataSiloId also creates a customFunction data ' +
-      'silo. DSR attach needs a NOT_CONFIGURED CUSTOM_FUNCTION silo (one function per silo). ' +
-      'Updates write a draft; omit code on update for metadata-only changes.',
+      'dashboard. Pass allowedHosts to set the network allowlist (omit on update to keep). ' +
+      'Updates preserve stored secret values. Save does not require a passing test. Response ' +
+      'returns verified envVarNames and allowedHosts from a post-write read. On create, omit ' +
+      'sombraId and dataSiloId unless an error requires them; pass a unique name for list ' +
+      'search. DSR create without dataSiloId also creates a customFunction data silo. DSR ' +
+      'attach needs a NOT_CONFIGURED CUSTOM_FUNCTION silo (one function per silo). Updates ' +
+      'write a draft; omit code on update for metadata-only changes.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
@@ -326,15 +375,20 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           dependencyWarnings = promotion.dependencyWarnings;
         }
 
-        // Verify env from the readable version (draft when pending, else active) — never echo
-        // the pre-write local merge.
+        // Verify env + hosts from the readable version (draft when pending, else active) —
+        // never echo the pre-write local merge / signed request.
         const verifiedSigned = await graphql.getSignedCustomFunctionVersion(result.id);
         const verifiedSource = await clients.rest.unwrapCustomFunction({
           signedCodeJwt: verifiedSigned.signedCodeJwt,
           signedCodeContextJwt: verifiedSigned.signedCodeContextJwt,
         });
         const verifiedEnvNames = Object.keys(verifiedSource.context.userDefinedEnv);
+        const verifiedAllowedHosts = verifiedSource.context.allowedHosts ?? [];
         const envPersistWarning = envPersistWarningFor(envVarNames, verifiedEnvNames);
+        const allowedHostsPersistWarning = allowedHostsPersistWarningFor(
+          allowedHosts,
+          verifiedAllowedHosts,
+        );
 
         const selectedVersion = result.draftVersion ?? result.activeVersion;
         // Only advertise names that actually persisted on the readable version.
@@ -358,6 +412,8 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           testResults: testResults.length > 0 ? testResults : undefined,
           envVarNames: verifiedEnvNames,
           envPersistWarning,
+          allowedHosts: verifiedAllowedHosts,
+          allowedHostsPersistWarning,
           dashboardHint: customFunctionDashboardHint(clients.dashboardUrl, result.id),
           nextStep,
         });

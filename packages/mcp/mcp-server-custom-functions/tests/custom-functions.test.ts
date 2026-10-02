@@ -157,6 +157,8 @@ describe('Custom Functions tools', () => {
       success: true,
       data: {
         envVarNames: [],
+        allowedHosts: [],
+        allowedHostsPersistWarning: undefined,
         nextStep: expect.stringMatching(/Environment Variables[\s\S]*custom_functions_test_run/),
       },
     });
@@ -275,6 +277,8 @@ describe('Custom Functions tools', () => {
       data: {
         envVarNames: ['API_KEY', 'BASE_URL'],
         envPersistWarning: undefined,
+        allowedHosts: [],
+        allowedHostsPersistWarning: undefined,
         nextStep: expect.stringContaining('API_KEY, BASE_URL'),
       },
     });
@@ -390,6 +394,174 @@ describe('Custom Functions tools', () => {
       data: {
         envVarNames: [],
         envPersistWarning: expect.stringContaining('TRANSCEND_API_KEY'),
+      },
+    });
+  });
+
+  it('returns verified allowedHosts after create', async () => {
+    graphql.createCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      lifecycleState: 'ACTIVE',
+      sombraId: 'sombra-1',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', hasPendingDraft: false },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: {
+        userDefinedEnv: {},
+        allowedHosts: ['localhost', 'pokeapi.co'],
+      },
+    });
+
+    const result = await getTool('custom_functions_upsert').handler({
+      type: 'GENERAL',
+      name: 'Example',
+      sombraId: 'sombra-1',
+      code: 'export default () => true;',
+      allowedHosts: ['pokeapi.co', 'localhost'],
+      setActive: true,
+      promote: false,
+    });
+
+    expect(rest.signCustomFunction).toHaveBeenCalledWith({
+      code: 'export default () => true;',
+      context: {
+        userDefinedEnv: {},
+        allowedHosts: ['pokeapi.co', 'localhost'],
+        allowThirdPartyImports: undefined,
+        timeoutMs: undefined,
+      },
+    });
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        allowedHosts: ['localhost', 'pokeapi.co'],
+        allowedHostsPersistWarning: undefined,
+      },
+    });
+    expect(JSON.stringify(result)).toContain('not shown in the Admin Dashboard');
+  });
+
+  it('returns allowedHostsPersistWarning when declared hosts are missing after write', async () => {
+    graphql.createCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      lifecycleState: 'ACTIVE',
+      sombraId: 'sombra-1',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', hasPendingDraft: false },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: { userDefinedEnv: {}, allowedHosts: [] },
+    });
+
+    const result = await getTool('custom_functions_upsert').handler({
+      type: 'GENERAL',
+      name: 'Example',
+      sombraId: 'sombra-1',
+      code: 'export default () => true;',
+      allowedHosts: ['pokeapi.co', 'localhost'],
+      setActive: true,
+      promote: false,
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        allowedHosts: [],
+        allowedHostsPersistWarning: expect.stringContaining('pokeapi.co'),
+      },
+    });
+  });
+
+  it('replaces allowedHosts on update when provided', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: {
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        sombraId: 'sombra-1',
+        hasPendingDraft: false,
+      },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    rest.unwrapCustomFunction
+      .mockResolvedValueOnce({
+        code: 'export default () => "stored";',
+        context: {
+          userDefinedEnv: {},
+          allowedHosts: ['old.example.com'],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 'export default () => "stored";',
+        context: {
+          userDefinedEnv: {},
+          allowedHosts: ['pokeapi.co', 'localhost'],
+        },
+      });
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: true,
+      draftVersion: {
+        id: 'version-2',
+        versionNumber: '2',
+        lifecycleState: 'DRAFT',
+        successfulTestRun: false,
+      },
+    });
+
+    const result = await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      type: 'GENERAL',
+      allowedHosts: ['pokeapi.co', 'localhost'],
+      setActive: false,
+      promote: false,
+    });
+
+    expect(rest.signCustomFunction).toHaveBeenCalledWith({
+      code: 'export default () => "stored";',
+      context: {
+        userDefinedEnv: {},
+        allowedHosts: ['pokeapi.co', 'localhost'],
+        allowThirdPartyImports: undefined,
+        timeoutMs: undefined,
+      },
+    });
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        allowedHosts: ['pokeapi.co', 'localhost'],
+        allowedHostsPersistWarning: undefined,
       },
     });
   });
@@ -742,7 +914,6 @@ describe('Custom Functions tools', () => {
     const result = await getTool('custom_functions_test_run').handler({
       id: 'cf-1',
       type: 'GENERAL',
-      allowedHosts: [],
     });
 
     expect(rest.signCustomFunction).not.toHaveBeenCalled();
@@ -757,6 +928,52 @@ describe('Custom Functions tools', () => {
         passed: true,
         customFunction: { activeVersion: { successfulTestRun: false } },
         nextStep: expect.stringContaining('does not require'),
+      },
+    });
+    expect(result.data).not.toHaveProperty('allowedHostsIgnoredWarning');
+  });
+
+  it('warns when allowedHosts is passed on a stored id-only test run', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: {
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        lifecycleState: 'ACTIVE',
+        sombraId: 'sombra-1',
+        hasPendingDraft: false,
+        activeVersion: {
+          id: 'version-1',
+          versionNumber: '1',
+          lifecycleState: 'ACTIVE',
+          successfulTestRun: false,
+        },
+      },
+      version: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+      ...SIGNED,
+    });
+    graphql.testRunCustomFunction.mockResolvedValue({
+      exitCode: 0,
+      logs: [],
+      profile: { timeMs: 4 },
+    });
+
+    const result = await getTool('custom_functions_test_run').handler({
+      id: 'cf-1',
+      type: 'GENERAL',
+      allowedHosts: ['pokeapi.co'],
+    });
+
+    expect(rest.signCustomFunction).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        allowedHostsIgnoredWarning: expect.stringContaining('custom_functions_upsert'),
       },
     });
   });
