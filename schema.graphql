@@ -363,6 +363,7 @@ enum ScopeName {
   manageBilling
   manageDataMap
   managedAssignedIntegrations
+  approveAssignedIntegrationRequests
   managedAssignedDataInventory
   managedAssignedConsentManager
   managedAssignedRequests
@@ -1467,6 +1468,8 @@ enum ActionItemCode {
   PROFILE_DATA_POINT_STATUS
   REQUEST_EXPIRY
   REQUEST_DATA_SILO_ERROR
+  REQUEST_DATA_SILO_NEEDS_APPROVAL
+  REQUEST_DATA_SILO_NEEDS_APPROVAL_ASSIGNED
   REQUEST_ENRICHER_ERROR
   REQUEST_IDENTIFIER_NEEDS_VERIFICATION
   REQUEST_ENRICHER_PERSON_NEEDS_MANUAL_ENTRY
@@ -3118,6 +3121,7 @@ enum OpfsFirstRoutingReason {
   IOS_FIREFOX_OPFS_FIRST
   IOS_OPFS_FIRST
   ANDROID_STREAMSAVER_CANCEL_RETRY
+  STREAMSAVER_CANCEL_RETRY
   WEBKIT_STREAM_SAVER_FAILURE_RETRY
   LARGE_ARCHIVE_OPFS_FIRST
 }
@@ -6219,6 +6223,7 @@ input AdminUpsertPreferenceRecordInput {
   purposes: [PurposeInput!]!
   confirmed: Boolean
   identifiers: [PreferenceStoreIdentifierInput!]!
+  birthDate: String
   options: AdminUpsertPreferenceRecordOptionsInput
 }
 
@@ -13457,6 +13462,7 @@ type DownloadFilesPayload {
   nodes: [DownloadFile!]!
   totalCount: Int!
   totalSize: String!
+  totalJsonSize: String!
 }
 
 type DownloadFilesCountsOnlyPayload {
@@ -17642,6 +17648,7 @@ type RequestFilesPayload {
   nodes: [RequestFile!]!
   totalCount: Int!
   totalSize: Float!
+  totalJsonSize: Float!
 }
 
 type RequestFilesCountsOnlyPayload {
@@ -19692,6 +19699,7 @@ type SombraPreview {
   transcendIngressUrl: String!
   title: String
   hostedMethod: SombraHostedMethod!
+  version: String
   publicKeyECDH: String
   odbcPooling: SombraOdbcPooling
 }
