@@ -34,8 +34,12 @@ export const FullscreenButton = memo(function FullscreenButton({
       if (event.key !== 'Escape' || event.defaultPrevented) {
         return;
       }
-      // Leave Escape for open dialogs / menus / listboxes (ConfirmDialog, split menus, PurposeMultiSelect).
-      if (document.querySelector('[aria-modal="true"], [role="menu"], [role="listbox"]')) {
+      // Leave Escape for open dialogs / menus / listboxes / editors that claim it.
+      if (
+        document.querySelector(
+          '[aria-modal="true"], [role="menu"], [role="listbox"], [data-claim-escape]',
+        )
+      ) {
         return;
       }
       event.preventDefault();
