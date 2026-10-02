@@ -47,8 +47,11 @@ export {
   CollapseIcon,
   CommentIcon,
   ExpandIcon,
+  PencilIcon,
   RefreshIcon,
+  SparkleIcon,
   TrashIcon,
+  WarningIcon,
 } from './Icons/Icons.tsx';
 export { SvgIcon, createSvgIcon, type SvgIconProps } from './Icons/SvgIcon.tsx';
 export { InlineAlert, type InlineAlertProps } from './InlineAlert/InlineAlert.tsx';

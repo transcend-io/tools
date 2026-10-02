@@ -94,6 +94,7 @@ export const CookieRowNotes = memo(function CookieRowNotes({
     setNotesError(undefined);
     try {
       await onSave(notesDraft);
+      onToggle();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save note';
       setNotesError(message);

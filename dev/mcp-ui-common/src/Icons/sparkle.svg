@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M5.99752 2.99625C5.99752 5.20631 4.20591 6.99791 1.99585 6.99791C4.20591 6.99791 5.99752 8.78952 5.99752 10.9996C5.99752 8.78952 7.78912 6.99791 9.99918 6.99791C7.78912 6.99791 5.99752 5.20631 5.99752 2.99625Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M17.0021 15.0012C17.0021 12.2387 14.7626 9.99915 12 9.99915C14.7626 9.99915 17.0021 7.75964 17.0021 4.99707C17.0021 7.75964 19.2416 9.99915 22.0042 9.99915C19.2416 9.99915 17.0021 12.2387 17.0021 15.0012Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M17.002 15.0013V16.0017"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M17.002 4.99709V3.99667"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M9.99911 21.0038V22.0042"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M9.99911 14.0008V13.0004"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M5.99752 10.9996V12"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M5.99752 1.99582V2.99624"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M9.9991 13.5006C9.9991 15.7107 8.2075 17.5023 5.99744 17.5023C8.2075 17.5023 9.9991 19.2939 9.9991 21.5039C9.9991 19.2939 11.7907 17.5023 14.0008 17.5023C11.7907 17.5023 9.9991 15.7107 9.9991 13.5006Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

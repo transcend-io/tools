@@ -1,14 +1,11 @@
 import {
-  ApproveCheckIcon,
   Button,
   ButtonVariant,
-  CancelIcon,
-  CommentIcon,
+  SparkleIcon,
   StatusBadge,
   StatusBadgeTone,
-  TrashIcon,
 } from '@transcend-io/mcp-ui-common';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { CookieRowNotes } from './CookieRowNotes.tsx';
@@ -17,7 +14,6 @@ import {
   useCookieTriageMeta,
   useRequestDelete,
 } from './CookieTriageContext.tsx';
-import { triageCopy } from './cookieTriageCopy.ts';
 import {
   CookieTriageDecision,
   decisionReadLabel,
@@ -29,6 +25,14 @@ import {
   type CookieRowState,
 } from './cookieTriageState.ts';
 import { PurposeMultiSelect } from './PurposeMultiSelect.tsx';
+import {
+  CookieTriageRowAction,
+  defaultRowAction,
+  formatSuggestionLine,
+  nextPrimaryAfterSuggestionChange,
+  type CookieTriageRowAction as CookieTriageRowActionValue,
+} from './rowActions.ts';
+import { RowActionSplitButton } from './RowActionSplitButton.tsx';
 
 interface CookieRowProps {
   /** Purpose tab this row belongs to */
@@ -49,13 +53,29 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
   const cookie = row.initial;
   const dormant = isDormantCookie(cookie);
   const suggestion = suggestRowDecision(row);
+  const [primaryAction, setPrimaryAction] = useState<CookieTriageRowActionValue>(() =>
+    defaultRowAction(suggestion),
+  );
+  const previousSuggestionRef = useRef(suggestion);
   const selectedPurposes = selectRowPurposeSlugs(row);
   const decided = row.decision;
   const isDecided =
     decided === CookieTriageDecision.Approve || decided === CookieTriageDecision.Junk;
   const busy = asking || mutating;
   const hasSavedNotes = row.notes.trim().length > 0;
-  const { singular } = triageCopy(triageType);
+  const suggestionLine = formatSuggestionLine(suggestion);
+  const hasSuggestion = suggestion !== undefined;
+
+  useEffect(() => {
+    const previousSuggestion = previousSuggestionRef.current;
+    previousSuggestionRef.current = suggestion;
+    if (previousSuggestion === suggestion) {
+      return;
+    }
+    setPrimaryAction((current) =>
+      nextPrimaryAfterSuggestionChange(current, previousSuggestion, suggestion),
+    );
+  }, [suggestion]);
 
   const onDecision = useCallback(
     async (next: CookieTriageDecision): Promise<void> => {
@@ -136,11 +156,33 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
     setNotesOpen((open) => !open);
   }
 
+  function onExecuteRowAction(action: CookieTriageRowActionValue): void {
+    switch (action) {
+      case CookieTriageRowAction.Approve:
+        void onDecision(CookieTriageDecision.Approve);
+        break;
+      case CookieTriageRowAction.Junk:
+        void onDecision(CookieTriageDecision.Junk);
+        break;
+      case CookieTriageRowAction.LeaveComment:
+        setNotesOpen(true);
+        break;
+      case CookieTriageRowAction.DeleteRecord:
+        setNotesOpen(false);
+        requestDelete({
+          purpose,
+          name: row.name,
+          itemLabel: cookie.name,
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
   return (
     <>
-      <tr
-        className={`align-middle ${hasSavedNotes || notesOpen ? '' : 'border-b border-card-line'}`}
-      >
+      <tr className={`align-top ${hasSavedNotes || notesOpen ? '' : 'border-b border-card-line'}`}>
         <td className="min-w-0 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="block truncate text-sm font-medium text-on-card" title={cookie.name}>
@@ -178,27 +220,6 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         <td className="min-w-0 px-4 py-3">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Decision">
-              <Button
-                variant={ButtonVariant.Action}
-                title="Ask the assistant what action to take"
-                disabled={busy}
-                aria-busy={asking}
-                onClick={() => {
-                  void onAskOpinion();
-                }}
-              >
-                Ask Agent
-              </Button>
-              <Button
-                variant={ButtonVariant.Icon}
-                active={notesOpen || hasSavedNotes}
-                aria-label={notesOpen ? 'Close note' : 'Add note'}
-                aria-pressed={notesOpen}
-                title={notesOpen ? 'Close note' : 'Add note'}
-                onClick={onToggleNotes}
-              >
-                <CommentIcon />
-              </Button>
               {isDecided ? (
                 <span className="inline-flex items-baseline gap-2 text-sm">
                   <span
@@ -223,53 +244,37 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   </Button>
                 </span>
               ) : (
-                <>
-                  <Button
-                    variant={ButtonVariant.Icon}
-                    active={suggestion === CookieTriageDecision.Approve}
-                    aria-label="Approve"
-                    disabled={busy}
-                    aria-busy={mutating}
-                    onClick={() => {
-                      void onDecision(CookieTriageDecision.Approve);
-                    }}
-                  >
-                    <ApproveCheckIcon />
-                  </Button>
-                  <Button
-                    variant={ButtonVariant.Icon}
-                    active={suggestion === CookieTriageDecision.Junk}
-                    aria-label="Junk"
-                    disabled={busy}
-                    aria-busy={mutating}
-                    onClick={() => {
-                      void onDecision(CookieTriageDecision.Junk);
-                    }}
-                  >
-                    <CancelIcon />
-                  </Button>
-                  {supportsPermanentDelete ? (
-                    <Button
-                      variant={ButtonVariant.Icon}
-                      aria-label="Delete"
-                      disabled={busy}
-                      aria-busy={mutating}
-                      title={`Permanently delete this ${singular}`}
-                      onClick={() => {
-                        setNotesOpen(false);
-                        requestDelete({
-                          purpose,
-                          name: row.name,
-                          itemLabel: cookie.name,
-                        });
-                      }}
-                    >
-                      <TrashIcon />
-                    </Button>
-                  ) : null}
-                </>
+                <RowActionSplitButton
+                  primary={primaryAction}
+                  supportsPermanentDelete={supportsPermanentDelete}
+                  disabled={busy}
+                  busy={mutating}
+                  onPrimaryChange={setPrimaryAction}
+                  onExecute={onExecuteRowAction}
+                />
               )}
+              <Button
+                variant={ButtonVariant.Action}
+                title="Ask the assistant what action to take"
+                disabled={busy}
+                aria-busy={asking}
+                onClick={() => {
+                  void onAskOpinion();
+                }}
+              >
+                Ask agent
+              </Button>
             </div>
+            {!isDecided ? (
+              <p
+                className={`inline-flex items-center gap-1 text-sm ${
+                  hasSuggestion ? 'text-brand' : 'text-on-card-muted'
+                }`}
+              >
+                {hasSuggestion ? <SparkleIcon width={12} height={12} /> : null}
+                <span>{suggestionLine}</span>
+              </p>
+            ) : null}
             {actionError ? (
               <p className="text-sm text-danger" role="alert">
                 {actionError}
