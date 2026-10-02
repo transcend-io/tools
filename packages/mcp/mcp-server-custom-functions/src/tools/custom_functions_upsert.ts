@@ -200,15 +200,13 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_upsert',
     description:
-      'Create or update a Custom Function from plaintext TypeScript. Pass envVarNames to ' +
-      'create empty env placeholders; never pass secret values — the user fills them in the ' +
-      'dashboard. Pass allowedHosts to set the network allowlist (omit on update to keep). ' +
-      'Updates preserve stored secret values. Save does not require a passing test. Response ' +
-      'returns verified envVarNames and allowedHosts from a post-write read. On create, omit ' +
-      'sombraId and dataSiloId unless an error requires them; pass a unique name for list ' +
-      'search. DSR create without dataSiloId also creates a customFunction data silo. DSR ' +
-      'attach needs a NOT_CONFIGURED CUSTOM_FUNCTION silo (one function per silo). Updates ' +
-      'write a draft; omit code on update for metadata-only changes.',
+      'Create or update a Custom Function from plaintext TypeScript. Pass envVarNames for ' +
+      'empty placeholders (never secret values — user fills in dashboard). Pass allowedHosts ' +
+      'for the network allowlist (omit on update to keep). Save does not require a passing ' +
+      'test; response returns verified envVarNames and allowedHosts. On create, omit ' +
+      'sombraId/dataSiloId unless required; use a unique name. DSR create without dataSiloId ' +
+      'also creates a customFunction silo; attach needs a NOT_CONFIGURED CUSTOM_FUNCTION ' +
+      'silo. Updates write a draft; omit code for metadata-only changes.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
