@@ -2,7 +2,10 @@ import {
   assertOffsetInRange,
   createListResult,
   defineTool,
-  describeNoMatches,
+  describeOutcome,
+  isoDate,
+  nonEmptyList,
+  nonEmptyListMessage,
   z,
   OffsetPaginationSchema,
   type ToolClients,
@@ -15,33 +18,6 @@ import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 export const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
 export type AssessmentStatusEnumInput = z.infer<typeof AssessmentStatusEnum>;
 
-/**
- * Accepts a bare date or a full timestamp, since the GraphQL `Date` scalar
- * takes both and callers phrase deadlines either way.
- */
-const isoDate = (field: string) =>
-  z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}([T ].*)?$/, {
-      message: `${field} must be an ISO 8601 date, e.g. 2026-01-31 or 2026-01-31T00:00:00Z`,
-    })
-    .optional();
-
-/**
- * An optional list filter that rejects `[]`.
- *
- * Empty arrays are dropped during filter assembly, so a caller that resolved a
- * lookup to nothing and passed the result through would have its filter read as
- * "no filter given" and get back every assessment in the organization — the
- * widest possible answer to a query that should have matched none.
- */
-const idList = (description: string) =>
-  z
-    .array(z.string())
-    .min(1, { message: 'Pass at least one value, or omit the filter entirely.' })
-    .optional()
-    .describe(description);
-
 /** Caller-facing sort names mapped onto `AssessmentFormRawOrderField`. */
 const SORT_FIELDS: Record<string, ListAssessmentsSortField> = {
   title: 'title',
@@ -53,19 +29,19 @@ export const ListAssessmentsSchema = z
   .object({
     statuses: z
       .array(AssessmentStatusEnum)
-      .min(1, { message: 'Pass at least one status, or omit the filter entirely.' })
+      .min(1, { message: nonEmptyListMessage('status') })
       .optional()
       .describe('Lifecycle statuses to include. Omit for every status.'),
     text: z.string().optional().describe('Free-text match on the assessment title'),
-    ids: idList('Specific assessment form IDs to fetch'),
-    assigneeIds: idList(
+    ids: nonEmptyList('Specific assessment form IDs to fetch'),
+    assigneeIds: nonEmptyList(
       'Transcend user IDs the form is assigned to. Resolve names with `admin_list_users`.',
     ),
-    reviewerIds: idList(
+    reviewerIds: nonEmptyList(
       'Transcend user IDs reviewing the form. Resolve names with `admin_list_users`.',
     ),
-    externalAssigneeEmails: idList('Email addresses of external (vendor) assignees'),
-    assessmentGroupIds: idList('Groups the forms belong to; see `assessments_list_groups`'),
+    externalAssigneeEmails: nonEmptyList('Email addresses of external (vendor) assignees'),
+    assessmentGroupIds: nonEmptyList('Groups the forms belong to; see `assessments_list_groups`'),
     createdAfter: isoDate('createdAfter').describe('Only forms created strictly after this date'),
     createdBefore: isoDate('createdBefore').describe('Only forms created on or before this date'),
     dueAfter: isoDate('dueAfter').describe('Only forms due strictly after this date'),
@@ -177,6 +153,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
         totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
         paginationNote: describeOutcome({
+          subject: 'assessments',
           returned: nodesWithLinks.length,
           totalCount,
           offset,
@@ -186,38 +163,4 @@ export function createAssessmentsListTool(clients: ToolClients) {
       });
     },
   });
-}
-
-/**
- * Tells the caller which of three situations it is in: nothing matched, more
- * pages remain, or this is everything. Without this an empty `data` array reads
- * the same as a filter typo, and the agent reports "no assessments" to the user.
- */
-function describeOutcome({
-  returned,
-  totalCount,
-  offset,
-  limit,
-  appliedFilters,
-}: {
-  /** Rows on this page */
-  returned: number;
-  /** Rows matching the filters overall */
-  totalCount: number;
-  /** Offset this page started at */
-  offset: number;
-  /** Page size requested */
-  limit: number;
-  /** Names of the filters that were forwarded to the API */
-  appliedFilters: string[];
-}): string {
-  if (totalCount === 0) return describeNoMatches('assessments', appliedFilters);
-  if (offset + returned < totalCount) {
-    return `Showing ${returned} of ${totalCount} matches. Fetch the next page with offset ${
-      offset + limit
-    }.`;
-  }
-  return offset === 0
-    ? `Showing all ${returned} match${returned === 1 ? '' : 'es'}. No further pages.`
-    : `Showing the last ${returned} of ${totalCount} matches. No further pages.`;
 }
