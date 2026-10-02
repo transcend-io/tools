@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
+import {
+  COOKIE_TRIAGE_DORMANT_MS,
+  CookieTriagePurposeCategory,
+} from '../src/lib/cookieTriageConfig.js';
 import {
   ConsentTriageType,
   CookieTriageDecision,
@@ -31,8 +34,10 @@ import {
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
 
-const recentActivityAt = '2026-08-26T17:22:08.000Z';
-const staleActivityAt = '2025-01-01T00:00:00.000Z';
+/** Well inside the dormant window so approve suggestions stay stable over time. */
+const recentActivityAt = new Date(Date.now() - COOKIE_TRIAGE_DORMANT_MS / 2).toISOString();
+/** Older than the dormant window so junk suggestions stay stable over time. */
+const staleActivityAt = new Date(Date.now() - COOKIE_TRIAGE_DORMANT_MS * 2).toISOString();
 
 const analyticsCookies: CookieTriageAnalysis[] = [
   {
@@ -1182,7 +1187,7 @@ describe('format helpers', () => {
         service: 'Google Analytics',
         trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 31204,
-        lastActivityAt: '2026-08-26T17:22:08.000Z',
+        lastActivityAt: recentActivityAt,
       },
     });
 
