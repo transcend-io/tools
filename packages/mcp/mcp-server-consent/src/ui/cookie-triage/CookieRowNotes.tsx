@@ -61,19 +61,23 @@ export const CookieRowNotes = memo(function CookieRowNotes({
     }
 
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key !== 'Escape' || notesSavingRef.current) {
+      if (event.key !== 'Escape') {
         return;
       }
-      // Claim Escape so fullscreen exit (and similar host handlers) do not steal it.
+      // Claim Escape before window bubble listeners (e.g. FullscreenButton) see it.
       event.preventDefault();
+      if (notesSavingRef.current) {
+        return;
+      }
       setNotesError(undefined);
       setNotesDraft(rowNotesRef.current);
       onToggleRef.current();
     }
 
-    window.addEventListener('keydown', onKeyDown);
+    // Capture so this runs before FullscreenButton's window bubble listener.
+    window.addEventListener('keydown', onKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, true);
     };
   }, [open]);
 
@@ -94,6 +98,7 @@ export const CookieRowNotes = memo(function CookieRowNotes({
     setNotesError(undefined);
     try {
       await onSave(notesDraft);
+      onToggle();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save note';
       setNotesError(message);
@@ -124,7 +129,7 @@ export const CookieRowNotes = memo(function CookieRowNotes({
         </tr>
       ) : null}
       {open ? (
-        <tr className="border-b border-card-line bg-card-sunken">
+        <tr className="border-b border-card-line bg-card-sunken" data-claim-escape="">
           <td colSpan={4} className="px-4 py-3">
             <label className="flex flex-col gap-2">
               <span className="sr-only">Note for {row.initial.name}</span>

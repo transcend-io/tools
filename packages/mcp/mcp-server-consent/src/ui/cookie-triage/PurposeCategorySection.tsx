@@ -5,6 +5,7 @@ import {
   ButtonVariant,
   ChevronDownIcon,
   InlineAlert,
+  SparkleIcon,
   Spinner,
   TableListFooter,
 } from '@transcend-io/mcp-ui-common';
@@ -147,6 +148,9 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
             }
           }}
         >
+          {!busy && (headerAction?.mode === 'apply' || headerAction === undefined) ? (
+            <SparkleIcon width={14} height={14} />
+          ) : null}
           {headerAction?.label ?? 'Apply suggestions'}
         </Button>
       </div>
