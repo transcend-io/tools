@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-consent
 
+## 1.3.1
+
+### Patch Changes
+
+- 6799f1e: Improve the consent triage review table: clearer suggestion affordances, a labeled split-button for row actions, top-aligned cells, and notes that close after save.
+
 ## 1.3.0
 
 ### Minor Changes
