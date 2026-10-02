@@ -136,7 +136,7 @@ export const RowActionSplitButton = memo(function RowActionSplitButton({
     <div className="inline-flex" ref={rootRef} role="group" aria-label="Row action">
       <button
         type="button"
-        className={`${SEGMENT_BASE} min-w-[4.75rem] rounded-l-sm rounded-r-none px-2.5`}
+        className={`${SEGMENT_BASE} min-w-19 rounded-l-sm rounded-r-none px-2.5`}
         disabled={inactive}
         aria-busy={busy || undefined}
         onClick={() => {
