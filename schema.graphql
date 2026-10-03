@@ -957,6 +957,7 @@ enum DatabaseModelName {
   privacyCenter
   privacyCenterVersion
   privacyCenterFooterLink
+  privacyCenterHostnameChange
   profile
   prompt
   promptRun
@@ -3919,6 +3920,15 @@ enum PrivacyCenterFooterLayout {
   GRID
 }
 
+enum PrivacyCenterHostnameChangeStatus {
+  PENDING_VALIDATION
+  READY_TO_CUT_OVER
+  CUT_OVER
+  ROLLED_BACK
+  COMPLETED
+  FAILED
+}
+
 enum PrivacyCenterModule {
   PRIVACY_CENTER
   POLICIES
@@ -5437,6 +5447,7 @@ type Mutation {
   addUser(input: AddUserInput!): AddUserPayload!
   adminUpsertPreferences(input: AdminUpsertPreferenceRecordsInput!): AdminUpsertPreferencesPayload!
   approveRequest(input: ApproveRequestInput!): ApproveRequestPayload!
+  approveRequestDataSilos(input: ApproveRequestDataSilosInput!): ApproveRequestDataSilosPayload!
   approveRequests(input: ApproveRequestsInput!): ApproveRequestsPayload!
   approveRequestSecondary(input: CommunicationInput!): ApproveRequestSecondaryPayload!
   archiveCustomFunction(input: ArchiveCustomFunctionInput!): ArchiveCustomFunctionPayload!
@@ -5679,6 +5690,7 @@ type Mutation {
   recordDropStatusOverrides(input: RecordDropStatusOverridesInput!): RecordDropStatusOverridesPayload!
   redactRequestFiles(input: RedactRequestFilesInput!): RedactRequestFilesPayload!
   refetchSubDataPointSample(input: RefetchSubDataPointSampleInput!): RefetchSubDataPointSamplePayload!
+  rejectRequestDataSilos(input: RejectRequestDataSilosInput!): RejectRequestDataSilosPayload!
   removeDataSiloFromWorkflowConfig(input: WorkflowDataSiloInput!): RemoveDataSiloFromWorkflowConfigPayload!
   removeEnrichersFromWorkflowConfig(input: RemoveEnrichersFromWorkflowConfigInput!): RemoveEnrichersFromWorkflowConfigPayload!
   removeFileUploadsFromWorkflowConfig(input: RemoveFileUploadsFromWorkflowConfigInput!): RemoveFileUploadsFromWorkflowConfigPayload!
@@ -6710,6 +6722,16 @@ type ApplyApprovedVendorAiDraftResult {
 type ApproveRequestPayload {
   clientMutationId: String
   request: Request!
+}
+
+type ApproveRequestDataSilosPayload {
+  clientMutationId: String
+  requestDataSilos: [RequestDataSilo!]!
+}
+
+input ApproveRequestDataSilosInput {
+  ids: [ID!]!
+  note: String
 }
 
 input ApproveRequestInput {
@@ -13415,6 +13437,8 @@ input DownloadAndDecryptMetricsInput {
   archiveTrailer: DownloadArchiveTrailerInput
   recentActivity: String
   hiddenMs: Float
+  declaredArchiveSizeBytes: Float
+  declaredLengthOverrunBytes: Float
 }
 
 input DownloadArchiveTrailerInput {
@@ -17088,6 +17112,16 @@ input RegionInput {
   countrySubDivision: String
 }
 
+type RejectRequestDataSilosPayload {
+  clientMutationId: String
+  requestDataSilos: [RequestDataSilo!]!
+}
+
+input RejectRequestDataSilosInput {
+  ids: [ID!]!
+  note: String!
+}
+
 input RejectVendorAiDraftInput {
   draftId: ID!
   reviewNotes: String!
@@ -17386,6 +17420,12 @@ type RequestDataSilo {
   requestFileCount: Int!
   error: String
   scheduledAt: Date
+  ownerApprovalStatus: RequestDataSiloOwnerApprovalStatus
+  ownerApprovalDecidedAt: Date
+  ownerApprovalDecidedBy: UserPreview
+  ownerApprovalDecidedByApiKey: ApiKeyPreview
+  ownerApprovalNote: String
+  canDecideOwnerApproval: Boolean!
 }
 
 input RequestDataSiloDataPointInput {
@@ -17661,6 +17701,7 @@ type RequestFilesTokenPayload {
   nodes: [RequestFile!]!
   totalCount: Int!
   totalSize: String!
+  totalJsonSize: String!
 }
 
 input RequestFileTokenFiltersInput {
