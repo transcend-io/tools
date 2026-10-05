@@ -10,7 +10,7 @@ Use the CLI for deterministic scaffolding and validation. Treat generated
 examples as disposable teaching material and derive the real policy contract
 from repository code and product requirements.
 
-Requires **Transcend CLI ≥ 11** (`transcend policy lint [<directory>]`, with
+Requires **Transcend CLI ≥ 11** (`transcend policy check [<directory>]`, with
 `init` available).
 
 ## Workflow
@@ -26,7 +26,7 @@ Requires **Transcend CLI ≥ 11** (`transcend policy lint [<directory>]`, with
 6. Preserve repository conventions and finish with:
 
 ```sh
-transcend policy lint --noInteractive
+transcend policy check --noInteractive
 ```
 
 ## Documentation

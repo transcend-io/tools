@@ -1,31 +1,32 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
+import { LocaleCodec } from './locale.js';
+
 /** Actions for buttons in modals */
-export const ModalButtonActions = makeEnum({
+export const ModalButtonActions = {
   SaveAndClose: 'SaveAndClose',
   AcceptAllAndClose: 'AcceptAllAndClose',
   RejectAllAndClose: 'RejectAllAndClose',
-});
+} as const;
 
 /** Type override */
 export type ModalButtonActions = (typeof ModalButtonActions)[keyof typeof ModalButtonActions];
 
 /** All action types for buttons */
-export const ButtonAction = makeEnum({
+export const ButtonAction = {
   ...ModalButtonActions,
   OpenModal: 'OpenModal',
-});
+} as const;
 
 /** Type override */
 export type ButtonAction = (typeof ButtonAction)[keyof typeof ButtonAction];
 
 /** Button Type */
-export const ButtonType = makeEnum({
+export const ButtonType = {
   Default: 'default',
   Link: 'link',
-});
+} as const;
 
 /** Type override */
 export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];
@@ -45,11 +46,11 @@ export type URLHostString = t.TypeOf<typeof URLHostString>;
 /** Top-level configuration shared between the UI layers */
 export const SharedTopLevelConfig = t.type({
   /** Supported locales */
-  locales: t.array(valuesOf(LOCALE_KEY)),
+  locales: t.array(LocaleCodec),
   /** The transcend URL where the transcend logo links to */
   transcendUrl: AbsoluteUrlString,
   /** The default locale to use - must be one of the supported locales */
-  defaultLocale: valuesOf(LOCALE_KEY),
+  defaultLocale: LocaleCodec,
 });
 
 /** Type override */

@@ -55,7 +55,7 @@ allow if facts.subject_is_trusted
 
 Do not use a fully qualified `data.<root>…` reference directly in a rule body.
 Policy Engine re-namespaces package declarations and imports during activation,
-and `transcend policy lint` rejects direct self-root references that would
+and `transcend policy check` rejects direct self-root references that would
 change meaning.
 
 ## Define the contract before implementation

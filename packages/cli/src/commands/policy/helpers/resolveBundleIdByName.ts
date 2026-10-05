@@ -1,7 +1,7 @@
 import type { Got } from 'got';
 
 import type { PolicyBundle, PolicyBundleListResponse } from '../types.js';
-import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
+import { throwPolicyEngineRequestError } from './formatPolicyEngineRequestError.js';
 
 /**
  * Resolves a bundle name to its parent record via the bundleName list filter.
@@ -14,15 +14,16 @@ export async function resolveBundleByName(
   client: Got,
   bundleName: string,
 ): Promise<PolicyBundle | undefined> {
-  const body = await policyEngineRequest(
-    client
+  try {
+    const body = await client
       .get('v1/policy-engine/policy-bundles', {
         searchParams: { 'filter[bundleName]': bundleName, limit: 1, offset: 0 },
       })
-      .json<PolicyBundleListResponse>(),
-  );
-
-  return body.nodes[0];
+      .json<PolicyBundleListResponse>();
+    return body.nodes[0];
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
 }
 
 /**

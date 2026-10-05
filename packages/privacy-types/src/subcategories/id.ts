@@ -1,7 +1,7 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /** Information that can be used to identify an individual */
-export const IdSubCategory = makeEnum({
+export const IdSubCategory = {
   /** A username associated with an individual */
   Username: 'USERNAME',
   /** A person's name */
@@ -18,7 +18,7 @@ export const IdSubCategory = makeEnum({
   UserId: 'USER_ID',
   /** Fallback subcategory */
   Id: 'ID',
-});
+} as const;
 
 /**
  * Overload with type of integration

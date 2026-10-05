@@ -6,7 +6,7 @@ import { CommunicationIdentifierType } from './identifier.js';
  * Enrichers that are a bit more freeform, as in they can take in arbitrary inputs
  * and return arbitrary outputs
  */
-export const CustomEnricherType = makeEnum({
+export const CustomEnricherType = {
   /** Notify a server to enrich the variable */
   Server: 'SERVER',
   /** Notify a person to enrich the value */
@@ -29,7 +29,7 @@ export const CustomEnricherType = makeEnum({
   GovernmentId: 'GOVERNMENT_ID',
   /** Custom Function enricher type. */
   CustomFunction: 'CUSTOM_FUNCTION',
-});
+} as const;
 
 /**
  * Override to cast as string
@@ -39,10 +39,10 @@ export type CustomEnricherType = (typeof CustomEnricherType)[keyof typeof Custom
 /**
  * Enrichers that can only be used to initialize the beginning of a DSR
  */
-export const InitEnricherType = makeEnum({
+export const InitEnricherType = {
   /** Sombra has the capability */
   Sombra: 'SOMBRA',
-});
+} as const;
 
 /**
  * Override to cast as string
@@ -52,11 +52,11 @@ export type InitEnricherType = (typeof InitEnricherType)[keyof typeof InitEnrich
 /**
  * The various types of identity enrichers supported by transcend
  */
-export const EnricherType = makeEnum({
+export const EnricherType = {
   ...InitEnricherType,
   ...CommunicationIdentifierType,
   ...CustomEnricherType,
-});
+} as const;
 
 /**
  * Override to cast as string

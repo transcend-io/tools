@@ -1,11 +1,11 @@
 ---
-description: Establish that MCP tools from Transcend Agent Governance are policy-gated; denials and approvals are expected, not bugs to bypass
+description: Establish that MCP tools from Transcend Rails Agent Controls are policy-gated; denials and approvals are expected, not bugs to bypass
 alwaysApply: true
 ---
 
-# Governed MCP context (Transcend Agent Governance)
+# Governed MCP context (Transcend Rails Agent Controls)
 
-You are connected to MCP tools through **Transcend Agent Governance**. Tool calls do not go to upstream servers directly. They route through your organization's **policy gateway**.
+You are connected to MCP tools through **Transcend Rails Agent Controls**. Tool calls do not go to upstream servers directly. They route through your organization's **policy gateway**.
 
 Auth is Cursor-native **browser OAuth** (public client `myelin_cursor_plugin`, scopes `mcp` + `offline_access`). Organization is chosen at consent. There is no credential-paste variable.
 

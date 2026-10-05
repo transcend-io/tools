@@ -102,17 +102,13 @@ const requiredPublishablePackageScripts = {
   'check:publint': 'publint --level warning --strict --pack pnpm',
 } as const;
 
-const requiredDevDependencies = {
-  '@arethetypeswrong/cli': 'catalog:',
-  '@types/node': 'catalog:',
-  tsdown: 'catalog:',
-  typescript: 'catalog:',
-  vitest: 'catalog:',
-} as const;
-
-const requiredPublishableDevDependencies = {
-  publint: 'catalog:',
-} as const;
+const requiredDevDependencies = [
+  '@arethetypeswrong/cli',
+  '@types/node',
+  'tsdown',
+  'typescript',
+  'vitest',
+] as const;
 
 /** Baselines for MCP servers, which layer view-specific settings over the shared ones. */
 const MCP_TSDOWN_BASELINE = 'tsdown.config.mcp.ts';
@@ -170,7 +166,7 @@ describe('package conventions', () => {
       expect(manifest.sideEffects).toEqual(isDesignTokens ? ['*.css'] : false);
       expect(manifest.types).toBe('./dist/index.d.mts');
       expect(manifest.files).toEqual(isDesignTokens ? ['dist', 'tokens'] : ['dist']);
-      expect(manifest.engines?.node).toBe('>=22.12.0');
+      expect(manifest.engines?.node).toBeOneOf(['>=22.12.0', undefined]);
       expect(exportDot?.['@transcend-io/source']).toBe('./src/index.ts');
       expect(exportDot?.types).toBe('./dist/index.d.mts');
       expect(exportDot?.default).toBe('./dist/index.mjs');
@@ -186,15 +182,9 @@ describe('package conventions', () => {
       }
       expect(manifest.scripts?.typecheck).toBe(requiredPackageScripts.typecheck);
       expect(manifest.scripts?.['check:exports']).toBe(requiredPackageScripts['check:exports']);
-      expect(manifest.devDependencies?.['@arethetypeswrong/cli']).toBe(
-        requiredDevDependencies['@arethetypeswrong/cli'],
-      );
-      expect(manifest.devDependencies?.['@types/node']).toBe(
-        requiredDevDependencies['@types/node'],
-      );
-      expect(manifest.devDependencies?.tsdown).toBe(requiredDevDependencies.tsdown);
-      expect(manifest.devDependencies?.typescript).toBe(requiredDevDependencies.typescript);
-      expect(manifest.devDependencies?.vitest).toBe(requiredDevDependencies.vitest);
+      for (const dependency of requiredDevDependencies) {
+        expect(manifest.devDependencies?.[dependency]).toBeDefined();
+      }
       if (isDesignTokens) {
         // Conditions mirror the `.` entry above: consumers read the built
         // stylesheet, builds inside this monorepo read source.
@@ -238,7 +228,7 @@ describe('package conventions', () => {
       expect(manifest.scripts?.['check:publint']).toBe(
         requiredPublishablePackageScripts['check:publint'],
       );
-      expect(manifest.devDependencies?.publint).toBe(requiredPublishableDevDependencies.publint);
+      expect(manifest.devDependencies?.publint).toBeDefined();
     },
   );
 

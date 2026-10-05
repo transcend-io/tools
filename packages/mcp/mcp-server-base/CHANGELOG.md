@@ -1,5 +1,27 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.4
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
+## 2.5.3
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
+## 2.5.2
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+
 ## 2.5.1
 
 ### Patch Changes

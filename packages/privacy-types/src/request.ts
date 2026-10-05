@@ -4,7 +4,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * The request statuses that a request can be created directly into.
  * This is useful for the purposes of uploading a backlog
  */
-export const PreflightRequestStatus = makeEnum({
+export const PreflightRequestStatus = {
   /**
    * The privacy request should be canceled because the
    * user is not allowed to make the request. The user will be
@@ -18,7 +18,7 @@ export const PreflightRequestStatus = makeEnum({
    * notified that there is a request that requires their review.
    */
   ON_HOLD: 'ON_HOLD',
-});
+} as const;
 
 /** Type override */
 export type PreflightRequestStatus =
@@ -28,7 +28,7 @@ export type PreflightRequestStatus =
  * The request statuses that a request can be created directly into.
  * This is useful for the purposes of uploading a backlog
  */
-export const CompletedRequestStatus = makeEnum({
+export const CompletedRequestStatus = {
   /** The data subject failed to verify at least one of the identifier they submit through the form */
   FailedVerification: 'FAILED_VERIFICATION',
   /** The request has been approved and sent to the data subject with no secondary action */
@@ -39,7 +39,7 @@ export const CompletedRequestStatus = makeEnum({
   SecondaryCompleted: 'SECONDARY_COMPLETED',
   /** The request was revoked because it was a duplicate (another open request covers it) */
   Revoked: 'REVOKED',
-});
+} as const;
 
 /** Type override */
 export type CompletedRequestStatus =
@@ -48,7 +48,7 @@ export type CompletedRequestStatus =
 /**
  * The statuses that a request can take on
  */
-export const RequestStatus = makeEnum({
+export const RequestStatus = {
   /** A data subject submits a DSR */
   RequestMade: 'REQUEST_MADE',
   /** The data subject failed to verify at least one of the identifier they submit through the form */
@@ -81,7 +81,7 @@ export const RequestStatus = makeEnum({
   SecondaryApproving: 'SECONDARY_APPROVING',
   /** The request was revoked because it was a duplicate (another open request covers it) */
   Revoked: 'REVOKED',
-});
+} as const;
 
 /** Type override */
 export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus];
@@ -105,7 +105,7 @@ export enum RequestOrigin {
 /**
  * The statuses that a queue is expected to implement
  */
-export const QueueStatus = makeEnum({
+export const QueueStatus = {
   /** The row is queued up to be processed by the service worker. */
   Queued: 'QUEUED',
   /**
@@ -131,7 +131,7 @@ export const QueueStatus = makeEnum({
    * and is currently in line to being processed.
    */
   RemoteProcessing: 'REMOTE_PROCESSING',
-});
+} as const;
 
 /**
  * Overload type
@@ -141,7 +141,7 @@ export type QueueStatus = (typeof QueueStatus)[keyof typeof QueueStatus];
 /**
  * Status of request/data-silo combo
  */
-export const RequestDataSiloStatus = makeEnum({
+export const RequestDataSiloStatus = {
   ...QueueStatus,
   /** The request not processed due to some exception */
   SkippedDueToException: 'SKIPPED_DUE_TO_EXCEPTION',
@@ -158,7 +158,7 @@ export const RequestDataSiloStatus = makeEnum({
    * vendor's retry-after when provided.
    */
   VendorRateLimited: 'VENDOR_RATE_LIMITED',
-});
+} as const;
 
 /**
  * Overload type
@@ -169,13 +169,13 @@ export type RequestDataSiloStatus =
 /**
  * The request enrichers are a standard queue.
  */
-export const RequestEnricherStatus = makeEnum({
+export const RequestEnricherStatus = {
   ...QueueStatus,
   /** Waiting on dependencies  in the enrichment step to finish running */
   WaitingOnDependencies: 'WAITING_ON_DEPENDENCIES',
   /** Polling for result */
   Polling: 'POLLING',
-});
+} as const;
 
 /**
  * Overload type
@@ -187,14 +187,14 @@ export type RequestEnricherStatus =
  * The different ways that regions can be detected at time of
  * request submit.
  */
-export const RegionDetectionMethod = makeEnum({
+export const RegionDetectionMethod = {
   /** Region detection is disabled */
   Disabled: 'DISABLED',
   /** Auto detect the region and collect in form silently */
   Auto: 'AUTO',
   /** Collect information about the user's region by presenting the user a form */
   Form: 'FORM',
-});
+} as const;
 
 /** Type override */
 export type RegionDetectionMethod =
@@ -205,14 +205,14 @@ export type RegionDetectionMethod =
  *
  * @see https://linear.app/transcend/issue/WAL-7712
  */
-export const RestartIdentifierStrategy = makeEnum({
+export const RestartIdentifierStrategy = {
   /** Keep all identifiers; only input-sourced identifiers stay verified */
   PreserveInitialVerificationsOnly: 'PRESERVE_INITIAL_VERIFICATIONS_ONLY',
   /** Keep all identifiers; preserve JWT verification from prior enrichment */
   PreserveAllVerifications: 'PRESERVE_ALL_VERIFICATIONS',
   /** Delete enriched identifiers; keep only input-sourced identifiers */
   RemoveEnrichedIdentifiers: 'REMOVE_ENRICHED_IDENTIFIERS',
-});
+} as const;
 
 /** Type override */
 export type RestartIdentifierStrategy =

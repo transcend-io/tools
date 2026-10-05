@@ -1,9 +1,9 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 import { AbsoluteUrlString, UIConfiguration, URLHostString } from './consentUiConfiguration.js';
 import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
+import { LocaleCodec } from './locale.js';
 
 /**
  * Types representing the top-level consent UI configuration
@@ -48,12 +48,12 @@ export type SemicolonDelimitedRegimeKeyString = t.TypeOf<typeof SemicolonDelimit
 /**
  * Autofocus toggle values ("on" / "off").
  */
-export const AutofocusToggle = makeEnum({
+export const AutofocusToggle = {
   /** Enable autofocus */
   On: 'on',
   /** Disable autofocus */
   Off: 'off',
-});
+} as const;
 
 /** Override type */
 export type AutofocusToggle = (typeof AutofocusToggle)[keyof typeof AutofocusToggle];
@@ -71,14 +71,14 @@ export type AutofocusValues = t.TypeOf<typeof AutofocusValues>;
 /**
  * Shadow root options ("open" / "closed" / "none").
  */
-export const ShadowRootOptions = makeEnum({
+export const ShadowRootOptions = {
   /** Enable shadow root */
   Open: 'open',
   /** Disable shadow root */
   Closed: 'closed',
   /** Disable shadow root */
   None: 'none',
-});
+} as const;
 
 /** Override type */
 export type ShadowRootOptions = (typeof ShadowRootOptions)[keyof typeof ShadowRootOptions];
@@ -101,7 +101,7 @@ const SharedLoadOptions = t.intersection([
     // if css is defined and cssFolder is not, CSS will be fetched from the css load option
     css: AbsoluteUrlString,
     // if message map is defined, it will be used to retrieve localized messages
-    messageMap: t.record(valuesOf(LOCALE_KEY), AbsoluteUrlString),
+    messageMap: t.record(LocaleCodec, AbsoluteUrlString),
     forceTheme: ThemeKey,
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,

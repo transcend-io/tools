@@ -1,5 +1,37 @@
 # @transcend-io/privacy-types
 
+## 6.4.0
+
+### Minor Changes
+
+- dea8763: Add integration owner-approval action item codes (`RequestDataSiloNeedsApproval` / `RequestDataSiloNeedsApprovalAssigned`) and an `ApproveAssignedIntegrationRequests` scope so assigned owners can approve or reject privacy request processing for their integrations without needing broader Manage Assigned Integrations access. Regenerate the CLI `transcend.yml` JSON schema so the new codes and scope are reflected.
+
+## 6.3.1
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
+## 6.3.0
+
+### Minor Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
+## 6.2.1
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+
 ## 6.2.0
 
 ### Minor Changes

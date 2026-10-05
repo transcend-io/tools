@@ -30,12 +30,12 @@ export const lintCommand = buildCommand({
     },
   },
   docs: {
-    brief: 'Verify local policy bundles with OPA and Regal',
+    brief: 'Lint local policy bundles with OPA formatting and Regal',
     fullDescription:
-      'Defaults to the policy workspace (`transcend/policy`) and verifies every publishable ' +
-      'child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. ' +
-      'Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, ' +
-      'runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. ' +
+      'Defaults to the policy workspace (`transcend/policy`) and lints every publishable ' +
+      'child directory that contains a `.manifest`. Pass one bundle path to lint a single unit. ' +
+      'Verifies OPA 1.x and Regal, checks or repairs OPA formatting, and treats Regal warnings as failures. ' +
+      'For the full verification gate (manifest, strict OPA check, and tests), use `transcend policy check`. ' +
       'No Transcend API key is needed.',
   },
 });

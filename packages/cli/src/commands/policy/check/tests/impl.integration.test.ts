@@ -7,17 +7,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { runCapturedProcess } from '../../../../lib/cli/run-captured-process.js';
 import { POLICY_STARTER_OPA_VERSION } from '../../../../lib/policy/policy-scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { lint } from '../impl.js';
+import { check } from '../impl.js';
 
 const temporaryDirectories: string[] = [];
 
 /**
- * Create an isolated policy directory for runtime-backed lint tests.
+ * Create an isolated policy directory for runtime-backed check tests.
  *
  * @returns Temporary policy directory
  */
 function makePolicyDirectory(): string {
-  const directory = mkdtempSync(join(tmpdir(), 'policy-lint-integration-'));
+  const directory = mkdtempSync(join(tmpdir(), 'policy-check-integration-'));
   temporaryDirectories.push(directory);
   return directory;
 }
@@ -28,7 +28,7 @@ afterEach(() => {
   });
 });
 
-describe('policy lint with OPA and Regal', () => {
+describe('policy check with OPA and Regal', () => {
   it('rejects production policy that depends on a local test module', async () => {
     const directory = makePolicyDirectory();
     writeFileSync(join(directory, '.manifest'), '{"roots":["policy_engine"]}\n');
@@ -72,7 +72,7 @@ test_allow if {
     );
     const context = buildContextForTest({ cwd: directory, stdinIsTTY: false });
 
-    await lint.call(
+    await check.call(
       context,
       {
         fix: true,

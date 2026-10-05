@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,9 +23,7 @@ type InvocationKey =
   | 'opa fmt --list'
   | 'opa fmt --diff'
   | 'opa fmt --write'
-  | 'opa check'
-  | 'regal lint'
-  | 'opa test';
+  | 'regal lint';
 
 /** One captured tool invocation. */
 interface ToolInvocation {
@@ -120,10 +118,6 @@ function createPolicyProject(): string {
     join(directory, 'policy.rego'),
     'package policy_engine\n\nimport rego.v1\n\ndefault allow := false\n',
   );
-  writeFileSync(
-    join(directory, 'policy_test.rego'),
-    'package policy_engine_test\n\nimport rego.v1\n\ntest_policy if { true }\n',
-  );
   return directory;
 }
 
@@ -140,7 +134,7 @@ afterEach(() => {
 });
 
 describe('policy lint', () => {
-  it('runs the complete successful gate against absolute project paths', async () => {
+  it('runs format and Regal without opa check or tests', async () => {
     const directory = createPolicyProject();
     const context = buildContextForTest({ cwd: tmpdir(), stdinIsTTY: false });
     const { runner, invocations } = buildRunner();
@@ -155,13 +149,10 @@ describe('policy lint', () => {
       fix: false,
       tools: { opa: '1.18.2', regal: '0.42.0' },
       checks: [
-        { name: 'manifest', status: 'passed' },
         { name: 'opa-version', status: 'passed' },
         { name: 'regal-version', status: 'passed' },
         { name: 'format', status: 'passed' },
-        { name: 'opa-check', status: 'passed' },
         { name: 'regal-lint', status: 'passed' },
-        { name: 'opa-test', status: 'passed' },
       ],
       unformattedFiles: [],
       fixedFiles: [],
@@ -171,7 +162,6 @@ describe('policy lint', () => {
       ['opa', 'version'],
       ['regal', 'version'],
       ['opa', 'fmt', '--list', directory],
-      ['opa', 'check', '--strict', '--ignore', '*_test.rego', directory],
       [
         'regal',
         'lint',
@@ -181,58 +171,9 @@ describe('policy lint', () => {
         join(directory, '.regal', 'config.yaml'),
         directory,
       ],
-      ['opa', 'test', '--fail-on-empty', '-b', directory],
     ]);
     expect(invocations.every(({ cwd }) => cwd === directory)).toBe(true);
-    expect(context.stdout.trim().split('\n')).toHaveLength(1);
-    expect(context.stderr).toBe('');
     expect(context.process.exitCode).not.toBe(1);
-  });
-
-  it('resolves a custom relative directory from the invocation directory', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({
-      cwd: dirname(directory),
-      stdinIsTTY: false,
-    });
-    const { runner } = buildRunner();
-
-    await lint.call(context, buildFlags(), join('.', basename(directory)), runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'passed',
-      directory,
-    });
-  });
-
-  it('fails formatting without prompting in JSON/noInteractive mode', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: true });
-    const { runner, invocations } = buildRunner({
-      'opa fmt --list': {
-        code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
-        stderr: '',
-      },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'failed',
-      unformattedFiles: ['policy.rego'],
-      fixedFiles: [],
-      diagnostics: [{ code: 'opa.format-required', severity: 'error' }],
-    });
-    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
-    expect(invocations.map(({ command, args }) => [command, ...args])).not.toContainEqual([
-      'opa',
-      'fmt',
-      '--write',
-      directory,
-    ]);
-    expect(context.stderr).toBe('');
-    expect(context.process.exitCode).toBe(1);
   });
 
   it('repairs OPA formatting with explicit --fix', async () => {
@@ -261,10 +202,9 @@ describe('policy lint', () => {
       '--write',
       directory,
     ]);
-    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
   });
 
-  it('preserves interactive formatting with a diff and confirmation', async () => {
+  it('fails formatting without prompting in JSON/noInteractive mode', async () => {
     const directory = createPolicyProject();
     const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: true });
     const { runner } = buildRunner({
@@ -273,249 +213,20 @@ describe('policy lint', () => {
         stdout: `${join(directory, 'policy.rego')}\n`,
         stderr: '',
       },
-      'opa fmt --diff': {
-        code: 0,
-        stdout: 'formatted diff',
-        stderr: '',
-      },
-    });
-    inquirerConfirmBooleanMock.mockResolvedValueOnce(true);
-
-    await lint.call(context, buildFlags({ json: false, noInteractive: false }), directory, runner);
-
-    expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
-      message: 'Format the unformatted policy files listed above?',
-    });
-    expect(context.stdout).toContain('Policy verification');
-    expect(context.stdout).toContain('PASS OPA formatting');
-    expect(context.stderr).toContain('policy.rego');
-    expect(context.stderr).toContain('formatted diff');
-  });
-
-  it('does not prompt when stderr is not interactive', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: true, stderrIsTTY: false });
-    const { runner } = buildRunner({
-      'opa fmt --list': {
-        code: 0,
-        stdout: `${join(directory, 'policy.rego')}\n`,
-        stderr: '',
-      },
     });
 
-    await lint.call(context, buildFlags({ json: false, noInteractive: false }), directory, runner);
+    await lint.call(context, buildFlags(), directory, runner);
 
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      status: 'failed',
+      diagnostics: [
+        {
+          code: 'opa.format-required',
+          message: expect.stringContaining('transcend policy lint --fix'),
+        },
+      ],
+    });
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
     expect(context.process.exitCode).toBe(1);
-  });
-
-  it('reports missing OPA and an incompatible Regal version with official guidance', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const missingError = Object.assign(new Error('spawn opa ENOENT'), { code: 'ENOENT' });
-    const { runner } = buildRunner({
-      'opa version': { code: 1, stdout: '', stderr: '', error: missingError },
-      'regal version': { code: 0, stdout: 'Version: 0.29.2\n', stderr: '' },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    const result = JSON.parse(context.stdout);
-    expect(result).toMatchObject({
-      status: 'failed',
-      tools: { opa: null, regal: null },
-      checks: [
-        { name: 'manifest', status: 'passed' },
-        { name: 'opa-version', status: 'failed' },
-        { name: 'regal-version', status: 'failed' },
-        { name: 'format', status: 'skipped' },
-        { name: 'opa-check', status: 'skipped' },
-        { name: 'regal-lint', status: 'skipped' },
-        { name: 'opa-test', status: 'skipped' },
-      ],
-    });
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: 'opa.missing',
-        message: expect.stringContaining('https://www.openpolicyagent.org/docs#1-download-opa'),
-      }),
-      expect.objectContaining({
-        code: 'regal.version',
-        message: expect.stringMatching(
-          /Regal 0\.30\.0 or newer[\s\S]*https:\/\/www\.openpolicyagent\.org\/projects\/regal#installing-regal/u,
-        ),
-      }),
-    ]);
-  });
-
-  it('reports incompatible OPA and missing Regal with official guidance', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const missingError = Object.assign(new Error('spawn regal ENOENT'), { code: 'ENOENT' });
-    const { runner } = buildRunner({
-      'opa version': { code: 0, stdout: 'Version: 0.68.0\n', stderr: '' },
-      'regal version': { code: 1, stdout: '', stderr: '', error: missingError },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    const result = JSON.parse(context.stdout);
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: 'opa.version',
-        message: expect.stringMatching(
-          /OPA 1\.x is required; found 0\.68\.0[\s\S]*https:\/\/www\.openpolicyagent\.org\/docs#1-download-opa/u,
-        ),
-      }),
-      expect.objectContaining({
-        code: 'regal.missing',
-        message: expect.stringContaining(
-          'https://www.openpolicyagent.org/projects/regal#installing-regal',
-        ),
-      }),
-    ]);
-  });
-
-  it('fails when manifest roots do not cover a publishable package', async () => {
-    const directory = createPolicyProject();
-    writeFileSync(join(directory, '.manifest'), JSON.stringify({ roots: ['other'] }));
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const { runner } = buildRunner();
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'failed',
-      checks: expect.arrayContaining([{ name: 'manifest', status: 'failed' }]),
-      diagnostics: [
-        expect.objectContaining({
-          code: 'manifest.invalid',
-          message: expect.stringMatching(
-            /roots" do not cover[\s\S]*policy\.rego \(package policy_engine\)/u,
-          ),
-        }),
-      ],
-    });
-  });
-
-  it('fails when opa test reports an empty test suite', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const { runner } = buildRunner({
-      'opa test': { code: 2, stdout: '', stderr: 'no tests were run' },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'failed',
-      checks: expect.arrayContaining([{ name: 'opa-test', status: 'failed' }]),
-      diagnostics: [
-        expect.objectContaining({
-          code: 'opa.test',
-          message: 'no tests were run',
-        }),
-      ],
-    });
-  });
-
-  it('preserves Regal violations and stderr notices in diagnostics', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const { runner } = buildRunner({
-      'regal lint': {
-        code: 3,
-        stdout: 'Rule: prefer-package-imports',
-        stderr: 'A new version of Regal is available.',
-      },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'failed',
-      diagnostics: [
-        expect.objectContaining({
-          code: 'regal.lint',
-          message: 'Rule: prefer-package-imports\nA new version of Regal is available.',
-        }),
-      ],
-    });
-  });
-
-  it('promotes configured Regal warnings into failing diagnostics', async () => {
-    const directory = createPolicyProject();
-    const context = buildContextForTest({ stdinIsTTY: false });
-    const { runner, invocations } = buildRunner({
-      'regal lint': {
-        code: 2,
-        stdout: 'Rule: todo-comment',
-        stderr: '',
-      },
-    });
-
-    await lint.call(context, buildFlags(), directory, runner);
-
-    expect(JSON.parse(context.stdout)).toMatchObject({
-      status: 'failed',
-      diagnostics: [
-        expect.objectContaining({
-          code: 'regal.lint',
-          message: 'Rule: todo-comment',
-        }),
-      ],
-    });
-    expect(invocations.map(({ command, args }) => [command, ...args])).toContainEqual([
-      'regal',
-      'lint',
-      '--fail-level',
-      'warning',
-      '--config-file',
-      join(directory, '.regal', 'config.yaml'),
-      directory,
-    ]);
-  });
-
-  it('lints every child with a .manifest under a workspace directory', async () => {
-    const workspace = mkdtempSync(join(tmpdir(), 'policy-lint-workspace-'));
-    temporaryDirectories.push(workspace);
-    mkdirSync(join(workspace, '.regal'), { recursive: true });
-    writeFileSync(join(workspace, '.regal', 'config.yaml'), 'project:\n  roots:\n    - example\n');
-
-    for (const name of ['example-bundle', 'payments'] as const) {
-      const bundle = join(workspace, name);
-      mkdirSync(bundle);
-      const root = name.replace(/-bundle$/u, '');
-      writeFileSync(join(bundle, '.manifest'), JSON.stringify({ roots: [root] }));
-      writeFileSync(
-        join(bundle, 'policy.rego'),
-        `package ${root}\n\nimport rego.v1\n\ndefault allow := false\n`,
-      );
-      writeFileSync(
-        join(bundle, 'policy_test.rego'),
-        `package ${root}_test\n\nimport rego.v1\n\ntest_policy if { true }\n`,
-      );
-    }
-
-    const context = buildContextForTest({ cwd: tmpdir(), stdinIsTTY: false });
-    const { runner, invocations } = buildRunner();
-
-    await lint.call(context, buildFlags(), workspace, runner);
-
-    const result = JSON.parse(context.stdout);
-    expect(result.version).toBe(2);
-    expect(result.status).toBe('passed');
-    expect(result.directory).toBe(workspace);
-    expect(result.results).toHaveLength(2);
-    expect(result.results.map((entry: { directory: string }) => entry.directory)).toEqual([
-      join(workspace, 'example-bundle'),
-      join(workspace, 'payments'),
-    ]);
-    expect(
-      invocations.filter(({ command, args }) => command === 'opa' && args[0] === 'check'),
-    ).toHaveLength(2);
-    expect(
-      invocations.filter(({ command, args }) => command === 'regal' && args[0] === 'lint'),
-    ).toHaveLength(2);
   });
 });

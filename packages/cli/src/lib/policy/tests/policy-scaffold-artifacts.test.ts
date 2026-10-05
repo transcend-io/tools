@@ -15,7 +15,7 @@ import {
 } from '../policy-scaffold-templates.js';
 
 describe('Policy Engine GitHub Actions workflow', () => {
-  it('emits a placeholder lint job when the workspace has no bundles yet', () => {
+  it('emits a placeholder check job when the workspace has no bundles yet', () => {
     const workflow = generatePolicyGithubActionsWorkflow({
       cliVersion: '11.0.0',
       workspaceDirectory: 'transcend/policy',
@@ -42,7 +42,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
     expect(workflow).toContain(`version: "${POLICY_STARTER_REGAL_VERSION}"`);
     expect(workflow).toContain('npm install --global @transcend-io/cli@10.27.4');
     expect(workflow).toContain(
-      'transcend policy lint\n          "$POLICY_DIRECTORY"\n          --noInteractive\n          --json',
+      'transcend policy check\n          "$POLICY_DIRECTORY"\n          --noInteractive\n          --json',
     );
     expect(workflow).toContain(
       `POLICY_DIRECTORY: "transcend/policy/${POLICY_STARTER_BUNDLE_DIRECTORY}"`,
@@ -79,8 +79,8 @@ describe('Policy Engine GitHub Actions workflow', () => {
       };
       /** Workflow jobs. */
       jobs: {
-        /** Policy lint job. */
-        lint: {
+        /** Policy check job. */
+        check: {
           /** Workflow steps. */
           steps: {
             /** Optional environment. */
@@ -103,7 +103,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
     expect(parsed.on.pull_request.paths).toEqual(expectedPaths);
     expect(parsed.on.push.branches).toEqual(['main']);
     expect(parsed.on.push.paths).toEqual(expectedPaths);
-    expect(parsed.jobs.lint.steps.at(-1)?.env).toEqual({
+    expect(parsed.jobs.check.steps.at(-1)?.env).toEqual({
       POLICY_DIRECTORY: `${workspace}/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
     });
     expect(workflow).toContain(JSON.stringify(`${workspace}/**/*.rego`));
@@ -126,7 +126,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
     expect(workflow).not.toContain('"./**/*.json"');
   });
 
-  it('matrices lint across multiple publish directories when provided', () => {
+  it('matrices check across multiple publish directories when provided', () => {
     const workflow = generatePolicyGithubActionsWorkflow({
       cliVersion: '11.0.0',
       workspaceDirectory: 'transcend/policy',
@@ -135,8 +135,8 @@ describe('Policy Engine GitHub Actions workflow', () => {
     const parsed = parse(workflow) as {
       /** Workflow jobs. */
       jobs: {
-        /** Policy lint job. */
-        lint: {
+        /** Policy check job. */
+        check: {
           /** Matrix strategy. */
           strategy: {
             /** Matrix values. */
@@ -149,7 +149,7 @@ describe('Policy Engine GitHub Actions workflow', () => {
       };
     };
 
-    expect(parsed.jobs.lint.strategy.matrix.policy_directory).toEqual([
+    expect(parsed.jobs.check.strategy.matrix.policy_directory).toEqual([
       'transcend/policy/example-bundle',
       'transcend/policy/permissions-bundle',
     ]);

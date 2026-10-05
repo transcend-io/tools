@@ -1,5 +1,51 @@
 # @transcend-io/mcp-server-consent
 
+## 1.3.1
+
+### Patch Changes
+
+- 6799f1e: Improve the consent triage review table: clearer suggestion affordances, a labeled split-button for row actions, top-aligned cells, and notes that close after save.
+
+## 1.3.0
+
+### Minor Changes
+
+- e59a2db: The consent cookie and data-flow triage review app is now generally available.
+
+  `consent_cookie_triage_review_app` no longer requires `TRANSCEND_MCP_EXPERIMENTAL=1` to appear in the tool catalog.
+
+## 1.2.9
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/mcp-server-base@2.5.4
+  - @transcend-io/privacy-types@6.3.1
+  - @transcend-io/sdk@2.1.16
+
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/sdk@2.1.15
+  - @transcend-io/mcp-server-base@2.5.3
+
+## 1.2.7
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/privacy-types@6.2.1
+  - @transcend-io/sdk@2.1.14
+
 ## 1.2.6
 
 ### Patch Changes

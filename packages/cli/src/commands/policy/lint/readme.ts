@@ -5,24 +5,24 @@ const examples = buildExamples<LintCommandFlags>(
   ['policy', 'lint'],
   [
     {
-      description: 'Verify every bundle under the default workspace',
+      description: 'Lint every bundle under the default workspace',
       flags: {},
     },
     {
-      description: 'Verify and format every bundle under the default workspace',
+      description: 'Lint and format every bundle under the default workspace',
       flags: {
         fix: true,
       },
     },
     {
-      description: 'Run the verification gate in CI or an editor',
+      description: 'Run lint in CI or an editor',
       flags: {
         noInteractive: true,
         json: true,
       },
     },
     {
-      description: 'Verify a single local publish directory',
+      description: 'Lint a single local publish directory',
       positionals: ['transcend/policy/example-bundle'],
       flags: {
         fix: true,
@@ -35,7 +35,7 @@ export default `#### Examples
 
 ${examples}
 
-With no directory argument, \`policy lint\` verifies every immediate child under the default
-workspace (\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to verify a
-single unit.
+With no directory argument, \`policy lint\` lints every immediate child under the default
+workspace (\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to lint a
+single unit. Use \`policy check\` for the full verification gate.
 `;

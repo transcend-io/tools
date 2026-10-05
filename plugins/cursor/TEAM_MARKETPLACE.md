@@ -1,4 +1,4 @@
-# Team Marketplace rollout — Transcend Agent Governance
+# Team Marketplace rollout — Transcend Rails Agent Controls
 
 Private [Cursor Team Marketplaces](https://cursor.com/docs/plugins.md#team-marketplaces) distribute this plugin to Transcend teammates and design partners **without** cloning `transcend-io/tools` or editing `mcp.json` by hand.
 
@@ -6,7 +6,7 @@ This is the dogfood / design-partner path while the public Cursor Marketplace re
 
 **Upstream docs:** [Plugins](https://cursor.com/docs/plugins.md) · [Plugins reference](https://cursor.com/docs/reference/plugins.md) · [GitHub integration](https://cursor.com/docs/integrations/github.md)
 
-**Repo packaging:** root [`.cursor-plugin/marketplace.json`](../../.cursor-plugin/marketplace.json) lists `transcend-agent-governance` → `./plugins/cursor/TranscendAgentGovernance`.
+**Repo packaging:** root [`.cursor-plugin/marketplace.json`](../../.cursor-plugin/marketplace.json) lists `transcend-agent-governance` → `./plugins/cursor/TranscendRailsAgentControls`.
 
 ---
 
@@ -39,7 +39,7 @@ Prefer Team Marketplace (Auto Refresh on `main`) for dogfood until the public pi
 ### Repo readiness before import
 
 1. `.cursor-plugin/marketplace.json` is on the branch Cursor will track (prefer `main`).
-2. `plugins/cursor/TranscendAgentGovernance/.cursor-plugin/plugin.json` validates (`node scripts/validate-cursor-plugins.mjs` in this repo).
+2. `plugins/cursor/TranscendRailsAgentControls/.cursor-plugin/plugin.json` validates (`node scripts/validate-cursor-plugins.mjs` in this repo).
 3. Prefer importing **after** the Agent Governance plugin PRs merge so teammates do not install a half-wired plugin.
 
 ---
@@ -69,7 +69,7 @@ Skip is possible for a one-shot public import, but Auto Refresh and reliable re-
    ```
 
 4. Select the branch to track (**`main`** once the plugin has merged; do not point dogfood at a long-lived feature branch unless intentionally testing a pre-release).
-5. Review the parsed plugins. Confirm **`transcend-agent-governance`** appears with source `./plugins/cursor/TranscendAgentGovernance` (display name **Transcend Agent Governance**).
+5. Review the parsed plugins. Confirm **`transcend-agent-governance`** appears with source `./plugins/cursor/TranscendRailsAgentControls` (display name **Transcend Rails Agent Controls**).
 6. Name the marketplace (suggestion: `Transcend plugins` / id aligned with manifest `transcend-plugins`).
 7. Under **Marketplace Settings**:
    - **Marketplace Access** — default “everyone in the team”, or restrict to an [Organization Group](https://cursor.com/docs/enterprise/organization-groups.md) for a smaller dogfood cohort.
@@ -78,7 +78,7 @@ Skip is possible for a one-shot public import, but Auto Refresh and reliable re-
 
 ### A3. Set installation mode
 
-For **Transcend Agent Governance** during dogfood:
+For **Transcend Rails Agent Controls** during dogfood:
 
 | Mode                                | When to use                                                              |
 | ----------------------------------- | ------------------------------------------------------------------------ |
@@ -89,7 +89,7 @@ For **Transcend Agent Governance** during dogfood:
 ### A4. Smoke-check as admin
 
 1. In Cursor Desktop, open **Customize** in the sidebar.
-2. Find **Transcend Agent Governance** under the team marketplace (not only `~/.cursor/plugins/local`).
+2. Find **Transcend Rails Agent Controls** under the team marketplace (not only `~/.cursor/plugins/local`).
 3. Install (or confirm Default On / Required already applied).
 4. Accept the default gateway (or set optional `GATEWAY_BASE_URL` for self-host only) — **no** `TENANT_ID`, **no** credential paste.
 5. Complete browser Connect / OAuth (org chosen at consent); confirm tools load after an Agent Governance admin assigns MCP servers to the auto-registered agent.
@@ -113,7 +113,7 @@ Record pass/fail and any friction as follow-up tickets (Part E).
 
 1. Use Cursor Desktop on a **Teams or Enterprise** team that has the Transcend (or partner) marketplace enabled for your user.
 2. Open **Customize** in the sidebar.
-3. Locate **Transcend Agent Governance** (team marketplace section).
+3. Locate **Transcend Rails Agent Controls** (team marketplace section).
 4. Click **Install** (skip if your admin set **Default On** / **Required**).
 5. When prompted for plugin variables (self-host only), enter `GATEWAY_BASE_URL` — scheme + host only. SaaS / Dev dogfood should need no prompt; do **not** paste `/mcp/...` into the base URL. There is no `TENANT_ID` variable.
 6. Open **Settings → Tools & MCP** if Connect did not start automatically; authenticate / **Connect**.
@@ -121,7 +121,7 @@ Record pass/fail and any friction as follow-up tickets (Part E).
 8. Ask an Agent Governance administrator to assign MCP servers / policy to your auto-registered connected agent (starts empty — fail-closed).
 9. Confirm `{slug}__{tool}` tools appear and an allowed call succeeds.
 
-**Do not** clone this repository, symlink into `~/.cursor/plugins/local`, or paste Bearer tokens into `mcp.json` for the default path. Those remain **dev / operator fallback** only (see plugin [README](./TranscendAgentGovernance/README.md)).
+**Do not** clone this repository, symlink into `~/.cursor/plugins/local`, or paste Bearer tokens into `mcp.json` for the default path. Those remain **dev / operator fallback** only (see plugin [README](./TranscendRailsAgentControls/README.md)).
 
 ---
 
@@ -135,11 +135,11 @@ Share this checklist (email / Notion / ticket):
 
 1. **Cursor plan:** Teams or Enterprise; a **team admin** must perform the import.
 2. **Marketplace source:** `https://github.com/transcend-io/tools` (branch `main` unless Transcend names a release branch).
-3. **Plugin id / name:** `transcend-agent-governance` / **Transcend Agent Governance**.
+3. **Plugin id / name:** `transcend-agent-governance` / **Transcend Rails Agent Controls**.
 4. **Install mode recommendation:** **Default Off** for the first pilot cohort.
 5. **Environment:** SaaS / Dev uses the plugin default gateway. Self-host partners need their `mcp.*` origin as optional `GATEWAY_BASE_URL` (scheme + host only). Organization is chosen at consent — no `TENANT_ID`.
 6. **Post-auth admin step in Agent Governance:** assign MCP servers / policy to each auto-registered Cursor agent.
-7. **Link** to [Transcend Agent Governance plugin README](./TranscendAgentGovernance/README.md) (sign-in, revoke, troubleshooting) and this document.
+7. **Link** to [Transcend Rails Agent Controls plugin README](./TranscendRailsAgentControls/README.md) (sign-in, revoke, troubleshooting) and this document.
 
 ### C2. Partner admin steps (their Cursor dashboard)
 
@@ -215,7 +215,7 @@ Capture install-path problems here as ticket seeds (do not absorb silently). Thi
 Copy/paste for the Transcend Cursor admin:
 
 ```text
-Subject: Please register Transcend Agent Governance on our Cursor Team Marketplace
+Subject: Please register Transcend Rails Agent Controls on our Cursor Team Marketplace
 
 Please import our Team Marketplace so teammates can install without cloning or editing JSON.
 
@@ -226,7 +226,7 @@ Please import our Team Marketplace so teammates can install without cloning or e
 2) Cursor Dashboard → Plugins → Team Marketplaces → Add / Import from Repo
    - URL: https://github.com/transcend-io/tools
    - Branch: main   (only after Agent Governance plugin PRs have merged)
-   - Confirm plugin: transcend-agent-governance (Transcend Agent Governance)
+   - Confirm plugin: transcend-agent-governance (Transcend Rails Agent Controls)
 
 3) Marketplace Settings
    - Access: whole team OR dogfood Organization Group
@@ -240,7 +240,7 @@ Please import our Team Marketplace so teammates can install without cloning or e
    Confirm org is chosen at consent and tools load after MCP server assignment.
 
 Runbook: plugins/cursor/TEAM_MARKETPLACE.md in transcend-io/tools
-Plugin README: plugins/cursor/TranscendAgentGovernance/README.md
+Plugin README: plugins/cursor/TranscendRailsAgentControls/README.md
 ```
 
 ---
@@ -249,4 +249,4 @@ Plugin README: plugins/cursor/TranscendAgentGovernance/README.md
 
 Engineering prepared packaging + this runbook. Completing acceptance criterion “registered in the Transcend Cursor team marketplace” needs a human with Cursor admin on the Transcend team (and a green `main` that contains the plugin).
 
-`ESCALATION: Need admin to register Transcend Agent Governance in Cursor Team Marketplace`
+`ESCALATION: Need admin to register Transcend Rails Agent Controls in Cursor Team Marketplace`

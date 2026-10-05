@@ -1,5 +1,38 @@
 # @transcend-io/mcp-server-admin
 
+## 1.1.3
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/mcp-server-base@2.5.4
+  - @transcend-io/privacy-types@6.3.1
+
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/mcp-server-base@2.5.3
+
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/privacy-types@6.2.1
+
+## 1.1.0
+
+### Minor Changes
+
+- ab5b612: Remove `admin_create_api_key`.
+
+  API key creation is no longer available through the Admin MCP. Use the Transcend Dashboard or CLI to create keys; `admin_list_api_keys` and `admin_list_scopes` remain for inspection.
+
 ## 1.0.13
 
 ### Patch Changes

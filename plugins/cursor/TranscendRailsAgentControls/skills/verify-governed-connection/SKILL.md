@@ -1,7 +1,7 @@
 ---
 name: verify-governed-connection
 description: >-
-  Diagnose Transcend Agent Governance MCP connection health: confirm the
+  Diagnose Transcend Rails Agent Controls MCP connection health: confirm the
   policy gateway is reachable, list which governed tools are available, and
   recognise expired or failed browser OAuth sessions. Use when tools are
   missing, the MCP server shows disconnected, auth fails at connect time, or
@@ -35,7 +35,7 @@ There is **no** credential / Bearer / API-key plugin variable. Do **not** tell u
 Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Cursor already exposes — do not invent hostnames or internal service names.
 
 1. **Plugin installed and enabled**  
-   Confirm **Transcend Agent Governance** is installed. Do not ask for an org / tenant identifier or a credential variable — neither belongs in plugin configuration.
+   Confirm **Transcend Rails Agent Controls** is installed. Do not ask for an org / tenant identifier or a credential variable — neither belongs in plugin configuration.
 
 2. **Gateway connection / Connect**  
    Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-agent-governance**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.

@@ -3,12 +3,12 @@ import { makeEnum } from '@transcend-io/type-utils';
 /**
  * An identifier that can be used to communication with the data subject, also implies that the identifier is transcend supported
  */
-export const CommunicationIdentifierType = makeEnum({
+export const CommunicationIdentifierType = {
   /** An email address */
   Email: 'email',
   /** A phone number */
   Phone: 'phone',
-});
+} as const;
 
 /**
  * Overload with type of integration
@@ -19,7 +19,7 @@ export type CommunicationIdentifierType =
 /**
  * The built in identification strategies
  */
-export const IdentifierType = makeEnum({
+export const IdentifierType = {
   ...CommunicationIdentifierType,
   /** The core id of the organization (usually provided through login) */
   CoreIdentifier: 'coreIdentifier',
@@ -103,7 +103,7 @@ export const IdentifierType = makeEnum({
   AdobeCampaignRecipientId: 'adobeCampaignRecipientId',
   /** The special Transcend identifier on consent preference records */
   Transcend: 'transcend',
-});
+} as const;
 
 /**
  * Overload with type of integration

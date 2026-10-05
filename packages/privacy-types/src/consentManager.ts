@@ -25,44 +25,44 @@ export enum ConsentTrackerStatus {
 /**
  * Applicable data flow scopes for a given URL
  */
-export const DataFlowScope = makeEnum({
+export const DataFlowScope = {
   Host: 'HOST',
   Path: 'PATH',
   QueryParam: 'QUERY_PARAM',
   RegExp: 'REGEX',
   CSP: 'CSP',
-});
+} as const;
 
 /** Type override */
 export type DataFlowScope = (typeof DataFlowScope)[keyof typeof DataFlowScope];
 
-export const ConsentBundleType = makeEnum({
+export const ConsentBundleType = {
   /** Bundle hosted at /cm path */
   Production: 'PRODUCTION',
   /** Bundle hosted at /cm-test path */
   Test: 'TEST',
-});
+} as const;
 
 /** Override type */
 export type ConsentBundleType = (typeof ConsentBundleType)[keyof typeof ConsentBundleType];
 
-export const UnknownRequestPolicy = makeEnum({
+export const UnknownRequestPolicy = {
   Allow: 'ALLOW',
   RequireFullConsent: 'REQUIRE_FULL_CONSENT',
   Block: 'BLOCK',
-});
+} as const;
 
 /** Override type */
 export type UnknownRequestPolicy = (typeof UnknownRequestPolicy)[keyof typeof UnknownRequestPolicy];
 
-export const TelemetryPartitionStrategy = makeEnum({
+export const TelemetryPartitionStrategy = {
   /** Partition telemetry data by the origin (default) */
   Origin: 'origin',
   /** Partition telemetry data by the origin + path */
   Path: 'path',
   /** Partition telemetry data by the full URL */
   Url: 'url',
-});
+} as const;
 
 /** Override type */
 export type TelemetryPartitionStrategy =
@@ -78,7 +78,7 @@ export type TelemetryPartitionStrategy =
  * If this is set to 'signals', then detected privacy signals always take precedence
  * over confirmed consent.
  */
-export const ConsentPrecedenceOption = makeEnum({
+export const ConsentPrecedenceOption = {
   User: 'user',
   /**
    * @deprecated Use Signals instead
@@ -86,7 +86,7 @@ export const ConsentPrecedenceOption = makeEnum({
   Signal: 'signal',
   /** Detected privacy signals take precedence over confirmed consent */
   Signals: 'signals',
-});
+} as const;
 
 /** Override type */
 export type ConsentPrecedenceOption =
@@ -102,12 +102,12 @@ export type ConsentPrecedenceOption =
  * On => allow-subdomains
  * Off => off
  */
-export const CspOption = makeEnum({
+export const CspOption = {
   Strict: 'Strict',
   Lax: 'Lax',
   On: 'On',
   Off: 'Off',
-});
+} as const;
 
 /** Override type */
 export type CspOption = (typeof CspOption)[keyof typeof CspOption];
@@ -118,10 +118,10 @@ export type CspOption = (typeof CspOption)[keyof typeof CspOption];
  * On
  * Off
  */
-export const UspapiOption = makeEnum({
+export const UspapiOption = {
   On: 'on',
   Off: 'off',
-});
+} as const;
 
 /** Override type */
 export type UspapiOption = (typeof UspapiOption)[keyof typeof UspapiOption];
@@ -133,11 +133,11 @@ export type UspapiOption = (typeof UspapiOption)[keyof typeof UspapiOption];
  * No
  * Unknown
  */
-export const SignedIabAgreementOption = makeEnum({
+export const SignedIabAgreementOption = {
   Yes: 'yes',
   No: 'no',
   Unknown: 'unknown',
-});
+} as const;
 
 /** Override type */
 export type SignedIabAgreementOption =
@@ -146,12 +146,12 @@ export type SignedIabAgreementOption =
 /**
  * Describes whether listed countries/country subdivisions are included in an experience
  */
-export const RegionsOperator = makeEnum({
+export const RegionsOperator = {
   /** The listed countries/country subdivisions, time zones, and languages are included in this experience */
   In: 'IN',
   /** The listed countries/country subdivisions, time zones, and languages are NOT included in this experience */
   NotIn: 'NOT_IN',
-});
+} as const;
 
 /** Override type */
 export type RegionsOperator = (typeof RegionsOperator)[keyof typeof RegionsOperator];
@@ -162,10 +162,10 @@ export type RegionsOperator = (typeof RegionsOperator)[keyof typeof RegionsOpera
  * On
  * Off
  */
-export const BackendSyncOption = makeEnum({
+export const BackendSyncOption = {
   On: 'on',
   Off: 'off',
-});
+} as const;
 
 /** Override type */
 export type BackendSyncOption = (typeof BackendSyncOption)[keyof typeof BackendSyncOption];
@@ -175,7 +175,7 @@ export type BackendSyncOption = (typeof BackendSyncOption)[keyof typeof BackendS
  *
  * default: 'on'
  */
-export const LocalSyncOption = makeEnum({
+export const LocalSyncOption = {
   /** use private sync only */
   Private: 'private',
   /** allow network-observable sync when private sync is unavailable */
@@ -184,7 +184,7 @@ export const LocalSyncOption = makeEnum({
   On: 'on',
   /** disable local sync */
   Off: 'off',
-});
+} as const;
 
 /** Type override */
 export type LocalSyncOption = (typeof LocalSyncOption)[keyof typeof LocalSyncOption];
@@ -192,10 +192,10 @@ export type LocalSyncOption = (typeof LocalSyncOption)[keyof typeof LocalSyncOpt
 /**
  * Sort direction for GraphQL order-by queries
  */
-export const OrderDirection = makeEnum({
+export const OrderDirection = {
   Asc: 'ASC',
   Desc: 'DESC',
-});
+} as const;
 
 /** Override type */
 export type OrderDirection = (typeof OrderDirection)[keyof typeof OrderDirection];
@@ -208,10 +208,10 @@ export type OrderDirection = (typeof OrderDirection)[keyof typeof OrderDirection
  * Opt-in => 'off' / false
  * Opt-out (unless for any reason not to; legal or otherwise) => 'Auto'
  */
-export const DefaultConsentOption = makeEnum({
+export const DefaultConsentOption = {
   OptIn: 'off',
   OptOut: 'Auto',
-});
+} as const;
 
 /** Override type */
 export type DefaultConsentOption = (typeof DefaultConsentOption)[keyof typeof DefaultConsentOption];
@@ -219,7 +219,7 @@ export type DefaultConsentOption = (typeof DefaultConsentOption)[keyof typeof De
 /**
  * Fields by which you can order cookies
  */
-export const CookieOrderField = makeEnum({
+export const CookieOrderField = {
   /** The name of this cookie */
   Name: 'name',
   /** When the cookie was created */
@@ -228,7 +228,7 @@ export const CookieOrderField = makeEnum({
   UpdatedAt: 'updatedAt',
   /** The number of occurrences (traffic) of this cookie */
   Occurrences: 'occurrences',
-});
+} as const;
 
 /** Type override */
 export type CookieOrderField = (typeof CookieOrderField)[keyof typeof CookieOrderField];
@@ -236,7 +236,7 @@ export type CookieOrderField = (typeof CookieOrderField)[keyof typeof CookieOrde
 /**
  * Fields by which you can order data flows
  */
-export const DataFlowOrderField = makeEnum({
+export const DataFlowOrderField = {
   /** The value of this data flow */
   Value: 'value',
   /** When the data flow was created */
@@ -247,7 +247,7 @@ export const DataFlowOrderField = makeEnum({
   Occurrences: 'occurrences',
   /** The SaaS tool associated with these data flows */
   Service: 'service',
-});
+} as const;
 
 /** Type override */
 export type DataFlowOrderField = (typeof DataFlowOrderField)[keyof typeof DataFlowOrderField];
@@ -255,14 +255,14 @@ export type DataFlowOrderField = (typeof DataFlowOrderField)[keyof typeof DataFl
 /**
  * Types of data flows
  */
-export const DataFlowType = makeEnum({
+export const DataFlowType = {
   /** URL-based data flow */
   Url: 'URL',
   /** Query parameter-based data flow */
   QueryParam: 'QUERY_PARAM',
   /** Regular expression-based data flow */
   RegExp: 'REGEX',
-});
+} as const;
 
 /** Type override */
 export type DataFlowType = (typeof DataFlowType)[keyof typeof DataFlowType];
@@ -270,12 +270,12 @@ export type DataFlowType = (typeof DataFlowType)[keyof typeof DataFlowType];
 /**
  * Triage actions for consent bulk operations
  */
-export const TriageAction = makeEnum({
+export const TriageAction = {
   /** Approve the tracker */
   Approve: 'APPROVE',
   /** Mark the tracker as junk */
   Junk: 'JUNK',
-});
+} as const;
 
 /** Type override */
 export type TriageAction = (typeof TriageAction)[keyof typeof TriageAction];
@@ -283,12 +283,12 @@ export type TriageAction = (typeof TriageAction)[keyof typeof TriageAction];
 /**
  * Discriminator for cookie vs data flow
  */
-export const ConsentTrackerType = makeEnum({
+export const ConsentTrackerType = {
   /** Cookie tracker */
   Cookie: 'cookie',
   /** Data flow tracker */
   DataFlow: 'data_flow',
-});
+} as const;
 
 /** Type override */
 export type ConsentTrackerType = (typeof ConsentTrackerType)[keyof typeof ConsentTrackerType];
@@ -296,7 +296,7 @@ export type ConsentTrackerType = (typeof ConsentTrackerType)[keyof typeof Consen
 /**
  * Metrics supported by airgap bundle aggregate/timeseries analytics
  */
-export const AirgapBundleAnalyticsMetric = makeEnum({
+export const AirgapBundleAnalyticsMetric = {
   /** User opt-in or opt-out for a consent purpose */
   ConsentChanged: 'CONSENT_CHANGED',
   /** Privacy signal detected (e.g. GPC, DNT) */
@@ -305,7 +305,7 @@ export const AirgapBundleAnalyticsMetric = makeEnum({
   SiteSessions: 'SITE_SESSIONS',
   /** Page view recorded */
   PageViews: 'PAGE_VIEWS',
-});
+} as const;
 
 /** Type override */
 export type AirgapBundleAnalyticsMetric =
@@ -314,14 +314,14 @@ export type AirgapBundleAnalyticsMetric =
 /**
  * Dimensions available for aggregate consent analytics breakdowns
  */
-export const AirgapBundleAnalyticsDimension = makeEnum({
+export const AirgapBundleAnalyticsDimension = {
   /** Consent value after change (true = opted in, false = opted out) */
   NewValue: 'NEW_VALUE',
   /** Privacy regime active when the event was recorded */
   Regime: 'REGIME',
   /** Tracking purpose the event relates to */
   Purpose: 'PURPOSE',
-});
+} as const;
 
 /** Type override */
 export type AirgapBundleAnalyticsDimension =
@@ -330,14 +330,14 @@ export type AirgapBundleAnalyticsDimension =
 /**
  * Bin sizes for airgap bundle timeseries analytics
  */
-export const AirgapBundleAnalyticsBinInterval = makeEnum({
+export const AirgapBundleAnalyticsBinInterval = {
   /** One minute bins */
   Minute: '1m',
   /** One hour bins */
   Hourly: '1h',
   /** One day bins */
   Daily: '1d',
-});
+} as const;
 
 /** Type override */
 export type AirgapBundleAnalyticsBinInterval =
@@ -346,14 +346,14 @@ export type AirgapBundleAnalyticsBinInterval =
 /**
  * analyticsData sources for consent manager metrics
  */
-export const ConsentManagerAnalyticsDataSource = makeEnum({
+export const ConsentManagerAnalyticsDataSource = {
   /** DNT/GPC and other privacy signal counts over time */
   PrivacySignalTimeseries: 'PRIVACY_SIGNAL_TIMESERIES',
   /** Explicit opt-in/opt-out events over time */
   ConsentChangesTimeseries: 'CONSENT_CHANGES_TIMESERIES',
   /** Session counts grouped by privacy regime */
   ConsentSessionsByRegime: 'CONSENT_SESSIONS_BY_REGIME',
-});
+} as const;
 
 /** Type override */
 export type ConsentManagerAnalyticsDataSource =
@@ -362,12 +362,12 @@ export type ConsentManagerAnalyticsDataSource =
 /**
  * Allowed bin sizes for consent manager analyticsData queries
  */
-export const ConsentManagerMetricBin = makeEnum({
+export const ConsentManagerMetricBin = {
   /** One hour bins */
   Hourly: '1h',
   /** One day bins */
   Daily: '1d',
-});
+} as const;
 
 /** Type override */
 export type ConsentManagerMetricBin =

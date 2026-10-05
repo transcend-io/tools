@@ -339,7 +339,7 @@ transcend policy new
 transcend policy init                   # create the workspace
 transcend policy new --template generic # add a bundle from a template
 
-transcend policy lint --noInteractive
+transcend policy check --noInteractive
 transcend policy test
 transcend policy eval transcend/policy/example-bundle \\
   --package=data.example.result \\
@@ -347,7 +347,7 @@ transcend policy eval transcend/policy/example-bundle \\
 \`\`\`
 
 \`policy new\` also writes a gitignored \`input.json\` (copy of \`input.example.json\`)
-for local Evaluate. \`policy lint\` / \`policy test\` default to every child with a
+for local Evaluate. \`policy check\` / \`policy test\` default to every child with a
 \`.manifest\` and use bundle-mode \`opa test -b\`, so both input files can coexist
 without a merge error.
 

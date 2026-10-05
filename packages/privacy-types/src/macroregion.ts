@@ -5,9 +5,9 @@ import { IsoCountryCode } from './isoRegion.js';
 /**
  * Country Code taken from https://github.com/umpirsky/country-list/blob/master/data/en/country.json
  */
-export const MacroRegion = makeEnum({
+export const MacroRegion = {
   [IsoCountryCode.EU]: IsoCountryCode.EU,
-});
+} as const;
 
 /** Type override */
 export type MacroRegion = (typeof MacroRegion)[keyof typeof MacroRegion];

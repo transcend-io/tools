@@ -1,5 +1,21 @@
 # @transcend-io/type-utils
 
+## 3.2.0
+
+### Minor Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+
+## 3.1.0
+
+### Minor Changes
+
+- e819811: Enum utilities are now deprecated and will be removed in the next major version
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+
 ## 3.0.1
 
 ### Patch Changes

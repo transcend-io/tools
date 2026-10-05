@@ -17,7 +17,7 @@ export const policyWorkspaceDirectoryParameter = {
 } as const satisfies TypedPositionalParameter<string | undefined, LocalContext>;
 
 /**
- * Positional directory for multi-bundle commands (`policy lint` / `policy test`).
+ * Positional directory for multi-bundle commands (`policy check` / `policy lint` / `policy test`).
  *
  * Defaults to the policy workspace. When that path has no `.manifest`, the
  * command discovers and runs against every immediate child that contains one.

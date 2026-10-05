@@ -1,5 +1,96 @@
 # @transcend-io/cli
 
+## 13.0.5
+
+### Patch Changes
+
+- da79134: Use workspace protocol to reference secret value package
+- Updated dependencies [7441a42]
+- Updated dependencies [12989f1]
+- Updated dependencies [88087f0]
+  - @transcend-io/secret-value@2.0.0
+  - @transcend-io/internationalization@4.2.0
+
+## 13.0.4
+
+### Patch Changes
+
+- 325a9c5: Remove query-string in favor of URLSearchParams
+
+## 13.0.3
+
+### Patch Changes
+
+- dea8763: Add integration owner-approval action item codes (`RequestDataSiloNeedsApproval` / `RequestDataSiloNeedsApprovalAssigned`) and an `ApproveAssignedIntegrationRequests` scope so assigned owners can approve or reject privacy request processing for their integrations without needing broader Manage Assigned Integrations access. Regenerate the CLI `transcend.yml` JSON schema so the new codes and scope are reflected.
+- Updated dependencies [dea8763]
+  - @transcend-io/privacy-types@6.4.0
+
+## 13.0.2
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/airgap.js-types@14.2.48
+  - @transcend-io/privacy-types@6.3.1
+  - @transcend-io/utils@0.3.3
+  - @transcend-io/sdk@2.1.16
+
+## 13.0.1
+
+### Patch Changes
+
+- 7140d27: Add the missing `transcend.yml` JSON schema for CLI v13. Version Packages now regenerates that versioned schema when the CLI major bumps.
+
+## 13.0.0
+
+### Major Changes
+
+- 8d8efe3: **Breaking:** Rename the Policy Engine verification gate from `transcend policy lint` to `transcend policy check`. Use `transcend policy lint` for OPA formatting and Regal only.
+
+  Migration:
+  - Replace `transcend policy lint` (CI, scripts, VS Code tasks) with `transcend policy check` for the full gate (manifest, formatting, strict OPA check, Regal, and tests).
+  - Keep or switch to `transcend policy lint` when you only want formatting + Regal (`--fix` still repairs OPA formatting).
+  - Re-run `transcend policy init --editor` / `--ci` (or `policy new`) to refresh generated VS Code tasks and GitHub Actions; legacy `policy: lint*` tasks are migrated to `policy: check*`.
+
+### Patch Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/airgap.js-types@14.2.47
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.15
+  - @transcend-io/utils@0.3.2
+
+## 12.1.5
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+  - @transcend-io/airgap.js-types@14.2.46
+  - @transcend-io/privacy-types@6.2.1
+  - @transcend-io/sdk@2.1.14
+  - @transcend-io/utils@0.3.1
+  - @transcend-io/custom-function-types@0.2.0
+
+## 12.1.4
+
+### Patch Changes
+
+- 1919505: Resolve Policy Engine bundles and versions by name via list filters instead of paginating full listings. Look up versions by UUID on the nested bundle route used by download (not the flat policy-bundle-versions path).
+
+## 12.1.3
+
+### Patch Changes
+
+- eb1f9bc: Generated Policy Engine and Custom Functions GitHub Actions workflows no longer double-run on pull request updates. `push` is limited to `main`; PR validation still runs via `pull_request`.
+
+  If you already have a generated workflow, update its `push` trigger to include `branches: [main]`, or remove the workflow and re-run `policy init` / `custom-functions init` with CI enabled.
+
 ## 12.1.2
 
 ### Patch Changes

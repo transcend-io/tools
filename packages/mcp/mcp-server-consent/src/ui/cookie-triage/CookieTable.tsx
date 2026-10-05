@@ -17,7 +17,8 @@ interface CookieTableProps {
   footer?: ReactNode;
 }
 
-const HEADER_CELL = 'bg-card px-4 py-2.5 text-left text-sm font-semibold uppercase text-on-card';
+const HEADER_CELL =
+  'align-top bg-card px-4 py-2.5 text-left text-sm font-semibold uppercase text-on-card';
 
 /** Triage table for one purpose category. */
 export const CookieTable = memo(function CookieTable({

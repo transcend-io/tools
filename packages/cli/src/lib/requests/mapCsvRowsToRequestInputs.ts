@@ -1,4 +1,3 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import type { PersistedState } from '@transcend-io/persisted-state';
 import {
   NORMALIZE_PHONE_NUMBER,
@@ -7,6 +6,7 @@ import {
   IdentifierType,
   IsoCountryCode,
   IsoCountrySubdivisionCode,
+  LocaleCodec,
 } from '@transcend-io/privacy-types';
 import type { AttributeKey } from '@transcend-io/sdk';
 import { ObjByString, valuesOf } from '@transcend-io/type-utils';
@@ -71,7 +71,7 @@ export const PrivacyRequestInput = t.intersection([
     /** Data silo IDs to submit for */
     dataSiloIds: t.array(t.string),
     /** Language key to map to */
-    locale: valuesOf(LOCALE_KEY),
+    locale: LocaleCodec,
     /** Workflow config ID to target explicitly */
     workflowConfigId: t.string,
   }),

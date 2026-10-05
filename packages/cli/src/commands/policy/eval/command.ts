@@ -104,7 +104,7 @@ export const evalCommand = buildCommand({
     brief: 'Evaluate one envelope against a local policy bundle',
     fullDescription:
       'Wraps `opa eval` for local policy debugging against one bundle directory. ' +
-      'Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as lint/publish — ' +
+      'Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as check/publish — ' +
       'tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). ' +
       'Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and ' +
       'show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are ' +

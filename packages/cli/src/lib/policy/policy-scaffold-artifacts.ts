@@ -46,7 +46,7 @@ export function generatePolicyGithubActionsWorkflow(options: {
   /** Policy workspace directory relative to the repository root. */
   workspaceDirectory: string;
   /**
-   * Publish directories to lint, relative to the repository root.
+   * Publish directories to check, relative to the repository root.
    *
    * Pass an empty array for a workspace with no bundles yet (`policy init`).
    * Defaults to the disposable starter bundle under the workspace when omitted.
@@ -68,9 +68,9 @@ export function generatePolicyGithubActionsWorkflow(options: {
   ];
   const pathFilters = watchedPaths.map((path) => `      - ${JSON.stringify(path)}`).join('\n');
 
-  let lintJob: string;
+  let checkJob: string;
   if (bundleDirectories.length === 0) {
-    lintJob = `  lint:
+    checkJob = `  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
@@ -80,7 +80,7 @@ export function generatePolicyGithubActionsWorkflow(options: {
           policy new refreshes this workflow automatically."
 `;
   } else if (bundleDirectories.length === 1) {
-    lintJob = `  lint:
+    checkJob = `  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
@@ -98,13 +98,13 @@ export function generatePolicyGithubActionsWorkflow(options: {
         env:
           POLICY_DIRECTORY: ${JSON.stringify(bundleDirectories[0])}
         run: >-
-          transcend policy lint
+          transcend policy check
           "$POLICY_DIRECTORY"
           --noInteractive
           --json
 `;
   } else {
-    lintJob = `  lint:
+    checkJob = `  check:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -126,7 +126,7 @@ ${bundleDirectories.map((directory) => `          - ${JSON.stringify(directory)}
       - name: Validate Policy Engine project
         env:
           POLICY_DIRECTORY: \${{ matrix.policy_directory }}
-        run: transcend policy lint "$POLICY_DIRECTORY" --noInteractive --json
+        run: transcend policy check "$POLICY_DIRECTORY" --noInteractive --json
 `;
   }
 
@@ -147,5 +147,5 @@ permissions:
   contents: read
 
 jobs:
-${lintJob}`;
+${checkJob}`;
 }

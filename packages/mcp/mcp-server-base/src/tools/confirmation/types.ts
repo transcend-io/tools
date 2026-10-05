@@ -8,7 +8,7 @@ import { makeEnum } from '@transcend-io/type-utils';
 import type { ApprovalTokenStore } from '../approval-tokens.js';
 
 /** Why a gated call did not run, or what the caller must do next. */
-export const ConfirmationCode = makeEnum({
+export const ConfirmationCode = {
   /** Form unavailable; approval token issued for replay */
   Required: 'CONFIRMATION_REQUIRED',
   /** User said no */
@@ -19,19 +19,19 @@ export const ConfirmationCode = makeEnum({
   Unavailable: 'CONFIRMATION_UNAVAILABLE',
   /** Token unknown, expired, spent, or mismatched */
   TokenInvalid: 'CONFIRMATION_TOKEN_INVALID',
-});
+} as const;
 
 export type ConfirmationCode = (typeof ConfirmationCode)[keyof typeof ConfirmationCode];
 
 /** How a transport is allowed to obtain a human's approval. */
-export const ConfirmationPolicy = makeEnum({
+export const ConfirmationPolicy = {
   /** Elicit a decision from the host's user, falling back to a replayable token */
   ElicitOrToken: 'ELICIT_OR_TOKEN',
   /** Elicit on the originating call's own stream, with nothing to fall back on */
   ElicitOnly: 'ELICIT_ONLY',
   /** Never run the action, whatever the host says it can render */
   Refuse: 'REFUSE',
-});
+} as const;
 
 export type ConfirmationPolicy = (typeof ConfirmationPolicy)[keyof typeof ConfirmationPolicy];
 
@@ -65,7 +65,7 @@ export type ConfirmationGate =
     };
 
 /** Why nobody was asked, which decides how the fallback describes itself. */
-export const UnaskedReason = makeEnum({
+export const UnaskedReason = {
   /** The host cannot show a form, or was asked and failed to */
   NoAnswer: 'NO_ANSWER',
   /**
@@ -78,7 +78,7 @@ export const UnaskedReason = makeEnum({
    * member goes when that file does.
    */
   Undelivered: 'UNDELIVERED',
-});
+} as const;
 
 export type UnaskedReason = (typeof UnaskedReason)[keyof typeof UnaskedReason];
 

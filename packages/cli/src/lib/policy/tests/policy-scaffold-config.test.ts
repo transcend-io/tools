@@ -282,7 +282,7 @@ describe('Policy Engine VS Code setup', () => {
     expect(mergePolicyEditorExtensions(result.contents)).toEqual(result);
   });
 
-  it('adds per-bundle and aggregate lint tasks and preserves custom tasks', () => {
+  it('adds per-bundle and aggregate check tasks and preserves custom tasks', () => {
     const workspace = "/repo/policies/customer's policy";
     const result = mergePolicyEditorTasks(
       `{
@@ -304,19 +304,19 @@ describe('Policy Engine VS Code setup', () => {
     expect(result.contents).toContain('// Keep the repository build.');
     expect(parsed.tasks).toHaveLength(3);
     expect(parsed.tasks[1]).toMatchObject({
-      label: 'policy: lint example',
+      label: 'policy: check example',
       command: 'transcend',
       args: [
         'policy',
-        'lint',
+        'check',
         `policies/customer's policy/${POLICY_STARTER_BUNDLE_DIRECTORY}`,
         '--noInteractive',
       ],
       group: { kind: 'test', isDefault: false },
     });
     expect(parsed.tasks[2]).toMatchObject({
-      label: 'policy: lint',
-      dependsOn: ['policy: lint example'],
+      label: 'policy: check',
+      dependsOn: ['policy: check example'],
       group: { kind: 'test', isDefault: true },
     });
   });
@@ -329,9 +329,9 @@ describe('Policy Engine VS Code setup', () => {
     expect(parsed.tasks).toBeUndefined();
   });
 
-  it('updates managed policy lint tasks when bundle roots grow', () => {
+  it('updates managed policy check tasks when bundle roots grow', () => {
     const existing =
-      '{"version":"2.0.0","tasks":[{"label":"policy: lint","dependsOn":["policy: lint example"],"group":{"kind":"test","isDefault":true},"problemMatcher":[]}]}\n';
+      '{"version":"2.0.0","tasks":[{"label":"policy: check","dependsOn":["policy: check example"],"group":{"kind":"test","isDefault":true},"problemMatcher":[]}]}\n';
     const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', [
       policyBundleRef('example'),
       policyBundleRef('permissions'),
@@ -342,9 +342,30 @@ describe('Policy Engine VS Code setup', () => {
     };
 
     expect(result.warnings).toEqual([]);
-    expect(parsed.tasks.find((task) => task.label === 'policy: lint')).toMatchObject({
-      dependsOn: ['policy: lint example', 'policy: lint permissions'],
+    expect(parsed.tasks.find((task) => task.label === 'policy: check')).toMatchObject({
+      dependsOn: ['policy: check example', 'policy: check permissions'],
       dependsOrder: 'sequence',
+    });
+  });
+
+  it('migrates legacy policy: lint tasks to policy: check', () => {
+    const existing =
+      '{"version":"2.0.0","tasks":[{"label":"policy: lint","dependsOn":["policy: lint example"],"group":{"kind":"test","isDefault":true},"problemMatcher":[]},{"label":"policy: lint example","command":"transcend","args":["policy","lint","policy/example-bundle","--noInteractive"]}]}';
+    const result = mergePolicyEditorTasks(existing, '/repo', '/repo/policy', [
+      policyBundleRef('example'),
+    ]);
+    const parsed = parse(result.contents) as {
+      /** VS Code tasks. */
+      tasks: Record<string, unknown>[];
+    };
+
+    expect(result.warnings).toEqual([]);
+    expect(parsed.tasks.some((task) => String(task.label).startsWith('policy: lint'))).toBe(false);
+    expect(parsed.tasks.find((task) => task.label === 'policy: check')).toMatchObject({
+      dependsOn: ['policy: check example'],
+    });
+    expect(parsed.tasks.find((task) => task.label === 'policy: check example')).toMatchObject({
+      args: ['policy', 'check', 'policy/example-bundle', '--noInteractive'],
     });
   });
 
@@ -359,7 +380,7 @@ describe('Policy Engine VS Code setup', () => {
     };
 
     expect(parsed.tasks.some((task) => task.label === 'build')).toBe(true);
-    expect(parsed.tasks.some((task) => task.label === 'policy: lint example')).toBe(true);
+    expect(parsed.tasks.some((task) => task.label === 'policy: check example')).toBe(true);
   });
 
   it('preserves malformed JSONC instead of replacing it', () => {

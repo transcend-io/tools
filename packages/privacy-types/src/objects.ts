@@ -1,7 +1,7 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /** The purpose of processing data */
-export const ProcessingPurpose = makeEnum({
+export const ProcessingPurpose = {
   /** Provide a service that the user explicitly requests and that is part of the product's basic service or functionality */
   Essential: 'ESSENTIAL',
   /** Provide a service that the user explicitly requests but that is not a necessary part of the product's basic service */
@@ -28,13 +28,13 @@ export const ProcessingPurpose = makeEnum({
   Other: 'OTHER',
   /** The purpose is not explicitly stated or is unclear */
   Unspecified: 'UNSPECIFIED',
-});
+} as const;
 
 /** Type override */
 export type ProcessingPurpose = (typeof ProcessingPurpose)[keyof typeof ProcessingPurpose];
 
 /** The category of personal data that is processed */
-export const DataCategoryType = makeEnum({
+export const DataCategoryType = {
   /** Financial information */
   Financial: 'FINANCIAL',
   /** Health information */
@@ -72,7 +72,7 @@ export const DataCategoryType = makeEnum({
    * For example, Salesforce Object Ids.
    */
   IntegrationIdentifier: 'INTEGRATION_IDENTIFIER',
-});
+} as const;
 
 /** Type override */
 export type DataCategoryType = (typeof DataCategoryType)[keyof typeof DataCategoryType];

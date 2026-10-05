@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "semverGroups": [
+    {
+      "label": "Use exact versions for dev dependencies",
+      "dependencyTypes": ["dev"],
+      "range": ""
+    },
+    {
+      "label": "Use caret versions for prod and peer dependencies",
+      "dependencyTypes": ["prod", "peer"],
+      "range": "^"
+    }
+  ],
+  "versionGroups": [
+    {
+      "label": "Use caret versions for prod and peer dependencies on workspace packages",
+      "dependencyTypes": ["prod", "peer"],
+      "specifierTypes": ["workspace-protocol"],
+      "pinVersion": "workspace:^"
+    },
+    {
+      "label": "Use exact versions for dev dependencies on workspace packages",
+      "dependencyTypes": ["dev"],
+      "specifierTypes": ["workspace-protocol"],
+      "pinVersion": "workspace:*"
+    }
+  ]
+}

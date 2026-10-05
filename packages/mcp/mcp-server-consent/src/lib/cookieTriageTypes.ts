@@ -3,31 +3,31 @@ import { makeEnum } from '@transcend-io/type-utils';
 import type { CookieTriagePurposeCategory } from './cookieTriageConfig.js';
 
 /** What the consent triage review app loads from the API */
-export const ConsentTriageType = makeEnum({
+export const ConsentTriageType = {
   /** Cookie inventory triage */
   Cookies: 'cookies',
   /** Data-flow inventory triage */
   DataFlows: 'data_flows',
-});
+} as const;
 
 /** Override type */
 export type ConsentTriageType = (typeof ConsentTriageType)[keyof typeof ConsentTriageType];
 
 /** User triage decision for a cookie or data-flow row */
-export const CookieTriageDecision = makeEnum({
+export const CookieTriageDecision = {
   /** Approve and mark LIVE */
   Approve: 'approve',
   /** Mark LIVE + junk */
   Junk: 'junk',
   /** Keep in review (explicit review decision) */
   Review: 'review',
-});
+} as const;
 
 /** Override type */
 export type CookieTriageDecision = (typeof CookieTriageDecision)[keyof typeof CookieTriageDecision];
 
 /** Per-tab / overview fetch status */
-export const CookieTriageLoadStatus = makeEnum({
+export const CookieTriageLoadStatus = {
   /** Not started */
   Idle: 'idle',
   /** In flight */
@@ -36,7 +36,7 @@ export const CookieTriageLoadStatus = makeEnum({
   Ready: 'ready',
   /** Failed */
   Error: 'error',
-});
+} as const;
 
 /** Override type */
 export type CookieTriageLoadStatus =

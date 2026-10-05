@@ -27,7 +27,7 @@ hints**. Upload does not branch on them.
 Before publishing:
 
 1. confirm the intended package and query paths with the consuming application;
-2. run `transcend policy lint <bundle-directory> --noInteractive` and tests;
+2. run `transcend policy check <bundle-directory> --noInteractive` and tests;
 3. review the generated bundle name, version, description, and target Transcend environment;
 4. keep API keys in the environment or the repository's approved secret store.
 

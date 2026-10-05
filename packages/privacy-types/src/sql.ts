@@ -1,8 +1,8 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 import { RequestAction } from './actions.js';
+import { LocaleCodec } from './locale.js';
 
 /**
  * Allowed database variable formats
@@ -30,7 +30,7 @@ export const DatabaseSqlVariablesForPrivacyRequest = t.intersection([
     /** The time that the privacy request was created */
     requestCreatedAt: t.string,
     /** The language key for the privacy request */
-    requestLocale: valuesOf(LOCALE_KEY),
+    requestLocale: LocaleCodec,
     /** Additional details provided about the request */
     requestDetails: t.string,
     /** Whether the request is a test request */

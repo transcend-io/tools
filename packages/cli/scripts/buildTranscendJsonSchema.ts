@@ -55,7 +55,10 @@ for (const fileName of readdirSync(schemaRoot)) {
   };
 
   // Build the JSON schema from io-ts codec
-  const jsonSchema = { ...schemaDefaults, ...toJsonSchema(TranscendInput) } as {
+  const jsonSchema = {
+    ...schemaDefaults,
+    ...toJsonSchema(TranscendInput, false, false, { useReferences: true }),
+  } as {
     $schema: string;
     $id: string;
     title: string;

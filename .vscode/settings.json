@@ -17,5 +17,8 @@
    */
   "prettier.enable": false,
   "eslint.enable": false,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  }
 }

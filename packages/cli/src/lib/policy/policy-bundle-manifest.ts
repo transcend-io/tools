@@ -169,7 +169,7 @@ function referencesDeclaredRoot(segments: readonly string[], root: readonly stri
 /**
  * Validate the manifest, publishable file requirement, and root coverage.
  *
- * This is the shared pure upload contract used by both `policy lint` and
+ * This is the shared pure upload contract used by both `policy check` and
  * `policy publish`.
  *
  * @param manifestContents - Raw manifest contents, or undefined when absent

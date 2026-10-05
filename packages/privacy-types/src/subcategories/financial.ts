@@ -1,7 +1,7 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /** Information about an individual's finances */
-export const FinancialSubCategory = makeEnum({
+export const FinancialSubCategory = {
   /** Account number */
   AccountNumber: 'ACCOUNT_NUMBER',
   /** Credit Card Number */
@@ -14,7 +14,7 @@ export const FinancialSubCategory = makeEnum({
   RoutingNumber: 'ROUTING_NUMBER',
   /** Fallback subcategory */
   Financial: 'FINANCIAL',
-});
+} as const;
 
 /**
  * Overload with type of integration

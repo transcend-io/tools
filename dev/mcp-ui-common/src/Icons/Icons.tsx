@@ -3,8 +3,11 @@ import type { SVGProps } from 'react';
 import approveCheckSvg from './approve-check.svg';
 import cancelSvg from './cancel.svg';
 import commentSvg from './comment.svg';
+import pencilSvg from './pencil.svg';
+import sparkleSvg from './sparkle.svg';
 import { createSvgIcon } from './SvgIcon.tsx';
 import trashSvg from './trash.svg';
+import warningSvg from './warning.svg';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -54,6 +57,15 @@ export const TrashIcon = createSvgIcon(trashSvg, 'TrashIcon');
 
 /** Comment / notes icon. */
 export const CommentIcon = createSvgIcon(commentSvg, 'CommentIcon');
+
+/** Pencil / edit icon for leave-comment controls. */
+export const PencilIcon = createSvgIcon(pencilSvg, 'PencilIcon');
+
+/** Warning triangle for destructive confirmations. */
+export const WarningIcon = createSvgIcon(warningSvg, 'WarningIcon');
+
+/** Sparkle icon for suggestion affordances. */
+export const SparkleIcon = createSvgIcon(sparkleSvg, 'SparkleIcon');
 
 /** Downward chevron for disclosure triggers. */
 export function ChevronDownIcon(props: IconProps) {

@@ -62,12 +62,39 @@ import {
   CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
+  LocaleCodec,
   PolicyType,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
+
+const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
+const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');
+const DataCategoryTypeCodec = valuesOf(DataCategoryType, 'DataCategoryType');
+const AttributeSupportedResourceTypeCodec = valuesOf(
+  AttributeSupportedResourceType,
+  'AttributeSupportedResourceType',
+);
+const IsoCountryCodeCodec = valuesOf(IsoCountryCode, 'IsoCountryCode');
+const IsoCountrySubdivisionCodeCodec = valuesOf(
+  IsoCountrySubdivisionCode,
+  'IsoCountrySubdivisionCode',
+);
+const IsoCountryOrSubdivisionCodeCodec = t.union(
+  [IsoCountryCodeCodec, IsoCountrySubdivisionCodeCodec],
+  'IsoCountryOrSubdivisionCode',
+);
+const DefaultIsoCountryOrSubdivisionCodeCodec = t.union(
+  [t.literal('default'), IsoCountryOrSubdivisionCodeCodec],
+  'DefaultIsoCountryOrSubdivisionCode',
+);
+const CodePackageTypeCodec = valuesOf(CodePackageType, 'CodePackageType');
+const DataFlowScopeCodec = valuesOf(DataFlowScope, 'DataFlowScope');
+const ConsentTrackerStatusCodec = valuesOf(ConsentTrackerStatus, 'ConsentTrackerStatus');
+const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequestPolicy');
+const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator');
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -204,7 +231,7 @@ export const EnricherInput = t.intersection([
      */
     phoneNumbers: t.array(t.string),
     /** The list of regions that should trigger the preflight check */
-    regionList: t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    regionList: t.array(IsoCountryOrSubdivisionCodeCodec),
     /**
      * Specify which data subjects the preflight check should run for
      */
@@ -212,7 +239,7 @@ export const EnricherInput = t.intersection([
     /** Headers to include in the webhook */
     headers: t.array(WebhookHeader),
     /** The privacy actions that the preflight check should run against */
-    'privacy-actions': t.array(valuesOf(RequestAction)),
+    'privacy-actions': t.array(RequestActionCodec),
   }),
 ]);
 
@@ -231,7 +258,7 @@ export type PreflightInput = EnricherInput;
 export const ProcessingPurposePreviewInput = t.intersection([
   t.type({
     /** The parent purpose */
-    purpose: valuesOf(ProcessingPurpose),
+    purpose: ProcessingPurposeCodec,
   }),
   t.partial({
     /** User-defined name for this processing purpose sub category */
@@ -248,7 +275,7 @@ export type ProcessingPurposePreviewInput = t.TypeOf<typeof ProcessingPurposePre
 export const DataCategoryPreviewInput = t.intersection([
   t.type({
     /** The parent category */
-    category: valuesOf(DataCategoryType),
+    category: DataCategoryTypeCodec,
   }),
   t.partial({
     /** User-defined name for this sub category */
@@ -328,7 +355,7 @@ export const AttributeInput = t.intersection([
     /** Description of attribute */
     description: t.string,
     /** Resource types that the attribute is enabled on */
-    resources: t.array(valuesOf(AttributeSupportedResourceType)),
+    resources: t.array(AttributeSupportedResourceTypeCodec),
     /** Values of attribute */
     values: t.array(AttributeValueInput),
   }),
@@ -367,9 +394,9 @@ export const VendorInput = t.intersection([
     /** Address */
     address: t.string,
     /** Headquarters country */
-    headquarterCountry: valuesOf(IsoCountryCode),
+    headquarterCountry: IsoCountryCodeCodec,
     /** Headquarters subdivision */
-    headquarterSubDivision: valuesOf(IsoCountrySubdivisionCode),
+    headquarterSubDivision: IsoCountrySubdivisionCodeCodec,
     /** Website URL */
     websiteUrl: t.string,
     /** Business entity */
@@ -407,7 +434,7 @@ export const DataCategoryInput = t.intersection([
     /** Name of data category */
     name: t.string,
     /** Type of data category */
-    category: valuesOf(DataCategoryType),
+    category: DataCategoryTypeCodec,
   }),
   t.partial({
     /** Description of data category */
@@ -447,7 +474,7 @@ export const ProcessingPurposeInput = t.intersection([
     /** Name of processing purpose */
     name: t.string,
     /** Type of processing purpose */
-    purpose: valuesOf(ProcessingPurpose),
+    purpose: ProcessingPurposeCodec,
   }),
   t.partial({
     /** Description of processing purpose */
@@ -647,9 +674,9 @@ export const BusinessEntityInput = t.intersection([
     /** Address of the business entity */
     address: t.string,
     /** Country of headquarters */
-    headquarterCountry: valuesOf(IsoCountryCode),
+    headquarterCountry: IsoCountryCodeCodec,
     /** Subdivision of headquarters */
-    headquarterSubDivision: valuesOf(IsoCountrySubdivisionCode),
+    headquarterSubDivision: IsoCountrySubdivisionCodeCodec,
     /** Data protection officer name for the business entity */
     dataProtectionOfficerName: t.string,
     /** Data protection officer email for the business entity */
@@ -679,9 +706,9 @@ export type BusinessEntityInput = t.TypeOf<typeof BusinessEntityInput>;
 
 export const RegionInput = t.partial({
   /** The country */
-  country: valuesOf(IsoCountryCode),
+  country: IsoCountryCodeCodec,
   /** The country subdivision */
-  countrySubDivision: valuesOf(IsoCountrySubdivisionCode),
+  countrySubDivision: IsoCountrySubdivisionCodeCodec,
 });
 
 /** Type override */
@@ -770,7 +797,7 @@ export const SoftwareDevelopmentKitInput = t.intersection([
     /** Title of software development kit */
     name: t.string,
     /** Code package type */
-    codePackageType: valuesOf(CodePackageType),
+    codePackageType: CodePackageTypeCodec,
   }),
   t.partial({
     /** Description of the SDK */
@@ -820,7 +847,7 @@ export const CodePackageInput = t.intersection([
     /** The name of the package */
     name: t.string,
     /** Type of code package */
-    type: valuesOf(CodePackageType),
+    type: CodePackageTypeCodec,
     /** Relative path to code package within the repository */
     relativePath: t.string,
     /** Name of repository that the code packages are being uploaded to */
@@ -889,7 +916,7 @@ export const DataSubjectInput = t.intersection([
      */
     supportsAuthorizedAgent: t.boolean,
     /** Enabled request actions for the data subject */
-    actions: t.array(valuesOf(RequestAction)),
+    actions: t.array(RequestActionCodec),
   }),
 ]);
 
@@ -904,7 +931,7 @@ export type DataSubjectInput = t.TypeOf<typeof DataSubjectInput>;
 export const ActionInput = t.intersection([
   t.type({
     /** The type of the data subject */
-    type: valuesOf(RequestAction),
+    type: RequestActionCodec,
   }),
   t.partial({
     /** Whether or not to skip deletion phase when no data is found */
@@ -918,9 +945,9 @@ export const ActionInput = t.intersection([
     /** The method in which the data subject's region is detected */
     regionDetectionMethod: valuesOf(RegionDetectionMethod),
     /** The list of regions to show in the form */
-    regionList: t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    regionList: t.array(IsoCountryOrSubdivisionCodeCodec),
     /** The list of regions NOT to show in the form */
-    regionBlockList: t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    regionBlockList: t.array(IsoCountryOrSubdivisionCodeCodec),
   }),
 ]);
 
@@ -945,7 +972,7 @@ export const IdentifierInput = t.intersection([
     /** The fixed set of options that an identifier can take on */
     selectOptions: t.array(t.string),
     /** Whether or not the identifier is shown in the privacy center form */
-    privacyCenterVisibility: t.array(valuesOf(RequestAction)),
+    privacyCenterVisibility: t.array(RequestActionCodec),
     /** The set of data subjects that this identifier is enabled for */
     dataSubjects: t.array(t.string),
     /** When true, the identifier is a required field on the privacy center form */
@@ -976,7 +1003,7 @@ export const DataFlowInput = t.intersection([
     /** Value of data flow */
     value: t.string,
     /** Type of data flow */
-    type: valuesOf(DataFlowScope),
+    type: DataFlowScopeCodec,
   }),
   t.partial({
     /** Description of data flow */
@@ -990,7 +1017,7 @@ export const DataFlowInput = t.intersection([
     /**
      * Status of the tracker (approved vs triage)
      */
-    status: valuesOf(ConsentTrackerStatus),
+    status: ConsentTrackerStatusCodec,
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo
@@ -1033,7 +1060,7 @@ export const CookieInput = t.intersection([
     /**
      * Status of the tracker (approved vs triage)
      */
-    status: valuesOf(ConsentTrackerStatus),
+    status: ConsentTrackerStatusCodec,
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo
@@ -1131,9 +1158,9 @@ export const ConsentManagerInput = t.partial({
   /** Precedence of signals vs user input */
   consentPrecedence: valuesOf(ConsentPrecedenceOption),
   /** The consent manager unknown request policy */
-  unknownRequestPolicy: valuesOf(UnknownRequestPolicy),
+  unknownRequestPolicy: UnknownRequestPolicyCodec,
   /** The consent manager unknown cookie policy */
-  unknownCookiePolicy: valuesOf(UnknownRequestPolicy),
+  unknownCookiePolicy: UnknownRequestPolicyCodec,
   /** The XDI sync endpoint for this airgap bundle */
   syncEndpoint: t.string,
   /** The telemetry partitioning strategy */
@@ -1186,9 +1213,9 @@ export const PrivacyCenterInput = t.partial({
   /** Whether or not to show the marketing preferences page */
   showMarketingPreferences: t.boolean,
   /** What languages are supported for the privacy center */
-  locales: t.array(valuesOf(LOCALE_KEY)),
+  locales: t.array(LocaleCodec),
   /** The default locale for the privacy center */
-  defaultLocale: valuesOf(LOCALE_KEY),
+  defaultLocale: LocaleCodec,
   /** Whether or not to prefer the browser default locale */
   preferBrowserDefaultLocale: t.boolean,
   /** The email addresses of the employees within your company that are the go-to individuals for managing this privacy center */
@@ -1277,7 +1304,7 @@ export const PolicyInput = t.intersection([
     /** Content of the policy */
     content: t.string,
     /** The languages for which the policy is disabled for */
-    disabledLocales: t.array(valuesOf(LOCALE_KEY)),
+    disabledLocales: t.array(LocaleCodec),
   }),
 ]);
 
@@ -1456,9 +1483,9 @@ export const DataSiloInput = t.intersection([
      */
     'email-settings': PromptAVendorEmailSettings,
     /** Country of data silo hosting */
-    country: valuesOf(IsoCountryCode),
+    country: IsoCountryCodeCodec,
     /** Sub-division of data silo hosting */
-    countrySubDivision: valuesOf(IsoCountrySubdivisionCode),
+    countrySubDivision: IsoCountrySubdivisionCodeCodec,
     /**
      * Attribute value and its corresponding attribute key
      */
@@ -1542,7 +1569,7 @@ export const AssessmentRuleInput = t.intersection([
     /** The reference id of the question whose answer is compared by this rule */
     'depends-on-question-reference-id': t.string,
     /** The operator to use when comparing the question answer to the operands */
-    'comparison-operator': valuesOf(ComparisonOperator),
+    'comparison-operator': ComparisonOperatorCodec,
   }),
   t.partial({
     /** The values to compare the question answer to */
@@ -1611,7 +1638,7 @@ export const RiskLogicInput = t.intersection([
     /** The values to compare */
     'comparison-operands': t.array(t.string),
     /** The operator */
-    'comparison-operator': valuesOf(ComparisonOperator),
+    'comparison-operator': ComparisonOperatorCodec,
   }),
   t.partial({
     /** The risk level to assign to the question */
@@ -1758,7 +1785,7 @@ export const AssessmentResourceInput = t.type({
   /** The title of the resource */
   title: t.string,
   /** The type of the resource */
-  type: valuesOf(AttributeSupportedResourceType),
+  type: AttributeSupportedResourceTypeCodec,
 });
 
 /** Type override */
@@ -1935,7 +1962,7 @@ export const PreferenceWorkflowConfigInput = t.intersection([
      */
     'workflow-title': t.string,
     /** The action type (e.g. ERASURE, ACCESS). Legacy mode; required when creating without workflow-title. */
-    'action-type': valuesOf(RequestAction),
+    'action-type': RequestActionCodec,
     /** The data subject type slug (e.g. customer) */
     'data-subject-type': t.string,
     /** Whether the config runs silently */
@@ -1962,7 +1989,7 @@ export const WorkflowConfigInput = t.intersection([
     /** User-facing title */
     title: t.string,
     /** Request action type */
-    'action-type': valuesOf(RequestAction),
+    'action-type': RequestActionCodec,
   }),
   t.partial({
     /**
@@ -1983,12 +2010,12 @@ export const WorkflowConfigInput = t.intersection([
     /** Whether to collect the data subject's region during intake */
     'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
     /** Region allow list */
-    'region-list': t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    'region-list': t.array(IsoCountryOrSubdivisionCodeCodec),
     /** Per-region request expiry times */
     'expiry-time': t.array(
       t.type({
         /** Region code (or 'default') */
-        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
+        region: DefaultIsoCountryOrSubdivisionCodeCodec,
         /** Expiry time in days */
         value: t.number,
       }),
@@ -2021,9 +2048,9 @@ export const SiloDiscoveryResultInput = t.intersection([
   }),
   t.partial({
     /** The ISO country code for the AWS Region if applicable */
-    country: valuesOf(IsoCountryCode),
+    country: IsoCountryCodeCodec,
     /** The ISO country subdivision code for the AWS Region if applicable */
-    countrySubDivision: valuesOf(IsoCountrySubdivisionCode),
+    countrySubDivision: IsoCountrySubdivisionCodeCodec,
     /** The plaintext that we will pass into results */
     plaintextContext: t.string,
     /** The custom title of the data silo results */
@@ -2200,7 +2227,7 @@ export const DataFlowCsvInput = t.intersection([
     /** The value of the data flow (host or regex) */
     'Connections Made To': t.string,
     /** The type of the data flow */
-    Type: valuesOf(DataFlowScope),
+    Type: DataFlowScopeCodec,
     /** The CSV of purposes mapped to that data flow */
     Purpose: t.string,
   }),
@@ -2214,7 +2241,7 @@ export const DataFlowCsvInput = t.intersection([
     /** Set of data flow team owners */
     Teams: t.string,
     /** LIVE vs NEEDS_REVIEW aka Approved vs Triage  */
-    Status: valuesOf(ConsentTrackerStatus),
+    Status: ConsentTrackerStatusCodec,
   }),
   // Custom attributes
   t.record(t.string, t.string),
@@ -2240,7 +2267,7 @@ export const CookieCsvInput = t.intersection([
     /** Set of cookie team owners */
     Teams: t.string,
     /** LIVE vs NEEDS_REVIEW aka Approved vs Triage  */
-    Status: valuesOf(ConsentTrackerStatus),
+    Status: ConsentTrackerStatusCodec,
   }),
   // Custom attributes
   t.record(t.string, t.string),
@@ -2272,7 +2299,7 @@ export const ConsentManagerServiceMetadata = t.type({
       /** Value of data flow */
       value: t.string,
       /** Type of data flow */
-      type: valuesOf(DataFlowScope),
+      type: DataFlowScopeCodec,
       /** Allowed purposes */
       trackingPurposes: t.array(t.string),
     }),

@@ -1,5 +1,31 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.48
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/privacy-types@6.3.1
+
+## 14.2.47
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+
+## 14.2.46
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+  - @transcend-io/privacy-types@6.2.1
+
 ## 14.2.45
 
 ### Patch Changes

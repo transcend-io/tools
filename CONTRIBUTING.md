@@ -61,7 +61,7 @@ Additional checks:
 Release and maintenance:
 
 - `pnpm changeset:version`: apply pending changesets to versions and changelogs
-- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm changeset:version:release`: apply pending changesets, regenerate CLI `transcend.yml` JSON schemas (so major bumps create `schema/transcend-yml-schema-vN.json`), and reformat the repo
 - `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
@@ -93,6 +93,7 @@ Stable releases are driven by Changesets, the [Version workflow](.github/workflo
    In a release PR:
    - Each changeset file (at `.changeset/*.md`) is turned into a change entry in each package's `CHANGELOG.md` file, and the changeset file is deleted.
    - Package versions are bumped accordingly.
+   - The CLI `transcend.yml` JSON schema is regenerated so a new major (e.g. `transcend-yml-schema-v13.json`) is created when `@transcend-io/cli` bumps major — that only happens here, not in feature PRs.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
 3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.
@@ -120,6 +121,7 @@ Add a changeset when changes to a package under `packages/` would require a new 
 - package `README.md` changes
 - test files
 - generated `dist/` output
+- committed generated `schema/` files (e.g. CLI `transcend.yml` JSON schemas)
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 

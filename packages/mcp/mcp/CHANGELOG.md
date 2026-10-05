@@ -1,5 +1,93 @@
 # @transcend-io/mcp
 
+## 1.6.1
+
+### Patch Changes
+
+- 6799f1e: Improve the consent triage review table: clearer suggestion affordances, a labeled split-button for row actions, top-aligned cells, and notes that close after save.
+- Updated dependencies [6799f1e]
+  - @transcend-io/mcp-server-consent@1.3.1
+
+## 1.6.0
+
+### Minor Changes
+
+- e59a2db: The consent cookie and data-flow triage review app is now generally available.
+
+  `consent_cookie_triage_review_app` no longer requires `TRANSCEND_MCP_EXPERIMENTAL=1` to appear in the tool catalog.
+
+### Patch Changes
+
+- Updated dependencies [e59a2db]
+  - @transcend-io/mcp-server-consent@1.3.0
+
+## 1.5.3
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/mcp-server-custom-functions@0.2.6
+  - @transcend-io/mcp-server-preferences@0.7.20
+  - @transcend-io/mcp-server-assessment@2.1.13
+  - @transcend-io/mcp-server-discovery@1.0.16
+  - @transcend-io/mcp-server-inventory@1.0.16
+  - @transcend-io/mcp-server-workflows@1.0.16
+  - @transcend-io/mcp-server-consent@1.2.9
+  - @transcend-io/mcp-server-policy@0.2.5
+  - @transcend-io/mcp-server-admin@1.1.3
+  - @transcend-io/mcp-server-base@2.5.4
+  - @transcend-io/mcp-server-docs@0.4.15
+  - @transcend-io/mcp-server-dsr@2.0.13
+
+## 1.5.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@1.1.2
+- @transcend-io/mcp-server-assessment@2.1.12
+- @transcend-io/mcp-server-consent@1.2.8
+- @transcend-io/mcp-server-custom-functions@0.2.5
+- @transcend-io/mcp-server-discovery@1.0.15
+- @transcend-io/mcp-server-dsr@2.0.12
+- @transcend-io/mcp-server-inventory@1.0.15
+- @transcend-io/mcp-server-policy@0.2.4
+- @transcend-io/mcp-server-preferences@0.7.19
+- @transcend-io/mcp-server-workflows@1.0.15
+- @transcend-io/mcp-server-base@2.5.3
+- @transcend-io/mcp-server-docs@0.4.14
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-consent@1.2.7
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/mcp-server-admin@1.1.1
+  - @transcend-io/mcp-server-assessment@2.1.11
+  - @transcend-io/mcp-server-custom-functions@0.2.4
+  - @transcend-io/mcp-server-discovery@1.0.14
+  - @transcend-io/mcp-server-docs@0.4.13
+  - @transcend-io/mcp-server-dsr@2.0.11
+  - @transcend-io/mcp-server-inventory@1.0.14
+  - @transcend-io/mcp-server-policy@0.2.3
+  - @transcend-io/mcp-server-preferences@0.7.18
+  - @transcend-io/mcp-server-workflows@1.0.14
+
+## 1.5.0
+
+### Minor Changes
+
+- ab5b612: Remove `admin_create_api_key`.
+
+  API key creation is no longer available through the Admin MCP. Use the Transcend Dashboard or CLI to create keys; `admin_list_api_keys` and `admin_list_scopes` remain for inspection.
+
+### Patch Changes
+
+- Updated dependencies [ab5b612]
+  - @transcend-io/mcp-server-admin@1.1.0
+
 ## 1.4.2
 
 ### Patch Changes
