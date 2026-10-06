@@ -4,6 +4,9 @@
  */
 export const ENV_VALUE_SET_IN_DASHBOARD = '[set in dashboard]';
 
+/** Shown when the stored value is still the unset `${NAME}` placeholder. */
+export const ENV_VALUE_NOT_SET = '[not set - fill in dashboard]';
+
 /**
  * Non-empty sentinel written for newly declared env names.
  *
@@ -29,7 +32,12 @@ export function redactUserDefinedEnv(
   userDefinedEnv: Record<string, string>,
 ): Record<string, string> {
   return Object.fromEntries(
-    Object.keys(userDefinedEnv).map((name) => [name, ENV_VALUE_SET_IN_DASHBOARD]),
+    Object.keys(userDefinedEnv).map((name) => {
+      const value = userDefinedEnv[name];
+      const redacted =
+        value === unsetEnvPlaceholder(name) ? ENV_VALUE_NOT_SET : ENV_VALUE_SET_IN_DASHBOARD;
+      return [name, redacted];
+    }),
   );
 }
 

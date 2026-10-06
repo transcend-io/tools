@@ -9,6 +9,11 @@ import type {
   CustomFunctionType,
   CustomFunctionsMixin,
 } from '../graphql.js';
+import {
+  applyEnvVarNames,
+  buildCustomFunctionSignContext,
+  sombraSupportsCustomFunctionSplitEnv,
+} from './buildCustomFunctionSignContext.js';
 import { resolveSombraIdForCreate } from './resolveSombraId.js';
 
 /**
@@ -28,6 +33,10 @@ export function didCustomFunctionTestPass(
 ): boolean {
   return !result.error && result.exitCode <= 0;
 }
+
+/** Shared field description for optional test payloads on upsert and test_run. */
+export const PAYLOAD_OMIT_GUIDANCE =
+  'Omit to use type-specific defaults (recommended). Hand-built DSR payloads often fail with an unclear decode error.';
 
 /**
  * Default GENERAL test payload when the caller omits one.
@@ -273,14 +282,24 @@ export async function executeCustomFunctionTestRun(
   const boundStoredDsrRun = ranStoredVersion && type === 'DSR';
   let signed = input.signed;
   if (!signed && input.code) {
+    const sombraVersion = await graphql.getPrimarySombraVersion();
+    const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
+    const envEntries = applyEnvVarNames(
+      Object.entries(input.userDefinedEnv ?? {}).map(([key, value]) => ({
+        key,
+        value,
+        isSecret: false,
+      })),
+    );
     signed = await rest.signCustomFunction({
       code: input.code,
-      context: {
-        userDefinedEnv: input.userDefinedEnv ?? {},
+      context: buildCustomFunctionSignContext({
+        envEntries,
+        supportsSplitEnv,
         allowedHosts: input.allowedHosts ?? [],
         allowThirdPartyImports: input.allowThirdPartyImports,
         timeoutMs: input.timeoutMs,
-      },
+      }),
     });
   }
   if (!signed && stored) {

@@ -72,7 +72,9 @@ export interface TranscendRestClientOptions {
 
 /** Runtime context attached to signed custom function code. */
 export interface CustomFunctionCodeContext {
-  /** Plaintext environment variables encrypted into the signed context JWT */
+  /**
+   * Legacy mixed env bag. Must be `{}` when `secretEnv` or `plaintextEnv` is set.
+   */
   userDefinedEnv: Record<string, string>;
   /** Hosts that the custom function may contact */
   allowedHosts: string[];
@@ -80,6 +82,10 @@ export interface CustomFunctionCodeContext {
   allowThirdPartyImports?: boolean;
   /** Maximum custom function runtime in milliseconds */
   timeoutMs?: number;
+  /** Secret env vars to encrypt (split-map signing) */
+  secretEnv?: Record<string, string>;
+  /** Non-secret env vars stored as plaintext (split-map signing) */
+  plaintextEnv?: Record<string, string>;
 }
 
 /** Plaintext custom function source accepted by Sombra customer ingress. */

@@ -31,8 +31,7 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
     description:
       'List data silos (data systems and integrations) in your organization. ' +
       'Pass `text` or `titles` to search/filter, or `customSiloConnectionStrategy=CUSTOM_FUNCTION` ' +
-      'to find silos that can host a DSR Custom Function. Attach only when connectionState is ' +
-      'NOT_CONFIGURED (one function per silo); CONNECTED means a function is already linked. ' +
+      'to find silos that can host a DSR Custom Function. ' +
       'Each row includes connectionState and customSiloConnectionStrategy; call ' +
       'inventory_get_data_silo for sombraId. `totalCount` is the full match count, not the size ' +
       'of this page.',

@@ -42,6 +42,9 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewConsentManager);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCustomFunction);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ManageCustomFunction);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ManageSombraRootKeys);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ConnectDataSilos);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ManageAccessControl);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCodeScanning);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewRequests);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);

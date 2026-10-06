@@ -29,8 +29,7 @@ export function createDocsFetchTool(_clients?: ToolClients) {
   return defineTool({
     name: 'docs_fetch',
     description:
-      'Fetch full markdown for a Transcend docs article or API-reference operation by URL. ' +
-      'Use urls from docs_list. API-reference pages are rendered from OpenAPI (not HTML).',
+      'Fetch full markdown for a Transcend docs article or an API reference page (endpoint or webhook) by URL from docs_list.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,

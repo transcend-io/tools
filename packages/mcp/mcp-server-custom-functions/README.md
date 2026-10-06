@@ -18,7 +18,8 @@ export SOMBRA_URL=https://your-customer-ingress.example.com
 export SOMBRA_CUSTOMER_KEY=your-customer-ingress-key
 ```
 
-The credentials need `ViewCustomFunction` and `ManageCustomFunction`. `SOMBRA_URL` and
+The credentials need `ViewCustomFunction`, `ManageCustomFunction`, `ManageSombraRootKeys`,
+`ConnectDataSilos`, and `ManageAccessControl`. `SOMBRA_URL` and
 `SOMBRA_CUSTOMER_KEY` must refer to the same single-tenant gateway used by the target data silo
 or GENERAL function. Customers with multiple STS Sombra gateways can run separate server
 configurations for each URL/key pair.
@@ -44,8 +45,10 @@ upsert (omit sombraId / dataSiloId, unique name, envVarNames for needed secrets)
 ```
 
 Do **not** pass secret values through MCP. Pass `envVarNames` (e.g. `["API_KEY"]`) to create
-Environment Variable placeholders (signed as `${API_KEY}` so Sombra persists the name; empty
-strings are dropped on merge-on-sign). The user replaces those values in the dashboard.
+Environment Variable placeholders (signed as `${API_KEY}` until the user fills them in the
+dashboard). Use `environmentVariables` with `key`, `isSecret`, and optional `replaceSecret` when
+you need explicit secret vs plain classification (recommended when names do not match credential
+heuristics). The user replaces secret values in the dashboard.
 Updates keep stored secret values and only add missing names from `envVarNames`.
 
 Successful responses include a `nextStep` string naming the following tool call. Or one-shot
@@ -81,7 +84,8 @@ a specific body. GENERAL payloads default to `{ "message": "hello world!" }` (th
 `extras`. Responses include `passed`, `exitCode`, `logs`, `error`, and `timeMs`.
 
 `custom_functions_get_code` returns plaintext code and runtime context with environment-variable
-**names** only (values are redacted). Set secrets in the Admin Dashboard Environment Variables
+**names** only (values are redacted as `[set in dashboard]` or `[not set - fill in dashboard]`).
+It also returns `unsetEnvVarNames` when any placeholders still need dashboard values. Set secrets in the Admin Dashboard Environment Variables
 tab. It returns `version.successfulTestRun`. The readable version is the pending draft when one
 exists, otherwise the active version; arbitrary historic versions cannot be unwrapped through
 this tool.

@@ -1,4 +1,9 @@
-import { TranscendRestClient, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ErrorCode,
+  ToolError,
+  TranscendRestClient,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -9,7 +14,11 @@ import {
 } from '../src/helpers/customFunctionTestRun.js';
 import { mapCustomFunctionUpsertError } from '../src/helpers/mapUpsertError.js';
 import { customFunctionDashboardUrl, customFunctionNextStep } from '../src/helpers/nextStep.js';
-import { ENV_VALUE_SET_IN_DASHBOARD, mergeEnvVarNames } from '../src/helpers/redactEnv.js';
+import {
+  ENV_VALUE_NOT_SET,
+  ENV_VALUE_SET_IN_DASHBOARD,
+  mergeEnvVarNames,
+} from '../src/helpers/redactEnv.js';
 import { pickSombraId } from '../src/helpers/resolveSombraId.js';
 import { getCustomFunctionsTools } from '../src/tools.js';
 import { CustomFunctionsTestRunSchema } from '../src/tools/custom_functions_test_run.js';
@@ -19,6 +28,24 @@ const SIGNED = {
   signedCodeJwt: 'signed-code',
   signedCodeContextJwt: 'signed-context',
 };
+
+/** Sign context shape for Sombra >= 7.609 (split secret/plain env maps). */
+function splitSignContext(options: {
+  secretEnv?: Record<string, string>;
+  plaintextEnv?: Record<string, string>;
+  allowedHosts: string[];
+  allowThirdPartyImports?: boolean;
+  timeoutMs?: number;
+}) {
+  return {
+    userDefinedEnv: {},
+    secretEnv: options.secretEnv ?? {},
+    plaintextEnv: options.plaintextEnv ?? {},
+    allowedHosts: options.allowedHosts,
+    allowThirdPartyImports: options.allowThirdPartyImports,
+    timeoutMs: options.timeoutMs,
+  };
+}
 
 describe('Custom Functions tools', () => {
   let rest: {
@@ -46,6 +73,8 @@ describe('Custom Functions tools', () => {
     createCustomFunctionDataSilo: ReturnType<typeof vi.fn>;
     /** Mock data silo delete (rollback) */
     deleteDataSilo: ReturnType<typeof vi.fn>;
+    /** Mock primary Sombra version query */
+    getPrimarySombraVersion: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -73,6 +102,7 @@ describe('Custom Functions tools', () => {
         title: 'Example',
       }),
       deleteDataSilo: vi.fn(),
+      getPrimarySombraVersion: vi.fn().mockResolvedValue('7.700.0'),
     };
   });
 
@@ -138,12 +168,7 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => true;',
-      context: {
-        userDefinedEnv: {},
-        allowedHosts: [],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      context: splitSignContext({ allowedHosts: [] }),
     });
     expect(graphql.createCustomFunction).toHaveBeenCalledWith(expect.objectContaining(SIGNED));
     expect(graphql.listSombras).not.toHaveBeenCalled();
@@ -210,12 +235,12 @@ describe('Custom Functions tools', () => {
     expect(rest.unwrapCustomFunction).toHaveBeenCalled();
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => true;',
-      context: {
-        userDefinedEnv: { TOKEN: 'secret' },
+      context: splitSignContext({
+        secretEnv: { TOKEN: 'secret' },
         allowedHosts: ['api.example.com', 'localhost'],
         allowThirdPartyImports: true,
         timeoutMs: 5000,
-      },
+      }),
     });
   });
 
@@ -265,12 +290,11 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => true;',
-      context: {
-        userDefinedEnv: { API_KEY: '${API_KEY}', BASE_URL: '${BASE_URL}' },
+      context: splitSignContext({
+        secretEnv: { API_KEY: '${API_KEY}' },
+        plaintextEnv: { BASE_URL: '${BASE_URL}' },
         allowedHosts: [],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      }),
     });
     expect(result).toMatchObject({
       success: true,
@@ -307,7 +331,7 @@ describe('Custom Functions tools', () => {
       .mockResolvedValueOnce({
         code: 'export default () => true;',
         context: {
-          userDefinedEnv: { TOKEN: 'secret', NEW_KEY: '${NEW_KEY}' },
+          userDefinedEnv: { TOKEN: 'secret', NEW_HOST: '${NEW_HOST}' },
           allowedHosts: [],
         },
       });
@@ -329,7 +353,7 @@ describe('Custom Functions tools', () => {
       id: 'cf-1',
       type: 'GENERAL',
       code: 'export default () => true;',
-      envVarNames: ['TOKEN', 'NEW_KEY'],
+      envVarNames: ['TOKEN', 'NEW_HOST'],
       allowedHosts: [],
       setActive: false,
       promote: false,
@@ -337,18 +361,17 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => true;',
-      context: {
-        userDefinedEnv: { TOKEN: 'secret', NEW_KEY: '${NEW_KEY}' },
+      context: splitSignContext({
+        secretEnv: { TOKEN: 'secret' },
+        plaintextEnv: { NEW_HOST: '${NEW_HOST}' },
         allowedHosts: [],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      }),
     });
     expect(result).toMatchObject({
       success: true,
       data: {
-        envVarNames: ['TOKEN', 'NEW_KEY'],
-        nextStep: expect.stringMatching(/TOKEN, NEW_KEY[\s\S]*promote_version/),
+        envVarNames: ['TOKEN', 'NEW_HOST'],
+        nextStep: expect.stringMatching(/TOKEN, NEW_HOST[\s\S]*promote_version/),
       },
     });
   });
@@ -438,12 +461,7 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => true;',
-      context: {
-        userDefinedEnv: {},
-        allowedHosts: ['pokeapi.co', 'localhost'],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      context: splitSignContext({ allowedHosts: ['pokeapi.co', 'localhost'] }),
     });
     expect(result).toMatchObject({
       success: true,
@@ -550,12 +568,7 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => "stored";',
-      context: {
-        userDefinedEnv: {},
-        allowedHosts: ['pokeapi.co', 'localhost'],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      context: splitSignContext({ allowedHosts: ['pokeapi.co', 'localhost'] }),
     });
     expect(result).toMatchObject({
       success: true,
@@ -617,12 +630,10 @@ describe('Custom Functions tools', () => {
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => "stored";',
-      context: {
-        userDefinedEnv: { API_KEY: '${API_KEY}' },
+      context: splitSignContext({
+        secretEnv: { API_KEY: '${API_KEY}' },
         allowedHosts: ['api.example.com'],
-        allowThirdPartyImports: undefined,
-        timeoutMs: undefined,
-      },
+      }),
     });
   });
 
@@ -633,6 +644,91 @@ describe('Custom Functions tools', () => {
         name: 'Example',
       }),
     ).toThrow(/code/);
+  });
+
+  it('uses legacy userDefinedEnv when Sombra predates split env maps', async () => {
+    graphql.getPrimarySombraVersion.mockResolvedValue('7.600.0');
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: { userDefinedEnv: { TOKEN: 'secret' }, allowedHosts: [] },
+    });
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: {
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        sombraId: 'sombra-1',
+        hasPendingDraft: false,
+      },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      hasPendingDraft: true,
+      draftVersion: { id: 'version-2' },
+    });
+
+    await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      type: 'GENERAL',
+      code: 'export default () => true;',
+      setActive: false,
+      promote: false,
+    });
+
+    expect(rest.signCustomFunction).toHaveBeenCalledWith({
+      code: 'export default () => true;',
+      context: {
+        userDefinedEnv: { TOKEN: 'secret' },
+        allowedHosts: [],
+        allowThirdPartyImports: undefined,
+        timeoutMs: undefined,
+      },
+    });
+  });
+
+  it('honors environmentVariables isSecret on create', async () => {
+    graphql.createCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      hasPendingDraft: false,
+    });
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', hasPendingDraft: false },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: { userDefinedEnv: {}, allowedHosts: [] },
+    });
+
+    await getTool('custom_functions_upsert').handler({
+      type: 'GENERAL',
+      name: 'Example',
+      sombraId: 'sombra-1',
+      code: 'export default () => true;',
+      environmentVariables: [
+        { key: 'NOT_A_SECRET_NAME', value: '${NOT_A_SECRET_NAME}', isSecret: true },
+        { key: 'PUBLIC_HOST', value: 'https://example.com', isSecret: false },
+      ],
+      allowedHosts: [],
+      setActive: true,
+      promote: false,
+    });
+
+    expect(rest.signCustomFunction).toHaveBeenCalledWith({
+      code: 'export default () => true;',
+      context: splitSignContext({
+        secretEnv: { NOT_A_SECRET_NAME: '${NOT_A_SECRET_NAME}' },
+        plaintextEnv: { PUBLIC_HOST: 'https://example.com' },
+        allowedHosts: [],
+      }),
+    });
   });
 
   it('updates a draft and promotes it when requested', async () => {
@@ -746,6 +842,37 @@ describe('Custom Functions tools', () => {
     });
     expect(JSON.stringify(result)).not.toContain('secret');
     expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
+  });
+
+  it('get_code marks unset placeholder env vars and lists unsetEnvVarNames', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', name: 'Example' },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...SIGNED,
+    });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: {
+        userDefinedEnv: { TOKEN: 'secret', API_KEY: '${API_KEY}' },
+        allowedHosts: [],
+      },
+    });
+
+    const result = await getTool('custom_functions_get_code').handler({ id: 'cf-1' });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        context: {
+          userDefinedEnv: {
+            TOKEN: ENV_VALUE_SET_IN_DASHBOARD,
+            API_KEY: ENV_VALUE_NOT_SET,
+          },
+        },
+        envVarNames: ['TOKEN', 'API_KEY'],
+        unsetEnvVarNames: ['API_KEY'],
+      },
+    });
   });
 
   it.each(['DSR', 'GENERAL'] as const)('signs unsaved %s code before a test run', async (type) => {
@@ -933,49 +1060,17 @@ describe('Custom Functions tools', () => {
     expect(result.data).not.toHaveProperty('allowedHostsIgnoredWarning');
   });
 
-  it('warns when allowedHosts is passed on a stored id-only test run', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: {
-        id: 'cf-1',
-        name: 'Example',
-        type: 'GENERAL',
-        lifecycleState: 'ACTIVE',
-        sombraId: 'sombra-1',
-        hasPendingDraft: false,
-        activeVersion: {
-          id: 'version-1',
-          versionNumber: '1',
-          lifecycleState: 'ACTIVE',
-          successfulTestRun: false,
-        },
-      },
-      version: {
-        id: 'version-1',
-        versionNumber: '1',
-        lifecycleState: 'ACTIVE',
-        successfulTestRun: false,
-      },
-      ...SIGNED,
-    });
-    graphql.testRunCustomFunction.mockResolvedValue({
-      exitCode: 0,
-      logs: [],
-      profile: { timeMs: 4 },
-    });
-
-    const result = await getTool('custom_functions_test_run').handler({
+  it('rejects allowedHosts on a stored id-only test run', () => {
+    const parsed = CustomFunctionsTestRunSchema.safeParse({
       id: 'cf-1',
       type: 'GENERAL',
       allowedHosts: ['pokeapi.co'],
     });
-
-    expect(rest.signCustomFunction).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      success: true,
-      data: {
-        allowedHostsIgnoredWarning: expect.stringContaining('custom_functions_upsert'),
-      },
-    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      const issue = parsed.error.issues.find((item) => item.path.join('.') === 'allowedHosts');
+      expect(issue?.message).toMatch(/custom_functions_upsert/);
+    }
   });
 
   it('marks a stored draft tested after a passing id-only run', async () => {
@@ -1236,7 +1331,10 @@ describe('Custom Functions tools', () => {
     expect(graphql.getSignedCustomFunctionVersion).toHaveBeenCalledWith('cf-1', undefined);
     expect(rest.signCustomFunction).toHaveBeenCalledWith(
       expect.objectContaining({
-        context: expect.objectContaining({ userDefinedEnv: { KEY: 'secret' } }),
+        context: splitSignContext({
+          plaintextEnv: { KEY: 'secret' },
+          allowedHosts: [],
+        }),
       }),
     );
     expect(graphql.testRunCustomFunction).toHaveBeenCalledWith(
@@ -1489,11 +1587,23 @@ describe('customFunctionNextStep', () => {
 
 describe('mapCustomFunctionUpsertError', () => {
   it('rewrites silo eligibility failures with inventory recovery guidance', () => {
-    expect(
-      mapCustomFunctionUpsertError(
-        new Error('Data silo connectionState must be NOT_CONFIGURED to attach a function'),
-      ).message,
-    ).toMatch(/inventory_get_data_silo[\s\S]*omit dataSiloId/);
+    const mapped = mapCustomFunctionUpsertError(
+      new Error('Data silo connectionState must be NOT_CONFIGURED to attach a function'),
+      { dataSiloId: 'silo-1' },
+    );
+    expect(mapped).toBeInstanceOf(ToolError);
+    expect(mapped.message).toMatch(/inventory_get_data_silo[\s\S]*omit dataSiloId/);
+    expect((mapped as ToolError).code).toBe(ErrorCode.VALIDATION_ERROR);
+    expect((mapped as ToolError).retryable).toBe(false);
+    expect((mapped as ToolError).details).toEqual({
+      dataSiloId: 'silo-1',
+      recoveryTool: 'inventory_get_data_silo',
+    });
+  });
+
+  it('passes through unrelated GraphQL errors unchanged', () => {
+    const original = new Error('name already has been taken');
+    expect(mapCustomFunctionUpsertError(original)).toBe(original);
   });
 });
 

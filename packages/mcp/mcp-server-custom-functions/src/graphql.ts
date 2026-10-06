@@ -135,6 +135,16 @@ const ListSombrasDoc = graphql(/* GraphQL */ `
   }
 `);
 
+const PrimarySombraVersionDoc = graphql(/* GraphQL */ `
+  query CustomFunctionsPrimarySombraVersion {
+    organization {
+      sombra {
+        version
+      }
+    }
+  }
+`);
+
 const CreateCustomFunctionDataSiloDoc = graphql(/* GraphQL */ `
   mutation CustomFunctionsCreateDataSilo($input: [CreateDataSilosInput!]!) {
     createDataSilos(input: $input) {
@@ -510,6 +520,12 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
       customerUrl: sombra.customerUrl,
       isPrimarySombra: sombra.isPrimarySombra,
     }));
+  }
+
+  /** Primary organization Sombra semver (for split-env signing capability). */
+  async getPrimarySombraVersion(): Promise<string | undefined> {
+    const data = await this.makeRequest(PrimarySombraVersionDoc, {});
+    return data.organization.sombra?.version ?? undefined;
   }
 
   async createCustomFunctionDataSilo(input: {

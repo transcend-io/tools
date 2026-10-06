@@ -3,17 +3,25 @@ import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/pri
 
 import type { CustomFunctionsMixin } from '../graphql.js';
 import {
+  applyEnvVarNames,
+  applyEnvironmentVariablesInput,
+  buildCustomFunctionSignContext,
+  type CustomFunctionEnvEntry,
+  envEntriesFromUnwrappedContext,
+  sombraSupportsCustomFunctionSplitEnv,
+} from '../helpers/buildCustomFunctionSignContext.js';
+import {
   executeCustomFunctionTestRun,
+  PAYLOAD_OMIT_GUIDANCE,
   type CustomFunctionTestRunView,
 } from '../helpers/customFunctionTestRun.js';
+import {
+  decodeStoredContextJwt,
+  envKeyNamesFromStoredContext,
+} from '../helpers/decodeStoredContextJwt.js';
 import { mapCustomFunctionUpsertError } from '../helpers/mapUpsertError.js';
 import { customFunctionDashboardHint, customFunctionNextStep } from '../helpers/nextStep.js';
-import { mergeEnvVarNames } from '../helpers/redactEnv.js';
 import { resolveSombraIdForCreate } from '../helpers/resolveSombraId.js';
-
-const PAYLOAD_OMIT_GUIDANCE =
-  'Strongly prefer omitting — type-specific defaults are used; a hand-built DSR payload ' +
-  'missing nested fields fails with an opaque decode error, not helpful validation';
 
 const TestPayloadSchema = z.object({
   payload: z.record(z.string(), z.unknown()).optional().describe(PAYLOAD_OMIT_GUIDANCE),
@@ -32,9 +40,8 @@ export const CustomFunctionsUpsertSchema = z
       .string()
       .optional()
       .describe(
-        'Existing CUSTOM_FUNCTION silo with connectionState=NOT_CONFIGURED (one DSR function ' +
-          'per silo). Prefer omit to auto-create. CONNECTED silos reject attach — check with ' +
-          'inventory_get_data_silo first.',
+        'Existing CUSTOM_FUNCTION silo that is still NOT_CONFIGURED (one DSR function per silo). ' +
+          'Prefer omitting to auto-create one.',
       ),
     sombraId: z
       .string()
@@ -54,20 +61,46 @@ export const CustomFunctionsUpsertSchema = z
       .array(z.string().min(1))
       .optional()
       .describe(
-        'Env var names to create as placeholders (e.g. API_KEY). Values are a non-empty ' +
-          'sentinel so Sombra persists the name — never pass real secrets; the user replaces ' +
-          'them in the dashboard. On update, adds missing names and keeps existing values; ' +
-          'omit to leave env unchanged.',
+        'Environment variable names the code reads (e.g. API_KEY). Creates placeholders; the user ' +
+          'enters real values in the dashboard. Never pass secret values. On update, adds missing ' +
+          'names and keeps existing values; omit to leave env unchanged. Prefer environmentVariables ' +
+          'when you need an explicit secret vs plain classification.',
+      ),
+    environmentVariables: z
+      .array(
+        z.object({
+          key: z.string().min(1).describe('Variable name'),
+          value: z
+            .string()
+            .optional()
+            .describe(
+              'Plaintext value. Never pass secrets. Omit on update to keep the stored value.',
+            ),
+          isSecret: z
+            .boolean()
+            .describe(
+              'When true, encrypt at sign time (dashboard “Secure”). When false, store as plaintext.',
+            ),
+          replaceSecret: z
+            .boolean()
+            .optional()
+            .describe(
+              'On update, set true when supplying a new secret value to replace the stored ciphertext.',
+            ),
+        }),
+      )
+      .optional()
+      .describe(
+        'Classified environment variables. Use instead of envVarNames when secret vs plain text ' +
+          'matters. Never pass secret values — users set secrets in the dashboard.',
       ),
     allowedHosts: z
       .array(z.string())
       .optional()
       .describe(
-        'Hostname allowlist (no scheme), e.g. pokeapi.co. Empty [] = localhost only; any ' +
-          "explicit list drops implicit localhost (include 'localhost' if using sdk.fetch). " +
-          'On update, omit to keep existing hosts — never pass [] unless you intend to wipe ' +
-          'to localhost-only. Provided list fully replaces. Response returns verified hosts ' +
-          'from a post-write read (not shown in the Admin Dashboard).',
+        'Outbound hostname allowlist, no scheme (e.g. pokeapi.co). A provided list replaces the ' +
+          "saved one. [] means localhost only; any non-empty list drops localhost (add 'localhost' " +
+          'for sdk.fetch). On update, omit to keep the saved list.',
       ),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
@@ -85,8 +118,7 @@ export const CustomFunctionsUpsertSchema = z
       .array(TestPayloadSchema)
       .optional()
       .describe(
-        'Optional pre-save tests; sets successfulTestRun only if all pass. Never blocks save. ' +
-          'Prefer omitting each payload (type defaults).',
+        'Optional pre-save tests; sets successfulTestRun only if all pass. Never blocks save.',
       ),
   })
   .superRefine((input, context) => {
@@ -200,24 +232,21 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
   return defineTool({
     name: 'custom_functions_upsert',
     description:
-      'Create or update a Custom Function from plaintext TypeScript. Pass envVarNames for ' +
-      'empty placeholders (never secret values — user fills in dashboard). Pass allowedHosts ' +
-      'for the network allowlist (omit on update to keep). Save does not require a passing ' +
-      'test; response returns verified envVarNames and allowedHosts. On create, omit ' +
-      'sombraId/dataSiloId unless required; use a unique name. DSR create without dataSiloId ' +
-      'also creates a customFunction silo; attach needs a NOT_CONFIGURED CUSTOM_FUNCTION ' +
-      'silo. Updates write a draft; omit code for metadata-only changes.',
+      'Create or update a Custom Function from plaintext TypeScript. Never pass secrets, API keys, ' +
+      'or credentials: envVarNames creates environment variable placeholders the user fills in the ' +
+      'dashboard. allowedHosts sets which domains the code may call (omit on update to keep). ' +
+      'Updates write a draft; omit code to change only settings. Testing is optional. On create, ' +
+      'omit sombraId and dataSiloId unless an error asks for them; use a unique name.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
     confirmation: {
       hint:
-        'Creates or updates Custom Function code (and allowed hosts / env var names when ' +
-        'provided). Secret values are never set by this tool — only empty env placeholders ' +
-        'via envVarNames; the user fills secrets in the dashboard. Updates write a draft; ' +
-        'setActive or promote can make GENERAL code live. On DSR create without dataSiloId, a ' +
-        'customFunction data silo is created too. Check name, type, code, envVarNames, ' +
-        'allowedHosts, setActive, and promote before agreeing.',
+        'Creates or updates a Custom Function from the code in the call arguments. Updates write a ' +
+        'draft; setActive or promote can make GENERAL code live. allowedHosts replaces the saved ' +
+        'network allowlist ([] means localhost only). envVarNames only adds placeholder names; no ' +
+        'secret values are set. DSR create without dataSiloId also creates a data silo. Check name, ' +
+        'type, code, allowedHosts, envVarNames, setActive, and promote before agreeing.',
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsUpsertSchema,
@@ -231,6 +260,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
       description,
       code,
       envVarNames,
+      environmentVariables,
       allowedHosts,
       allowThirdPartyImports,
       timeoutMs,
@@ -261,14 +291,16 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
       }
 
       try {
-        // Secret values never come from the agent. Stored values are preserved on update;
-        // envVarNames only adds non-empty placeholders for missing names (empty string is
-        // merge-on-sign “keep prior” and drops new keys).
-        let storedEnv: Record<string, string> | undefined;
+        // Secret values never come from the agent. Stored values are preserved on update via
+        // unwrap + re-sign; envVarNames / environmentVariables only add placeholders or metadata.
         let resolvedCode = code;
         let resolvedAllowedHosts = allowedHosts ?? [];
         let resolvedAllowThirdPartyImports = allowThirdPartyImports;
         let resolvedTimeoutMs = timeoutMs;
+        let envEntries: CustomFunctionEnvEntry[] = [];
+
+        const sombraVersion = await graphql.getPrimarySombraVersion();
+        const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
 
         if (id) {
           const stored = await graphql.getSignedCustomFunctionVersion(id, versionId);
@@ -276,7 +308,8 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
             signedCodeJwt: stored.signedCodeJwt,
             signedCodeContextJwt: stored.signedCodeContextJwt,
           });
-          storedEnv = source.context.userDefinedEnv;
+          const decodedStored = decodeStoredContextJwt(stored.signedCodeContextJwt);
+          envEntries = envEntriesFromUnwrappedContext(source.context, decodedStored);
           if (resolvedCode === undefined) {
             resolvedCode = source.code;
           }
@@ -297,16 +330,20 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           throw new Error('Pass plaintext TypeScript code when creating a Custom Function');
         }
 
-        const userDefinedEnv = mergeEnvVarNames({ stored: storedEnv, envVarNames });
+        envEntries = applyEnvVarNames(envEntries, envVarNames);
+        envEntries = applyEnvironmentVariablesInput(envEntries, environmentVariables);
+
+        const signContext = buildCustomFunctionSignContext({
+          envEntries,
+          supportsSplitEnv,
+          allowedHosts: resolvedAllowedHosts,
+          allowThirdPartyImports: resolvedAllowThirdPartyImports,
+          timeoutMs: resolvedTimeoutMs,
+        });
 
         const signed = await clients.rest.signCustomFunction({
           code: resolvedCode,
-          context: {
-            userDefinedEnv,
-            allowedHosts: resolvedAllowedHosts,
-            allowThirdPartyImports: resolvedAllowThirdPartyImports,
-            timeoutMs: resolvedTimeoutMs,
-          },
+          context: signContext,
         });
 
         const testResults: (CustomFunctionTestRunView & {
@@ -380,7 +417,10 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           signedCodeJwt: verifiedSigned.signedCodeJwt,
           signedCodeContextJwt: verifiedSigned.signedCodeContextJwt,
         });
-        const verifiedEnvNames = Object.keys(verifiedSource.context.userDefinedEnv);
+        const verifiedDecoded = decodeStoredContextJwt(verifiedSigned.signedCodeContextJwt);
+        const verifiedEnvNames = verifiedDecoded
+          ? envKeyNamesFromStoredContext(verifiedDecoded)
+          : Object.keys(verifiedSource.context.userDefinedEnv);
         const verifiedAllowedHosts = verifiedSource.context.allowedHosts ?? [];
         const envPersistWarning = envPersistWarningFor(envVarNames, verifiedEnvNames);
         const allowedHostsPersistWarning = allowedHostsPersistWarningFor(
@@ -423,7 +463,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
             // Ignore rollback failures so the original create error is surfaced.
           }
         }
-        throw mapCustomFunctionUpsertError(error);
+        throw mapCustomFunctionUpsertError(error, { dataSiloId: resolvedDataSiloId });
       }
     },
   });

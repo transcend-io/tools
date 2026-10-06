@@ -2,12 +2,11 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
-import { executeCustomFunctionTestRun } from '../helpers/customFunctionTestRun.js';
+import {
+  executeCustomFunctionTestRun,
+  PAYLOAD_OMIT_GUIDANCE,
+} from '../helpers/customFunctionTestRun.js';
 import { customFunctionNextStep } from '../helpers/nextStep.js';
-
-const PAYLOAD_OMIT_GUIDANCE =
-  'Strongly prefer omitting — type-specific defaults are used; a hand-built DSR payload ' +
-  'missing nested fields fails with an opaque decode error, not helpful validation';
 
 export const CustomFunctionsTestRunSchema = z
   .object({
@@ -40,12 +39,7 @@ export const CustomFunctionsTestRunSchema = z
     allowedHosts: z
       .array(z.string())
       .optional()
-      .describe(
-        'Hosts for unsaved code trials only (when code is passed). Ignored for stored runs ' +
-          '({ id } without code) — those use the saved allowlist. To change hosts, call ' +
-          "custom_functions_upsert. Empty = localhost only; include 'localhost' with " +
-          'sdk.fetch. Secrets/env are dashboard-only.',
-      ),
+      .describe('Allowlist for unsaved code trials only. [] means localhost only.'),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
   })
@@ -78,6 +72,15 @@ export const CustomFunctionsTestRunSchema = z
         message: 'payloadType is only valid for DSR test runs. Omit payloadType for GENERAL',
       });
     }
+    if (input.id && !input.code && input.allowedHosts !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['allowedHosts'],
+        message:
+          'allowedHosts only applies to unsaved code trials. Saved runs use the saved allowlist; ' +
+          'call custom_functions_upsert with allowedHosts to change it.',
+      });
+    }
   });
 export type CustomFunctionsTestRunInput = z.infer<typeof CustomFunctionsTestRunSchema>;
 
@@ -96,7 +99,7 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       hint:
         'Runs Custom Function code on your Sombra gateway with the payload in the call ' +
         'arguments. Stored runs use dashboard Environment Variables; unsaved trials have no ' +
-        'secrets. Check id or code, type, payload, and allowedHosts before agreeing.',
+        'secrets. Check id or code, type, and payload before agreeing.',
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsTestRunSchema,
@@ -113,7 +116,6 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       timeoutMs,
     }) => {
       const storedRun = Boolean(id) && !code;
-      const hostsIgnoredOnStoredRun = storedRun && allowedHosts !== undefined;
       const { result, customFunction } = await executeCustomFunctionTestRun(graphql, clients.rest, {
         type,
         id,
@@ -145,14 +147,6 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
         ...result,
         customFunction,
         nextStep,
-        ...(hostsIgnoredOnStoredRun
-          ? {
-              allowedHostsIgnoredWarning:
-                'allowedHosts was ignored for this stored run ({ id } without code). The ' +
-                'saved allowlist was used. Call custom_functions_upsert with allowedHosts to ' +
-                'persist changes, or pass code for an unsaved trial that uses these hosts.',
-            }
-          : {}),
       });
     },
   });

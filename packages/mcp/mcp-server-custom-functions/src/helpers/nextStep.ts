@@ -21,8 +21,8 @@ export function customFunctionDashboardHint(dashboardUrl: string, functionId: st
   const url = customFunctionDashboardUrl(dashboardUrl, functionId);
   return (
     `Review this function at ${url}. Fill Environment Variable values there — MCP only ` +
-    'creates empty name placeholders; do not pass credentials through tools. Allowed hosts ' +
-    'are not shown in the Admin Dashboard; confirm them via upsert response or ' +
+    'creates placeholder names; the user enters real values there. Allowed hosts are not ' +
+    'shown in the Admin Dashboard; confirm them via upsert response or ' +
     'custom_functions_get_code.'
   );
 }
@@ -68,8 +68,7 @@ export function customFunctionNextStep(input: {
       const draftEnvHint =
         input.envVarNames && input.envVarNames.length > 0
           ? `Env var names (${input.envVarNames.join(', ')}) are on draft ` +
-            `"${input.draftVersionId}" — promote before treating them as live. ` +
-            'Do not pass secrets through MCP. '
+            `"${input.draftVersionId}" — promote before treating them as live. `
           : '';
       return (
         draftEnvHint +
