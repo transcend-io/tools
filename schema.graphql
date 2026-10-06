@@ -2470,6 +2470,7 @@ enum DataSiloDiscoveryPluginType {
 
 enum DataSiloErrorRollupGroupBy {
   ERROR_MESSAGE
+  PATTERN
   DATA_POINT
 }
 
@@ -5189,6 +5190,7 @@ type Query {
   actions(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ActionFiltersInput, orderBy: [ActionOrder!]): ActionsPayload!
   activities(first: Int, offset: Int = 0, last: Int, filterBy: ActivityFiltersInput!, orderBy: [ActivityOrder!]): ActivitiesPayload!
   airgapBundleAggregateAnalytics(id: ID!, input: AirgapBundleAggregateAnalyticsInput!): AirgapBundleAggregateAnalyticsResult!
+  airgapBundleAirgapPrefixModules(input: AirgapBundleInput!): AirgapBundleAirgapPrefixModulesPayload!
   airgapBundleTimeseriesAnalytics(id: ID!, input: AirgapBundleTimeseriesAnalyticsInput!): AirgapBundleTimeseriesAnalyticsResult!
   airgapBundleVersions(first: Int, offset: Int = 0, last: Int, id: ID!, input: AirgapBundleVersionsInput!): AirgapBundleVersionsPayload!
   airgapVersions(input: AirgapVersionsInput!): AirgapVersionsPayload!
@@ -5548,6 +5550,7 @@ type Mutation {
   createTemplate(input: TemplateInput!): CreateTemplatePayload!
   createVendor(input: CreateVendorInput!): CreateVendorPayload!
   createWorkflow(input: CreateWorkflowInput!): CreateWorkflowPayload!
+  cutOverPrivacyCenterHostnameChange(input: PrivacyCenterIdInput!): CutOverPrivacyCenterHostnameChangePayload!
   dataSubjectDownloadCEK(id: ID!, lookup: PrivacyCenterLookupInput, dhEncrypted: String!, input: DataSubjectDownloadCEKInput): DataSubjectDownloadCekPayload!
   dataSubjectUpdateConsentPreferences(input: UpdateConsentPreferenceInput!, lookup: PrivacyCenterLookupInput, dhEncrypted: String!): DataSubjectUpdateConsentPreferencesPayload!
   deleteActionItemCollections(input: DeleteActionItemCollectionsInput!): DeleteActionItemCollectionsPayload!
@@ -5705,6 +5708,7 @@ type Mutation {
   requestDemo(input: DemoInput!): RequestDemoPayload!
   requestEmailBounced(input: RequestEmailBouncedInput!): RequestEmailBouncedPayload!
   requestNewDataSiloToken(input: RequestNewDataSiloTokenInput!): RequestNewDataSiloTokenPayload!
+  requestPrivacyCenterHostnameChange(input: RequestPrivacyCenterHostnameChangeInput!): RequestPrivacyCenterHostnameChangePayload!
   reScanPluginPermissions(input: UpdatePluginInput!): ReScanPluginPermissionsPayload!
   resendAssessmentFormNotifications(input: ResendAssessmentFormNotificationsInput!): ResendAssessmentFormNotificationsPayload!
   resetDataSiloRateLimitsToDefault(id: ID!): ResetDataSiloRateLimitsToDefaultPayload!
@@ -5727,6 +5731,7 @@ type Mutation {
   retryRequestEnricher(id: ID!): RetryRequestEnricherPayload!
   revealConsentIdentifierEncryptionKey(dhEncrypted: String!): RevealConsentIdentifierEncryptionKeyPayload!
   revealRootSombraSecret(dhEncrypted: String!): RevealRootSombraSecretPayload!
+  revertPrivacyCenterHostnameChange(input: PrivacyCenterIdInput!): RevertPrivacyCenterHostnameChangePayload!
   revokeComplianceReportTokens(input: RevokeComplianceReportTokensInput!): RevokeComplianceReportTokensPayload!
   revokeRequest(dhEncrypted: String!, id: ID!, lookup: PrivacyCenterLookupInput): RevokeRequestPayload!
   rocUserRecords(input: RocUserRecordsInput!, dhEncrypted: String!): RocUserRecordsPayload!
@@ -6308,6 +6313,11 @@ type AirgapBundleAirgapPrefixModule {
   airgapPrefixModuleRelease: AirgapPrefixModuleRelease!
   config: String
   createdAt: Date!
+}
+
+type AirgapBundleAirgapPrefixModulesPayload {
+  clientMutationId: String
+  nodes: [AirgapBundleAirgapPrefixModule!]!
 }
 
 input AirgapBundleInput {
@@ -11349,6 +11359,12 @@ type CustomSyncEndpointsPayload {
   totalCount: Int!
 }
 
+type CutOverPrivacyCenterHostnameChangePayload {
+  clientMutationId: String
+  hostnameChange: PrivacyCenterHostnameChange!
+  success: Boolean!
+}
+
 type DataCategoriesPayload {
   clientMutationId: String
   nodes: [DataCategoryInterface!]!
@@ -11964,6 +11980,7 @@ type DataSilo implements DatamapDataSiloInterface {
   isPaidIntegration: Boolean!
   isPausedForDsrs: Boolean!
   skipSecondaryIfNoFiles: Boolean!
+  ownerApprovalRequestActions: [RequestAction!]!
   privacyRequestSubdatapointEnabled: Boolean!
   users: [UserPreview!]!
   plaintextContext: [PlaintextContext!]!
@@ -12471,6 +12488,7 @@ type DataSubjectInternal implements DataSubjectInterface {
   fulFilledRequestCount: Int!
   closedRequestCount: Int!
   hasRequests: Boolean!
+  legacyActions: [Action!]!
 }
 
 type DataSubjectUpdateConsentPreferencesPayload {
@@ -13415,6 +13433,7 @@ input DownloadAndDecryptEventInput {
   recoveredToSinkMode: DownloadSinkMode
   pipelineElapsedMs: Float
   testRunId: String
+  convertJsonToCsv: Boolean
 }
 
 input DownloadAndDecryptMetricsInput {
@@ -15322,6 +15341,7 @@ type MigrateRequestConfigurationsToWorkflowsPayload {
 
 input MigrateRequestConfigurationsToWorkflowsInput {
   dryRun: Boolean!
+  actionSubjectFilters: [WorkflowMigrationActionSubjectFilterInput!]
 }
 
 input MigrateSSOInput {
@@ -16155,6 +16175,7 @@ type PrivacyCenterDeployment {
   id: ID!
   cloudfront: CloudFront
   certificate: Certificate
+  hostnameChange: PrivacyCenterHostnameChange
   step: PrivacyCenterDeploymentStep!
 }
 
@@ -16184,6 +16205,17 @@ input PrivacyCenterFooterLinkInput {
   url: String
   iconId: ID
   iconOnly: Boolean
+}
+
+type PrivacyCenterHostnameChange {
+  id: ID!
+  previousHostname: String!
+  newHostname: String!
+  status: PrivacyCenterHostnameChangeStatus!
+  cutOverAt: Date
+  pendingValidationCertificate: Certificate!
+  previousHostnameValidationCertificate: Certificate
+  newHostnameServing: Boolean!
 }
 
 input PrivacyCenterIdInput {
@@ -17516,6 +17548,10 @@ type RequestDownloadAttempt {
   totalSizeBytes: Float
   totalNumFiles: Int
   filesCompleted: Int
+  zipOutputBytes: Float
+  declaredArchiveSizeBytes: Float
+  declaredLengthOverrunBytes: Float
+  convertJsonToCsv: Boolean
   createdAt: Date!
   updatedAt: Date!
 }
@@ -18004,6 +18040,16 @@ input RequestOrder {
   direction: OrderDirection!
 }
 
+type RequestPrivacyCenterHostnameChangePayload {
+  clientMutationId: String
+  hostnameChange: PrivacyCenterHostnameChange!
+}
+
+input RequestPrivacyCenterHostnameChangeInput {
+  privacyCenterId: ID!
+  newHostname: String!
+}
+
 type RequestsPayload {
   clientMutationId: String
   nodes: [Request!]!
@@ -18288,6 +18334,12 @@ type RevealConsentIdentifierEncryptionKeyPayload {
 type RevealRootSombraSecretPayload {
   clientMutationId: String
   decryptionContext: DecryptionContext!
+}
+
+type RevertPrivacyCenterHostnameChangePayload {
+  clientMutationId: String
+  hostnameChange: PrivacyCenterHostnameChange!
+  success: Boolean!
 }
 
 type RevokeComplianceReportTokensPayload {
@@ -21433,6 +21485,7 @@ input UpdateDataSiloInput {
   isLive: Boolean
   isPausedForDsrs: Boolean
   skipSecondaryIfNoFiles: Boolean
+  ownerApprovalRequestActions: [RequestAction!]
   headers: [CustomHeaderInput!]
   attributes: [AttributeInput!]
   dependedOnDataSilos: [DependedOnDataSiloInput!]
@@ -22743,13 +22796,13 @@ input UpdateVendorsInput {
 type UpdateWorkflowCommunicationSettingsPayload {
   clientMutationId: String
   success: Boolean!
-  privacyCenterDeployStatus: String!
 }
 
 input UpdateWorkflowCommunicationSettingsInput {
-  id: ID!
+  workflowConfigId: ID!
+  templateType: WorkflowCommunicationTemplateType!
+  enabled: Boolean!
   templateId: ID
-  enabled: Boolean
 }
 
 type UpdateWorkflowConfigPayload {
@@ -23281,6 +23334,16 @@ type WorkflowInstance {
   scheduledAt: Date!
 }
 
+type WorkflowMigrationActionSubjectFilter {
+  actionType: RequestAction!
+  subjectType: String!
+}
+
+input WorkflowMigrationActionSubjectFilterInput {
+  actionType: RequestAction!
+  subjectType: String!
+}
+
 type WorkflowMigrationRunPayload {
   clientMutationId: String
   migrationRun: WorkflowMigrationRun!
@@ -23293,6 +23356,7 @@ type WorkflowMigrationRun {
   status: WorkflowMigrationRunStatus!
   result: String
   errorMessage: String
+  actionSubjectFilters: [WorkflowMigrationActionSubjectFilter!]
   startedAt: Date
   finishedAt: Date
   createdAt: Date!
