@@ -1,3 +1,4 @@
+import { subDays, subMilliseconds } from 'date-fns';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -34,10 +35,12 @@ import {
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
 
-/** Well inside the dormant window so approve suggestions stay stable over time. */
-const recentActivityAt = new Date(Date.now() - COOKIE_TRIAGE_DORMANT_MS / 2).toISOString();
-/** Older than the dormant window so junk suggestions stay stable over time. */
-const staleActivityAt = new Date(Date.now() - COOKIE_TRIAGE_DORMANT_MS * 2).toISOString();
+const testStartedAt = new Date();
+const recentActivityAt = subDays(testStartedAt, 1).toISOString();
+const staleActivityAt = subMilliseconds(
+  subDays(testStartedAt, 1),
+  COOKIE_TRIAGE_DORMANT_MS,
+).toISOString();
 
 const analyticsCookies: CookieTriageAnalysis[] = [
   {
@@ -1187,7 +1190,7 @@ describe('format helpers', () => {
         service: 'Google Analytics',
         trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 31204,
-        lastActivityAt: recentActivityAt,
+        lastActivityAt: '2026-08-26T17:22:08.000Z',
       },
     });
 
