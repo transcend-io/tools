@@ -1,12 +1,13 @@
-import type { CustomFunctionCodeContext } from '@transcend-io/mcp-server-base';
-
 import {
-  storedContextUsesSplitEnv,
-  type StoredContextJwtPayload,
-} from './decodeStoredContextJwt.js';
+  ErrorCode,
+  ToolError,
+  type CustomFunctionCodeContext,
+} from '@transcend-io/mcp-server-base';
+
+import type { StoredContextJwtPayload } from './decodeStoredContextJwt.js';
 import type { CustomFunctionEnvironmentVariableInput } from './environmentVariableInput.js';
-import { inferSecretFromKeyName } from './inferSecretFromKeyName.js';
 import { unsetEnvPlaceholder } from './redactEnv.js';
+import { classifyStoredEnv } from './storedEnv.js';
 
 /** Minimum Sombra version that persists split `secretEnv` / `plaintextEnv` maps. */
 export const MIN_SOMBRA_VERSION_CUSTOM_FUNCTION_SPLIT_ENV = '7.609.0';
@@ -49,7 +50,7 @@ export interface UnwrappedCustomFunctionContext {
  */
 export function sombraSupportsCustomFunctionSplitEnv(version: string | undefined): boolean {
   if (!version?.trim()) {
-    return true;
+    return false;
   }
   return compareSemverAtLeast(version.trim(), MIN_SOMBRA_VERSION_CUSTOM_FUNCTION_SPLIT_ENV);
 }
@@ -65,54 +66,7 @@ export function envEntriesFromUnwrappedContext(
   context: UnwrappedCustomFunctionContext,
   storedContext?: StoredContextJwtPayload | null,
 ): CustomFunctionEnvEntry[] {
-  const mergedValues = context.userDefinedEnv ?? {};
-  const hasSplitUnwrap = context.secretEnv !== undefined || context.plaintextEnv !== undefined;
-
-  if (hasSplitUnwrap) {
-    const secretEnv = context.secretEnv ?? {};
-    const plaintextEnv = context.plaintextEnv ?? {};
-    const keys = new Set([...Object.keys(secretEnv), ...Object.keys(plaintextEnv)]);
-    return [...keys]
-      .sort((left, right) => left.localeCompare(right))
-      .map((key) => {
-        if (key in secretEnv) {
-          return { key, value: secretEnv[key] ?? '', isSecret: true };
-        }
-        return {
-          key,
-          value: plaintextEnv[key] ?? '',
-          isSecret: false,
-        };
-      });
-  }
-
-  if (storedContext && storedContextUsesSplitEnv(storedContext)) {
-    const secretKeys = new Set(Object.keys(storedContext.userDefinedEncryptedEnv ?? {}));
-    const plainFromJwt = storedContext.userDefinedPlaintextEnv ?? {};
-    const keys = new Set([
-      ...Object.keys(storedContext.userDefinedEncryptedEnv ?? {}),
-      ...Object.keys(plainFromJwt),
-      ...Object.keys(mergedValues),
-    ]);
-    return [...keys]
-      .sort((left, right) => left.localeCompare(right))
-      .map((key) => {
-        const isSecret = secretKeys.has(key);
-        const value = isSecret
-          ? (mergedValues[key] ?? '')
-          : (mergedValues[key] ?? plainFromJwt[key] ?? '');
-        return { key, value, isSecret };
-      });
-  }
-
-  const legacyEnv = mergedValues;
-  return Object.keys(legacyEnv)
-    .sort((left, right) => left.localeCompare(right))
-    .map((key) => ({
-      key,
-      value: legacyEnv[key] ?? '',
-      isSecret: inferSecretFromKeyName(key),
-    }));
+  return classifyStoredEnv(storedContext, context);
 }
 
 /**
@@ -237,6 +191,48 @@ export function secretToPlainFlipError(
  * @param options - Env rows and shared context fields
  * @returns Context accepted by customer ingress signing
  */
+/**
+ * Env var key names present on a sign context about to be sent to Sombra.
+ *
+ * @param context - Sign context from {@link buildCustomFunctionSignContext}
+ * @returns Sorted unique keys
+ */
+export function envKeysFromSignContext(context: CustomFunctionCodeContext): string[] {
+  const hasSplit = context.secretEnv !== undefined || context.plaintextEnv !== undefined;
+  if (hasSplit) {
+    const keys = new Set([
+      ...Object.keys(context.secretEnv ?? {}),
+      ...Object.keys(context.plaintextEnv ?? {}),
+    ]);
+    return [...keys].sort((left, right) => left.localeCompare(right));
+  }
+  return Object.keys(context.userDefinedEnv).sort((left, right) => left.localeCompare(right));
+}
+
+/**
+ * Fail before signing when the sign context would drop env keys.
+ *
+ * @param expectedKeys - Keys that must appear on the sign context
+ * @param context - Built sign context
+ */
+export function assertSignContextPreservesEnvKeys(
+  expectedKeys: string[],
+  context: CustomFunctionCodeContext,
+): void {
+  const signedSet = new Set(envKeysFromSignContext(context));
+  const missing = expectedKeys.filter((key) => !signedSet.has(key));
+  if (missing.length === 0) {
+    return;
+  }
+  throw new ToolError(
+    ErrorCode.VALIDATION_ERROR,
+    `Signing would drop environment variable keys: ${missing.join(', ')}. Retry with legacy-compatible ` +
+      'settings or contact support if the gateway version is unknown.',
+    false,
+    { missingEnvKeys: missing },
+  );
+}
+
 export function buildCustomFunctionSignContext(options: {
   /** Env rows after merge / classification */
   envEntries: CustomFunctionEnvEntry[];
@@ -303,7 +299,7 @@ function compareSemverAtLeast(version: string, minimum: string): boolean {
   const left = parseSemverTriple(version);
   const right = parseSemverTriple(minimum);
   if (!left || !right) {
-    return true;
+    return false;
   }
   if (left[0] !== right[0]) {
     return left[0] > right[0];

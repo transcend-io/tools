@@ -34,7 +34,7 @@ export function createCustomFunctionsPromoteVersionTool(clients: ToolClients) {
         'function starts using the new code immediately. Check customFunctionId and versionId ' +
         'in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CustomFunctionsPromoteVersionSchema,
     handler: async ({ customFunctionId, versionId }) => {
       const summary = await graphql.getCustomFunctionSummary(customFunctionId);

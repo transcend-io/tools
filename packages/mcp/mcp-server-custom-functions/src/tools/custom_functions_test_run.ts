@@ -124,8 +124,6 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
         payloadType,
         sombraId,
         dataSiloId,
-        // Unsaved trials never take agent-supplied secrets; stored runs use signed JWTs.
-        userDefinedEnv: {},
         allowedHosts: allowedHosts ?? [],
         allowThirdPartyImports,
         timeoutMs,

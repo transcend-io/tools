@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyEnvironmentVariablesInput,
+  assertSignContextPreservesEnvKeys,
   buildCustomFunctionSignContext,
   envEntriesFromUnwrappedContext,
   plainToSecretFlipKeys,
@@ -19,6 +20,27 @@ describe('sombraSupportsCustomFunctionSplitEnv', () => {
 
   it('returns false for older versions', () => {
     expect(sombraSupportsCustomFunctionSplitEnv('7.608.9')).toBe(false);
+  });
+
+  it('returns false when the signing gateway version is unknown', () => {
+    expect(sombraSupportsCustomFunctionSplitEnv(undefined)).toBe(false);
+    expect(sombraSupportsCustomFunctionSplitEnv('')).toBe(false);
+    expect(sombraSupportsCustomFunctionSplitEnv('not-a-version')).toBe(false);
+  });
+});
+
+describe(assertSignContextPreservesEnvKeys, () => {
+  it('throws when the sign context would drop env keys', () => {
+    expect(() =>
+      assertSignContextPreservesEnvKeys(
+        ['KEEP_ME'],
+        buildCustomFunctionSignContext({
+          supportsSplitEnv: true,
+          allowedHosts: [],
+          envEntries: [],
+        }),
+      ),
+    ).toThrow(/KEEP_ME/);
   });
 });
 
@@ -102,6 +124,20 @@ describe(envEntriesFromUnwrappedContext, () => {
       { key: 'API_KEY', value: 'cipher', isSecret: true },
       { key: 'HOST', value: 'https://example.com', isSecret: false },
     ]);
+  });
+
+  it('treats all keys as secret when the stored JWT uses legacy merged env only', () => {
+    expect(
+      envEntriesFromUnwrappedContext(
+        {
+          allowedHosts: [],
+          userDefinedEnv: { CUSTOM_FLAG: 'plain-looking' },
+        },
+        {
+          userDefinedEncryptedEnv: { CUSTOM_FLAG: 'cipher' },
+        },
+      ),
+    ).toEqual([{ key: 'CUSTOM_FLAG', value: 'plain-looking', isSecret: true }]);
   });
 });
 

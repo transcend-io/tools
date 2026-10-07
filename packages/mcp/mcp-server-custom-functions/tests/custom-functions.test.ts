@@ -17,7 +17,6 @@ import {
 import type { StoredContextJwtPayload } from '../src/helpers/decodeStoredContextJwt.js';
 import { mapCustomFunctionUpsertError } from '../src/helpers/mapUpsertError.js';
 import { customFunctionDashboardUrl, customFunctionNextStep } from '../src/helpers/nextStep.js';
-import { mergeEnvVarNames } from '../src/helpers/redactEnv.js';
 import { pickSombraId } from '../src/helpers/resolveSombraId.js';
 import { getCustomFunctionsTools } from '../src/tools.js';
 import { CustomFunctionsTestRunSchema } from '../src/tools/custom_functions_test_run.js';
@@ -87,8 +86,6 @@ describe('Custom Functions tools', () => {
     createCustomFunctionDataSilo: ReturnType<typeof vi.fn>;
     /** Mock data silo delete (rollback) */
     deleteDataSilo: ReturnType<typeof vi.fn>;
-    /** Mock primary Sombra version query */
-    getPrimarySombraVersion: ReturnType<typeof vi.fn>;
     /** Mock summary-only fetch for promote pre-checks */
     getCustomFunctionSummary: ReturnType<typeof vi.fn>;
     /** Mock version history list */
@@ -113,6 +110,7 @@ describe('Custom Functions tools', () => {
           title: 'Local',
           customerUrl: 'https://sombra.example.com',
           isPrimarySombra: true,
+          version: '7.700.0',
         },
       ]),
       createCustomFunctionDataSilo: vi.fn().mockResolvedValue({
@@ -120,7 +118,6 @@ describe('Custom Functions tools', () => {
         title: 'Example',
       }),
       deleteDataSilo: vi.fn(),
-      getPrimarySombraVersion: vi.fn().mockResolvedValue('7.700.0'),
       getCustomFunctionSummary: vi.fn().mockResolvedValue({
         id: 'cf-1',
         name: 'Example',
@@ -210,7 +207,7 @@ describe('Custom Functions tools', () => {
       context: splitSignContext({ allowedHosts: [] }),
     });
     expect(graphql.createCustomFunction).toHaveBeenCalledWith(expect.objectContaining(SIGNED));
-    expect(graphql.listSombras).not.toHaveBeenCalled();
+    expect(graphql.listSombras).toHaveBeenCalled();
     expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
     expect(JSON.stringify(result)).not.toContain('signedCodeContextJwt');
     expect(JSON.stringify(result)).not.toContain('dashboardHint');
@@ -789,7 +786,15 @@ describe('Custom Functions tools', () => {
         successfulTestRun: false,
       },
     });
-    graphql.getPrimarySombraVersion.mockResolvedValue('7.600.0');
+    graphql.listSombras.mockResolvedValue([
+      {
+        id: 'sombra-1',
+        title: 'Local',
+        customerUrl: 'https://sombra.example.com',
+        isPrimarySombra: true,
+        version: '7.600.0',
+      },
+    ]);
     rest.unwrapCustomFunction.mockResolvedValue({
       code: 'export default () => true;',
       context: { userDefinedEnv: { TOKEN: 'secret' }, allowedHosts: [] },
@@ -826,6 +831,34 @@ describe('Custom Functions tools', () => {
         allowedHosts: [],
         allowThirdPartyImports: undefined,
         timeoutMs: undefined,
+      },
+    });
+  });
+
+  it('does not delete an auto-created data silo when post-save verification fails', async () => {
+    graphql.createCustomFunction.mockResolvedValue({
+      id: 'cf-dsr',
+      name: 'Fn',
+      type: 'DSR',
+      hasPendingDraft: true,
+      draftVersion: { id: 'version-1', lifecycleState: 'DRAFT' },
+    });
+    graphql.getSignedCustomFunctionVersion.mockRejectedValue(
+      new Error('verification unwrap failed'),
+    );
+
+    const result = await getTool('custom_functions_upsert').handler({
+      type: 'DSR',
+      name: 'Fn',
+      code: 'export default () => true;',
+    });
+
+    expect(graphql.createCustomFunctionDataSilo).toHaveBeenCalled();
+    expect(graphql.deleteDataSilo).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        verificationWarning: expect.stringMatching(/verification failed/i),
       },
     });
   });
@@ -1581,12 +1614,22 @@ describe('Custom Functions tools', () => {
     });
     graphql.getSignedCustomFunctionVersion
       .mockResolvedValueOnce({
-        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: false },
+        customFunction: {
+          id: 'cf-1',
+          type: 'GENERAL',
+          sombraId: 'sombra-1',
+          hasPendingDraft: false,
+        },
         version: { id: 'version-1', lifecycleState: 'ACTIVE' },
         ...SIGNED,
       })
       .mockResolvedValueOnce({
-        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: true },
+        customFunction: {
+          id: 'cf-1',
+          type: 'GENERAL',
+          sombraId: 'sombra-1',
+          hasPendingDraft: true,
+        },
         version: { id: 'version-2', lifecycleState: 'DRAFT' },
         ...signedWithContext({
           userDefinedPlaintextEnv: { KEEP: 'y' },
@@ -1744,27 +1787,6 @@ describe('pickSombraId', () => {
 
   it('lists available gateways when the agent must choose', () => {
     expect(() => pickSombraId([GATEWAY_A, GATEWAY_B])).toThrow(/Available Sombra gateways/);
-  });
-});
-
-describe('mergeEnvVarNames', () => {
-  it('creates non-empty placeholders for new names and keeps stored values', () => {
-    expect(
-      mergeEnvVarNames({
-        stored: { TOKEN: 'secret' },
-        envVarNames: ['TOKEN', 'API_KEY'],
-      }),
-    ).toEqual({ TOKEN: 'secret', API_KEY: '${API_KEY}' });
-  });
-
-  it('returns empty object when creating with no names', () => {
-    expect(mergeEnvVarNames({})).toEqual({});
-  });
-
-  it('uses a non-empty sentinel so Sombra does not drop new keys', () => {
-    expect(mergeEnvVarNames({ envVarNames: ['TRANSCEND_API_KEY'] })).toEqual({
-      TRANSCEND_API_KEY: '${TRANSCEND_API_KEY}',
-    });
   });
 });
 

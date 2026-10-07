@@ -18,8 +18,8 @@ export SOMBRA_URL=https://your-customer-ingress.example.com
 export SOMBRA_CUSTOMER_KEY=your-customer-ingress-key
 ```
 
-The credentials need `ViewCustomFunction`, `ManageCustomFunction`, `ManageSombraRootKeys`,
-`ConnectDataSilos`, and `ManageAccessControl`. `SOMBRA_URL` and
+The credentials need `ViewCustomFunction`, `ManageCustomFunction`, and `ConnectDataSilos`.
+`SOMBRA_URL` and
 `SOMBRA_CUSTOMER_KEY` must refer to the same single-tenant gateway used by the target data silo
 or GENERAL function. Customers with multiple STS Sombra gateways can run separate server
 configurations for each URL/key pair.

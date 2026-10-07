@@ -166,16 +166,7 @@ const ListSombrasDoc = graphql(/* GraphQL */ `
       title
       customerUrl
       isPrimarySombra
-    }
-  }
-`);
-
-const PrimarySombraVersionDoc = graphql(/* GraphQL */ `
-  query CustomFunctionsPrimarySombraVersion {
-    organization {
-      sombra {
-        version
-      }
+      version
     }
   }
 `);
@@ -326,6 +317,8 @@ export interface SombraSummary {
   customerUrl: string;
   /** Whether this is the organization's primary Sombra */
   isPrimarySombra: boolean;
+  /** Installed Sombra semver on this gateway */
+  version?: string;
 }
 
 interface RawCustomFunctionVersion {
@@ -433,18 +426,64 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     };
   }
 
+  private async fetchCustomFunctionNode(id: string): Promise<RawCustomFunction> {
+    const data = await this.makeRequest(GetCustomFunctionCodeDoc, {
+      filterBy: { id },
+    });
+    const node = data.customFunctions.nodes[0];
+    if (!node) {
+      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
+    }
+    return node;
+  }
+
+  private async fetchAllVersionNodes(
+    customFunctionId: string,
+  ): Promise<RawCustomFunctionVersionListNode[]> {
+    const pageSize = 50;
+    const nodes: RawCustomFunctionVersionListNode[] = [];
+    let offset = 0;
+    let totalCount = Number.POSITIVE_INFINITY;
+    while (offset < totalCount) {
+      const data = await this.makeRequest(ListCustomFunctionVersionsDoc, {
+        first: pageSize,
+        offset,
+        filterBy: { customFunctionId },
+      });
+      nodes.push(...data.customFunctionVersions.nodes);
+      totalCount = data.customFunctionVersions.totalCount;
+      offset += data.customFunctionVersions.nodes.length;
+      if (data.customFunctionVersions.nodes.length === 0) {
+        break;
+      }
+    }
+    return nodes;
+  }
+
+  private async versionNotReadableError(
+    customFunctionId: string,
+    versionId: string,
+  ): Promise<ToolError> {
+    const versions = await this.listCustomFunctionVersions(customFunctionId, { first: 200 });
+    const catalog =
+      versions.length > 0
+        ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
+        : '(none)';
+    return new ToolError(
+      ErrorCode.NOT_FOUND,
+      `Version ${versionId} cannot be read for custom function ${customFunctionId}. Known versions: ${catalog}.`,
+      false,
+    );
+  }
+
   async listCustomFunctionVersions(
     customFunctionId: string,
     options: { first?: number; offset?: number } = {},
   ): Promise<CustomFunctionVersionListEntry[]> {
     const first = options.first ?? 20;
     const offset = options.offset ?? 0;
-    const data = await this.makeRequest(ListCustomFunctionVersionsDoc, {
-      first,
-      offset,
-      filterBy: { customFunctionId },
-    });
-    return data.customFunctionVersions.nodes.map((version: RawCustomFunctionVersionListNode) => ({
+    const all = await this.fetchAllVersionNodes(customFunctionId);
+    return all.slice(offset, offset + first).map((version) => ({
       id: version.id,
       versionNumber: version.versionNumber,
       lifecycleState: version.lifecycleState,
@@ -457,15 +496,8 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     customFunctionId: string,
     versionId: string,
   ): Promise<RawCustomFunctionVersionListNode | undefined> {
-    const data = await this.makeRequest(ListCustomFunctionVersionsDoc, {
-      first: 50,
-      offset: 0,
-      filterBy: { customFunctionId },
-    });
-    const match = data.customFunctionVersions.nodes.find(
-      (version: RawCustomFunctionVersionListNode) => version.id === versionId,
-    );
-    return match;
+    const all = await this.fetchAllVersionNodes(customFunctionId);
+    return all.find((version) => version.id === versionId);
   }
 
   async getSignedCustomFunctionVersion(
@@ -473,13 +505,7 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     versionId?: string,
     options: { allowInactiveVersion?: boolean } = {},
   ): Promise<SignedCustomFunctionVersion> {
-    const data = await this.makeRequest(GetCustomFunctionCodeDoc, {
-      filterBy: { id },
-    });
-    const node = data.customFunctions.nodes[0];
-    if (!node) {
-      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
-    }
+    const node = await this.fetchCustomFunctionNode(id);
 
     const defaultVersion =
       node.hasPendingDraft && node.draftVersion
@@ -502,31 +528,13 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
       } else if (options.allowInactiveVersion) {
         const inactive = await this.getVersionWithSignedJwts(id, versionId);
         if (!inactive) {
-          const versions = await this.listCustomFunctionVersions(id);
-          const catalog =
-            versions.length > 0
-              ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
-              : '(none)';
-          throw new ToolError(
-            ErrorCode.NOT_FOUND,
-            `Version ${versionId} cannot be read for custom function ${id}. Known versions: ${catalog}.`,
-            false,
-          );
+          throw await this.versionNotReadableError(id, versionId);
         }
         selectedVersion = inactive;
       } else {
         selectedVersion = matchesDraft ?? matchesActive ?? defaultVersion;
         if (selectedVersion.id !== versionId) {
-          const versions = await this.listCustomFunctionVersions(id);
-          const catalog =
-            versions.length > 0
-              ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
-              : '(none)';
-          throw new ToolError(
-            ErrorCode.NOT_FOUND,
-            `Version ${versionId} cannot be read for custom function ${id}. Known versions: ${catalog}.`,
-            false,
-          );
+          throw await this.versionNotReadableError(id, versionId);
         }
       }
     }
@@ -551,14 +559,7 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
 
   /** Load function metadata without signed JWTs (for promote pre-checks). */
   async getCustomFunctionSummary(id: string): Promise<CustomFunctionSummary> {
-    const data = await this.makeRequest(GetCustomFunctionCodeDoc, {
-      filterBy: { id },
-    });
-    const node = data.customFunctions.nodes[0];
-    if (!node) {
-      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
-    }
-    return mapCustomFunction(node);
+    return mapCustomFunction(await this.fetchCustomFunctionNode(id));
   }
 
   async createCustomFunction(input: {
@@ -667,13 +668,8 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
       title: sombra.title ?? undefined,
       customerUrl: sombra.customerUrl,
       isPrimarySombra: sombra.isPrimarySombra,
+      version: sombra.version ?? undefined,
     }));
-  }
-
-  /** Primary organization Sombra semver (for split-env signing capability). */
-  async getPrimarySombraVersion(): Promise<string | undefined> {
-    const data = await this.makeRequest(PrimarySombraVersionDoc, {});
-    return data.organization.sombra?.version ?? undefined;
   }
 
   async createCustomFunctionDataSilo(input: {

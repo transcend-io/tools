@@ -29,23 +29,9 @@ export function createCustomFunctionsGetCodeTool(clients: ToolClients) {
     zodSchema: CustomFunctionsGetCodeSchema,
     handler: async ({ id, versionId }) => {
       const versions = await graphql.listCustomFunctionVersions(id);
-      let signed;
-      try {
-        signed = await graphql.getSignedCustomFunctionVersion(id, versionId, {
-          allowInactiveVersion: versionId !== undefined,
-        });
-      } catch (error) {
-        if (versionId !== undefined) {
-          const message = error instanceof Error ? error.message : String(error);
-          if (/unwrap|decrypt|sign|jwt/i.test(message)) {
-            throw new Error(
-              `Could not decrypt version ${versionId}. It may have been signed by a previous ` +
-                'Sombra gateway. Read a newer version or use the Admin Dashboard.',
-            );
-          }
-        }
-        throw error;
-      }
+      const signed = await graphql.getSignedCustomFunctionVersion(id, versionId, {
+        allowInactiveVersion: versionId !== undefined,
+      });
       let source;
       try {
         source = await clients.rest.unwrapCustomFunction({

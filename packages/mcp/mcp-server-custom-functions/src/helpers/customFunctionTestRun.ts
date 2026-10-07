@@ -9,10 +9,6 @@ import type {
   CustomFunctionType,
   CustomFunctionsMixin,
 } from '../graphql.js';
-import {
-  buildCustomFunctionSignContext,
-  sombraSupportsCustomFunctionSplitEnv,
-} from './buildCustomFunctionSignContext.js';
 import { resolveSombraIdForCreate } from './resolveSombraId.js';
 
 /**
@@ -241,8 +237,6 @@ export async function executeCustomFunctionTestRun(
     sombraId?: string;
     /** DSR silo ID to inject when the payload omits one */
     dataSiloId?: string;
-    /** Environment variables encrypted into freshly signed context */
-    userDefinedEnv?: Record<string, string>;
     /** Network hosts the function is allowed to contact */
     allowedHosts?: string[];
     /** Allow imports from Sombra-approved third-party repositories */
@@ -281,22 +275,14 @@ export async function executeCustomFunctionTestRun(
   const boundStoredDsrRun = ranStoredVersion && type === 'DSR';
   let signed = input.signed;
   if (!signed && input.code) {
-    const sombraVersion = await graphql.getPrimarySombraVersion();
-    const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
-    const envEntries = Object.entries(input.userDefinedEnv ?? {}).map(([key, value]) => ({
-      key,
-      value,
-      isSecret: false,
-    }));
     signed = await rest.signCustomFunction({
       code: input.code,
-      context: buildCustomFunctionSignContext({
-        envEntries,
-        supportsSplitEnv,
+      context: {
+        userDefinedEnv: {},
         allowedHosts: input.allowedHosts ?? [],
         allowThirdPartyImports: input.allowThirdPartyImports,
         timeoutMs: input.timeoutMs,
-      }),
+      },
     });
   }
   if (!signed && stored) {

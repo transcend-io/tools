@@ -1,12 +1,6 @@
 import type { UnwrappedCustomFunctionContext } from './buildCustomFunctionSignContext.js';
-import {
-  decodeStoredContextJwt,
-  envKeyNamesFromStoredContext,
-  storedContextUsesSplitEnv,
-  type StoredContextJwtPayload,
-} from './decodeStoredContextJwt.js';
-import { inferSecretFromKeyName } from './inferSecretFromKeyName.js';
-import { unsetEnvPlaceholder } from './redactEnv.js';
+import { decodeStoredContextJwt } from './decodeStoredContextJwt.js';
+import { classifyStoredEnv, isEnvValueSet } from './storedEnv.js';
 
 /** Runtime settings stored in the signed context JWT. */
 export interface CustomFunctionReadableSettings {
@@ -60,17 +54,21 @@ export function buildReadableVersionContext(
     timeoutMs: payload?.timeoutMs ?? unwrappedContext.timeoutMs,
   };
 
-  if (payload && storedContextUsesSplitEnv(payload)) {
+  const entries = classifyStoredEnv(payload, unwrappedContext);
+  const environmentVariables: CustomFunctionReadableEnvironmentVariable[] = entries.map((entry) => {
+    const isSet = isEnvValueSet(entry.key, entry.value);
+    if (entry.isSecret) {
+      return { key: entry.key, isSecret: true, isSet };
+    }
     return {
-      settings,
-      environmentVariables: environmentVariablesFromSplitPayload(payload, unwrappedContext),
+      key: entry.key,
+      isSecret: false,
+      isSet,
+      ...(isSet ? { value: entry.value } : {}),
     };
-  }
+  });
 
-  return {
-    settings,
-    environmentVariables: environmentVariablesFromLegacyContext(unwrappedContext),
-  };
+  return { settings, environmentVariables };
 }
 
 /**
@@ -83,60 +81,4 @@ export function unsetEnvironmentVariableKeys(
   environmentVariables: CustomFunctionReadableEnvironmentVariable[],
 ): string[] {
   return environmentVariables.filter((row) => !row.isSet).map((row) => row.key);
-}
-
-function environmentVariablesFromSplitPayload(
-  payload: StoredContextJwtPayload,
-  unwrappedContext: UnwrappedCustomFunctionContext,
-): CustomFunctionReadableEnvironmentVariable[] {
-  const secretKeys = Object.keys(payload.userDefinedEncryptedEnv ?? {});
-  const plainFromJwt = payload.userDefinedPlaintextEnv ?? {};
-  const keys = envKeyNamesFromStoredContext(payload);
-  const mergedUnwrap = {
-    ...(unwrappedContext.secretEnv ?? {}),
-    ...(unwrappedContext.plaintextEnv ?? {}),
-    ...(unwrappedContext.userDefinedEnv ?? {}),
-  };
-
-  return keys.map((key) => {
-    const isSecret = secretKeys.includes(key);
-    if (isSecret) {
-      const unwrapValue = mergedUnwrap[key];
-      const isSet =
-        unwrapValue !== undefined && unwrapValue !== '' && unwrapValue !== unsetEnvPlaceholder(key);
-      return { key, isSecret: true, isSet };
-    }
-    const jwtPlain = plainFromJwt[key];
-    const unwrapPlain = unwrappedContext.plaintextEnv?.[key] ?? mergedUnwrap[key];
-    const value = jwtPlain ?? unwrapPlain;
-    const isSet = value !== undefined && value !== '' && value !== unsetEnvPlaceholder(key);
-    return {
-      key,
-      isSecret: false,
-      isSet,
-      ...(isSet ? { value } : {}),
-    };
-  });
-}
-
-function environmentVariablesFromLegacyContext(
-  unwrappedContext: UnwrappedCustomFunctionContext,
-): CustomFunctionReadableEnvironmentVariable[] {
-  const merged = unwrappedContext.userDefinedEnv ?? {};
-  return Object.keys(merged)
-    .sort((left, right) => left.localeCompare(right))
-    .map((key) => {
-      const value = merged[key] ?? '';
-      const isSecret = inferSecretFromKeyName(key);
-      const isSet = value !== '' && value !== unsetEnvPlaceholder(key);
-      if (isSecret) {
-        return { key, isSecret: true, isSet };
-      }
-      return {
-        key,
-        isSecret: false,
-        isSet,
-        ...(isSet ? { value } : {}),
-      };
-    });
 }

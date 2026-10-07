@@ -4,7 +4,5 @@ import { ScopeName } from '@transcend-io/privacy-types';
 export const CUSTOM_FUNCTIONS_OAUTH_SCOPES = [
   ScopeName.ViewCustomFunction,
   ScopeName.ManageCustomFunction,
-  ScopeName.ManageSombraRootKeys,
   ScopeName.ConnectDataSilos,
-  ScopeName.ManageAccessControl,
 ] as const;

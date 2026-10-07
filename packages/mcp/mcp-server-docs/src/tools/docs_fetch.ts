@@ -9,17 +9,11 @@ export const DocsFetchSchema = z.object({
   url: z
     .string()
     .url()
-    .describe('Absolute https URL from docs_list (article .md or /docs/api-reference/ operation).'),
+    .describe('Absolute https URL of a docs.transcend.io article (.md) from docs_list.'),
 });
 export type DocsFetchInput = z.infer<typeof DocsFetchSchema>;
 
 function formatBody(body: string, url: string): string {
-  // API-reference markdown already ends with Source; avoid doubling the footer.
-  if (body.includes(`Source: ${url}`)) {
-    const truncated =
-      body.length > MAX_BODY_CHARS ? `${body.slice(0, MAX_BODY_CHARS)}\n\n...(truncated)` : body;
-    return truncated;
-  }
   const truncated =
     body.length > MAX_BODY_CHARS ? `${body.slice(0, MAX_BODY_CHARS)}\n\n...(truncated)` : body;
   return `${truncated}\n\nSource: ${url}`;
@@ -29,7 +23,8 @@ export function createDocsFetchTool(_clients?: ToolClients) {
   return defineTool({
     name: 'docs_fetch',
     description:
-      'Fetch full markdown for a Transcend docs article or an API reference page (endpoint or webhook) by URL from docs_list.',
+      'Fetch full markdown content for a Transcend documentation article by URL. ' +
+      'Use urls returned by docs_list.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,

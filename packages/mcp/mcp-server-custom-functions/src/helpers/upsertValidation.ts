@@ -1,10 +1,39 @@
 import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
-import type { CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionSummary } from '../graphql.js';
 
 /**
- * Reject upsert calls that only pass id (or id + ignored type) with no mutable fields.
+ * Whether the upsert touches versioned fields (code, env, hosts, timeout).
+ *
+ * @param input - Upsert fields
+ * @returns True when a new draft would be written
+ */
+function touchesVersionFields(input: {
+  /** New code */
+  code?: string;
+  /** Env rows */
+  environmentVariables?: unknown[];
+  /** Env keys to remove */
+  removeEnvironmentVariables?: string[];
+  /** Host allowlist */
+  allowedHosts?: string[];
+  /** Third-party imports */
+  allowThirdPartyImports?: boolean;
+  /** Timeout */
+  timeoutMs?: number;
+}): boolean {
+  return (
+    input.code !== undefined ||
+    input.environmentVariables !== undefined ||
+    input.removeEnvironmentVariables !== undefined ||
+    input.allowedHosts !== undefined ||
+    input.allowThirdPartyImports !== undefined ||
+    input.timeoutMs !== undefined
+  );
+}
+
+/**
+ * Reject upsert calls that only pass metadata with no version fields.
  *
  * @param input - Upsert fields on update
  * @returns True when name and/or description are the only provided changes
@@ -32,24 +61,17 @@ export function isMetadataOnlyUpdate(input: {
   if (!input.id) {
     return false;
   }
-  const touchesVersion =
-    input.code !== undefined ||
-    input.environmentVariables !== undefined ||
-    input.removeEnvironmentVariables !== undefined ||
-    input.allowedHosts !== undefined ||
-    input.allowThirdPartyImports !== undefined ||
-    input.timeoutMs !== undefined;
-  if (touchesVersion) {
+  if (touchesVersionFields(input)) {
     return false;
   }
   return input.name !== undefined || input.description !== undefined;
 }
 
 /**
- * Whether the caller passed any upsert field on update.
+ * Whether the caller passed any upsert field on update besides id alone.
  *
  * @param input - Upsert fields on update
- * @returns True when at least one field besides id is set
+ * @returns True when at least one mutable field is set
  */
 export function hasAnyUpsertFieldOnUpdate(input: {
   /** New code */
@@ -68,23 +90,8 @@ export function hasAnyUpsertFieldOnUpdate(input: {
   name?: string;
   /** New description */
   description?: string;
-  /** Explicit draft version */
-  versionId?: string;
-  /** Requested type */
-  type?: CustomFunctionType;
 }): boolean {
-  return (
-    input.code !== undefined ||
-    input.environmentVariables !== undefined ||
-    input.removeEnvironmentVariables !== undefined ||
-    input.allowedHosts !== undefined ||
-    input.allowThirdPartyImports !== undefined ||
-    input.timeoutMs !== undefined ||
-    input.name !== undefined ||
-    input.description !== undefined ||
-    input.versionId !== undefined ||
-    input.type !== undefined
-  );
+  return touchesVersionFields(input) || input.name !== undefined || input.description !== undefined;
 }
 
 /**

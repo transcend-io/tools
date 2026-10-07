@@ -8,15 +8,17 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { CustomFunctionType } from '@transcend-io/privacy-types';
 
-import type { CustomFunctionsMixin } from '../graphql.js';
+import type { CustomFunctionSummary, CustomFunctionsMixin } from '../graphql.js';
 import {
   applyEnvironmentVariablesInput,
+  assertSignContextPreservesEnvKeys,
   buildCustomFunctionSignContext,
   envEntriesFromUnwrappedContext,
   plainToSecretFlipKeys,
   removeEnvironmentVariableKeys,
   secretToPlainFlipError,
   sombraSupportsCustomFunctionSplitEnv,
+  type CustomFunctionEnvEntry,
 } from '../helpers/buildCustomFunctionSignContext.js';
 import {
   decodeStoredContextJwt,
@@ -28,7 +30,10 @@ import {
   buildReadableVersionContext,
   unsetEnvironmentVariableKeys,
 } from '../helpers/readableCustomFunctionVersion.js';
-import { resolveSombraIdForCreate } from '../helpers/resolveSombraId.js';
+import {
+  resolveSigningSombraVersion,
+  resolveSombraIdForCreate,
+} from '../helpers/resolveSombraId.js';
 import {
   assertUpsertVersionIdEditable,
   hasAnyUpsertFieldOnUpdate,
@@ -184,56 +189,47 @@ export const CustomFunctionsUpsertSchema = z
 export type CustomFunctionsUpsertInput = z.infer<typeof CustomFunctionsUpsertSchema>;
 
 /**
- * Missing declared env names after a post-write unwrap, when any.
+ * Post-save env key mismatches (missing kept keys, failed removals, or undeclared adds).
  *
- * @param declaredKeys - Keys the agent asked to ensure
+ * @param priorKeys - Env keys before this upsert (update only)
+ * @param removedKeys - Keys the agent asked to delete
+ * @param declaredKeys - Keys the agent declared in environmentVariables
  * @param verified - Keys present on the readable version after write
- * @returns Warning string or undefined when all declared names persisted
+ * @returns Warning strings when verification disagrees with intent
  */
-function envPersistWarningFor(
+function envKeyWarnings(
+  priorKeys: string[],
+  removedKeys: string[] | undefined,
   declaredKeys: string[] | undefined,
   verified: string[],
-): string | undefined {
-  if (!declaredKeys || declaredKeys.length === 0) {
-    return undefined;
-  }
+): { persist?: string; remove?: string } {
   const verifiedSet = new Set(verified);
-  const missing = declaredKeys.filter((name) => !verifiedSet.has(name));
-  if (missing.length === 0) {
-    return undefined;
-  }
-  return (
-    `Declared environmentVariables keys did not appear on the readable version after save: ${missing.join(
-      ', ',
-    )}. Do not tell the user they were set. Retry upsert with environmentVariables (omit code on ` +
-    'update to keep stored code) or add the names in the dashboard Environment Variables tab.'
-  );
-}
+  const removeSet = new Set((removedKeys ?? []).map((key) => key.trim()).filter(Boolean));
+  const shouldKeep = priorKeys.filter((key) => !removeSet.has(key));
+  const missingKept = shouldKeep.filter((key) => !verifiedSet.has(key));
+  const missingDeclared = (declaredKeys ?? [])
+    .map((key) => key.trim())
+    .filter(Boolean)
+    .filter((key) => !verifiedSet.has(key));
+  const missing = [...new Set([...missingKept, ...missingDeclared])];
+  const stillPresent = (removedKeys ?? [])
+    .map((key) => key.trim())
+    .filter(Boolean)
+    .filter((key) => verifiedSet.has(key));
 
-/**
- * Env keys that were not removed after save.
- *
- * @param removedKeys - Keys the agent asked to delete
- * @param verified - Keys present on the readable version after write
- * @returns Warning string or undefined when all removed keys are gone
- */
-function envRemoveWarningFor(
-  removedKeys: string[] | undefined,
-  verified: string[],
-): string | undefined {
-  if (!removedKeys || removedKeys.length === 0) {
-    return undefined;
-  }
-  const verifiedSet = new Set(verified);
-  const stillPresent = removedKeys.filter((name) => verifiedSet.has(name));
-  if (stillPresent.length === 0) {
-    return undefined;
-  }
-  return (
-    `removeEnvironmentVariables keys still present after save: ${stillPresent.join(', ')}. Do not ` +
-    'tell the user they were removed. Retry custom_functions_upsert with removeEnvironmentVariables ' +
-    '(omit code on update to keep stored code).'
-  );
+  const persist =
+    missing.length > 0
+      ? `Environment variable keys missing after save: ${missing.join(', ')}. Do not tell the user ` +
+        'they were set or preserved. Retry custom_functions_upsert (omit code on update to keep ' +
+        'stored code) or use the dashboard Environment Variables tab.'
+      : undefined;
+  const remove =
+    stillPresent.length > 0
+      ? `removeEnvironmentVariables keys still present after save: ${stillPresent.join(', ')}. Do not ` +
+        'tell the user they were removed. Retry custom_functions_upsert with removeEnvironmentVariables ' +
+        '(omit code on update to keep stored code).'
+      : undefined;
+  return { persist, remove };
 }
 
 /**
@@ -336,8 +332,6 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           timeoutMs,
           name,
           description,
-          versionId,
-          type: inputType,
         })
       ) {
         throw new ToolError(
@@ -375,7 +369,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
       }
 
       let resolvedVersionId = versionId;
-      let storedSummary: import('../graphql.js').CustomFunctionSummary | undefined;
+      let storedSummary: CustomFunctionSummary | undefined;
       if (id) {
         storedSummary = await graphql.getCustomFunctionSummary(id);
         if (inputType && inputType !== storedSummary.type) {
@@ -425,22 +419,19 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         let resolvedAllowedHosts = allowedHosts ?? [];
         let resolvedAllowThirdPartyImports = allowThirdPartyImports;
         let resolvedTimeoutMs = timeoutMs;
-        let envEntries: import('../helpers/buildCustomFunctionSignContext.js').CustomFunctionEnvEntry[] =
-          [];
-
-        const sombraVersion = await graphql.getPrimarySombraVersion();
-        const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
+        let envEntries: CustomFunctionEnvEntry[] = [];
+        let priorEnvKeys: string[] = [];
 
         let envClassificationWarning: string | undefined;
         if (id) {
-          const stored =
-            storedForType ?? (await graphql.getSignedCustomFunctionVersion(id, resolvedVersionId));
+          const stored = storedForType!;
           const source = await clients.rest.unwrapCustomFunction({
             signedCodeJwt: stored.signedCodeJwt,
             signedCodeContextJwt: stored.signedCodeContextJwt,
           });
           const decodedStored = decodeStoredContextJwt(stored.signedCodeContextJwt);
           envEntries = envEntriesFromUnwrappedContext(source.context, decodedStored);
+          priorEnvKeys = envEntries.map((entry) => entry.key);
           const flipError = secretToPlainFlipError(envEntries, environmentVariables);
           if (flipError) {
             throw new ToolError(ErrorCode.VALIDATION_ERROR, flipError, false, {
@@ -471,13 +462,6 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           }
           resolvedDataSiloId = resolvedDataSiloId ?? stored.customFunction.dataSiloId;
           resolvedSombraId = resolvedSombraId ?? stored.customFunction.sombraId;
-        } else if (environmentVariables?.length) {
-          const flipError = secretToPlainFlipError([], environmentVariables);
-          if (flipError) {
-            throw new ToolError(ErrorCode.VALIDATION_ERROR, flipError, false, {
-              recovery: 'dashboard',
-            });
-          }
         }
 
         if (!resolvedCode) {
@@ -487,6 +471,14 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         envEntries = applyEnvironmentVariablesInput(envEntries, environmentVariables);
         envEntries = removeEnvironmentVariableKeys(envEntries, removeEnvironmentVariables);
 
+        const sombras = await graphql.listSombras();
+        const sombraVersion = resolveSigningSombraVersion(
+          sombras,
+          clients.rest,
+          resolvedSombraId ?? storedSummary?.sombraId,
+        );
+        const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
+
         const signContext = buildCustomFunctionSignContext({
           envEntries,
           supportsSplitEnv,
@@ -494,6 +486,8 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           allowThirdPartyImports: resolvedAllowThirdPartyImports,
           timeoutMs: resolvedTimeoutMs,
         });
+        const expectedEnvKeys = envEntries.map((entry) => entry.key);
+        assertSignContextPreservesEnvKeys(expectedEnvKeys, signContext);
 
         const signed = await clients.rest.signCustomFunction({
           code: resolvedCode,
@@ -516,31 +510,62 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               description,
               ...signed,
             });
-
-        const verifiedSigned = await graphql.getSignedCustomFunctionVersion(customFunction.id);
-        const verifiedSource = await clients.rest.unwrapCustomFunction({
-          signedCodeJwt: verifiedSigned.signedCodeJwt,
-          signedCodeContextJwt: verifiedSigned.signedCodeContextJwt,
-        });
-        const readable = buildReadableVersionContext(
-          verifiedSigned.signedCodeContextJwt,
-          verifiedSource.context,
-        );
-        const verifiedDecoded = decodeStoredContextJwt(verifiedSigned.signedCodeContextJwt);
-        const verifiedEnvNames = verifiedDecoded
-          ? envKeyNamesFromStoredContext(verifiedDecoded)
-          : readable.environmentVariables.map((row) => row.key);
-        const declaredKeys = environmentVariables?.map((row) => row.key.trim()).filter(Boolean);
-        const removedKeys = removeEnvironmentVariables?.map((key) => key.trim()).filter(Boolean);
-        const envPersistWarning = envPersistWarningFor(declaredKeys, verifiedEnvNames);
-        const envRemoveWarning = envRemoveWarningFor(removedKeys, verifiedEnvNames);
-        const allowedHostsPersistWarning = allowedHostsPersistWarningFor(
-          allowedHosts,
-          readable.settings.allowedHosts,
-        );
-        const unsetKeys = unsetEnvironmentVariableKeys(readable.environmentVariables);
+        createdDataSiloId = undefined;
 
         const selectedVersion = customFunction.draftVersion ?? customFunction.activeVersion;
+        let readableVersionId: string | undefined;
+        let settings: ReturnType<typeof buildReadableVersionContext>['settings'] | undefined;
+        let environmentVariablesOut:
+          | ReturnType<typeof buildReadableVersionContext>['environmentVariables']
+          | undefined;
+        let envPersistWarning: string | undefined;
+        let envRemoveWarning: string | undefined;
+        let allowedHostsPersistWarning: string | undefined;
+        let unsetKeys: string[] = [];
+        let verificationWarning: string | undefined;
+
+        try {
+          const verifiedSigned = await graphql.getSignedCustomFunctionVersion(customFunction.id);
+          const verifiedSource = await clients.rest.unwrapCustomFunction({
+            signedCodeJwt: verifiedSigned.signedCodeJwt,
+            signedCodeContextJwt: verifiedSigned.signedCodeContextJwt,
+          });
+          const readable = buildReadableVersionContext(
+            verifiedSigned.signedCodeContextJwt,
+            verifiedSource.context,
+          );
+          const verifiedDecoded = decodeStoredContextJwt(verifiedSigned.signedCodeContextJwt);
+          const verifiedEnvNames = verifiedDecoded
+            ? envKeyNamesFromStoredContext(verifiedDecoded)
+            : readable.environmentVariables.map((row) => row.key);
+          const declaredKeys = environmentVariables?.map((row) => row.key.trim()).filter(Boolean);
+          const removedKeys = removeEnvironmentVariables?.map((key) => key.trim()).filter(Boolean);
+          const envWarnings = envKeyWarnings(
+            priorEnvKeys,
+            removedKeys,
+            declaredKeys,
+            verifiedEnvNames,
+          );
+          envPersistWarning = envWarnings.persist;
+          envRemoveWarning = envWarnings.remove;
+          allowedHostsPersistWarning = allowedHostsPersistWarningFor(
+            allowedHosts,
+            readable.settings.allowedHosts,
+          );
+          unsetKeys = unsetEnvironmentVariableKeys(readable.environmentVariables);
+          readableVersionId = verifiedSigned.version.id;
+          settings = readable.settings;
+          environmentVariablesOut = readable.environmentVariables;
+        } catch (verificationError) {
+          const message =
+            verificationError instanceof Error
+              ? verificationError.message
+              : String(verificationError);
+          verificationWarning =
+            `Save succeeded but post-save verification failed: ${message}. Call custom_functions_get_code ` +
+            'to confirm the draft before promoting.';
+        }
+
         const nextStep = customFunction.hasPendingDraft
           ? customFunctionNextStep({
               kind: 'draft',
@@ -557,13 +582,14 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         return createToolResult(true, {
           customFunction,
           versionLifecycleState: selectedVersion?.lifecycleState,
-          readableVersionId: verifiedSigned.version.id,
-          settings: readable.settings,
-          environmentVariables: readable.environmentVariables,
+          ...(readableVersionId ? { readableVersionId } : {}),
+          ...(settings ? { settings } : {}),
+          ...(environmentVariablesOut ? { environmentVariables: environmentVariablesOut } : {}),
           envPersistWarning,
           envRemoveWarning,
           ...(envClassificationWarning ? { envClassificationWarning } : {}),
           allowedHostsPersistWarning,
+          ...(verificationWarning ? { verificationWarning } : {}),
           ...(unsetKeys.length > 0
             ? {
                 dashboardHint: customFunctionDashboardHint(clients.dashboardUrl, customFunction.id),
