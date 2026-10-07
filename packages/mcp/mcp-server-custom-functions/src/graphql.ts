@@ -1,4 +1,4 @@
-import { TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
+import { ErrorCode, ToolError, TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
 import type {
   CustomFunctionLifecycleState,
   CustomFunctionPayloadType,
@@ -51,13 +51,48 @@ const ListCustomFunctionsDoc = graphql(/* GraphQL */ `
   }
 `);
 
+const ListCustomFunctionVersionsDoc = graphql(/* GraphQL */ `
+  query CustomFunctionsListVersions(
+    $first: Int
+    $offset: Int
+    $filterBy: CustomFunctionVersionsFilterInput!
+  ) {
+    customFunctionVersions(first: $first, offset: $offset, filterBy: $filterBy) {
+      nodes {
+        id
+        versionNumber
+        lifecycleState
+        lastModifiedAt
+        successfulTestRun
+        signedCodeJwt
+        signedCodeContextJwt
+      }
+      totalCount
+    }
+  }
+`);
+
 const GetCustomFunctionCodeDoc = graphql(/* GraphQL */ `
   query CustomFunctionsGetCode($filterBy: CustomFunctionFilterInput) {
     customFunctions(first: 1, filterBy: $filterBy) {
       nodes {
         ...CustomFunctionsSummary
-        signedCodeJwt
-        signedCodeContextJwt
+        activeVersion {
+          id
+          versionNumber
+          lifecycleState
+          successfulTestRun
+          signedCodeJwt
+          signedCodeContextJwt
+        }
+        draftVersion {
+          id
+          versionNumber
+          lifecycleState
+          successfulTestRun
+          signedCodeJwt
+          signedCodeContextJwt
+        }
       }
     }
   }
@@ -220,6 +255,24 @@ export interface SignedCustomFunctionVersion {
   signedCodeContextJwt: string;
 }
 
+export interface CustomFunctionVersionListEntry {
+  /** Version ID */
+  id: string;
+  /** Human-readable version number */
+  versionNumber: string;
+  /** Version lifecycle state */
+  lifecycleState: CustomFunctionVersionLifecycleState;
+  /** Last modified timestamp */
+  lastModifiedAt: string;
+  /** Whether this version has completed a successful test run */
+  successfulTestRun: boolean;
+}
+
+interface RawCustomFunctionVersionListNode extends RawCustomFunctionVersion {
+  /** Last modified timestamp */
+  lastModifiedAt: string;
+}
+
 export interface CustomFunctionDependencyWarning {
   /** Type of dependent resource */
   dependencyType: string;
@@ -284,6 +337,10 @@ interface RawCustomFunctionVersion {
   lifecycleState: CustomFunctionVersionLifecycleState;
   /** Whether this version has completed a successful test run */
   successfulTestRun: boolean;
+  /** Signed code JWT for this version (get-code query only) */
+  signedCodeJwt?: string;
+  /** Signed context JWT for this version (get-code query only) */
+  signedCodeContextJwt?: string;
 }
 
 interface RawCustomFunction {
@@ -376,41 +433,132 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     };
   }
 
+  async listCustomFunctionVersions(
+    customFunctionId: string,
+    options: { first?: number; offset?: number } = {},
+  ): Promise<CustomFunctionVersionListEntry[]> {
+    const first = options.first ?? 20;
+    const offset = options.offset ?? 0;
+    const data = await this.makeRequest(ListCustomFunctionVersionsDoc, {
+      first,
+      offset,
+      filterBy: { customFunctionId },
+    });
+    return data.customFunctionVersions.nodes.map((version: RawCustomFunctionVersionListNode) => ({
+      id: version.id,
+      versionNumber: version.versionNumber,
+      lifecycleState: version.lifecycleState,
+      lastModifiedAt: version.lastModifiedAt,
+      successfulTestRun: version.successfulTestRun,
+    }));
+  }
+
+  private async getVersionWithSignedJwts(
+    customFunctionId: string,
+    versionId: string,
+  ): Promise<RawCustomFunctionVersionListNode | undefined> {
+    const data = await this.makeRequest(ListCustomFunctionVersionsDoc, {
+      first: 50,
+      offset: 0,
+      filterBy: { customFunctionId },
+    });
+    const match = data.customFunctionVersions.nodes.find(
+      (version: RawCustomFunctionVersionListNode) => version.id === versionId,
+    );
+    return match;
+  }
+
   async getSignedCustomFunctionVersion(
     id: string,
     versionId?: string,
+    options: { allowInactiveVersion?: boolean } = {},
   ): Promise<SignedCustomFunctionVersion> {
     const data = await this.makeRequest(GetCustomFunctionCodeDoc, {
       filterBy: { id },
     });
     const node = data.customFunctions.nodes[0];
     if (!node) {
-      throw new Error(`No custom function found with id ${id}.`);
+      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
     }
 
-    // Prefer draft when pending so reads match the JWTs GraphQL returns on the
-    // parent (draft if pending, else active) — same as the SDK preferred version.
-    const selectedVersion =
+    const defaultVersion =
       node.hasPendingDraft && node.draftVersion
         ? node.draftVersion
         : (node.activeVersion ?? node.draftVersion);
-    if (!selectedVersion) {
-      throw new Error(`Custom function ${id} has no readable version.`);
+    if (!defaultVersion) {
+      throw new ToolError(
+        ErrorCode.NOT_FOUND,
+        `Custom function ${id} has no readable version.`,
+        false,
+      );
     }
-    if (versionId && selectedVersion.id !== versionId) {
-      throw new Error(
-        `Version ${versionId} cannot be read through the current GraphQL API. ` +
-          `The readable version for custom function ${id} is ${selectedVersion.id} ` +
-          `(draft when a pending draft exists, otherwise active).`,
+
+    let selectedVersion: RawCustomFunctionVersion = defaultVersion;
+    if (versionId) {
+      const matchesDraft = node.draftVersion?.id === versionId ? node.draftVersion : undefined;
+      const matchesActive = node.activeVersion?.id === versionId ? node.activeVersion : undefined;
+      if (matchesDraft ?? matchesActive) {
+        selectedVersion = (matchesDraft ?? matchesActive)!;
+      } else if (options.allowInactiveVersion) {
+        const inactive = await this.getVersionWithSignedJwts(id, versionId);
+        if (!inactive) {
+          const versions = await this.listCustomFunctionVersions(id);
+          const catalog =
+            versions.length > 0
+              ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
+              : '(none)';
+          throw new ToolError(
+            ErrorCode.NOT_FOUND,
+            `Version ${versionId} cannot be read for custom function ${id}. Known versions: ${catalog}.`,
+            false,
+          );
+        }
+        selectedVersion = inactive;
+      } else {
+        selectedVersion = matchesDraft ?? matchesActive ?? defaultVersion;
+        if (selectedVersion.id !== versionId) {
+          const versions = await this.listCustomFunctionVersions(id);
+          const catalog =
+            versions.length > 0
+              ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
+              : '(none)';
+          throw new ToolError(
+            ErrorCode.NOT_FOUND,
+            `Version ${versionId} cannot be read for custom function ${id}. Known versions: ${catalog}.`,
+            false,
+          );
+        }
+      }
+    }
+
+    const signedCodeJwt = selectedVersion.signedCodeJwt;
+    const signedCodeContextJwt = selectedVersion.signedCodeContextJwt;
+    if (!signedCodeJwt || !signedCodeContextJwt) {
+      throw new ToolError(
+        ErrorCode.API_ERROR,
+        `Custom function ${id} version ${selectedVersion.id} is missing signed JWTs. Retry later.`,
+        true,
       );
     }
 
     return {
       customFunction: mapCustomFunction(node),
       version: mapVersion(selectedVersion)!,
-      signedCodeJwt: node.signedCodeJwt,
-      signedCodeContextJwt: node.signedCodeContextJwt,
+      signedCodeJwt,
+      signedCodeContextJwt,
     };
+  }
+
+  /** Load function metadata without signed JWTs (for promote pre-checks). */
+  async getCustomFunctionSummary(id: string): Promise<CustomFunctionSummary> {
+    const data = await this.makeRequest(GetCustomFunctionCodeDoc, {
+      filterBy: { id },
+    });
+    const node = data.customFunctions.nodes[0];
+    if (!node) {
+      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
+    }
+    return mapCustomFunction(node);
   }
 
   async createCustomFunction(input: {

@@ -91,7 +91,7 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
     description:
       'Test a Custom Function (saved or unsaved TypeScript). Pass { id } alone for the stored ' +
       'version (uses dashboard env); pass code for a trial without secrets. Prefer omitting ' +
-      'payload. DSR or GENERAL.',
+      'payload. DSR or GENERAL. Logs mask all env var values, including plain ones.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
@@ -133,16 +133,17 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       });
       const nextStep = result.passed
         ? storedRun
-          ? customFunctionNextStep({
-              kind:
-                customFunction?.draftVersion?.successfulTestRun === true ||
-                customFunction?.activeVersion?.successfulTestRun === true
-                  ? 'storedTestPassed'
-                  : 'storedTestNeedsSave',
-              id: id!,
-            })
+          ? customFunction?.hasPendingDraft
+            ? customFunctionNextStep({
+                kind: 'storedTestPassed',
+                id: id!,
+                draftVersionId: customFunction.draftVersion?.id,
+              })
+            : customFunctionNextStep({ kind: 'storedTestNoDraft', id: id! })
           : customFunctionNextStep({ kind: 'unsavedTestPassed', id: id ?? '' })
-        : undefined;
+        : id
+          ? customFunctionNextStep({ kind: 'testFailed', id })
+          : undefined;
       return createToolResult(true, {
         ...result,
         customFunction,

@@ -4,6 +4,7 @@ import {
   storedContextUsesSplitEnv,
   type StoredContextJwtPayload,
 } from './decodeStoredContextJwt.js';
+import type { CustomFunctionEnvironmentVariableInput } from './environmentVariableInput.js';
 import { inferSecretFromKeyName } from './inferSecretFromKeyName.js';
 import { unsetEnvPlaceholder } from './redactEnv.js';
 
@@ -20,20 +21,6 @@ export interface CustomFunctionEnvEntry {
   value: string;
   /** When true, the value is encrypted into `userDefinedEncryptedEnv` */
   isSecret: boolean;
-}
-
-/**
- * Explicit env input from `custom_functions_upsert`.
- */
-export interface CustomFunctionEnvironmentVariableInput {
-  /** Variable name */
-  key: string;
-  /** Plaintext value; omit on update to keep the stored value */
-  value?: string;
-  /** When true, encrypt at sign time */
-  isSecret: boolean;
-  /** When true on update, replace a stored secret instead of merge-keeping ciphertext */
-  replaceSecret?: boolean;
 }
 
 /**
@@ -129,37 +116,10 @@ export function envEntriesFromUnwrappedContext(
 }
 
 /**
- * Ensure declared env names exist as placeholders without dropping stored rows.
+ * Apply environment variable input from `custom_functions_upsert`.
  *
  * @param entries - Existing env rows
- * @param envVarNames - Names the agent asked to add
- * @returns Updated env rows
- */
-export function applyEnvVarNames(
-  entries: CustomFunctionEnvEntry[],
-  envVarNames?: string[],
-): CustomFunctionEnvEntry[] {
-  const byKey = new Map(entries.map((entry) => [entry.key, entry]));
-  for (const name of envVarNames ?? []) {
-    const key = name.trim();
-    if (key === '' || byKey.has(key)) {
-      continue;
-    }
-    const isSecret = inferSecretFromKeyName(key);
-    byKey.set(key, {
-      key,
-      value: unsetEnvPlaceholder(key),
-      isSecret,
-    });
-  }
-  return [...byKey.values()].sort((left, right) => left.key.localeCompare(right.key));
-}
-
-/**
- * Apply explicit environment variable input from the MCP tool schema.
- *
- * @param entries - Existing env rows
- * @param environmentVariables - Caller-provided classification and optional values
+ * @param environmentVariables - Caller-provided classification and optional plain values
  * @returns Updated env rows
  */
 export function applyEnvironmentVariablesInput(
@@ -180,19 +140,11 @@ export function applyEnvironmentVariablesInput(
     if (value === undefined) {
       if (prior) {
         value = prior.value;
-      } else if (row.isSecret) {
-        value = unsetEnvPlaceholder(key);
       } else {
         value = unsetEnvPlaceholder(key);
       }
     }
-    if (
-      row.isSecret &&
-      prior?.isSecret &&
-      value === '' &&
-      !row.replaceSecret &&
-      prior.value !== ''
-    ) {
+    if (row.isSecret && prior?.isSecret && value === '' && prior.value !== '') {
       value = prior.value;
     }
     byKey.set(key, {
@@ -202,6 +154,81 @@ export function applyEnvironmentVariablesInput(
     });
   }
   return [...byKey.values()].sort((left, right) => left.key.localeCompare(right.key));
+}
+
+/**
+ * Remove environment variable keys from editor rows before signing.
+ *
+ * @param entries - Existing env rows
+ * @param keysToRemove - Keys to drop entirely
+ * @returns Env rows without the removed keys
+ */
+export function removeEnvironmentVariableKeys(
+  entries: CustomFunctionEnvEntry[],
+  keysToRemove?: string[],
+): CustomFunctionEnvEntry[] {
+  if (!keysToRemove?.length) {
+    return entries;
+  }
+  const removeSet = new Set(keysToRemove.map((key) => key.trim()).filter(Boolean));
+  if (removeSet.size === 0) {
+    return entries;
+  }
+  return entries.filter((entry) => !removeSet.has(entry.key));
+}
+
+/**
+ * Keys that flipped from plain to secret in this upsert.
+ *
+ * @param prior - Existing env rows before merge
+ * @param environmentVariables - Incoming env rows from the agent
+ * @returns Keys whose classification changed plain → secret
+ */
+export function plainToSecretFlipKeys(
+  prior: CustomFunctionEnvEntry[],
+  environmentVariables?: CustomFunctionEnvironmentVariableInput[],
+): string[] {
+  if (!environmentVariables?.length) {
+    return [];
+  }
+  const priorByKey = new Map(prior.map((entry) => [entry.key, entry]));
+  const flipped: string[] = [];
+  for (const row of environmentVariables) {
+    const key = row.key.trim();
+    const priorEntry = priorByKey.get(key);
+    if (priorEntry && !priorEntry.isSecret && row.isSecret) {
+      flipped.push(key);
+    }
+  }
+  return flipped;
+}
+
+/**
+ * Reject flipping a stored secret to plaintext via MCP.
+ *
+ * @param prior - Existing env rows before merge
+ * @param environmentVariables - Incoming env rows from the agent
+ * @returns Error message when a flip is attempted, otherwise undefined
+ */
+export function secretToPlainFlipError(
+  prior: CustomFunctionEnvEntry[],
+  environmentVariables?: CustomFunctionEnvironmentVariableInput[],
+): string | undefined {
+  if (!environmentVariables?.length) {
+    return undefined;
+  }
+  const priorByKey = new Map(prior.map((entry) => [entry.key, entry]));
+  for (const row of environmentVariables) {
+    const key = row.key.trim();
+    const priorEntry = priorByKey.get(key);
+    if (priorEntry?.isSecret && !row.isSecret) {
+      return (
+        `Cannot change "${key}" from secret to plain text through MCP. ` +
+        'Update classification in the Admin Dashboard Environment Variables tab.'
+      );
+    }
+  }
+  return undefined;
 }
 
 /**

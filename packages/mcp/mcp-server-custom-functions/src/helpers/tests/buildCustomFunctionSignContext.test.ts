@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  applyEnvVarNames,
   applyEnvironmentVariablesInput,
   buildCustomFunctionSignContext,
   envEntriesFromUnwrappedContext,
+  plainToSecretFlipKeys,
+  removeEnvironmentVariableKeys,
+  secretToPlainFlipError,
   sombraSupportsCustomFunctionSplitEnv,
 } from '../buildCustomFunctionSignContext.js';
 import { unsetEnvPlaceholder } from '../redactEnv.js';
@@ -123,11 +125,38 @@ describe(applyEnvironmentVariablesInput, () => {
   });
 });
 
-describe(applyEnvVarNames, () => {
-  it('classifies TOKEN as secret and HOST as plain', () => {
-    expect(applyEnvVarNames([], ['TOKEN', 'HOST'])).toEqual([
-      { key: 'HOST', value: unsetEnvPlaceholder('HOST'), isSecret: false },
-      { key: 'TOKEN', value: unsetEnvPlaceholder('TOKEN'), isSecret: true },
-    ]);
+describe(secretToPlainFlipError, () => {
+  it('blocks flipping a stored secret to plain', () => {
+    expect(
+      secretToPlainFlipError(
+        [{ key: 'API_KEY', value: 'cipher', isSecret: true }],
+        [{ key: 'API_KEY', isSecret: false }],
+      ),
+    ).toMatch(/Cannot change "API_KEY"/);
+  });
+});
+
+describe(removeEnvironmentVariableKeys, () => {
+  it('drops listed keys from env rows', () => {
+    expect(
+      removeEnvironmentVariableKeys(
+        [
+          { key: 'OLD', value: 'x', isSecret: false },
+          { key: 'KEEP', value: 'y', isSecret: false },
+        ],
+        ['OLD'],
+      ),
+    ).toEqual([{ key: 'KEEP', value: 'y', isSecret: false }]);
+  });
+});
+
+describe(plainToSecretFlipKeys, () => {
+  it('detects plain-to-secret classification changes', () => {
+    expect(
+      plainToSecretFlipKeys(
+        [{ key: 'API_KEY', value: 'visible', isSecret: false }],
+        [{ key: 'API_KEY', isSecret: true }],
+      ),
+    ).toEqual(['API_KEY']);
   });
 });

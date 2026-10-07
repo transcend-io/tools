@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 import {
   ErrorCode,
   ToolError,
@@ -12,13 +14,10 @@ import {
   injectDataSiloIntoDsrTestPayload,
   mapCustomFunctionTestRunError,
 } from '../src/helpers/customFunctionTestRun.js';
+import type { StoredContextJwtPayload } from '../src/helpers/decodeStoredContextJwt.js';
 import { mapCustomFunctionUpsertError } from '../src/helpers/mapUpsertError.js';
 import { customFunctionDashboardUrl, customFunctionNextStep } from '../src/helpers/nextStep.js';
-import {
-  ENV_VALUE_NOT_SET,
-  ENV_VALUE_SET_IN_DASHBOARD,
-  mergeEnvVarNames,
-} from '../src/helpers/redactEnv.js';
+import { mergeEnvVarNames } from '../src/helpers/redactEnv.js';
 import { pickSombraId } from '../src/helpers/resolveSombraId.js';
 import { getCustomFunctionsTools } from '../src/tools.js';
 import { CustomFunctionsTestRunSchema } from '../src/tools/custom_functions_test_run.js';
@@ -28,6 +27,21 @@ const SIGNED = {
   signedCodeJwt: 'signed-code',
   signedCodeContextJwt: 'signed-context',
 };
+
+/**
+ * Build a fake signed context JWT whose payload {@link decodeStoredContextJwt} can read.
+ *
+ * @param payload - Context fields stored in the JWT
+ * @returns JWT pair for mocks
+ */
+function signedWithContext(payload: StoredContextJwtPayload = {}) {
+  const header = Buffer.from(JSON.stringify({ alg: 'none' }), 'utf8').toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+  return {
+    signedCodeJwt: 'signed-code',
+    signedCodeContextJwt: `${header}.${body}.test`,
+  };
+}
 
 /** Sign context shape for Sombra >= 7.609 (split secret/plain env maps). */
 function splitSignContext(options: {
@@ -75,6 +89,10 @@ describe('Custom Functions tools', () => {
     deleteDataSilo: ReturnType<typeof vi.fn>;
     /** Mock primary Sombra version query */
     getPrimarySombraVersion: ReturnType<typeof vi.fn>;
+    /** Mock summary-only fetch for promote pre-checks */
+    getCustomFunctionSummary: ReturnType<typeof vi.fn>;
+    /** Mock version history list */
+    listCustomFunctionVersions: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -103,6 +121,29 @@ describe('Custom Functions tools', () => {
       }),
       deleteDataSilo: vi.fn(),
       getPrimarySombraVersion: vi.fn().mockResolvedValue('7.700.0'),
+      getCustomFunctionSummary: vi.fn().mockResolvedValue({
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        sombraId: 'sombra-1',
+        lifecycleState: 'ACTIVE',
+        hasPendingDraft: false,
+        activeVersion: {
+          id: 'version-1',
+          versionNumber: '1',
+          lifecycleState: 'ACTIVE',
+          successfulTestRun: false,
+        },
+      }),
+      listCustomFunctionVersions: vi.fn().mockResolvedValue([
+        {
+          id: 'version-1',
+          versionNumber: '1',
+          lifecycleState: 'ACTIVE',
+          lastModifiedAt: '2026-01-01T00:00:00.000Z',
+          successfulTestRun: false,
+        },
+      ]),
     };
   });
 
@@ -162,8 +203,6 @@ describe('Custom Functions tools', () => {
       sombraId: 'sombra-1',
       code: 'export default () => true;',
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -174,22 +213,33 @@ describe('Custom Functions tools', () => {
     expect(graphql.listSombras).not.toHaveBeenCalled();
     expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
     expect(JSON.stringify(result)).not.toContain('signedCodeContextJwt');
-    expect(JSON.stringify(result)).toContain(
-      'https://app.transcend.io/infrastructure/functions?functionId=cf-1',
-    );
-    expect(JSON.stringify(result)).toContain('Environment Variables');
+    expect(JSON.stringify(result)).not.toContain('dashboardHint');
     expect(result).toMatchObject({
       success: true,
       data: {
-        envVarNames: [],
-        allowedHosts: [],
+        environmentVariables: [],
+        settings: { allowedHosts: [] },
         allowedHostsPersistWarning: undefined,
-        nextStep: expect.stringMatching(/Environment Variables[\s\S]*custom_functions_test_run/),
+        nextStep: expect.stringMatching(/custom_functions_test_run/),
       },
     });
   });
 
   it('preserves stored env and hosts on update when omitted', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: {
         id: 'cf-1',
@@ -228,8 +278,6 @@ describe('Custom Functions tools', () => {
       id: 'cf-1',
       type: 'GENERAL',
       code: 'export default () => true;',
-      setActive: false,
-      promote: false,
     });
 
     expect(rest.unwrapCustomFunction).toHaveBeenCalled();
@@ -244,7 +292,7 @@ describe('Custom Functions tools', () => {
     });
   });
 
-  it('creates empty env placeholders from envVarNames without secret values', async () => {
+  it('creates empty env placeholders from environmentVariables without secret values', async () => {
     graphql.createCustomFunction.mockResolvedValue({
       id: 'cf-1',
       name: 'Example',
@@ -259,6 +307,14 @@ describe('Custom Functions tools', () => {
         successfulTestRun: false,
       },
     });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: {
+        secretEnv: { API_KEY: '${API_KEY}' },
+        plaintextEnv: { BASE_URL: '${BASE_URL}' },
+        allowedHosts: [],
+      },
+    });
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: {
         id: 'cf-1',
@@ -267,14 +323,11 @@ describe('Custom Functions tools', () => {
         hasPendingDraft: false,
       },
       version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export default () => true;',
-      context: {
-        userDefinedEnv: { API_KEY: '${API_KEY}', BASE_URL: '${BASE_URL}' },
+      ...signedWithContext({
+        userDefinedEncryptedEnv: { API_KEY: 'cipher' },
+        userDefinedPlaintextEnv: { BASE_URL: '${BASE_URL}' },
         allowedHosts: [],
-      },
+      }),
     });
 
     const result = await getTool('custom_functions_upsert').handler({
@@ -282,10 +335,11 @@ describe('Custom Functions tools', () => {
       name: 'Example',
       sombraId: 'sombra-1',
       code: 'export default () => true;',
-      envVarNames: ['API_KEY', 'BASE_URL'],
+      environmentVariables: [
+        { key: 'API_KEY', isSecret: true },
+        { key: 'BASE_URL', isSecret: false },
+      ],
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -299,17 +353,35 @@ describe('Custom Functions tools', () => {
     expect(result).toMatchObject({
       success: true,
       data: {
-        envVarNames: ['API_KEY', 'BASE_URL'],
+        environmentVariables: expect.arrayContaining([
+          { key: 'API_KEY', isSecret: true, isSet: false },
+          { key: 'BASE_URL', isSecret: false, isSet: false },
+        ]),
         envPersistWarning: undefined,
-        allowedHosts: [],
+        settings: { allowedHosts: [] },
         allowedHostsPersistWarning: undefined,
-        nextStep: expect.stringContaining('API_KEY, BASE_URL'),
+        nextStep: expect.stringContaining('API_KEY'),
+        dashboardHint: expect.any(String),
       },
     });
   });
 
   it('adds missing env names on update without overwriting stored secrets', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
+    const activeSigned = {
       customFunction: {
         id: 'cf-1',
         name: 'Example',
@@ -319,7 +391,10 @@ describe('Custom Functions tools', () => {
       },
       version: { id: 'version-1', lifecycleState: 'ACTIVE' },
       ...SIGNED,
-    });
+    };
+    graphql.getSignedCustomFunctionVersion
+      .mockResolvedValueOnce(activeSigned)
+      .mockResolvedValueOnce(activeSigned);
     rest.unwrapCustomFunction
       .mockResolvedValueOnce({
         code: 'export default () => false;',
@@ -349,14 +424,31 @@ describe('Custom Functions tools', () => {
       },
     });
 
+    graphql.getSignedCustomFunctionVersion.mockResolvedValueOnce({
+      customFunction: {
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        sombraId: 'sombra-1',
+        hasPendingDraft: true,
+        draftVersion: { id: 'version-2' },
+      },
+      version: { id: 'version-2', lifecycleState: 'DRAFT' },
+      ...signedWithContext({
+        userDefinedEncryptedEnv: { TOKEN: 'cipher' },
+        userDefinedPlaintextEnv: { NEW_HOST: '${NEW_HOST}' },
+        allowedHosts: [],
+      }),
+    });
+
     const result = await getTool('custom_functions_upsert').handler({
       id: 'cf-1',
-      type: 'GENERAL',
       code: 'export default () => true;',
-      envVarNames: ['TOKEN', 'NEW_HOST'],
+      environmentVariables: [
+        { key: 'TOKEN', isSecret: true },
+        { key: 'NEW_HOST', isSecret: false },
+      ],
       allowedHosts: [],
-      setActive: false,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -370,8 +462,7 @@ describe('Custom Functions tools', () => {
     expect(result).toMatchObject({
       success: true,
       data: {
-        envVarNames: ['TOKEN', 'NEW_HOST'],
-        nextStep: expect.stringMatching(/TOKEN, NEW_HOST[\s\S]*promote_version/),
+        nextStep: expect.stringMatching(/promote_version/),
       },
     });
   });
@@ -406,16 +497,14 @@ describe('Custom Functions tools', () => {
       name: 'Example',
       sombraId: 'sombra-1',
       code: 'export default () => true;',
-      envVarNames: ['TRANSCEND_API_KEY'],
+      environmentVariables: [{ key: 'TRANSCEND_API_KEY', isSecret: true }],
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(result).toMatchObject({
       success: true,
       data: {
-        envVarNames: [],
+        environmentVariables: [],
         envPersistWarning: expect.stringContaining('TRANSCEND_API_KEY'),
       },
     });
@@ -439,7 +528,10 @@ describe('Custom Functions tools', () => {
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: { id: 'cf-1', hasPendingDraft: false },
       version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
+      ...signedWithContext({
+        allowedHosts: ['localhost', 'pokeapi.co'],
+        userDefinedPlaintextEnv: {},
+      }),
     });
     rest.unwrapCustomFunction.mockResolvedValue({
       code: 'export default () => true;',
@@ -455,8 +547,6 @@ describe('Custom Functions tools', () => {
       sombraId: 'sombra-1',
       code: 'export default () => true;',
       allowedHosts: ['pokeapi.co', 'localhost'],
-      setActive: true,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -466,11 +556,10 @@ describe('Custom Functions tools', () => {
     expect(result).toMatchObject({
       success: true,
       data: {
-        allowedHosts: ['localhost', 'pokeapi.co'],
+        settings: { allowedHosts: ['localhost', 'pokeapi.co'] },
         allowedHostsPersistWarning: undefined,
       },
     });
-    expect(JSON.stringify(result)).toContain('not shown in the Admin Dashboard');
   });
 
   it('returns allowedHostsPersistWarning when declared hosts are missing after write', async () => {
@@ -504,21 +593,33 @@ describe('Custom Functions tools', () => {
       sombraId: 'sombra-1',
       code: 'export default () => true;',
       allowedHosts: ['pokeapi.co', 'localhost'],
-      setActive: true,
-      promote: false,
     });
 
     expect(result).toMatchObject({
       success: true,
       data: {
-        allowedHosts: [],
+        settings: { allowedHosts: [] },
         allowedHostsPersistWarning: expect.stringContaining('pokeapi.co'),
       },
     });
   });
 
   it('replaces allowedHosts on update when provided', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
+    const activeSigned = {
       customFunction: {
         id: 'cf-1',
         name: 'Example',
@@ -528,7 +629,24 @@ describe('Custom Functions tools', () => {
       },
       version: { id: 'version-1', lifecycleState: 'ACTIVE' },
       ...SIGNED,
-    });
+    };
+    const draftSigned = {
+      customFunction: {
+        id: 'cf-1',
+        name: 'Example',
+        type: 'GENERAL',
+        hasPendingDraft: true,
+        draftVersion: { id: 'version-2' },
+      },
+      version: { id: 'version-2', lifecycleState: 'DRAFT' },
+      ...signedWithContext({
+        allowedHosts: ['pokeapi.co', 'localhost'],
+        userDefinedPlaintextEnv: {},
+      }),
+    };
+    graphql.getSignedCustomFunctionVersion
+      .mockResolvedValueOnce(activeSigned)
+      .mockResolvedValueOnce(draftSigned);
     rest.unwrapCustomFunction
       .mockResolvedValueOnce({
         code: 'export default () => "stored";',
@@ -562,24 +680,37 @@ describe('Custom Functions tools', () => {
       id: 'cf-1',
       type: 'GENERAL',
       allowedHosts: ['pokeapi.co', 'localhost'],
-      setActive: false,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
       code: 'export default () => "stored";',
       context: splitSignContext({ allowedHosts: ['pokeapi.co', 'localhost'] }),
     });
+
     expect(result).toMatchObject({
       success: true,
       data: {
-        allowedHosts: ['pokeapi.co', 'localhost'],
+        settings: { allowedHosts: ['pokeapi.co', 'localhost'] },
         allowedHostsPersistWarning: undefined,
       },
     });
   });
 
   it('re-signs stored code when code is omitted on update', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: {
         id: 'cf-1',
@@ -622,10 +753,7 @@ describe('Custom Functions tools', () => {
 
     await getTool('custom_functions_upsert').handler({
       id: 'cf-1',
-      type: 'GENERAL',
-      envVarNames: ['API_KEY'],
-      setActive: false,
-      promote: false,
+      environmentVariables: [{ key: 'API_KEY', isSecret: true }],
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -647,6 +775,20 @@ describe('Custom Functions tools', () => {
   });
 
   it('uses legacy userDefinedEnv when Sombra predates split env maps', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: false,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: false,
+      },
+    });
     graphql.getPrimarySombraVersion.mockResolvedValue('7.600.0');
     rest.unwrapCustomFunction.mockResolvedValue({
       code: 'export default () => true;',
@@ -675,8 +817,6 @@ describe('Custom Functions tools', () => {
       id: 'cf-1',
       type: 'GENERAL',
       code: 'export default () => true;',
-      setActive: false,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -717,8 +857,6 @@ describe('Custom Functions tools', () => {
         { key: 'PUBLIC_HOST', value: 'https://example.com', isSecret: false },
       ],
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(rest.signCustomFunction).toHaveBeenCalledWith({
@@ -731,27 +869,11 @@ describe('Custom Functions tools', () => {
     });
   });
 
-  it('updates a draft and promotes it when requested', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: {
-        id: 'cf-1',
-        name: 'Example',
-        type: 'GENERAL',
-        sombraId: 'sombra-1',
-        hasPendingDraft: false,
-      },
-      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export default () => false;',
-      context: { userDefinedEnv: {}, allowedHosts: [] },
-    });
-    graphql.updateCustomFunction.mockResolvedValue({
+  it('promote_version warns when the draft was not tested', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
       id: 'cf-1',
       name: 'Example',
       type: 'GENERAL',
-      lifecycleState: 'ACTIVE',
       hasPendingDraft: true,
       draftVersion: {
         id: 'version-2',
@@ -767,26 +889,41 @@ describe('Custom Functions tools', () => {
         type: 'GENERAL',
         lifecycleState: 'ACTIVE',
         hasPendingDraft: false,
-        activeVersion: {
-          id: 'version-2',
-          versionNumber: '2',
-          lifecycleState: 'ACTIVE',
-          successfulTestRun: false,
-        },
       },
       dependencyWarnings: [],
     });
 
-    await getTool('custom_functions_upsert').handler({
-      id: 'cf-1',
-      type: 'GENERAL',
-      code: 'export default () => true;',
-      allowedHosts: [],
-      setActive: true,
-      promote: true,
+    const result = await getTool('custom_functions_promote_version').handler({
+      customFunctionId: 'cf-1',
+      versionId: 'version-2',
     });
 
     expect(graphql.promoteCustomFunctionVersion).toHaveBeenCalledWith('cf-1', 'version-2');
+    expect(result).toMatchObject({
+      success: true,
+      data: { untestedWarning: expect.stringContaining('custom_functions_test_run') },
+    });
+  });
+
+  it('description-only upsert skips signing and does not send JWTs', async () => {
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Renamed',
+      type: 'GENERAL',
+      hasPendingDraft: false,
+    });
+
+    await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      description: 'New description only',
+    });
+
+    expect(rest.signCustomFunction).not.toHaveBeenCalled();
+    expect(graphql.updateCustomFunction).toHaveBeenCalledWith({
+      id: 'cf-1',
+      description: 'New description only',
+    });
+    expect(graphql.getSignedCustomFunctionVersion).not.toHaveBeenCalled();
   });
 
   it('lists custom functions without returning JWTs', async () => {
@@ -819,41 +956,21 @@ describe('Custom Functions tools', () => {
     expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
   });
 
-  it('unwraps code and redacts env values without returning signed JWTs', async () => {
+  it('unwraps code without returning secret values from unwrap', async () => {
     graphql.getSignedCustomFunctionVersion.mockResolvedValue({
       customFunction: { id: 'cf-1', name: 'Example' },
       version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export default () => true;',
-      context: { userDefinedEnv: { TOKEN: 'secret' }, allowedHosts: [] },
-    });
-
-    const result = await getTool('custom_functions_get_code').handler({ id: 'cf-1' });
-
-    expect(result).toMatchObject({
-      success: true,
-      data: {
-        code: 'export default () => true;',
-        context: { userDefinedEnv: { TOKEN: ENV_VALUE_SET_IN_DASHBOARD } },
-        envVarNames: ['TOKEN'],
-      },
-    });
-    expect(JSON.stringify(result)).not.toContain('secret');
-    expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
-  });
-
-  it('get_code marks unset placeholder env vars and lists unsetEnvVarNames', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: { id: 'cf-1', name: 'Example' },
-      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
+      ...signedWithContext({
+        userDefinedEncryptedEnv: { TOKEN: 'cipher' },
+        userDefinedPlaintextEnv: {},
+        allowedHosts: [],
+      }),
     });
     rest.unwrapCustomFunction.mockResolvedValue({
       code: 'export default () => true;',
       context: {
-        userDefinedEnv: { TOKEN: 'secret', API_KEY: '${API_KEY}' },
+        secretEnv: { TOKEN: 'super-secret-value' },
+        plaintextEnv: {},
         allowedHosts: [],
       },
     });
@@ -863,14 +980,42 @@ describe('Custom Functions tools', () => {
     expect(result).toMatchObject({
       success: true,
       data: {
-        context: {
-          userDefinedEnv: {
-            TOKEN: ENV_VALUE_SET_IN_DASHBOARD,
-            API_KEY: ENV_VALUE_NOT_SET,
-          },
-        },
-        envVarNames: ['TOKEN', 'API_KEY'],
-        unsetEnvVarNames: ['API_KEY'],
+        code: 'export default () => true;',
+        environmentVariables: [{ key: 'TOKEN', isSecret: true, isSet: true }],
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain('super-secret-value');
+    expect(JSON.stringify(result)).not.toContain('signedCodeJwt');
+  });
+
+  it('get_code marks unset placeholder env vars', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', name: 'Example' },
+      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+      ...signedWithContext({
+        userDefinedEncryptedEnv: { TOKEN: 'cipher', API_KEY: 'cipher2' },
+        userDefinedPlaintextEnv: {},
+        allowedHosts: [],
+      }),
+    });
+    rest.unwrapCustomFunction.mockResolvedValue({
+      code: 'export default () => true;',
+      context: {
+        secretEnv: { TOKEN: 'secret', API_KEY: '${API_KEY}' },
+        plaintextEnv: {},
+        allowedHosts: [],
+      },
+    });
+
+    const result = await getTool('custom_functions_get_code').handler({ id: 'cf-1' });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        environmentVariables: [
+          { key: 'API_KEY', isSecret: true, isSet: false },
+          { key: 'TOKEN', isSecret: true, isSet: true },
+        ],
       },
     });
   });
@@ -937,8 +1082,6 @@ describe('Custom Functions tools', () => {
       name: 'Example',
       code: 'export default () => true;',
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(graphql.listSombras).toHaveBeenCalled();
@@ -977,8 +1120,6 @@ describe('Custom Functions tools', () => {
       name: 'DSR Example',
       code: 'export const enricher = () => true; export default enricher;',
       allowedHosts: [],
-      setActive: true,
-      promote: false,
     });
 
     expect(graphql.createCustomFunctionDataSilo).toHaveBeenCalledWith({
@@ -1000,8 +1141,6 @@ describe('Custom Functions tools', () => {
         name: 'DSR Example',
         code: 'export const enricher = () => true; export default enricher;',
         allowedHosts: [],
-        setActive: true,
-        promote: false,
       }),
     ).rejects.toThrow('create failed');
 
@@ -1054,7 +1193,7 @@ describe('Custom Functions tools', () => {
       data: {
         passed: true,
         customFunction: { activeVersion: { successfulTestRun: false } },
-        nextStep: expect.stringContaining('does not require'),
+        nextStep: expect.stringContaining('no pending draft'),
       },
     });
     expect(result.data).not.toHaveProperty('allowedHostsIgnoredWarning');
@@ -1228,184 +1367,9 @@ describe('Custom Functions tools', () => {
     expect(JSON.parse(Buffer.from(call.payload, 'base64').toString('utf8'))).toMatchObject({
       extras: { dataSilo: { id: 'silo-new' } },
     });
-    expect(graphql.updateCustomFunction).not.toHaveBeenCalled();
-  });
-
-  it('test-runs upsert payloads before create and sets successfulTestRun', async () => {
-    graphql.testRunCustomFunction.mockResolvedValue({
-      exitCode: 0,
-      logs: [],
-      profile: { timeMs: 1 },
-    });
-    graphql.createCustomFunction.mockResolvedValue({
-      id: 'cf-1',
-      name: 'Example',
-      type: 'GENERAL',
-      lifecycleState: 'ACTIVE',
-      sombraId: 'sombra-1',
-      hasPendingDraft: false,
-      activeVersion: {
-        id: 'version-1',
-        versionNumber: '1',
-        lifecycleState: 'ACTIVE',
-        successfulTestRun: true,
-      },
-    });
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: { id: 'cf-1', hasPendingDraft: false },
-      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export default () => true;',
-      context: { userDefinedEnv: {}, allowedHosts: [] },
-    });
-
-    const result = await getTool('custom_functions_upsert').handler({
-      type: 'GENERAL',
-      name: 'Example',
-      sombraId: 'sombra-1',
-      code: 'export default () => true;',
-      allowedHosts: [],
-      setActive: true,
-      promote: false,
-      testPayloads: [{ payload: { message: 'smoke' } }],
-    });
-
-    expect(graphql.testRunCustomFunction).toHaveBeenCalled();
-    expect(graphql.createCustomFunction).toHaveBeenCalledWith(
-      expect.objectContaining({ successfulTestRun: true, ...SIGNED }),
+    expect(graphql.updateCustomFunction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'cf-dsr', successfulTestRun: true }),
     );
-    expect(result).toMatchObject({
-      success: true,
-      data: { testResults: [{ passed: true, exitCode: 0 }] },
-    });
-  });
-
-  it('omits id when testPayloads run before an update so GraphQL accepts signed JWTs', async () => {
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: {
-        id: 'cf-1',
-        name: 'DSR Example',
-        type: 'DSR',
-        lifecycleState: 'ACTIVE',
-        dataSiloId: 'silo-1',
-        hasPendingDraft: false,
-      },
-      version: {
-        id: 'version-1',
-        versionNumber: '1',
-        lifecycleState: 'ACTIVE',
-        successfulTestRun: false,
-      },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export const enricher = () => true; export default enricher;',
-      context: { userDefinedEnv: { KEY: 'secret' }, allowedHosts: [] },
-    });
-    graphql.testRunCustomFunction.mockResolvedValue({
-      exitCode: 0,
-      logs: [],
-      profile: { timeMs: 1 },
-    });
-    graphql.updateCustomFunction.mockResolvedValue({
-      id: 'cf-1',
-      type: 'DSR',
-      dataSiloId: 'silo-1',
-      hasPendingDraft: true,
-      draftVersion: { id: 'version-2', successfulTestRun: true },
-    });
-
-    // Omit dataSiloId on update — pre-save runs must load it from the stored row.
-    await getTool('custom_functions_upsert').handler({
-      id: 'cf-1',
-      type: 'DSR',
-      code: 'export const enricher = () => true; export default enricher;',
-      allowedHosts: [],
-      setActive: true,
-      promote: false,
-      testPayloads: [{}],
-    });
-
-    expect(graphql.getSignedCustomFunctionVersion).toHaveBeenCalledWith('cf-1', undefined);
-    expect(rest.signCustomFunction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        context: splitSignContext({
-          plaintextEnv: { KEY: 'secret' },
-          allowedHosts: [],
-        }),
-      }),
-    );
-    expect(graphql.testRunCustomFunction).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'DSR', ...SIGNED }),
-    );
-    expect(graphql.testRunCustomFunction.mock.calls[0]?.[0]).not.toHaveProperty('id');
-    const call = graphql.testRunCustomFunction.mock.calls[0]?.[0] as {
-      payload: string;
-    };
-    expect(JSON.parse(Buffer.from(call.payload, 'base64').toString('utf8'))).toMatchObject({
-      extras: { dataSilo: { id: 'silo-1' } },
-    });
-  });
-
-  it('still saves when upsert testPayloads fail', async () => {
-    graphql.testRunCustomFunction.mockResolvedValue({
-      exitCode: 1,
-      logs: [],
-      error: { message: 'boom' },
-      profile: { timeMs: 1 },
-    });
-    graphql.createCustomFunction.mockResolvedValue({
-      id: 'cf-1',
-      name: 'DSR Example',
-      type: 'DSR',
-      lifecycleState: 'ACTIVE',
-      dataSiloId: 'silo-new',
-      hasPendingDraft: false,
-      activeVersion: {
-        id: 'version-1',
-        versionNumber: '1',
-        lifecycleState: 'ACTIVE',
-        successfulTestRun: false,
-      },
-    });
-    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
-      customFunction: { id: 'cf-1', hasPendingDraft: false },
-      version: { id: 'version-1', lifecycleState: 'ACTIVE' },
-      ...SIGNED,
-    });
-    rest.unwrapCustomFunction.mockResolvedValue({
-      code: 'export const enricher = () => true; export default enricher;',
-      context: { userDefinedEnv: {}, allowedHosts: [] },
-    });
-
-    const result = await getTool('custom_functions_upsert').handler({
-      type: 'DSR',
-      name: 'DSR Example',
-      code: 'export const enricher = () => true; export default enricher;',
-      allowedHosts: [],
-      setActive: true,
-      promote: false,
-      testPayloads: [{ payload: {} }],
-    });
-
-    expect(graphql.createCustomFunction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'DSR',
-        dataSiloId: 'silo-new',
-        ...SIGNED,
-      }),
-    );
-    expect(graphql.createCustomFunction.mock.calls[0]?.[0]).not.toHaveProperty('successfulTestRun');
-    expect(graphql.deleteDataSilo).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      success: true,
-      data: {
-        testResults: [{ passed: false, exitCode: 1 }],
-        nextStep: expect.stringContaining('does not require'),
-      },
-    });
   });
 
   it('fails with setup guidance when SOMBRA_CUSTOMER_KEY is missing', async () => {
@@ -1421,8 +1385,6 @@ describe('Custom Functions tools', () => {
         dataSiloId: 'silo-1',
         code: 'export const enricher = () => true; export default enricher;',
         allowedHosts: [],
-        setActive: true,
-        promote: false,
       }),
     ).rejects.toThrow('SOMBRA_CUSTOMER_KEY');
   });
@@ -1489,6 +1451,268 @@ describe('Custom Functions tools', () => {
       expect(parsed.error.issues.some((issue) => issue.path[0] === 'dataSiloId')).toBe(true);
     }
   });
+
+  it('continues the pending draft when versionId is omitted on GENERAL update', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      name: 'Example',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      lifecycleState: 'ACTIVE',
+      hasPendingDraft: true,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: true,
+      },
+      draftVersion: {
+        id: 'version-2',
+        versionNumber: '1.1',
+        lifecycleState: 'DRAFT',
+        successfulTestRun: false,
+      },
+    });
+    graphql.getSignedCustomFunctionVersion
+      .mockResolvedValueOnce({
+        customFunction: {
+          id: 'cf-1',
+          type: 'GENERAL',
+          hasPendingDraft: true,
+          draftVersion: { id: 'version-2' },
+        },
+        version: { id: 'version-2', lifecycleState: 'DRAFT' },
+        ...SIGNED,
+      })
+      .mockResolvedValueOnce({
+        customFunction: {
+          id: 'cf-1',
+          type: 'GENERAL',
+          hasPendingDraft: true,
+          draftVersion: { id: 'version-2' },
+        },
+        version: { id: 'version-2', lifecycleState: 'DRAFT' },
+        ...signedWithContext({ allowedHosts: ['api.example.com'], userDefinedPlaintextEnv: {} }),
+      });
+    rest.unwrapCustomFunction
+      .mockResolvedValueOnce({
+        code: 'export default () => "draft";',
+        context: { userDefinedEnv: {}, allowedHosts: [] },
+      })
+      .mockResolvedValueOnce({
+        code: 'export default () => "draft";',
+        context: { userDefinedEnv: {}, allowedHosts: ['api.example.com'] },
+      });
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      hasPendingDraft: true,
+      draftVersion: { id: 'version-2', lifecycleState: 'DRAFT', successfulTestRun: false },
+    });
+
+    await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      allowedHosts: ['api.example.com'],
+    });
+
+    expect(graphql.updateCustomFunction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'cf-1', versionId: 'version-2' }),
+    );
+  });
+
+  it('rejects editing the active version by versionId', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      hasPendingDraft: true,
+      activeVersion: {
+        id: 'version-1',
+        versionNumber: '1',
+        lifecycleState: 'ACTIVE',
+        successfulTestRun: true,
+      },
+      draftVersion: {
+        id: 'version-2',
+        versionNumber: '1.1',
+        lifecycleState: 'DRAFT',
+        successfulTestRun: false,
+      },
+    });
+
+    await expect(
+      getTool('custom_functions_upsert').handler({
+        id: 'cf-1',
+        versionId: 'version-1',
+        code: 'export default () => true;',
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('rejects type changes on update', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      hasPendingDraft: false,
+      activeVersion: { id: 'version-1', lifecycleState: 'ACTIVE', successfulTestRun: false },
+    });
+
+    await expect(
+      getTool('custom_functions_upsert').handler({
+        id: 'cf-1',
+        type: 'DSR',
+        code: 'export default () => true;',
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+  });
+
+  it('rejects no-op updates with only id', async () => {
+    await expect(getTool('custom_functions_upsert').handler({ id: 'cf-1' })).rejects.toMatchObject({
+      code: ErrorCode.VALIDATION_ERROR,
+    });
+  });
+
+  it('removes environment variables on update', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      hasPendingDraft: false,
+      activeVersion: { id: 'version-1', lifecycleState: 'ACTIVE', successfulTestRun: false },
+    });
+    graphql.getSignedCustomFunctionVersion
+      .mockResolvedValueOnce({
+        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: false },
+        version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+        ...SIGNED,
+      })
+      .mockResolvedValueOnce({
+        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: true },
+        version: { id: 'version-2', lifecycleState: 'DRAFT' },
+        ...signedWithContext({
+          userDefinedPlaintextEnv: { KEEP: 'y' },
+          allowedHosts: [],
+        }),
+      });
+    rest.unwrapCustomFunction
+      .mockResolvedValueOnce({
+        code: 'export default () => true;',
+        context: {
+          plaintextEnv: { OLD_KEY: 'x', KEEP: 'y' },
+          secretEnv: {},
+          allowedHosts: [],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 'export default () => true;',
+        context: {
+          plaintextEnv: { KEEP: 'y' },
+          secretEnv: {},
+          allowedHosts: [],
+        },
+      });
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      hasPendingDraft: true,
+      draftVersion: { id: 'version-2', lifecycleState: 'DRAFT', successfulTestRun: false },
+    });
+
+    await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      removeEnvironmentVariables: ['OLD_KEY'],
+    });
+
+    expect(rest.signCustomFunction).toHaveBeenCalledWith({
+      code: 'export default () => true;',
+      context: splitSignContext({
+        plaintextEnv: { KEEP: 'y' },
+        allowedHosts: [],
+      }),
+    });
+  });
+
+  it('returns envClassificationWarning on plain-to-secret flip', async () => {
+    graphql.getCustomFunctionSummary.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      sombraId: 'sombra-1',
+      hasPendingDraft: false,
+      activeVersion: { id: 'version-1', lifecycleState: 'ACTIVE', successfulTestRun: false },
+    });
+    graphql.getSignedCustomFunctionVersion
+      .mockResolvedValueOnce({
+        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: false },
+        version: { id: 'version-1', lifecycleState: 'ACTIVE' },
+        ...SIGNED,
+      })
+      .mockResolvedValueOnce({
+        customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: true },
+        version: { id: 'version-2', lifecycleState: 'DRAFT' },
+        ...signedWithContext({
+          userDefinedEncryptedEnv: { API_KEY: 'cipher' },
+          allowedHosts: [],
+        }),
+      });
+    rest.unwrapCustomFunction
+      .mockResolvedValueOnce({
+        code: 'export default () => true;',
+        context: {
+          plaintextEnv: { API_KEY: 'visible' },
+          secretEnv: {},
+          allowedHosts: [],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 'export default () => true;',
+        context: {
+          plaintextEnv: {},
+          secretEnv: { API_KEY: 'visible' },
+          allowedHosts: [],
+        },
+      });
+    graphql.updateCustomFunction.mockResolvedValue({
+      id: 'cf-1',
+      type: 'GENERAL',
+      hasPendingDraft: true,
+      draftVersion: { id: 'version-2', lifecycleState: 'DRAFT', successfulTestRun: false },
+    });
+
+    const result = await getTool('custom_functions_upsert').handler({
+      id: 'cf-1',
+      environmentVariables: [{ key: 'API_KEY', isSecret: true }],
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        envClassificationWarning: expect.stringContaining('API_KEY'),
+      },
+    });
+  });
+
+  it('returns testFailed nextStep when a stored test run fails', async () => {
+    graphql.getSignedCustomFunctionVersion.mockResolvedValue({
+      customFunction: { id: 'cf-1', type: 'GENERAL', hasPendingDraft: true },
+      version: { id: 'version-2', lifecycleState: 'DRAFT' },
+      ...SIGNED,
+    });
+    graphql.testRunCustomFunction.mockResolvedValue({
+      exitCode: 1,
+      logs: [],
+      error: { message: 'boom' },
+      profile: { timeMs: 1 },
+    });
+
+    const result = await getTool('custom_functions_test_run').handler({ id: 'cf-1' });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: {
+        passed: false,
+        nextStep: expect.stringContaining('passed: false'),
+      },
+    });
+  });
 });
 
 const GATEWAY_A = {
@@ -1545,43 +1769,34 @@ describe('mergeEnvVarNames', () => {
 });
 
 describe('customFunctionNextStep', () => {
-  it('tells the agent testing is optional after create and to set secrets in the dashboard', () => {
+  it('points create at test_run', () => {
     const step = customFunctionNextStep({ kind: 'created', id: 'cf-1' });
-    expect(step).toContain('does not require');
-    expect(step).toContain('Environment Variables');
+    expect(step).toContain('custom_functions_test_run');
   });
 
-  it('names declared env placeholders after create', () => {
+  it('names unset env keys after create', () => {
     expect(
       customFunctionNextStep({
         kind: 'created',
         id: 'cf-1',
-        envVarNames: ['API_KEY', 'BASE_URL'],
+        unsetEnvKeys: ['API_KEY', 'BASE_URL'],
       }),
     ).toContain('API_KEY, BASE_URL');
   });
 
-  it('tells the agent to save after an untested stored run', () => {
+  it('tells the agent to upsert after an unsaved trial', () => {
     expect(customFunctionNextStep({ kind: 'storedTestNeedsSave', id: 'cf-1' })).toContain(
-      'does not require',
+      'custom_functions_upsert',
     );
   });
 
-  it('points a draft at promote_version', () => {
+  it('points a draft at test_run then promote_version', () => {
     expect(
       customFunctionNextStep({ kind: 'draft', id: 'cf-1', draftVersionId: 'version-2' }),
     ).toContain('versionId "version-2"');
-  });
-
-  it('notes draft env names must be promoted before they are live', () => {
     expect(
-      customFunctionNextStep({
-        kind: 'draft',
-        id: 'cf-1',
-        draftVersionId: 'version-2',
-        envVarNames: ['API_KEY'],
-      }),
-    ).toMatch(/API_KEY[\s\S]*draft[\s\S]*promote/);
+      customFunctionNextStep({ kind: 'draft', id: 'cf-1', draftVersionId: 'version-2' }),
+    ).toContain('custom_functions_test_run');
   });
 });
 

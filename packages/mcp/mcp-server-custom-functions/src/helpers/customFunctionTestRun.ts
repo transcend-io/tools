@@ -10,7 +10,6 @@ import type {
   CustomFunctionsMixin,
 } from '../graphql.js';
 import {
-  applyEnvVarNames,
   buildCustomFunctionSignContext,
   sombraSupportsCustomFunctionSplitEnv,
 } from './buildCustomFunctionSignContext.js';
@@ -284,13 +283,11 @@ export async function executeCustomFunctionTestRun(
   if (!signed && input.code) {
     const sombraVersion = await graphql.getPrimarySombraVersion();
     const supportsSplitEnv = sombraSupportsCustomFunctionSplitEnv(sombraVersion);
-    const envEntries = applyEnvVarNames(
-      Object.entries(input.userDefinedEnv ?? {}).map(([key, value]) => ({
-        key,
-        value,
-        isSecret: false,
-      })),
-    );
+    const envEntries = Object.entries(input.userDefinedEnv ?? {}).map(([key, value]) => ({
+      key,
+      value,
+      isSecret: false,
+    }));
     signed = await rest.signCustomFunction({
       code: input.code,
       context: buildCustomFunctionSignContext({
@@ -357,12 +354,15 @@ export async function executeCustomFunctionTestRun(
   const result = mapCustomFunctionTestRunView(execution);
 
   let customFunction = stored?.customFunction;
+  const versionCanBeMarkedTested =
+    stored &&
+    (stored.version.lifecycleState === 'DRAFT' ||
+      (type === 'DSR' && stored.version.lifecycleState === 'ACTIVE'));
   if (
     result.passed &&
     input.markSuccessfulTestRun &&
     ranStoredVersion &&
-    stored &&
-    stored.version.lifecycleState === 'DRAFT' &&
+    versionCanBeMarkedTested &&
     signed
   ) {
     try {

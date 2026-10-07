@@ -4,6 +4,10 @@
 '@transcend-io/mcp-server-inventory': patch
 ---
 
-Custom Function MCP tools now keep secrets in the Admin Dashboard only. Pass `envVarNames` to declare placeholder names, or `environmentVariables` with `isSecret` when you need explicit secret vs plain classification. Signing uses split secret/plain env maps on Sombra 7.609.0+ so the Admin Dashboard no longer shows the legacy “Review which variables are secret” callout for API-managed functions. Enter real secret values in the dashboard. Updates keep existing secrets and allowed hosts unless you pass new values. `custom_functions_get_code` shows which environment variables still need dashboard values. OAuth now also requests `ManageSombraRootKeys`, `ConnectDataSilos`, and `ManageAccessControl` (re-authorize if you already connected).
+Custom Function MCP tools now use a clearer save → test → promote flow. `custom_functions_upsert` only saves code and settings (draft for GENERAL updates); run `custom_functions_test_run` with `{ id }`, then `custom_functions_promote_version` to go live.
 
-**Migration:** If you previously passed `userDefinedEnv`, pass `envVarNames` instead and fill values in the dashboard. On update, omitting `allowedHosts` now keeps the saved allowlist; pass `[]` to reset to localhost only. Stored `custom_functions_test_run` calls no longer accept `allowedHosts` — use `custom_functions_upsert` to change the saved allowlist.
+On update, omit `versionId` to continue the pending draft instead of starting another. `custom_functions_get_code` returns a `versions` list and can read any version by `versionId` (including inactive versions). Remove env vars with `removeEnvironmentVariables`.
+
+Environment variables use a single `environmentVariables` input with `key`, `isSecret`, and optional `value` for **plain** variables only. Never pass secret values through MCP — users set secrets in the Admin Dashboard. Plain → secret encrypts the current value; the tool warns that older versions may still contain plaintext. `custom_functions_get_code` returns `settings` and `environmentVariables` (with `isSet`) and never echoes secret values.
+
+**Migration:** Replace `envVarNames` with `environmentVariables` (`isSecret: true` for secrets). Remove `testPayloads`, `promote`, and `setActive` from upsert — use `custom_functions_test_run` and `custom_functions_promote_version` instead. On update, omit `allowedHosts` to keep the saved allowlist; pass `[]` for localhost only. Re-authorize MCP if prompted for updated scopes.
