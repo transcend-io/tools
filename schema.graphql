@@ -5193,6 +5193,7 @@ type Query {
   airgapBundleAirgapPrefixModules(input: AirgapBundleInput!): AirgapBundleAirgapPrefixModulesPayload!
   airgapBundleTimeseriesAnalytics(id: ID!, input: AirgapBundleTimeseriesAnalyticsInput!): AirgapBundleTimeseriesAnalyticsResult!
   airgapBundleVersions(first: Int, offset: Int = 0, last: Int, id: ID!, input: AirgapBundleVersionsInput!): AirgapBundleVersionsPayload!
+  airgapPrefixModule(input: AirgapPrefixModuleInput!): AirgapPrefixModulePayload!
   airgapVersions(input: AirgapVersionsInput!): AirgapVersionsPayload!
   analyticsData(input: AnalyticsInput!): AnalyticsResult!
   apiKey(id: ID!): ApiKey!
@@ -5697,6 +5698,7 @@ type Mutation {
   removeDataSiloFromWorkflowConfig(input: WorkflowDataSiloInput!): RemoveDataSiloFromWorkflowConfigPayload!
   removeEnrichersFromWorkflowConfig(input: RemoveEnrichersFromWorkflowConfigInput!): RemoveEnrichersFromWorkflowConfigPayload!
   removeFileUploadsFromWorkflowConfig(input: RemoveFileUploadsFromWorkflowConfigInput!): RemoveFileUploadsFromWorkflowConfigPayload!
+  removePrivacyCenterPreviousHostname(input: PrivacyCenterIdInput!): RemovePrivacyCenterPreviousHostnamePayload!
   removeRequestIdentifiers(input: RemoveRequestIdentifiersInput!): RemoveRequestIdentifiersPayload!
   removeSombra(id: ID!): RemoveSombraPayload!
   removeTCFStacksFromBundle(input: SetTCFStacksInput!): RemoveTcfStacksFromBundlePayload!
@@ -5767,6 +5769,7 @@ type Mutation {
   sombraSingleTenantConfigSync(input: SombraSingleTenantConfigSyncInput!): SombraSingleTenantConfigSyncPayload!
   submitAssessmentFormForReview(input: SubmitAssessmentFormForReviewInput!): SubmitAssessmentFormForReviewPayload!
   submitAssessmentFormForReviewToken(input: TokenInput!): SubmitAssessmentFormForReviewTokenPayload!
+  switchBackPrivacyCenterHostnameChange(input: PrivacyCenterIdInput!): SwitchBackPrivacyCenterHostnameChangePayload!
   syncTcfVendorsFromTelemetry(input: SyncTcfVendorsFromTelemetryInput!): SyncTcfVendorsFromTelemetryPayload!
   testIntegrationsSombraConnectivity(id: ID!): TestIntegrationsSombraConnectivityPayload!
   testSombraEmployeeAuthentication(id: ID!, dhEncrypted: String!): TestSombraEmployeeAuthenticationPayload!
@@ -6512,11 +6515,20 @@ type AirgapCookieOrDataFlowPreview {
   name: String!
 }
 
+type AirgapPrefixModulePayload {
+  clientMutationId: String
+  airgapPrefixModule: AirgapPrefixModule!
+}
+
 type AirgapPrefixModule {
   id: ID!
   organizationId: ID
   name: String!
   releases: [AirgapPrefixModuleRelease!]!
+}
+
+input AirgapPrefixModuleInput {
+  id: ID!
 }
 
 type AirgapPrefixModulePreview {
@@ -9526,6 +9538,7 @@ input ConsentPreferenceUpdateInput {
   purposes: [NonAdminPurposeInput!]!
   metadata: String
   metadataTimestamp: String
+  birthDate: String
 }
 
 type ConsentRecord {
@@ -16176,6 +16189,7 @@ type PrivacyCenterDeployment {
   cloudfront: CloudFront
   certificate: Certificate
   hostnameChange: PrivacyCenterHostnameChange
+  failedHostnameChange: PrivacyCenterHostnameChange
   step: PrivacyCenterDeploymentStep!
 }
 
@@ -17216,6 +17230,12 @@ input RemoveFileUploadsFromWorkflowConfigInput {
   ids: [ID!]!
 }
 
+type RemovePrivacyCenterPreviousHostnamePayload {
+  clientMutationId: String
+  hostnameChange: PrivacyCenterHostnameChange!
+  success: Boolean!
+}
+
 type RemoveRequestIdentifiersPayload {
   clientMutationId: String
   count: Int!
@@ -17661,6 +17681,7 @@ type RequestFile implements RequestFileInterface {
   context: String!
   downloadKey: String
   scheduledAt: Date!
+  pollId: String
   dataPoint: RequestFileDataPointPreview!
 }
 
@@ -17695,6 +17716,7 @@ input RequestFileFiltersInput {
   dataSiloId: ID
   exportMode: [DataPointExportMode!]
   isArchived: Boolean
+  hasPollId: Boolean
 }
 
 interface RequestFileInterface {
@@ -20062,6 +20084,12 @@ input SubmitAssessmentFormForReviewInput {
 type SubmitAssessmentFormForReviewTokenPayload {
   clientMutationId: String
   assessmentForm: AssessmentFormRaw!
+}
+
+type SwitchBackPrivacyCenterHostnameChangePayload {
+  clientMutationId: String
+  hostnameChange: PrivacyCenterHostnameChange!
+  success: Boolean!
 }
 
 type SyncedConsentManager {
