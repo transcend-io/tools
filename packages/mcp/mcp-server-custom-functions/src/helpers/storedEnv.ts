@@ -2,12 +2,17 @@ import type {
   CustomFunctionEnvEntry,
   UnwrappedCustomFunctionContext,
 } from './buildCustomFunctionSignContext.js';
-import {
-  envKeyNamesFromStoredContext,
-  storedContextUsesSplitEnv,
-  type StoredContextJwtPayload,
-} from './decodeStoredContextJwt.js';
-import { unsetEnvPlaceholder } from './redactEnv.js';
+import type { StoredContextJwtPayload } from './decodeStoredContextJwt.js';
+
+/**
+ * Placeholder for a new env key so Sombra merge-on-sign retains the slot.
+ *
+ * @param name - Environment variable name
+ * @returns Placeholder value for signing
+ */
+export function unsetEnvPlaceholder(name: string): string {
+  return `\${${name}}`;
+}
 
 /**
  * Whether an env value is considered set (not empty and not the unset placeholder).
@@ -52,7 +57,7 @@ export function classifyStoredEnv(
       });
   }
 
-  if (storedPayload && storedContextUsesSplitEnv(storedPayload)) {
+  if (storedPayload && storedPayload.userDefinedPlaintextEnv !== undefined) {
     const secretKeys = new Set(Object.keys(storedPayload.userDefinedEncryptedEnv ?? {}));
     const plainFromJwt = storedPayload.userDefinedPlaintextEnv ?? {};
     const keys = new Set([
@@ -71,10 +76,15 @@ export function classifyStoredEnv(
       });
   }
 
-  const legacyKeys = new Set([
-    ...Object.keys(mergedValues),
-    ...(storedPayload ? envKeyNamesFromStoredContext(storedPayload) : []),
-  ]);
+  const legacyKeys = new Set(Object.keys(mergedValues));
+  if (storedPayload) {
+    for (const key of Object.keys(storedPayload.userDefinedEncryptedEnv ?? {})) {
+      legacyKeys.add(key);
+    }
+    for (const key of Object.keys(storedPayload.userDefinedPlaintextEnv ?? {})) {
+      legacyKeys.add(key);
+    }
+  }
   return [...legacyKeys]
     .sort((left, right) => left.localeCompare(right))
     .map((key) => ({

@@ -70,15 +70,3 @@ export function buildReadableVersionContext(
 
   return { settings, environmentVariables };
 }
-
-/**
- * Names of environment variables that still need dashboard values.
- *
- * @param environmentVariables - Readable env rows
- * @returns Keys that are unset
- */
-export function unsetEnvironmentVariableKeys(
-  environmentVariables: CustomFunctionReadableEnvironmentVariable[],
-): string[] {
-  return environmentVariables.filter((row) => !row.isSet).map((row) => row.key);
-}
