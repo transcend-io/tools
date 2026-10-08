@@ -16,7 +16,7 @@ export const CustomFunctionsListSchema = OffsetPaginationSchema.extend({
     .optional()
     .describe('Filter by lifecycle state'),
   dataSiloId: z.string().optional().describe('Filter DSR functions by data silo ID'),
-  text: z.string().optional().describe('Free-text search (use the unique name from upsert)'),
+  text: z.string().optional().describe('Filter by substring of name or description'),
 });
 export type CustomFunctionsListInput = z.infer<typeof CustomFunctionsListSchema>;
 
