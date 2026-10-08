@@ -116,26 +116,27 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       timeoutMs,
     }) => {
       const storedRun = Boolean(id) && !code;
-      const { result, customFunction } = await executeCustomFunctionTestRun(graphql, clients.rest, {
-        type,
-        id,
-        code,
-        payload,
-        payloadType,
-        sombraId,
-        dataSiloId,
-        allowedHosts: allowedHosts ?? [],
-        allowThirdPartyImports,
-        timeoutMs,
-        markSuccessfulTestRun: storedRun,
-      });
+      const { result, customFunction, markedSuccessfulTestRun } =
+        await executeCustomFunctionTestRun(graphql, clients.rest, {
+          type,
+          id,
+          code,
+          payload,
+          payloadType,
+          sombraId,
+          dataSiloId,
+          allowedHosts: allowedHosts ?? [],
+          allowThirdPartyImports,
+          timeoutMs,
+          markSuccessfulTestRun: storedRun,
+        });
       const nextStep = result.passed
         ? storedRun
-          ? customFunction?.hasPendingDraft
+          ? customFunction?.hasPendingDraft || markedSuccessfulTestRun
             ? customFunctionNextStep({
                 kind: 'storedTestPassed',
                 id: id!,
-                draftVersionId: customFunction.draftVersion?.id,
+                draftVersionId: customFunction?.draftVersion?.id,
               })
             : customFunctionNextStep({ kind: 'storedTestNoDraft', id: id! })
           : customFunctionNextStep({ kind: 'unsavedTestPassed', id: id ?? '' })

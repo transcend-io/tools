@@ -251,6 +251,8 @@ export async function executeCustomFunctionTestRun(
   result: CustomFunctionTestRunView;
   /** Stored function after an optional successfulTestRun update */
   customFunction?: CustomFunctionSummary;
+  /** True when this run persisted successfulTestRun on the stored version */
+  markedSuccessfulTestRun: boolean;
 }> {
   const stored = input.id ? await graphql.getSignedCustomFunctionVersion(input.id) : undefined;
   const type = input.type ?? stored?.customFunction.type;
@@ -340,6 +342,7 @@ export async function executeCustomFunctionTestRun(
   const result = mapCustomFunctionTestRunView(execution);
 
   let customFunction = stored?.customFunction;
+  let markedSuccessfulTestRun = false;
   const versionCanBeMarkedTested =
     stored &&
     (stored.version.lifecycleState === 'DRAFT' ||
@@ -358,10 +361,11 @@ export async function executeCustomFunctionTestRun(
         successfulTestRun: true,
         ...signed,
       });
+      markedSuccessfulTestRun = true;
     } catch (error) {
       throwMappedTestRunError(error);
     }
   }
 
-  return { result, customFunction };
+  return { result, customFunction, markedSuccessfulTestRun };
 }
