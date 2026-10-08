@@ -13,27 +13,21 @@ import {
   applyEnvironmentVariablesInput,
   assertSignContextPreservesEnvKeys,
   buildCustomFunctionSignContext,
-  envEntriesFromUnwrappedContext,
   plainToSecretFlipKeys,
   removeEnvironmentVariableKeys,
   secretToPlainFlipError,
   sombraSupportsCustomFunctionSplitEnv,
   type CustomFunctionEnvEntry,
 } from '../helpers/buildCustomFunctionSignContext.js';
-import {
-  decodeStoredContextJwt,
-  envKeyNamesFromStoredContext,
-} from '../helpers/decodeStoredContextJwt.js';
+import { decodeStoredContextJwt } from '../helpers/decodeStoredContextJwt.js';
 import { mapCustomFunctionUpsertError } from '../helpers/mapUpsertError.js';
 import { customFunctionDashboardHint, customFunctionNextStep } from '../helpers/nextStep.js';
-import {
-  buildReadableVersionContext,
-  unsetEnvironmentVariableKeys,
-} from '../helpers/readableCustomFunctionVersion.js';
+import { buildReadableVersionContext } from '../helpers/readableCustomFunctionVersion.js';
 import {
   resolveSigningSombraVersion,
   resolveSombraIdForCreate,
 } from '../helpers/resolveSombraId.js';
+import { classifyStoredEnv } from '../helpers/storedEnv.js';
 import {
   assertUpsertVersionIdEditable,
   hasAnyUpsertFieldOnUpdate,
@@ -342,6 +336,20 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         );
       }
 
+      let resolvedVersionId = versionId;
+      let storedSummary: CustomFunctionSummary | undefined;
+      if (id) {
+        storedSummary = await graphql.getCustomFunctionSummary(id);
+        if (inputType && inputType !== storedSummary.type) {
+          throw new ToolError(
+            ErrorCode.VALIDATION_ERROR,
+            `type cannot be changed after create (stored type is ${storedSummary.type}).`,
+            false,
+            { storedType: storedSummary.type },
+          );
+        }
+      }
+
       if (
         id &&
         isMetadataOnlyUpdate({
@@ -368,18 +376,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         });
       }
 
-      let resolvedVersionId = versionId;
-      let storedSummary: CustomFunctionSummary | undefined;
-      if (id) {
-        storedSummary = await graphql.getCustomFunctionSummary(id);
-        if (inputType && inputType !== storedSummary.type) {
-          throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
-            `type cannot be changed after create (stored type is ${storedSummary.type}).`,
-            false,
-            { storedType: storedSummary.type },
-          );
-        }
+      if (id && storedSummary) {
         const sombraChange =
           sombraId !== undefined && sombraId !== (storedSummary.sombraId ?? undefined);
         if (versionId !== undefined) {
@@ -430,7 +427,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
             signedCodeContextJwt: stored.signedCodeContextJwt,
           });
           const decodedStored = decodeStoredContextJwt(stored.signedCodeContextJwt);
-          envEntries = envEntriesFromUnwrappedContext(source.context, decodedStored);
+          envEntries = classifyStoredEnv(decodedStored, source.context);
           priorEnvKeys = envEntries.map((entry) => entry.key);
           const flipError = secretToPlainFlipError(envEntries, environmentVariables);
           if (flipError) {
@@ -536,7 +533,12 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           );
           const verifiedDecoded = decodeStoredContextJwt(verifiedSigned.signedCodeContextJwt);
           const verifiedEnvNames = verifiedDecoded
-            ? envKeyNamesFromStoredContext(verifiedDecoded)
+            ? [
+                ...new Set([
+                  ...Object.keys(verifiedDecoded.userDefinedEncryptedEnv ?? {}),
+                  ...Object.keys(verifiedDecoded.userDefinedPlaintextEnv ?? {}),
+                ]),
+              ].sort((left, right) => left.localeCompare(right))
             : readable.environmentVariables.map((row) => row.key);
           const declaredKeys = environmentVariables?.map((row) => row.key.trim()).filter(Boolean);
           const removedKeys = removeEnvironmentVariables?.map((key) => key.trim()).filter(Boolean);
@@ -552,7 +554,9 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
             allowedHosts,
             readable.settings.allowedHosts,
           );
-          unsetKeys = unsetEnvironmentVariableKeys(readable.environmentVariables);
+          unsetKeys = readable.environmentVariables
+            .filter((row) => !row.isSet)
+            .map((row) => row.key);
           readableVersionId = verifiedSigned.version.id;
           settings = readable.settings;
           environmentVariablesOut = readable.environmentVariables;
