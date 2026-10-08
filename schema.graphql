@@ -5673,6 +5673,7 @@ type Mutation {
   markDataSiloDiscoveryResultsDuplicate(input: [MarkDataSiloDiscoveryResultsDuplicateInput!]!): MarkDataSiloDiscoveryResultsDuplicatePayload!
   markDataSiloDiscoveryResultsJunk(input: [MarkDataSiloDiscoveryResultsJunkInput!]!): MarkDataSiloDiscoveryResultsJunkPayload!
   markDataSiloNotConfigured(id: ID!): MarkDataSiloNotConfiguredPayload!
+  markDropReportSubmitted(input: MarkDropReportSubmittedInput!): MarkDropReportSubmittedPayload!
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
   migrateRequestConfigurationsToWorkflows(input: MigrateRequestConfigurationsToWorkflowsInput!): MigrateRequestConfigurationsToWorkflowsPayload!
@@ -13728,6 +13729,11 @@ type DropStatusOverridesResult {
   recorded: Int!
 }
 
+type DropSubmissionMarkedResult {
+  dropRunId: ID!
+  state: DropRunState!
+}
+
 type DsrFormIdentifier implements IdentifierInterface {
   id: String!
   name: String!
@@ -15262,6 +15268,15 @@ input MarkDataSiloDiscoveryResultsJunkInput {
 type MarkDataSiloNotConfiguredPayload {
   clientMutationId: String
   dataSilo: DataSilo!
+}
+
+type MarkDropReportSubmittedPayload {
+  clientMutationId: String
+  result: DropSubmissionMarkedResult!
+}
+
+input MarkDropReportSubmittedInput {
+  dropRunId: ID!
 }
 
 type MarkDropStarterDownloadedPayload {
@@ -23126,11 +23141,10 @@ type WiredIdentifier implements IdentifierInterface {
 }
 
 type WorkflowCommunicationSettings {
-  id: ID!
-  templateId: ID
-  type: WorkflowCommunicationMethod!
-  enabled: Boolean!
   templateType: WorkflowCommunicationTemplateType!
+  enabled: Boolean!
+  workflowOverrideTemplate: Template
+  globalTemplate: Template
 }
 
 type WorkflowCommunicationsSettingsPayload {
