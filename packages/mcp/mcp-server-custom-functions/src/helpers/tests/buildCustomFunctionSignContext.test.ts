@@ -4,13 +4,12 @@ import {
   applyEnvironmentVariablesInput,
   assertSignContextPreservesEnvKeys,
   buildCustomFunctionSignContext,
-  envEntriesFromUnwrappedContext,
   plainToSecretFlipKeys,
   removeEnvironmentVariableKeys,
   secretToPlainFlipError,
   sombraSupportsCustomFunctionSplitEnv,
 } from '../buildCustomFunctionSignContext.js';
-import { unsetEnvPlaceholder } from '../redactEnv.js';
+import { classifyStoredEnv, unsetEnvPlaceholder } from '../storedEnv.js';
 
 describe('sombraSupportsCustomFunctionSplitEnv', () => {
   it('returns true for versions at or above 7.609.0', () => {
@@ -94,10 +93,10 @@ describe(buildCustomFunctionSignContext, () => {
   });
 });
 
-describe(envEntriesFromUnwrappedContext, () => {
+describe(classifyStoredEnv, () => {
   it('uses split unwrap maps when present', () => {
     expect(
-      envEntriesFromUnwrappedContext({
+      classifyStoredEnv(null, {
         allowedHosts: [],
         secretEnv: { API_KEY: '' },
         plaintextEnv: { HOST: 'https://example.com' },
@@ -110,14 +109,14 @@ describe(envEntriesFromUnwrappedContext, () => {
 
   it('uses stored JWT classification when unwrap is legacy merged', () => {
     expect(
-      envEntriesFromUnwrappedContext(
-        {
-          allowedHosts: [],
-          userDefinedEnv: { API_KEY: 'cipher', HOST: 'https://example.com' },
-        },
+      classifyStoredEnv(
         {
           userDefinedEncryptedEnv: { API_KEY: 'cipher' },
           userDefinedPlaintextEnv: { HOST: 'https://example.com' },
+        },
+        {
+          allowedHosts: [],
+          userDefinedEnv: { API_KEY: 'cipher', HOST: 'https://example.com' },
         },
       ),
     ).toEqual([
@@ -128,13 +127,13 @@ describe(envEntriesFromUnwrappedContext, () => {
 
   it('treats all keys as secret when the stored JWT uses legacy merged env only', () => {
     expect(
-      envEntriesFromUnwrappedContext(
+      classifyStoredEnv(
+        {
+          userDefinedEncryptedEnv: { CUSTOM_FLAG: 'cipher' },
+        },
         {
           allowedHosts: [],
           userDefinedEnv: { CUSTOM_FLAG: 'plain-looking' },
-        },
-        {
-          userDefinedEncryptedEnv: { CUSTOM_FLAG: 'cipher' },
         },
       ),
     ).toEqual([{ key: 'CUSTOM_FLAG', value: 'plain-looking', isSecret: true }]);

@@ -6,8 +6,7 @@ import {
 
 import type { StoredContextJwtPayload } from './decodeStoredContextJwt.js';
 import type { CustomFunctionEnvironmentVariableInput } from './environmentVariableInput.js';
-import { unsetEnvPlaceholder } from './redactEnv.js';
-import { classifyStoredEnv } from './storedEnv.js';
+import { unsetEnvPlaceholder } from './storedEnv.js';
 
 /** Minimum Sombra version that persists split `secretEnv` / `plaintextEnv` maps. */
 export const MIN_SOMBRA_VERSION_CUSTOM_FUNCTION_SPLIT_ENV = '7.609.0';
@@ -53,20 +52,6 @@ export function sombraSupportsCustomFunctionSplitEnv(version: string | undefined
     return false;
   }
   return compareSemverAtLeast(version.trim(), MIN_SOMBRA_VERSION_CUSTOM_FUNCTION_SPLIT_ENV);
-}
-
-/**
- * Build env rows from an unwrapped context plus optional stored JWT classification.
- *
- * @param context - Unwrapped context from customer ingress
- * @param storedContext - Decoded stored context JWT, when updating
- * @returns Editor-style env rows
- */
-export function envEntriesFromUnwrappedContext(
-  context: UnwrappedCustomFunctionContext,
-  storedContext?: StoredContextJwtPayload | null,
-): CustomFunctionEnvEntry[] {
-  return classifyStoredEnv(storedContext, context);
 }
 
 /**
