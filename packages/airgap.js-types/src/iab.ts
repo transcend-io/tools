@@ -197,15 +197,20 @@ export type TcfGvlV3Vendor = t.TypeOf<typeof TcfGvlV3Vendor>;
  */
 export const TcfV3VendorList = t.intersection([
   TcfVendorListVersion,
-  t.type({
-    purposes: t.record(t.string, TcfGvlV3Purpose),
-    specialPurposes: t.record(t.string, TcfGvlV3Purpose),
-    features: t.record(t.string, TcfGvlV3Purpose),
-    specialFeatures: t.record(t.string, TcfGvlV3Purpose),
-    stacks: t.record(t.string, TcfStack),
-    dataCategories: t.record(t.string, TcfGvlV3DataCategory),
-    vendors: t.record(t.string, TcfGvlV3Vendor),
-  }),
+  t.intersection([
+    t.type({
+      purposes: t.record(t.string, TcfGvlV3Purpose),
+      specialPurposes: t.record(t.string, TcfGvlV3Purpose),
+      features: t.record(t.string, TcfGvlV3Purpose),
+      specialFeatures: t.record(t.string, TcfGvlV3Purpose),
+      stacks: t.record(t.string, TcfStack),
+      dataCategories: t.record(t.string, TcfGvlV3DataCategory),
+      vendors: t.record(t.string, TcfGvlV3Vendor),
+    }),
+    t.partial({
+      standardTexts: t.record(t.string, t.string),
+    }),
+  ]),
 ]);
 
 /**
