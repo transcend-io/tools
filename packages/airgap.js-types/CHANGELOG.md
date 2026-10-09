@@ -1,5 +1,11 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.49
+
+### Patch Changes
+
+- e903006: TCF v3 vendor lists now accept an optional `standardTexts` field.
+
 ## 14.2.48
 
 ### Patch Changes
