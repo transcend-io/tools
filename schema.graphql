@@ -3866,6 +3866,11 @@ enum MaestroSendAssessmentMode {
   EXISTING_ASSESSMENT
 }
 
+enum MaestroWebhookAuthType {
+  HMAC
+  BASIC_AUTH
+}
+
 enum AssetFileOrderField {
   createdAt
   updatedAt
@@ -10644,7 +10649,10 @@ input CreateMaestroRuleInput {
   triggerOnSave: Boolean
   customFunctionId: ID
   sombraId: ID
+  webhookAuthType: MaestroWebhookAuthType
   webhookSecret: String
+  basicAuthUsername: String
+  basicAuthPassword: String
   hmacAlgorithm: MaestroHmacAlgorithm
   signatureHeader: String
   timestampHeader: String
@@ -15163,6 +15171,8 @@ type MaestroRuleTrigger {
   timestampSkewToleranceSeconds: Int
   timestampFormat: MaestroHmacTimestampFormat
   signatureEncoding: MaestroHmacSignatureEncoding
+  webhookAuthType: MaestroWebhookAuthType
+  basicAuthUsername: String
   hasWebhookSecret: Boolean!
   webhookHmacSettings: MaestroWebhookHmacSettings
   scheduleConfig: MaestroScheduleTriggerConfig
@@ -21889,7 +21899,10 @@ input UpdateMaestroRuleInput {
   sendAssessment: SendAssessmentActionInput
   customFunctionId: ID
   sombraId: ID
+  webhookAuthType: MaestroWebhookAuthType
   webhookSecret: String
+  basicAuthUsername: String
+  basicAuthPassword: String
   scheduleTriggerConfig: MaestroScheduleTriggerConfigInput
   triggerOnSave: Boolean
   triggerType: MaestroRuleTriggerType
