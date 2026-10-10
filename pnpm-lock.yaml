@@ -101,10 +101,10 @@ importers:
     devDependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.31.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
       '@modelcontextprotocol/sdk':
-        specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        specifier: 1.31.0
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -147,7 +147,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.31.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -437,10 +437,10 @@ importers:
         version: 0.18.3
       '@terrazzo/cli':
         specifier: 2.0.3
-        version: 2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+        version: 2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.13.13)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
       '@terrazzo/plugin-css':
         specifier: 2.0.3
-        version: 2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))
+        version: 2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.13.13)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))
       '@types/lodash':
         specifier: 4.14.202
         version: 4.14.202
@@ -494,7 +494,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-admin':
         specifier: workspace:^
         version: link:../mcp-server-admin
@@ -570,7 +570,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -610,7 +610,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -650,7 +650,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/type-utils':
         specifier: workspace:^
         version: link:../../type-utils
@@ -675,7 +675,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.31.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -714,7 +714,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -736,7 +736,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.31.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -787,7 +787,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -827,7 +827,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -864,7 +864,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@orama/orama':
         specifier: ^3.1.18
         version: 3.1.18
@@ -904,7 +904,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -944,7 +944,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -981,7 +981,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -1024,7 +1024,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -1064,7 +1064,7 @@ importers:
         version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.31.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -1949,6 +1949,12 @@ packages:
     peerDependencies:
       hono: ^4
 
+  '@hono/node-server@2.1.3':
+    resolution: {integrity: sha512-TA//nWMqPhbfdfneACk6t5a9eqbS9lABEPyKn0/xZTah3H3U2XaVg85rJFl0/Fyit0I552YDHgXGVSf3GwqbUw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4
+
   '@humanwhocodes/momoa@3.3.10':
     resolution: {integrity: sha512-KWiFQpSAqEIyrTXko3hFNLeQvSK8zXlJQzhhxsyVn58WFRYXST99b3Nqnu+ttOtjds2Pl2grUHGpe2NzhPynuQ==}
     engines: {node: '>=18'}
@@ -2138,8 +2144,8 @@ packages:
       react-dom:
         optional: true
 
-  '@modelcontextprotocol/sdk@1.29.0':
-    resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
+  '@modelcontextprotocol/sdk@1.31.0':
+    resolution: {integrity: sha512-UvTMgnNlnIBO/22ob2RcVGDlcvOslQs8T59+FTGdA0L27a39fdGF/EDETNtDVK4DZGpwomlsYpRdA8UXcVL/pw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -3857,8 +3863,8 @@ packages:
   eventemitter3@5.0.4:
     resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
 
-  eventsource-parser@3.1.0:
-    resolution: {integrity: sha512-kJezFj9YFAMLeORyi7aCLxLbD5/qWMQnoMVlVPyHIll7lgRJCc3JVln9Vgl9nwQi0YkMnhdGTMNn7CkRRAptMg==}
+  eventsource-parser@3.1.1:
+    resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
     engines: {node: '>=18.0.0'}
 
   eventsource@2.0.2:
@@ -3877,8 +3883,8 @@ packages:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@8.5.2:
-    resolution: {integrity: sha512-5Kb34ipNX694DH48vN9irak1Qx30nb0PLYHXfJgw4YEjiC3ZEmZJhwOp+VfiCYwFzvFTdB9QkArYS5kXa2cx2A==}
+  express-rate-limit@8.7.1:
+    resolution: {integrity: sha512-2FXbqkygil3mZiXzEtM0IjE/UBmBNot0J1GEVrJT4JbrvwOSoEtqtO+wHbiMQELWe1eNvHoYRg2dkjOid+6JkA==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -4129,8 +4135,8 @@ packages:
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
 
-  hono@4.12.25:
-    resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
+  hono@4.13.13:
+    resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
     engines: {node: '>=16.9.0'}
 
   hookable@6.1.1:
@@ -4165,6 +4171,10 @@ packages:
 
   iconv-lite@0.7.2:
     resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
+    engines: {node: '>=0.10.0'}
+
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ieee754@1.2.1:
@@ -4218,8 +4228,8 @@ packages:
     peerDependencies:
       fp-ts: ^2.5.0
 
-  ip-address@10.2.0:
-    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
+  ip-address@10.7.3:
+    resolution: {integrity: sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -4355,8 +4365,8 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
-  jose@6.2.3:
-    resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -6855,9 +6865,13 @@ snapshots:
     dependencies:
       graphql: 16.14.2
 
-  '@hono/node-server@1.19.14(hono@4.12.25)':
+  '@hono/node-server@1.19.14(hono@4.13.13)':
     dependencies:
-      hono: 4.12.25
+      hono: 4.13.13
+
+  '@hono/node-server@2.1.3(hono@4.13.13)':
+    dependencies:
+      hono: 4.13.13
 
   '@humanwhocodes/momoa@3.3.10': {}
 
@@ -6916,7 +6930,7 @@ snapshots:
   '@inquirer/external-editor@3.0.3(@types/node@24.13.3)':
     dependencies:
       chardet: 2.1.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
     optionalDependencies:
       '@types/node': 24.13.3
 
@@ -7028,29 +7042,29 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)':
+  '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.31.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.31.0(zod@4.4.3)
       '@standard-schema/spec': 1.1.0
       zod: 4.4.3
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
+  '@modelcontextprotocol/sdk@1.31.0(zod@4.4.3)':
     dependencies:
-      '@hono/node-server': 1.19.14(hono@4.12.25)
+      '@hono/node-server': 2.1.3(hono@4.13.13)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.1.0
+      eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.5.2(express@5.2.1)
-      hono: 4.12.25
-      jose: 6.2.3
+      express-rate-limit: 8.7.1(express@5.2.1)
+      hono: 4.13.13
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -7529,10 +7543,10 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.0.16(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
 
-  '@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)':
+  '@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.13.13)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)':
     dependencies:
       '@clack/prompts': 1.7.0
-      '@hono/node-server': 1.19.14(hono@4.12.25)
+      '@hono/node-server': 1.19.14(hono@4.13.13)
       '@humanwhocodes/momoa': 3.3.10
       '@terrazzo/json-schema-tools': 0.2.1(@humanwhocodes/momoa@3.3.10)(yaml-to-momoa@0.0.9)
       '@terrazzo/parser': 2.4.0(yaml-to-momoa@0.0.9)
@@ -7588,9 +7602,9 @@ snapshots:
     optionalDependencies:
       yaml-to-momoa: 0.0.9
 
-  '@terrazzo/plugin-css@2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))':
+  '@terrazzo/plugin-css@2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.13.13)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))':
     dependencies:
-      '@terrazzo/cli': 2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+      '@terrazzo/cli': 2.0.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.13.13)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
       '@terrazzo/parser': 2.4.0(yaml-to-momoa@0.0.9)
       '@terrazzo/token-tools': 2.4.0
 
@@ -8420,13 +8434,13 @@ snapshots:
 
   eventemitter3@5.0.4: {}
 
-  eventsource-parser@3.1.0: {}
+  eventsource-parser@3.1.1: {}
 
   eventsource@2.0.2: {}
 
   eventsource@3.0.7:
     dependencies:
-      eventsource-parser: 3.1.0
+      eventsource-parser: 3.1.1
 
   execa@5.1.1:
     dependencies:
@@ -8442,10 +8456,13 @@ snapshots:
 
   expect-type@1.3.0: {}
 
-  express-rate-limit@8.5.2(express@5.2.1):
+  express-rate-limit@8.7.1(express@5.2.1):
     dependencies:
+      debug: 4.4.3
       express: 5.2.1
-      ip-address: 10.2.0
+      ip-address: 10.7.3
+    transitivePeerDependencies:
+      - supports-color
 
   express@5.2.1:
     dependencies:
@@ -8752,7 +8769,7 @@ snapshots:
 
   highlight.js@10.7.3: {}
 
-  hono@4.12.25: {}
+  hono@4.13.13: {}
 
   hookable@6.1.1: {}
 
@@ -8785,6 +8802,10 @@ snapshots:
   husky@9.1.7: {}
 
   iconv-lite@0.7.2:
+    dependencies:
+      safer-buffer: 2.1.2
+
+  iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
 
@@ -8849,7 +8870,7 @@ snapshots:
     dependencies:
       fp-ts: 2.16.11
 
-  ip-address@10.2.0: {}
+  ip-address@10.7.3: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -8943,7 +8964,7 @@ snapshots:
 
   jiti@2.7.0: {}
 
-  jose@6.2.3: {}
+  jose@6.2.12: {}
 
   js-tokens@4.0.0: {}
 
@@ -9635,7 +9656,7 @@ snapshots:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       unpipe: 1.0.0
 
   react-dom@19.2.8(react@19.2.8):
