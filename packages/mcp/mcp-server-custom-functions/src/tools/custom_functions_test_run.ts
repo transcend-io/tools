@@ -2,7 +2,10 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
-import { executeCustomFunctionTestRun } from '../helpers/customFunctionTestRun.js';
+import {
+  executeCustomFunctionTestRun,
+  PAYLOAD_OMIT_GUIDANCE,
+} from '../helpers/customFunctionTestRun.js';
 import { customFunctionNextStep } from '../helpers/nextStep.js';
 
 export const CustomFunctionsTestRunSchema = z
@@ -20,10 +23,7 @@ export const CustomFunctionsTestRunSchema = z
       .min(1)
       .optional()
       .describe('Unsaved TypeScript trial; required without id. DSR also needs dataSiloId'),
-    payload: z
-      .record(z.string(), z.unknown())
-      .optional()
-      .describe('Optional JSON body; omit for type-specific defaults'),
+    payload: z.record(z.string(), z.unknown()).optional().describe(PAYLOAD_OMIT_GUIDANCE),
     payloadType: z
       .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
       .optional()
@@ -36,12 +36,10 @@ export const CustomFunctionsTestRunSchema = z
       .string()
       .optional()
       .describe('DSR silo; omit with id. Required for unsaved DSR tests'),
-    userDefinedEnv: z
-      .record(z.string(), z.string())
+    allowedHosts: z
+      .array(z.string())
       .optional()
-      .default({})
-      .describe('Runtime env vars'),
-    allowedHosts: z.array(z.string()).optional().default([]).describe('Allowed hosts'),
+      .describe('Allowlist for unsaved code trials only. [] means localhost only.'),
     allowThirdPartyImports: z.boolean().optional().describe('Allow third-party imports'),
     timeoutMs: z.number().int().positive().optional().describe('Timeout ms'),
   })
@@ -74,6 +72,15 @@ export const CustomFunctionsTestRunSchema = z
         message: 'payloadType is only valid for DSR test runs. Omit payloadType for GENERAL',
       });
     }
+    if (input.id && !input.code && input.allowedHosts !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['allowedHosts'],
+        message:
+          'allowedHosts only applies to unsaved code trials. Saved runs use the saved allowlist; ' +
+          'call custom_functions_upsert with allowedHosts to change it.',
+      });
+    }
   });
 export type CustomFunctionsTestRunInput = z.infer<typeof CustomFunctionsTestRunSchema>;
 
@@ -83,15 +90,16 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
     name: 'custom_functions_test_run',
     description:
       'Test a Custom Function (saved or unsaved TypeScript). Pass { id } alone for the stored ' +
-      'version; pass code for a trial. DSR or GENERAL.',
+      'version (uses dashboard env); pass code for a trial without secrets. Prefer omitting ' +
+      'payload. DSR or GENERAL. Logs mask all env var values, including plain ones.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
     confirmation: {
       hint:
         'Runs Custom Function code on your Sombra gateway with the payload in the call ' +
-        'arguments. That can call allowed hosts and use runtime env vars. Check id or code, ' +
-        'type, payload, and env before agreeing.',
+        'arguments. Stored runs use dashboard Environment Variables; unsaved trials have no ' +
+        'secrets. Check id or code, type, and payload before agreeing.',
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CustomFunctionsTestRunSchema,
@@ -103,38 +111,38 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
       payloadType,
       sombraId,
       dataSiloId,
-      userDefinedEnv,
       allowedHosts,
       allowThirdPartyImports,
       timeoutMs,
     }) => {
       const storedRun = Boolean(id) && !code;
-      const { result, customFunction } = await executeCustomFunctionTestRun(graphql, clients.rest, {
-        type,
-        id,
-        code,
-        payload,
-        payloadType,
-        sombraId,
-        dataSiloId,
-        userDefinedEnv,
-        allowedHosts,
-        allowThirdPartyImports,
-        timeoutMs,
-        markSuccessfulTestRun: storedRun,
-      });
+      const { result, customFunction, markedSuccessfulTestRun } =
+        await executeCustomFunctionTestRun(graphql, clients.rest, {
+          type,
+          id,
+          code,
+          payload,
+          payloadType,
+          sombraId,
+          dataSiloId,
+          allowedHosts: allowedHosts ?? [],
+          allowThirdPartyImports,
+          timeoutMs,
+          markSuccessfulTestRun: storedRun,
+        });
       const nextStep = result.passed
         ? storedRun
-          ? customFunctionNextStep({
-              kind:
-                customFunction?.draftVersion?.successfulTestRun === true ||
-                customFunction?.activeVersion?.successfulTestRun === true
-                  ? 'storedTestPassed'
-                  : 'storedTestNeedsSave',
-              id: id!,
-            })
+          ? customFunction?.hasPendingDraft || markedSuccessfulTestRun
+            ? customFunctionNextStep({
+                kind: 'storedTestPassed',
+                id: id!,
+                draftVersionId: customFunction?.draftVersion?.id,
+              })
+            : customFunctionNextStep({ kind: 'storedTestNoDraft', id: id! })
           : customFunctionNextStep({ kind: 'unsavedTestPassed', id: id ?? '' })
-        : undefined;
+        : id
+          ? customFunctionNextStep({ kind: 'testFailed', id })
+          : undefined;
       return createToolResult(true, {
         ...result,
         customFunction,

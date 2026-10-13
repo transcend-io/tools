@@ -29,6 +29,10 @@ export function didCustomFunctionTestPass(
   return !result.error && result.exitCode <= 0;
 }
 
+/** Shared field description for optional test payloads on upsert and test_run. */
+export const PAYLOAD_OMIT_GUIDANCE =
+  'Omit to use type-specific defaults (recommended). Hand-built DSR payloads often fail with an unclear decode error.';
+
 /**
  * Default GENERAL test payload when the caller omits one.
  */
@@ -233,8 +237,6 @@ export async function executeCustomFunctionTestRun(
     sombraId?: string;
     /** DSR silo ID to inject when the payload omits one */
     dataSiloId?: string;
-    /** Environment variables encrypted into freshly signed context */
-    userDefinedEnv?: Record<string, string>;
     /** Network hosts the function is allowed to contact */
     allowedHosts?: string[];
     /** Allow imports from Sombra-approved third-party repositories */
@@ -249,6 +251,8 @@ export async function executeCustomFunctionTestRun(
   result: CustomFunctionTestRunView;
   /** Stored function after an optional successfulTestRun update */
   customFunction?: CustomFunctionSummary;
+  /** True when this run persisted successfulTestRun on the stored version */
+  markedSuccessfulTestRun: boolean;
 }> {
   const stored = input.id ? await graphql.getSignedCustomFunctionVersion(input.id) : undefined;
   const type = input.type ?? stored?.customFunction.type;
@@ -276,7 +280,7 @@ export async function executeCustomFunctionTestRun(
     signed = await rest.signCustomFunction({
       code: input.code,
       context: {
-        userDefinedEnv: input.userDefinedEnv ?? {},
+        userDefinedEnv: {},
         allowedHosts: input.allowedHosts ?? [],
         allowThirdPartyImports: input.allowThirdPartyImports,
         timeoutMs: input.timeoutMs,
@@ -338,12 +342,16 @@ export async function executeCustomFunctionTestRun(
   const result = mapCustomFunctionTestRunView(execution);
 
   let customFunction = stored?.customFunction;
+  let markedSuccessfulTestRun = false;
+  const versionCanBeMarkedTested =
+    stored &&
+    (stored.version.lifecycleState === 'DRAFT' ||
+      (type === 'DSR' && stored.version.lifecycleState === 'ACTIVE'));
   if (
     result.passed &&
     input.markSuccessfulTestRun &&
     ranStoredVersion &&
-    stored &&
-    stored.version.lifecycleState === 'DRAFT' &&
+    versionCanBeMarkedTested &&
     signed
   ) {
     try {
@@ -353,10 +361,11 @@ export async function executeCustomFunctionTestRun(
         successfulTestRun: true,
         ...signed,
       });
+      markedSuccessfulTestRun = true;
     } catch (error) {
       throwMappedTestRunError(error);
     }
   }
 
-  return { result, customFunction };
+  return { result, customFunction, markedSuccessfulTestRun };
 }
