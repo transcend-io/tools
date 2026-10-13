@@ -1,5 +1,31 @@
 # @transcend-io/mcp-server-custom-functions
 
+## 0.3.0
+
+### Minor Changes
+
+- 8c88bad: Custom Function MCP tools now follow a clearer save → test → promote flow. `custom_functions_upsert` saves code and runtime settings as a draft; run `custom_functions_test_run` with `{ id }`, then `custom_functions_promote_version` to go live.
+
+  Environment variables use `environmentVariables` with `key`, `isSecret`, and optional `value` for **plain** variables only. Never pass secret values through MCP — users set secrets in the Admin Dashboard. `custom_functions_get_code` returns `settings` and `environmentVariables` (with `isSet`) and never echoes secret values.
+
+  **Migration**
+  - **`custom_functions_upsert`:** Replace `userDefinedEnv` with `environmentVariables`. Remove `testPayloads`, `promote`, and `setActive`; use `custom_functions_test_run` and `custom_functions_promote_version` instead.
+  - **`custom_functions_test_run`:** `userDefinedEnv` was removed. Unsaved trials run without env vars; stored runs use the saved environment.
+  - **`custom_functions_get_code`:** Returns `settings` and `environmentVariables` instead of `context`.
+  - **On update:** Omit `code` or `allowedHosts` to keep saved values. `[]` means localhost only.
+  - **Permissions:** The custom functions server now requests `ConnectDataSilos`. Re-authorize MCP when prompted.
+
+### Patch Changes
+
+- 510f6e4: Inventory and custom-function MCP tool descriptions are clearer for finding CUSTOM_FUNCTION silos and planning DSR integrations.
+
+  The custom functions server now requests `ConnectDataSilos` during OAuth consent (re-authorize when prompted). Signing helpers and GraphQL support for draft/active versions are in place for upcoming tool updates.
+
+- 1e03c24: `custom_functions_get_code`, `custom_functions_test_run`, and `custom_functions_promote_version` now align with a save → test → promote draft workflow, with clearer `nextStep` guidance after each step.
+- Updated dependencies [510f6e4]
+- Updated dependencies [8c88bad]
+  - @transcend-io/mcp-server-base@2.5.5
+
 ## 0.2.6
 
 ### Patch Changes
