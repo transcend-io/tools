@@ -90,3 +90,36 @@ export async function resolveSombraIdForCreate(
   }
   return pickSombraId(await listSombras(), getConfiguredSombraUrl(rest));
 }
+
+/**
+ * Sombra semver for the gateway that signs custom functions (`SOMBRA_URL` match, else explicit id).
+ *
+ * @param sombras - Gateways from GraphQL
+ * @param rest - Sombra REST client (for `SOMBRA_URL` matching)
+ * @param explicitSombraId - Function or create-time gateway ID when known
+ * @returns Version string when the signing gateway is identified
+ */
+export function resolveSigningSombraVersion(
+  sombras: SombraSummary[],
+  rest: TranscendRestClient,
+  explicitSombraId?: string | null,
+): string | undefined {
+  const configured = getConfiguredSombraUrl(rest);
+  if (configured) {
+    const match = sombras.find((sombra) => normalizeSombraUrl(sombra.customerUrl) === configured);
+    return match?.version ?? undefined;
+  }
+  // Signing uses the REST client's resolved ingress (org primary when SOMBRA_URL is unset),
+  // not necessarily the function's sombraId.
+  const primaries = sombras.filter((sombra) => sombra.isPrimarySombra);
+  if (primaries.length === 1 && primaries[0]) {
+    return primaries[0].version ?? undefined;
+  }
+  if (explicitSombraId) {
+    return sombras.find((sombra) => sombra.id === explicitSombraId)?.version ?? undefined;
+  }
+  if (sombras.length === 1 && sombras[0]) {
+    return sombras[0].version ?? undefined;
+  }
+  return undefined;
+}
