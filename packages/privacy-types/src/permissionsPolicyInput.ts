@@ -23,6 +23,21 @@ const NonNegativeInt = new t.Type<number, number, unknown>(
 );
 
 /**
+ * Topic choice under a purpose, projected from the Preference Store
+ * `preferences[]` entry. `choice` flattens the store's
+ * `booleanValue` / `selectValue` / `selectValues` into one field.
+ */
+export const PermissionsPolicyTopicEntry = t.type({
+  /** Topic slug (for example Frequency or SnowAlerts). */
+  name: t.string,
+  /** Boolean topic choice, single-select value, multi-select values, or null when unset. */
+  choice: t.union([t.boolean, t.string, t.array(t.string), t.null]),
+});
+
+/** Type override. */
+export type PermissionsPolicyTopicEntry = t.TypeOf<typeof PermissionsPolicyTopicEntry>;
+
+/**
  * Preference row projected into the OPA `input.preferences` bag.
  * Snake_case matches the Rego wire format.
  */
@@ -39,6 +54,11 @@ export const PermissionsPolicyPreferenceEntry = t.intersection([
      * Omitted when no timestamp is available.
      */
     days_since_choice: NonNegativeInt,
+    /**
+     * Topic choices stored under this purpose. Omitted when the purpose has none;
+     * unset topics are absent rather than padded.
+     */
+    topics: t.array(PermissionsPolicyTopicEntry),
   }),
 ]);
 
@@ -71,6 +91,7 @@ export const PERMISSIONS_POLICY_INPUT_EXAMPLE: PermissionsPolicyInput = {
       name: 'Analytics',
       choice: true,
       days_since_choice: 42,
+      topics: [{ name: 'Frequency', choice: 'Weekly' }],
     },
     {
       name: 'SaleOfInfo',
@@ -232,6 +253,31 @@ export function buildPermissionsPolicyInputJsonSchema(options?: {
     preferenceItems.properties.choice = {
       ...preferenceItems.properties.choice,
       description: 'true when opted in, false when opted out, or null when unset.',
+    };
+  }
+
+  if (preferenceItems?.properties) {
+    preferenceItems.properties.topics = {
+      type: 'array',
+      description:
+        'Topic choices stored under this purpose. Omitted when the purpose has none; unset topics are absent rather than padded.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'choice'],
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Topic slug (for example Frequency or SnowAlerts).',
+          },
+          choice: {
+            type: ['boolean', 'string', 'array', 'null'],
+            items: { type: 'string' },
+            description:
+              'Boolean topic choice, single-select value, multi-select values, or null when unset.',
+          },
+        },
+      },
     };
   }
 
