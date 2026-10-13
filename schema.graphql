@@ -5521,7 +5521,7 @@ type Mutation {
   createIdentifier(input: IdentifierInput!): CreateIdentifierPayload!
   createLegalHolds(input: CreateLegalHoldInput!): CreateLegalHoldsPayload!
   createLegalMatter(input: CreateLegalMatterInput!): CreateLegalMatterPayload!
-  createMaestroRule(input: CreateMaestroRuleInput!, dhEncrypted: String): CreateMaestroRulePayload!
+  createMaestroRule(input: CreateMaestroRuleInput!): CreateMaestroRulePayload!
   createOauthClient(input: CreateOauthClientInput!): CreateOauthClientPayload!
   createOnPremiseSombra(input: OnPremiseSombraInput!): CreateOnPremiseSombraPayload!
   createOrUpdateConsentApplications(input: CreateOrUpdateConsentApplicationInput!): CreateOrUpdateConsentApplicationsPayload!
@@ -5854,7 +5854,7 @@ type Mutation {
   updateLegalMatter(input: UpdateLegalMatterInput!): UpdateLegalMatterPayload!
   updateLoadOptions(input: UpdateLoadOptionsInput!): UpdateLoadOptionsPayload!
   updateLookupProcess(input: UpdateLookupProcessInput!): UpdateLookupProcessPayload!
-  updateMaestroRule(input: UpdateMaestroRuleInput!, dhEncrypted: String): UpdateMaestroRulePayload!
+  updateMaestroRule(input: UpdateMaestroRuleInput!): UpdateMaestroRulePayload!
   updateMaestroRuleStatuses(input: UpdateMaestroRuleStatusesInput!): UpdateMaestroRuleStatusesPayload!
   updateOauthClient(input: UpdateOauthClientInput!): UpdateOauthClientPayload!
   updateOrCreateCookies(input: UpdateOrCreateCookiesInput!): UpdateOrCreateCookiesPayload!
@@ -9981,6 +9981,10 @@ input CookiesFiltersInput {
   createdAt: String
   createdAtAfter: String
   createdAtBefore: String
+  lastChangedByUserIds: [ID!]
+  lastChangedByApiKeyIds: [ID!]
+  updatedAtAfter: String
+  updatedAtBefore: String
   lastDiscoveredAt: String
   lastDiscoveredAtAfter: String
   lastDiscoveredAtBefore: String
@@ -10648,7 +10652,6 @@ input CreateMaestroRuleInput {
   scheduleTriggerConfig: MaestroScheduleTriggerConfigInput
   triggerOnSave: Boolean
   customFunctionId: ID
-  sombraId: ID
   webhookAuthType: MaestroWebhookAuthType
   webhookSecret: String
   basicAuthUsername: String
@@ -11504,7 +11507,7 @@ input DataFlowServicesFiltersInput {
   purposes: [ID!]
   text: String
   isJunk: Boolean
-  status: ConsentTrackerStatus
+  status: ConsentTrackerFilter
   showZeroActivity: Boolean
 }
 
@@ -11524,12 +11527,16 @@ input DataFlowsFiltersInput {
   consentSiteHosts: [String!]
   consentSiteSites: [String!]
   source: ConsentTrackerSource
-  status: ConsentTrackerStatus
+  status: ConsentTrackerFilter
   type: DataFlowScope
   discoveredBy: [ID!]
   createdAt: String
   createdAtAfter: String
   createdAtBefore: String
+  lastChangedByUserIds: [ID!]
+  lastChangedByApiKeyIds: [ID!]
+  updatedAtAfter: String
+  updatedAtBefore: String
   lastDiscoveredAt: String
   lastDiscoveredAtAfter: String
   lastDiscoveredAtBefore: String
@@ -21898,7 +21905,6 @@ input UpdateMaestroRuleInput {
   teamIds: [ID!]
   sendAssessment: SendAssessmentActionInput
   customFunctionId: ID
-  sombraId: ID
   webhookAuthType: MaestroWebhookAuthType
   webhookSecret: String
   basicAuthUsername: String
