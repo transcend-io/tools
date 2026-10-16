@@ -1023,6 +1023,7 @@ enum DatabaseModelName {
   scannedObjectPath
   requestsProcessedStatsSetting
   retentionSchedule
+  retentionScheduleOverride
   consentWorkflowTrigger
   consentWorkflowTriggerPurpose
   workflowConfig
@@ -2127,6 +2128,7 @@ enum AnalyticsDimension {
   WAS_ALLOWED
   CONSENT_MANAGER_ID
   ENCOUNTERED_AT
+  ENCOUNTERED_AT_PLAIN
   MOBILE_APP_ID
   REGEX
   MAX_AGE
@@ -2504,11 +2506,6 @@ enum DiscoClassScanPhase {
   CLASSIFICATION
 }
 
-enum DisconnectedSiloState {
-  EXPIRED
-  NOT_CONFIGURED
-}
-
 enum DsrAutomationPluginType {
   SCHEMA_DISCOVERY
 }
@@ -2584,13 +2581,6 @@ enum ModeOption {
   tags
   multiple
   combobox
-}
-
-enum NotDisconnectedSiloState {
-  CONNECTED
-  PERMISSIONS_UPDATED
-  PARTIAL
-  INDEXING
 }
 
 enum PluginQueueStatus {
@@ -3612,6 +3602,11 @@ enum DiscoClassScanType {
   CLASSIFICATION_ONLY
 }
 
+enum DisconnectedSiloState {
+  EXPIRED
+  NOT_CONFIGURED
+}
+
 enum ErasureRedactionMethod {
   REQUIRED_REVIEW
   AUTO_REDACT_IDENTIFIERS_ONLY
@@ -3648,6 +3643,13 @@ enum LookupProcessStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   INACTIVE
+}
+
+enum NotDisconnectedSiloState {
+  CONNECTED
+  PERMISSIONS_UPDATED
+  PARTIAL
+  INDEXING
 }
 
 enum PlaintextReasonStaticType {
@@ -6619,6 +6621,7 @@ type AnalyticsDimensions {
   WAS_ALLOWED: String
   CONSENT_MANAGER_ID: String
   ENCOUNTERED_AT: String
+  ENCOUNTERED_AT_PLAIN: String
   MOBILE_APP_ID: String
   REGEX: String
   MAX_AGE: String
@@ -10604,6 +10607,7 @@ input CreateExperienceInput {
   iabSignals: [IABSignal!]
   consentExpiry: Int
   onConsentExpiry: OnConsentExpiry
+  consentValidAfter: Date
   isActive: Boolean
   consentUiVariantId: ID
   autoPrompt: Boolean
@@ -14161,6 +14165,7 @@ type Experience {
   iabSignals: [IABSignal!]!
   consentExpiry: Int!
   onConsentExpiry: OnConsentExpiry!
+  consentValidAfter: Date
   isActive: Boolean!
   consentUiVariant: ConsentUiVariantPreview
   autoPrompt: Boolean!
@@ -15241,6 +15246,7 @@ type MakeDataSubjectRequestPayload {
 type MakeDataSubjectRequestsPayload {
   clientMutationId: String
   requests: [RequestHistory!]!
+  validationErrors: [BulkDsrValidationError!]!
 }
 
 type MakeDefaultSyncEndpointPayload {
@@ -21756,6 +21762,7 @@ input UpdateExperienceInput {
   iabSignals: [IABSignal!]
   consentExpiry: Int
   onConsentExpiry: OnConsentExpiry
+  consentValidAfter: Date
   isActive: Boolean
   consentUiVariantId: ID
   autoPrompt: Boolean
