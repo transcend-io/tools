@@ -9561,6 +9561,7 @@ type ConsentRecord {
   airgapVersion: String
   metadata: String
   metadataTimestamp: String
+  createdAt: String
   updatedAt: String
   identifiers: [PreferenceStoreIdentifierSchema!]!
 }
@@ -13971,6 +13972,7 @@ type EnrichedConsentRecordSchema {
   airgapVersion: String
   metadata: String
   metadataTimestamp: String
+  createdAt: String
   updatedAt: String
   identifiers: [PreferenceStoreIdentifierSchema!]!
 }
