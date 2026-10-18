@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/ext-apps": "1.7.5",
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@transcend-io/design-tokens": "workspace:*",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
