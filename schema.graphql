@@ -2964,6 +2964,7 @@ enum DownloadAndDecryptError {
   METADATA_FETCH_FAILED
   REQUEST_NOT_DOWNLOADABLE
   SESSION_EXPIRED
+  SECURITY_CHECK_REQUIRED
   URL_REFRESH_FAILED
   S3_FETCH_FAILED
   DECRYPTION_FAILED
@@ -9561,6 +9562,7 @@ type ConsentRecord {
   airgapVersion: String
   metadata: String
   metadataTimestamp: String
+  createdAt: String
   updatedAt: String
   identifiers: [PreferenceStoreIdentifierSchema!]!
 }
@@ -13971,6 +13973,7 @@ type EnrichedConsentRecordSchema {
   airgapVersion: String
   metadata: String
   metadataTimestamp: String
+  createdAt: String
   updatedAt: String
   identifiers: [PreferenceStoreIdentifierSchema!]!
 }
