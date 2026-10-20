@@ -1,5 +1,11 @@
 # @transcend-io/sdk
 
+## 2.1.17
+
+### Patch Changes
+
+- a0d513d: Narrowed use of Got types to only the relevant got methods
+
 ## 2.1.16
 
 ### Patch Changes
