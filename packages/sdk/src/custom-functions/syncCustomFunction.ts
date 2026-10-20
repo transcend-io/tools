@@ -146,7 +146,7 @@ export async function syncCustomFunction(
      * gateway the function belongs to (see `resolveEffectiveSombraId`).
      * Required unless `dryRun` is set
      */
-    sombra?: Got;
+    sombra?: Pick<Got, 'post'>;
     /** Default Sombra gateway ID when neither the config nor the existing function specify one */
     defaultSombraId?: string;
     /** All existing custom functions in the organization (see `fetchAllCustomFunctions`) */

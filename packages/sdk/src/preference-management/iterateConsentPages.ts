@@ -17,7 +17,7 @@ import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.
  * @yields Pages of PreferenceQueryResponseItem
  */
 export async function* iterateConsentPages(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   partition: string,
   filter: PreferencesQueryFilter,
   pageSize: number,

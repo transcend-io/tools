@@ -47,7 +47,7 @@ function mapGetPolicyBundleVersionResponse(
  * @returns First matching version on the page
  */
 async function fetchPolicyBundleVersionPage(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleId: string,
   searchParams: Record<string, string | number>,
 ): Promise<PolicyBundleVersion | undefined> {
@@ -74,7 +74,7 @@ async function fetchPolicyBundleVersionPage(
  * @returns Matching version record
  */
 async function resolvePolicyBundleVersionById(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleId: string,
   versionId: string,
 ): Promise<PolicyBundleVersion> {
@@ -107,7 +107,7 @@ async function resolvePolicyBundleVersionById(
  * @returns Matching or latest version record
  */
 export async function resolvePolicyBundleVersion(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleId: string,
   options: ResolvePolicyBundleVersionOptions,
 ): Promise<PolicyBundleVersion> {

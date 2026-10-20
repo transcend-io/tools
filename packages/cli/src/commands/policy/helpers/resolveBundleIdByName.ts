@@ -11,7 +11,7 @@ import { throwPolicyEngineRequestError } from './formatPolicyEngineRequestError.
  * @returns Matching bundle when found
  */
 export async function resolveBundleByName(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleName: string,
 ): Promise<PolicyBundle | undefined> {
   try {
@@ -34,7 +34,7 @@ export async function resolveBundleByName(
  * @returns Bundle UUID when found
  */
 export async function resolveBundleIdByName(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleName: string,
 ): Promise<string | undefined> {
   const bundle = await resolveBundleByName(client, bundleName);

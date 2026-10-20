@@ -41,7 +41,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
   transcend,
 }: {
   /** the OneTrust client instance */
-  oneTrust: Got;
+  oneTrust: Pick<Got, 'post' | 'get'>;
   /** the Transcend client instance */
   transcend?: GraphQLClient;
   /** Whether to write to file instead of syncing to Transcend */

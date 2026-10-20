@@ -18,7 +18,7 @@ import { PrivacyRequestResponse } from './submitPrivacyRequest.js';
  * @returns Successfully submitted request
  */
 export async function restartPrivacyRequest(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   request: PrivacyRequest,
   {
     sendEmailReceipt = false,
