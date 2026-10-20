@@ -44,7 +44,7 @@ export type PrivacyRequestResponse = t.TypeOf<typeof PrivacyRequestResponse>;
  * @returns Successfully submitted request
  */
 export async function submitPrivacyRequest(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   input: PrivacyRequestInput,
   {
     details = '',

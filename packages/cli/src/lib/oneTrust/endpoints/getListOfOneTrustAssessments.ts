@@ -18,7 +18,7 @@ export const getListOfOneTrustAssessments = async ({
   oneTrust,
 }: {
   /** The OneTrust client instance */
-  oneTrust: Got;
+  oneTrust: Pick<Got, 'get'>;
 }): Promise<OneTrustAssessment[]> => {
   let currentPage = 0;
   let totalPages = 1;

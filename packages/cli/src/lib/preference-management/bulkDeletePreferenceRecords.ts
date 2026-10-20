@@ -63,7 +63,7 @@ type DeletePreferenceRecordRowsOptions = Omit<DeletePreferenceRecordsOptions, 'f
  * @returns List of failed deletions
  */
 async function deletePreferenceRecordsRepository(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     partition,
     identifierChunk: chunk,
@@ -122,7 +122,7 @@ async function deletePreferenceRecordsRepository(
  * @returns All nodes (only when onItems is not provided)
  */
 export async function bulkDeletePreferenceRecords(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     partition,
     filePath,
@@ -150,7 +150,7 @@ export async function bulkDeletePreferenceRecords(
  * @returns Failed deletions.
  */
 export async function bulkDeletePreferenceRecordsFromRows(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     anchorIdentifiers,
     partition,

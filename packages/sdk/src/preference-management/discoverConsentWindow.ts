@@ -79,7 +79,7 @@ function withBeforeBound(
  * @returns The first record or null if none
  */
 async function fetchOne(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   partition: string,
   filter: PreferencesQueryFilter,
   logger: Logger,
@@ -117,7 +117,7 @@ async function fetchOne(
  * @returns Earliest day with data (UTC start-of-day)
  */
 export async function findEarliestDayWithData(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   opts: {
     /** Partition */
     partition: string;
@@ -294,7 +294,7 @@ export async function findEarliestDayWithData(
  * @returns Latest day with data
  */
 export async function findLatestDayWithData(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   opts: {
     /** Partition */
     partition: string;

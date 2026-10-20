@@ -63,7 +63,7 @@ export type CronIdentifier = t.TypeOf<typeof CronIdentifier>;
  * @returns Successfully submitted request
  */
 export async function pullCronPageOfIdentifiers(
-  sombra: Got,
+  sombra: Pick<Got, 'get'>,
   {
     dataSiloId,
     limit = 100,

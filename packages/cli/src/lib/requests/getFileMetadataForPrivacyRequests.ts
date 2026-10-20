@@ -99,7 +99,7 @@ export async function getFileMetadataForPrivacyRequests(
     limit = 100,
   }: {
     /** Sombra instance */
-    sombra: Got;
+    sombra: Pick<Got, 'get'>;
     /** Number of files to pull at once */
     limit?: number;
     /** Concurrency limit for approving */

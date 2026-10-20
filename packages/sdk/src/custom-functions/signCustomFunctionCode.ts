@@ -29,7 +29,7 @@ export interface SignedCustomFunctionJwts {
  * @returns The signed code and context JWTs to store via the GraphQL API
  */
 export async function signCustomFunctionCode(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   payload: CustomFunctionSignPayload,
   options: {
     /** Existing custom function ID, forwarded for Sombra log context */
