@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 13.0.6
+
+### Patch Changes
+
+- a0d513d: Narrowed use of Got types to only the relevant got methods
+- Updated dependencies [a0d513d]
+  - @transcend-io/sdk@2.1.17
+
 ## 13.0.5
 
 ### Patch Changes
