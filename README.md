@@ -27,3 +27,12 @@ Install [Transcend's Agent Skills](./skills) via:
 ```sh
 npx skills add transcend-io/tools
 ```
+
+## Plugins
+
+Official Transcend marketplace plugins for AI coding tools, packaged under [`plugins/`](./plugins):
+
+| Tool   | Index                                                    | Marketplace manifest                                                   |
+| ------ | -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Cursor | [`plugins/cursor/README.md`](./plugins/cursor/README.md) | [`.cursor-plugin/marketplace.json`](./.cursor-plugin/marketplace.json) |
+| Claude | [`plugins/claude/README.md`](./plugins/claude/README.md) | [`.claude-plugin/marketplace.json`](./.claude-plugin/marketplace.json) |
