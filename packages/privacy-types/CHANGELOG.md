@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.5.0
+
+### Minor Changes
+
+- 53a4405: Add DSR error codes for duplicate open requests and open parent requests.
+
 ## 6.4.0
 
 ### Minor Changes
