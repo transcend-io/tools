@@ -88,6 +88,16 @@ export const DsrErrorCode = {
    * submit requests.
    */
   DraftWorkflowConfig: 'DRAFT_WORKFLOW_CONFIG',
+  /**
+   * An open request with the same type and identifiers already exists for this
+   * data subject.
+   */
+  DuplicateOpenRequest: 'DUPLICATE_OPEN_REQUEST',
+  /**
+   * An open parent request (for example erasure with access preview) already
+   * covers this submission.
+   */
+  OpenParentRequest: 'OPEN_PARENT_REQUEST',
 } as const;
 
 /** Type override */

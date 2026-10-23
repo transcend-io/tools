@@ -118,6 +118,8 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidRequestInput]: () => string;
   [DsrErrorCode.InvalidIdentifierJwt]: () => string;
   [DsrErrorCode.DraftWorkflowConfig]: () => string;
+  [DsrErrorCode.DuplicateOpenRequest]: () => string;
+  [DsrErrorCode.OpenParentRequest]: () => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -249,4 +251,7 @@ export const DSR_ERROR_MESSAGE = {
   [DsrErrorCode.InvalidIdentifierJwt]: () => 'Signed identifier JWT failed verification',
   [DsrErrorCode.DraftWorkflowConfig]: () =>
     'Workflow is saved as a draft and cannot be used to submit requests.',
+  [DsrErrorCode.DuplicateOpenRequest]: () => 'You have already made this request.',
+  [DsrErrorCode.OpenParentRequest]: () =>
+    'You have already submitted a previous request that will also accommodate this current one.',
 } as const satisfies DsrErrorMessageMap;

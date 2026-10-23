@@ -64,6 +64,12 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DraftWorkflowConfig]()).toBe(
       'Workflow is saved as a draft and cannot be used to submit requests.',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateOpenRequest]()).toBe(
+      'You have already made this request.',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.OpenParentRequest]()).toBe(
+      'You have already submitted a previous request that will also accommodate this current one.',
+    );
   });
 
   it('renders parameterized per-request messages', () => {
