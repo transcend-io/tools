@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 13.0.8
+
+### Patch Changes
+
+- 4e9549d: Add `ServerWebhookAwaitingCallback` to the `ActionItemCode` enum so server webhook integrations that accept jobs but never call back can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+- Updated dependencies [4e9549d]
+  - @transcend-io/privacy-types@6.6.1
+
 ## 13.0.7
 
 ### Patch Changes
