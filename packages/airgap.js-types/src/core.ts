@@ -620,6 +620,13 @@ export const CoreTrackingConsentDetails = t.intersection([
     metadata: t.intersection([ReservedMetadataCodec, t.UnknownRecord]),
     /** When the metadata was last updated */
     metadataTimestamp: t.string,
+    /** When and (optionally) how purposes acquired their current value, as an array of timestamp (ISO 8601) x purpose array x (optional) provenance tuples */
+    changes: t.array(
+      t.union([
+        t.tuple([t.string, t.array(t.string)]),
+        t.tuple([t.string, t.array(t.string), t.unknown]),
+      ]),
+    ),
   }),
 ]);
 
