@@ -19,7 +19,7 @@
 - **OAuth credentials** for stdio transport — see [OAuth client setup](#oauth-client-setup) below. Requires **admin access** to create OAuth clients in the Transcend dashboard.
 - Packages are in **beta**. Install via `npm install -g @transcend-io/<package>` or use `npx -y @transcend-io/<package>`. To develop from source, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set the OAuth environment variables; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
-In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
+In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package). Prefer the bin (`transcend-mcp`, `transcend-mcp-consent`, …) over pointing at `dist/cli.mjs` inside `node_modules` — the bin stays stable across releases; internal paths may not.
 
 ## OAuth client setup
 

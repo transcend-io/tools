@@ -4,9 +4,13 @@ This guide covers running Transcend MCP servers in HTTP mode for remote hosting.
 
 ## Quick start
 
+Run the published **`transcend-mcp`** (or domain) binary — via `npx` or a global install. Prefer that over invoking `dist/cli.mjs` by path; the bin is the stable entry point across releases.
+
 ```bash
 # Start the unified server in HTTP mode
 TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp --transport http
+# equivalent after npm install -g @transcend-io/mcp:
+# TRANSCEND_API_KEY=your-api-key transcend-mcp --transport http
 
 # Or a domain server
 TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server-consent --transport http

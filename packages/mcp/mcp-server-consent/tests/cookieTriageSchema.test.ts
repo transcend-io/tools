@@ -1,4 +1,4 @@
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
+import { toolInputSchema } from '@transcend-io/mcp-server-base';
 import { describe, expect, it } from 'vitest';
 
 import { ConsentTriageType } from '../src/lib/cookieTriageTypes.js';
@@ -6,7 +6,7 @@ import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
 
 describe('CookieTriageAppSchema JSON schema', () => {
   it('exposes triageType enum for MCP hosts', () => {
-    const schema = toJsonSchemaCompat(CookieTriageAppSchema as never) as {
+    const schema = toolInputSchema(CookieTriageAppSchema) as {
       properties: {
         triageType: { type?: string; enum?: string[] };
       };
