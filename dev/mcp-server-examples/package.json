@@ -44,10 +44,6 @@
     "vitest": "4.1.11",
     "zod": "4.4.3"
   },
-  "peerDependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.4.3"
-  },
   "engines": {
     "node": ">=22.12.0"
   }
