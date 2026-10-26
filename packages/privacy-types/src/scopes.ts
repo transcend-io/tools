@@ -111,6 +111,7 @@ export enum ScopeName {
   ManageCustomFunction = 'manageCustomFunction',
   // Assignable view access for the Administration Usage dashboard
   ViewUsage = 'viewUsage',
+  ExecuteLLMClassification = 'executeLLMClassification',
 }
 
 /**
@@ -1049,6 +1050,17 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     description: 'View organization usage metrics in the Administration Usage dashboard.',
     type: ScopeType.View,
     products: [TranscendProduct.Administration],
+  },
+  [ScopeName.ExecuteLLMClassification]: {
+    title: 'Execute LLM Classification',
+    dependencies: [],
+    description: 'Call the Sombra-hosted LLM classification endpoints to classify text samples.',
+    type: ScopeType.Modify,
+    products: [
+      TranscendProduct.StructuredDiscovery,
+      TranscendProduct.UnstructuredDiscovery,
+      TranscendProduct.Sombra,
+    ],
   },
 };
 
