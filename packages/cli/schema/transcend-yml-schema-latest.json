@@ -50,6 +50,7 @@
                   "USER_NEEDS_CONFIGURATION",
                   "SOMBRA_VERSION_UPGRADE",
                   "SOMBRA_NEEDS_KEY_ROTATION",
+                  "SERVER_WEBHOOK_AWAITING_CALLBACK",
                   "DATA_FLOW_NEEDS_REVIEW",
                   "DATA_FLOW_ASSIGNED_FOR_REVIEW",
                   "COOKIE_NEEDS_REVIEW",
