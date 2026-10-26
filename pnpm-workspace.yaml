@@ -17,6 +17,8 @@ minimumReleaseAgeExclude:
   - vitest@4.1.11
   # Renovate security update: vite@8.1.6
   - vite@8.1.6
+  # Renovate security update: undici@6.29.1
+  - undici@6.29.1
 
 onlyBuiltDependencies:
   - esbuild
