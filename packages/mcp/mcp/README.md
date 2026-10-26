@@ -77,7 +77,7 @@ Full setup, troubleshooting, and multi-server guidance: [MCP root README](../REA
 
 ### MCP client configuration (stdio)
 
-`npx` runs the package’s `transcend-mcp` binary (see `bin` in `package.json`). Add to your MCP client config (for example Claude Desktop or Cursor):
+Always launch via the package’s **`transcend-mcp`** binary (`bin` in `package.json`) — for example `npx -y @transcend-io/mcp` or a global `transcend-mcp` after `npm install -g @transcend-io/mcp`. Do not point clients at an internal path such as `node_modules/@transcend-io/mcp/dist/cli.mjs`; that file can move between releases and will break deployments.
 
 ```json
 {

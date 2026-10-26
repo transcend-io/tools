@@ -138,6 +138,9 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   dev/mcp-ui-common:
     dependencies:
@@ -568,9 +571,6 @@ importers:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -580,13 +580,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -602,15 +602,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-assessment:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -620,13 +620,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -642,15 +642,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-base:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/type-utils':
         specifier: workspace:^
         version: link:../../type-utils
@@ -666,9 +666,6 @@ importers:
       open:
         specifier: ^11.0.0
         version: 11.0.0
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
@@ -676,6 +673,9 @@ importers:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -709,12 +709,12 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-consent:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -727,9 +727,6 @@ importers:
       '@transcend-io/type-utils':
         specifier: workspace:^
         version: link:../../type-utils
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
@@ -737,6 +734,9 @@ importers:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -779,15 +779,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-custom-functions:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -797,13 +797,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -819,15 +819,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-discovery:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -837,13 +837,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -859,12 +859,12 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-docs:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@orama/orama':
         specifier: ^3.1.18
         version: 3.1.18
@@ -874,13 +874,13 @@ importers:
       lru-cache:
         specifier: ^11.5.1
         version: 11.5.1
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -896,15 +896,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-dsr:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -914,13 +914,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -936,15 +936,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-inventory:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -954,13 +954,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -976,12 +976,12 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-policy:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -997,13 +997,13 @@ importers:
       got:
         specifier: ^15.0.0
         version: 15.0.5
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1019,12 +1019,12 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-preferences:
     dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -1034,13 +1034,13 @@ importers:
       '@transcend-io/sdk':
         specifier: workspace:^
         version: link:../../sdk
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1056,15 +1056,15 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/mcp/mcp-server-workflows:
     dependencies:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
@@ -1074,13 +1074,13 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@modelcontextprotocol/sdk':
+        specifier: 1.29.0
+        version: 1.29.0(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1096,6 +1096,9 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/privacy-types:
     dependencies:
