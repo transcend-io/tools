@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.6.0
+
+### Minor Changes
+
+- 974478c: Add an API key scope to call Sombra-hosted LLM classification endpoints.
+
 ## 6.5.0
 
 ### Minor Changes
