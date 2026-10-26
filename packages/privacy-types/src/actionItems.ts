@@ -131,6 +131,10 @@ export enum ActionItemCode {
    */
   SombraNeedsKeyRotation = 'SOMBRA_NEEDS_KEY_ROTATION',
   /**
+   * - A server webhook integration accepted jobs but never called back to complete them
+   */
+  ServerWebhookAwaitingCallback = 'SERVER_WEBHOOK_AWAITING_CALLBACK',
+  /**
    * - Data Flows that need review
    */
   DataFlowNeedsReview = 'DATA_FLOW_NEEDS_REVIEW',
