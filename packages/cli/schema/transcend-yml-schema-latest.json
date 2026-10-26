@@ -320,7 +320,8 @@
                     "executeRules",
                     "viewCustomFunction",
                     "manageCustomFunction",
-                    "viewUsage"
+                    "viewUsage",
+                    "executeLLMClassification"
                   ]
                 }
               }
