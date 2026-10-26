@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 13.0.7
+
+### Patch Changes
+
+- 974478c: Add an API key scope to call Sombra-hosted LLM classification endpoints.
+- Updated dependencies [974478c]
+  - @transcend-io/privacy-types@6.6.0
+
 ## 13.0.6
 
 ### Patch Changes
