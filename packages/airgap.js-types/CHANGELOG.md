@@ -1,5 +1,11 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.50
+
+### Patch Changes
+
+- 4d53209: Consent details can now include an optional `changes` log: when each purpose got its current value, and optionally what caused that change.
+
 ## 14.2.49
 
 ### Patch Changes
