@@ -1,5 +1,30 @@
 # @transcend-io/mcp
 
+## 1.7.1
+
+### Patch Changes
+
+- 32695c0: Fix `tools/list` failing when a host installs a different Zod copy than the MCP SDK (common with pnpm). Tool input schemas are now converted with the server’s own Zod and handed to the SDK as plain JSON Schema.
+
+  Domain `mcp-server-*` packages now declare `zod` and `@modelcontextprotocol/sdk` as peer dependencies; `@transcend-io/mcp` still installs them for you. If you depend on a domain package alone, ensure those peers are present (npm/pnpm usually install them automatically).
+
+  Prefer the published `transcend-mcp` binary over pointing clients at `dist/cli.mjs`.
+
+- Updated dependencies [6dc6471]
+- Updated dependencies [32695c0]
+  - @transcend-io/mcp-server-custom-functions@0.3.1
+  - @transcend-io/mcp-server-base@2.5.6
+  - @transcend-io/mcp-server-admin@1.1.4
+  - @transcend-io/mcp-server-assessment@2.1.14
+  - @transcend-io/mcp-server-consent@1.3.2
+  - @transcend-io/mcp-server-discovery@1.0.17
+  - @transcend-io/mcp-server-docs@0.4.16
+  - @transcend-io/mcp-server-dsr@2.0.14
+  - @transcend-io/mcp-server-inventory@1.0.18
+  - @transcend-io/mcp-server-policy@0.2.6
+  - @transcend-io/mcp-server-preferences@0.7.21
+  - @transcend-io/mcp-server-workflows@1.0.17
+
 ## 1.7.0
 
 ### Minor Changes
