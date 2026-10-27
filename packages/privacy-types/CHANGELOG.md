@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.6.2
+
+### Patch Changes
+
+- 6dc6471: Drop `INACTIVE` from `CustomFunctionLifecycleState` to match staging (version-level `INACTIVE` is unchanged).
+
 ## 6.6.1
 
 ### Patch Changes
