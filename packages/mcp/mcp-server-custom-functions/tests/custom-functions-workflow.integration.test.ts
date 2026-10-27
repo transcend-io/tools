@@ -387,7 +387,7 @@ describe('Custom Functions tools', () => {
         id: 'cf-1',
         name: 'Example',
         type: 'GENERAL',
-        lifecycleState: 'INACTIVE',
+        lifecycleState: 'ACTIVE',
         sombraId: 'sombra-1',
         hasPendingDraft: true,
         draftVersion: {

@@ -1643,6 +1643,14 @@ enum EmailOutboxStatus {
   FELL_BACK_TO_BODY
 }
 
+enum EmailDomainVerificationStatus {
+  Success
+  Failed
+  Pending
+  TemporaryFailure
+  NotStarted
+}
+
 enum CustomizableText {
   fontFamilyHeader
   fontFamilyBody
@@ -2743,6 +2751,8 @@ enum DsrErrorCode {
   INVALID_REQUEST_INPUT
   INVALID_IDENTIFIER_JWT
   DRAFT_WORKFLOW_CONFIG
+  DUPLICATE_OPEN_REQUEST
+  OPEN_PARENT_REQUEST
 }
 
 enum DsrRequestOutcome {
@@ -2799,6 +2809,13 @@ enum DropPollInterval {
   EVERY_12_HOURS
   DAILY
   WEEKLY
+}
+
+enum DropRunAmendmentGenerationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  FAILED
 }
 
 enum DropRunMode {
@@ -3480,7 +3497,6 @@ enum ContentClassificationStatus {
 }
 
 enum CustomFunctionLifecycleState {
-  INACTIVE
   ACTIVE
   ARCHIVED
 }
@@ -4280,14 +4296,6 @@ enum DsrIncomingRequestColumnName {
   workflowConfig
 }
 
-enum EmailDomainVerificationStatus {
-  Success
-  Failed
-  Pending
-  TemporaryFailure
-  NotStarted
-}
-
 enum ExternalOauthServiceCode {
   SLACK_NOTIFICATIONS
 }
@@ -4628,6 +4636,11 @@ enum AiFeatureAuditChangeKind {
   VISIBILITY_HIDDEN
 }
 
+enum ApiKeyAuditSource {
+  RETOOL_TEMPORARY_TOKEN
+  SEEDER
+}
+
 enum AuditEventBaseModelCode {
   ACTION_ITEM
   ASSESSMENT_ANSWER
@@ -4697,6 +4710,7 @@ enum AuditEventBaseModelCode {
   WORKFLOW_PREFERENCE_MAPPING_CONFIG
   FEATURE
   USER
+  API_KEY
   DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
@@ -4858,6 +4872,9 @@ enum AuditEventCode {
   USER_TEAM
   USER_SCOPE
   USER_DATA_SILO
+  API_KEY
+  API_KEY_SCOPE
+  API_KEY_DATA_SILO
   DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
@@ -4945,6 +4962,7 @@ enum DropRunLifecycleKind {
   SUPPRESSION_APPLIED
   REPORT_GENERATED
   REPORT_SUBMITTED
+  AMENDMENT_GENERATED
   REPORT_AMENDED
   SUBMISSION_SUMMARY_RECEIVED
   SUBMISSION_DISCREPANCY_FLAGGED
@@ -5042,6 +5060,7 @@ enum BaseCacheKey {
   AIRGAP_VERSION
   UI_V2_VERSION
   DROP_RUN_DSR_PROGRESS
+  DROP_RUN_AMENDMENT_SUMMARY
 }
 
 enum AuditorGQLRegionEnum {
@@ -5134,6 +5153,7 @@ enum IntlMessageType {
   WORKFLOW_DESCRIPTION
   FILE_UPLOAD_LABEL
   FILE_UPLOAD_INFO
+  WORKFLOW_FORM_ITEM
   CONSENT_PURPOSE_TITLE
   CONSENT_PURPOSE_DISCLOSURE_TITLE
   CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
@@ -5180,6 +5200,7 @@ enum PrivacyCenterIntlMessageType {
   WORKFLOW_DESCRIPTION
   FILE_UPLOAD_LABEL
   FILE_UPLOAD_INFO
+  WORKFLOW_FORM_ITEM
   CONSENT_PURPOSE_TITLE
   CONSENT_PURPOSE_DISCLOSURE_TITLE
   CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
@@ -5198,7 +5219,7 @@ type Query {
   actions(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ActionFiltersInput, orderBy: [ActionOrder!]): ActionsPayload!
   activities(first: Int, offset: Int = 0, last: Int, filterBy: ActivityFiltersInput!, orderBy: [ActivityOrder!]): ActivitiesPayload!
   airgapBundleAggregateAnalytics(id: ID!, input: AirgapBundleAggregateAnalyticsInput!): AirgapBundleAggregateAnalyticsResult!
-  airgapBundleAirgapPrefixModules(input: AirgapBundleInput!): AirgapBundleAirgapPrefixModulesPayload!
+  airgapBundleAirgapPrefixModules(input: AirgapBundleInput!, filterBy: FilterAirgapBundleAirgapPrefixModulesInput, first: Int, offset: Int = 0, last: Int): AirgapBundleAirgapPrefixModulesPayload!
   airgapBundleTimeseriesAnalytics(id: ID!, input: AirgapBundleTimeseriesAnalyticsInput!): AirgapBundleTimeseriesAnalyticsResult!
   airgapBundleVersions(first: Int, offset: Int = 0, last: Int, id: ID!, input: AirgapBundleVersionsInput!): AirgapBundleVersionsPayload!
   airgapPrefixModule(input: AirgapPrefixModuleInput!): AirgapPrefixModulePayload!
@@ -5310,6 +5331,7 @@ type Query {
   downloadFilesCountsOnly(dhEncrypted: String!, filterBy: DownloadFileFiltersInput!, lookup: PrivacyCenterLookupInput): DownloadFilesCountsOnlyPayload!
   dropBrokerConfig: DropBrokerConfigPayload!
   dropRun(id: ID!): DropRunSummary!
+  dropRunAmendmentSummary(input: DropRunAmendmentSummaryInput!): DropRunAmendmentSummary!
   dropRunDsrProgress(input: DropRunDsrProgressInput!): DropRunDsrProgress!
   dropRunRequests(first: Int, last: Int, before: String, after: String, filterBy: DropRunRequestFiltersInput!): DropRunRequestsPayload!
   dropRuns(first: Int, last: Int, before: String, after: String, filterBy: DropRunFiltersInput): DropRunsPayload!
@@ -5353,6 +5375,7 @@ type Query {
   preferenceTopicOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueFilterInput): PreferenceTopicOptionValuesPayload!
   preferenceTopics(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicFilterInput): PreferenceTopicsPayload!
   preflights(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: EnricherFiltersInput, orderBy: [EnricherOrder!]): PreflightsPayload!
+  previewRequestRetentionScheduleDeletions(input: PreviewRequestRetentionScheduleDeletionsInput!): PreviewRequestRetentionScheduleDeletionsPayload!
   privacyCenter(lookup: PrivacyCenterLookupInput): PrivacyCenterStringified!
   privacyCenterDeployment(input: PrivacyCenterIdInput!): PrivacyCenterDeployment!
   privacyCenterPolicies(lookup: PrivacyCenterLookupInput): [Policy!]!
@@ -5660,6 +5683,7 @@ type Mutation {
   fireSecondaryAction(input: FireSecondaryActionInput!): FireSecondaryActionPayload!
   generateConsentIdentifierEncryptionKey(dhEncrypted: String!): GenerateConsentIdentifierEncryptionKeyPayload!
   generateDataSiloSqlStatements(input: GenerateSqlInput!): GenerateDataSiloSqlStatementsPayload!
+  generateDropAmendment(input: GenerateDropAmendmentInput!): GenerateDropAmendmentPayload!
   generateDropReport(input: GenerateDropReportInput!): GenerateDropReportPayload!
   generateParentPrivacyCenterLoginToken(lookup: PrivacyCenterLookupInput, dhEncrypted: String!): GenerateParentPrivacyCenterLoginTokenPayload!
   generateWorkflowConfigSqlStatements(input: GenerateWorkflowConfigSqlInput!): GenerateWorkflowConfigSqlStatementsPayload!
@@ -5681,6 +5705,7 @@ type Mutation {
   markDataSiloDiscoveryResultsDuplicate(input: [MarkDataSiloDiscoveryResultsDuplicateInput!]!): MarkDataSiloDiscoveryResultsDuplicatePayload!
   markDataSiloDiscoveryResultsJunk(input: [MarkDataSiloDiscoveryResultsJunkInput!]!): MarkDataSiloDiscoveryResultsJunkPayload!
   markDataSiloNotConfigured(id: ID!): MarkDataSiloNotConfiguredPayload!
+  markDropAmendmentSubmitted(input: MarkDropAmendmentSubmittedInput!): MarkDropAmendmentSubmittedPayload!
   markDropReportSubmitted(input: MarkDropReportSubmittedInput!): MarkDropReportSubmittedPayload!
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
@@ -5716,7 +5741,6 @@ type Mutation {
   reportAiFeatureAsInaccurate(input: ReportAiFeatureAsInaccurateInput!): ReportAiFeatureAsInaccuratePayload!
   reprocessComplianceReport(input: ReprocessComplianceReportInput!): ReprocessComplianceReportPayload!
   requestCertificate(input: PrivacyCenterIdInput!): RequestCertificatePayload!
-  requestDemo(input: DemoInput!): RequestDemoPayload!
   requestEmailBounced(input: RequestEmailBouncedInput!): RequestEmailBouncedPayload!
   requestNewDataSiloToken(input: RequestNewDataSiloTokenInput!): RequestNewDataSiloTokenPayload!
   requestPrivacyCenterHostnameChange(input: RequestPrivacyCenterHostnameChangeInput!): RequestPrivacyCenterHostnameChangePayload!
@@ -6330,6 +6354,7 @@ type AirgapBundleAirgapPrefixModule {
 type AirgapBundleAirgapPrefixModulesPayload {
   clientMutationId: String
   nodes: [AirgapBundleAirgapPrefixModule!]!
+  totalCount: Int!
 }
 
 input AirgapBundleInput {
@@ -9810,6 +9835,7 @@ type ConsentWorkflowTrigger {
   isSilent: Boolean!
   allowUnauthenticated: Boolean!
   isActive: Boolean!
+  openRequestCount: Int
   dataSilos: [DataSiloPreview!]!
   dataPoints: [DataPointPreviewWithDataSilo!]!
   workflowConfigId: ID
@@ -13231,21 +13257,6 @@ input DeleteWorkflowInput {
   workflowConfigId: ID!
 }
 
-type Demo {
-  id: ID!
-  email: String!
-  name: String
-  pathname: String
-}
-
-input DemoInput {
-  email: String!
-  companyName: String!
-  pathname: String
-  dataSubjects: Int
-  name: String
-}
-
 input DependedOnDataSiloInput {
   ids: [ID!]
   titles: [String!]
@@ -13548,6 +13559,12 @@ type DownloadFilesCountsOnlyPayload {
   nodes: [DownloadFileCounts!]!
 }
 
+type DropAmendmentSubmissionMarkedResult {
+  dropRunId: ID!
+  state: DropRunState!
+  amendmentRound: Int!
+}
+
 type DropArtifact {
   id: ID!
   artifactType: DropArtifactType!
@@ -13584,6 +13601,11 @@ type DropBrokerConfig {
   pollLeaseOwnerApiKey: ApiKeyPreview
 }
 
+type DropGenerateAmendmentResult {
+  started: Boolean!
+  amendmentGenerationStatus: DropRunAmendmentGenerationStatus!
+}
+
 type DropGenerateReportResult {
   started: Boolean!
   reportGenerationStatus: DropRunReportGenerationStatus!
@@ -13606,6 +13628,19 @@ type DropReportStatusBreakdown {
   statusDeleted: Int!
   statusOptedOut: Int!
   statusNotFound: Int!
+}
+
+type DropRunAmendmentSummary {
+  reportedRecordCount: Int!
+  changedRecordCount: Int!
+  stillOpenRecordCount: Int!
+  amendmentRoundsGenerated: Int!
+  transitions: [DropRunStatusTransition!]!
+}
+
+input DropRunAmendmentSummaryInput {
+  dropRunId: ID!
+  forceRefetch: Boolean
 }
 
 type DropRunDsrProcessingStats {
@@ -13704,6 +13739,12 @@ type DropRunsPayload {
   pageInfo: PageInfo!
 }
 
+type DropRunStatusTransition {
+  from: Int!
+  to: Int!
+  count: Int!
+}
+
 type DropRunSubmissionDiscrepancyCounts {
   failedCount: Int!
   missingCount: Int!
@@ -13736,6 +13777,11 @@ type DropRunSummary {
   reportGenerationStatus: DropRunReportGenerationStatus!
   reportGenerationStartedAt: Date
   reportGenerationError: String
+  amendmentGenerationStatus: DropRunAmendmentGenerationStatus!
+  amendmentGeneratedAt: Date
+  amendmentGenerationError: String
+  lastAmendmentSubmittedRound: Int
+  lastAmendmentSubmittedAt: Date
   reportPendingRecordsCount: Int
 }
 
@@ -13780,6 +13826,12 @@ type DsrPurposeChange {
   name: String!
   preferences: String!
   enrichedPreferences: [EnrichedPreference!]!
+}
+
+type DsrWorkflowLinkPreview {
+  id: ID!
+  title: LocalizedMessage!
+  internalName: String!
 }
 
 type DuplicateApiKeyPayload {
@@ -14273,6 +14325,10 @@ type FileSnippetDecryptionContext {
   decryptionContext: DecryptionContext
 }
 
+input FilterAirgapBundleAirgapPrefixModulesInput {
+  text: String
+}
+
 input FilterConsentHostInput {
   text: String
   dataFlowIds: [ID!]
@@ -14481,6 +14537,15 @@ input GenerateDebugBundleInput {
   buildPathPrefix: String
 }
 
+type GenerateDropAmendmentPayload {
+  clientMutationId: String
+  result: DropGenerateAmendmentResult!
+}
+
+input GenerateDropAmendmentInput {
+  dropRunId: ID!
+}
+
 type GenerateDropReportPayload {
   clientMutationId: String
   result: DropGenerateReportResult!
@@ -14516,6 +14581,8 @@ input GenerateTemporaryApiTokenInput {
   organizationId: ID!
   scopes: [ScopeName!]
   msBeforeExpire: Int
+  retoolFunctionName: String
+  purpose: String
 }
 
 input GenerateWorkflowConfigSqlInput {
@@ -15105,7 +15172,7 @@ type MaestroRuleAction {
   type: MaestroRuleActionType!
   order: Int!
   customFunctionId: ID
-  sombraId: ID
+  sombraId: ID @deprecated(reason: "Use customFunction.sombraId instead")
   customFunction: CustomFunction
   sendAssessmentMode: MaestroSendAssessmentMode
   assessmentName: String
@@ -15294,6 +15361,15 @@ input MarkDataSiloDiscoveryResultsJunkInput {
 type MarkDataSiloNotConfiguredPayload {
   clientMutationId: String
   dataSilo: DataSilo!
+}
+
+type MarkDropAmendmentSubmittedPayload {
+  clientMutationId: String
+  result: DropAmendmentSubmissionMarkedResult!
+}
+
+input MarkDropAmendmentSubmittedInput {
+  dropRunId: ID!
 }
 
 type MarkDropReportSubmittedPayload {
@@ -15691,6 +15767,8 @@ type Organization {
   region: String!
   promptAPersonEmailTokenDuration: Int
   restartTimeLimitDays: Int
+  requireSso: Boolean
+  requireSsoForAllChildren: Boolean!
 }
 
 input OrganizationExistsInput {
@@ -16197,6 +16275,19 @@ type PrepareRequestAttachmentsPayload {
 input PrepareRequestAttachmentsInput {
   requestId: ID!
   files: [PrepareRequestAttachmentFileInput!]!
+}
+
+type PreviewRequestRetentionScheduleDeletionsPayload {
+  clientMutationId: String
+  requestCount: Int!
+  rows: [RetentionScheduleDeletionPreviewRow!]!
+}
+
+input PreviewRequestRetentionScheduleDeletionsInput {
+  retentionScheduleId: ID!
+  durationDays: Int
+  retentionScheduleOverrides: [RetentionScheduleOverrideInput!]
+  operation: RetentionScheduleOperation
 }
 
 type PrivacyCenterAccessToken {
@@ -17438,6 +17529,7 @@ type Request implements RequestInterface {
   successfullyCompletedAt: Date
   overduePercentage: Float!
   daysRemaining: Int
+  extensionTimeDays: Int!
   bounced: Int!
   isTest: Boolean!
   isSilent: Boolean!
@@ -17561,11 +17653,6 @@ type RequestDataSilosPayload {
   clientMutationId: String
   nodes: [RequestDataSilo!]!
   totalCount: Int!
-}
-
-type RequestDemoPayload {
-  clientMutationId: String
-  demo: Demo!
 }
 
 type RequestDetails {
@@ -17856,6 +17943,7 @@ input RequestFiltersInput {
   hasEnricherErrors: Boolean
   identifierValue: String
   workflowConfigIds: [ID!]
+  consentWorkflowTriggerIds: [ID!]
   dropRunIds: [ID!]
   dropProjectedCppaStatusCodes: [Int!]
   partitionKeys: [String!]
@@ -18323,14 +18411,38 @@ type RetentionSchedule {
   type: RetentionScheduleType!
   durationDays: Int!
   operation: RetentionScheduleOperation!
+  retentionScheduleOverrides: [RetentionScheduleOverride!]!
   createdAt: Date!
   updatedAt: Date!
+}
+
+type RetentionScheduleDeletionPreviewRow {
+  label: String!
+  country: String
+  countrySubDivision: String
+  requestAction: RequestAction
+  requestCount: Int!
 }
 
 input RetentionScheduleFiltersInput {
   ids: [ID!]
   operations: [RetentionScheduleOperation!]
   types: [RetentionScheduleType!]
+}
+
+type RetentionScheduleOverride {
+  id: ID!
+  country: String!
+  countrySubDivision: String
+  requestAction: RequestAction
+  durationDays: Int!
+}
+
+input RetentionScheduleOverrideInput {
+  country: String!
+  countrySubDivision: String
+  requestAction: RequestAction
+  durationDays: Int!
 }
 
 type RetentionSchedulesPayload {
@@ -22435,6 +22547,7 @@ input UpdateRetentionScheduleInput {
   durationDays: Int
   operation: RetentionScheduleOperation
   type: RetentionScheduleType
+  retentionScheduleOverrides: [RetentionScheduleOverrideInput!]
 }
 
 type UpdateRiskCategoriesPayload {
@@ -22909,6 +23022,7 @@ input UpdateWorkflowConfigInput {
   completedSteps: [WorkflowCompletedStepInput!]
   regionList: [String!]
   expiryTime: [ExpiryTimeInput!]
+  extensionTime: [ExpiryTimeInput!]
   postCompileStatus: PostCompileStatus
   attributeKeyIds: [ID!]
   internalName: String
@@ -23220,12 +23334,14 @@ type WorkflowConfig {
   completedSteps: [WorkflowCompletedStep!]
   regionList: [String!]
   expiryTime: [ExpiryTime!]
+  extensionTime: [ExpiryTime!]
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String!
   allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
   isSubmittedByIntegration: Boolean!
+  linkedDsrWorkflowConfig: DsrWorkflowLinkPreview
 }
 
 type WorkflowConfigActionCount {

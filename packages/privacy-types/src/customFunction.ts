@@ -15,11 +15,12 @@ export type CustomFunctionType = (typeof CustomFunctionType)[keyof typeof Custom
 
 /**
  * The lifecycle state of a custom function.
+ *
+ * Staging removed `INACTIVE` from this enum (version-level `INACTIVE` is unchanged).
+ * A function that only has a draft is still `ACTIVE` until archived.
  */
 export const CustomFunctionLifecycleState = {
-  /** The function exists but has no active version */
-  Inactive: 'INACTIVE',
-  /** The function has an active version */
+  /** The function is available (may or may not have an active version yet) */
   Active: 'ACTIVE',
   /** The function is archived */
   Archived: 'ARCHIVED',
