@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.7.0
+
+### Minor Changes
+
+- 3a3d0b2: Add `CANCELED_AFTER_REQUEST_CLOSED` RequestDataSilo status.
+
 ## 6.6.2
 
 ### Patch Changes
