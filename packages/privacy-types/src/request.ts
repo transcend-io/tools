@@ -145,7 +145,7 @@ export const RequestDataSiloStatus = {
   ...QueueStatus,
   /** The request not processed due to some exception */
   SkippedDueToException: 'SKIPPED_DUE_TO_EXCEPTION',
-  /** The job was canceled because its parent request closed (canceled, failed verification, revoked, or completed) before the job finished */
+  /** The job was canceled because its parent request closed (canceled, failed verification or revoked) before the job finished */
   CanceledAfterRequestClosed: 'CANCELED_AFTER_REQUEST_CLOSED',
   /**
    * Deferred by Transcend's data silo rate limiter (the integration's
