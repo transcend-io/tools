@@ -937,6 +937,8 @@ enum DatabaseModelName {
   enricher
   EnricherDependentEnricher
   FailedLoginAttempt
+  userAuthFactor
+  userAuthFactorChallenge
   featureDefinition
   feature
   formItem
@@ -4587,6 +4589,19 @@ enum ThemePreference {
   DARK
 }
 
+enum UserAuthFactorChallengePurpose {
+  Enroll
+  Login
+  RoleAssumption
+}
+
+enum UserAuthFactorType {
+  Email
+  Totp
+  WebAuthn
+  Sms
+}
+
 enum UserLoginMethod {
   LOCAL
   SSO
@@ -5419,6 +5434,7 @@ type Query {
   requestsForDataSilo(first: Int, offset: Int = 0, last: Int, filterBy: RequestFiltersForDataSiloInput): RequestsForDataSiloPayload!
   requestsProcessedDisclosureStats(lookup: PrivacyCenterLookupInput, input: RequestsProcessedDisclosureStatsInput): [RequestsProcessedDisclosureStatsByYear!]!
   requestsProcessedDisclosureStatsSettings(input: PrivacyCenterIdInput!): RequestsProcessedDisclosureStatsSettings!
+  requireSsoLockoutPreview(first: Int, offset: Int = 0, last: Int, filterBy: RequireSsoLockoutPreviewFiltersInput): RequireSsoLockoutPreviewPayload!
   retentionSchedules(first: Int, offset: Int = 0, last: Int, filterBy: RetentionScheduleFiltersInput, useMaster: Boolean): RetentionSchedulesPayload!
   riskCategories(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RiskCategoriesFiltersInput): RiskCategoriesPayload!
   riskFrameworks(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: RiskFrameworksFiltersInput): RiskFrameworksPayload!
@@ -15769,6 +15785,8 @@ type Organization {
   restartTimeLimitDays: Int
   requireSso: Boolean
   requireSsoForAllChildren: Boolean!
+  effectiveRequireSso: Boolean!
+  requireSsoLockedByParent: Boolean!
 }
 
 input OrganizationExistsInput {
@@ -18266,6 +18284,16 @@ type RequestSteps {
   steps: [Step!]!
 }
 
+type RequireSsoLockoutPreviewPayload {
+  clientMutationId: String
+  nodes: [User!]!
+  totalCount: Int!
+}
+
+input RequireSsoLockoutPreviewFiltersInput {
+  forRequireSsoForAllChildren: Boolean
+}
+
 type ReScanPluginPermissionsPayload {
   clientMutationId: String
   plugin: Plugin!
@@ -19467,6 +19495,11 @@ input SetTCFStacksInput {
 type SetTokenSecretPayload {
   clientMutationId: String
   tokenSecrets: TokenSecrets!
+}
+
+input SetUserBreakGlassAsAdminInput {
+  id: ID!
+  isBreakGlass: Boolean!
 }
 
 type SetWorkflowIdentifierDisabledPayload {
