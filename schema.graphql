@@ -444,6 +444,7 @@ enum ScopeName {
   viewCustomFunction
   manageCustomFunction
   viewUsage
+  executeLLMClassification
 }
 
 enum ScopeType {
@@ -1098,6 +1099,7 @@ enum RequestDataSiloStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   SKIPPED_DUE_TO_EXCEPTION
+  CANCELED_AFTER_REQUEST_CLOSED
   TRANSCEND_RATE_LIMITED
   VENDOR_RATE_LIMITED
 }
@@ -1483,6 +1485,7 @@ enum ActionItemCode {
   USER_NEEDS_CONFIGURATION
   SOMBRA_VERSION_UPGRADE
   SOMBRA_NEEDS_KEY_ROTATION
+  SERVER_WEBHOOK_AWAITING_CALLBACK
   DATA_FLOW_NEEDS_REVIEW
   DATA_FLOW_ASSIGNED_FOR_REVIEW
   COOKIE_NEEDS_REVIEW
@@ -2587,6 +2590,11 @@ enum MetadataDiscoveryPluginType {
   UNSTRUCTURED_DATA_DISCOVERY
 }
 
+enum MissingPreferenceRecordBehavior {
+  ALLOW_MISSING_PREFERENCE_RECORD
+  REQUIRE_EXISTING_PREFERENCE_RECORD
+}
+
 enum ModeOption {
   tags
   multiple
@@ -3154,6 +3162,7 @@ enum ProfileDataPointStatusSuccess {
   FINISHED
   SKIPPED
   SKIPPED_DUE_TO_EXCEPTION
+  CANCELED_AFTER_REQUEST_CLOSED
 }
 
 enum ProfileOrderField {
@@ -3196,6 +3205,7 @@ enum RequestDataSiloStatusSuccess {
   RESOLVED
   SKIPPED
   SKIPPED_DUE_TO_EXCEPTION
+  CANCELED_AFTER_REQUEST_CLOSED
 }
 
 enum RequestDownloadAttemptActivity {
@@ -3306,6 +3316,11 @@ enum RequestOrderField {
   daysRemaining
 }
 
+enum SkipRequestDataSiloStatus {
+  SKIPPED
+  SKIPPED_DUE_TO_EXCEPTION
+}
+
 enum UpdateRequestDataSiloStatus {
   WAITING
   RESOLVED
@@ -3323,6 +3338,7 @@ enum VisualRequestDataSiloStatus {
   ACTION_REQUIRED
   REMOTE_PROCESSING
   SKIPPED_DUE_TO_EXCEPTION
+  CANCELED_AFTER_REQUEST_CLOSED
   TRANSCEND_RATE_LIMITED
   VENDOR_RATE_LIMITED
   WAITING_ON_DEPENDENCIES
@@ -3331,7 +3347,6 @@ enum VisualRequestDataSiloStatus {
   DATA_SILO_DISCONNECTED
   DATA_SILO_PAUSED
   REQUEST_PENDING
-  REQUEST_CANCELED
   MANUAL
 }
 
@@ -3709,6 +3724,7 @@ enum ProfileDataPointStatus {
   TRANSCEND_RATE_LIMITED
   VENDOR_RATE_LIMITED
   FINISHED
+  CANCELED_AFTER_REQUEST_CLOSED
 }
 
 enum RateLimitSource {
@@ -5145,6 +5161,7 @@ enum IntlMessageType {
   ACTION_FORM_ITEM
   DATA_SUBJECT_LOGIN_INSTRUCTIONS
   DATA_SUBJECT_DISABLED_INSTRUCTIONS
+  DATA_SUBJECT_MISSING_PREFERENCE_RECORD_MESSAGE
   IDENTIFIER_TITLE
   IDENTIFIER_DESCRIPTION
   IDENTIFIER_VALIDATION_ERROR_MESSAGE
@@ -5192,6 +5209,7 @@ enum PrivacyCenterIntlMessageType {
   ACTION_FORM_ITEM
   DATA_SUBJECT_LOGIN_INSTRUCTIONS
   DATA_SUBJECT_DISABLED_INSTRUCTIONS
+  DATA_SUBJECT_MISSING_PREFERENCE_RECORD_MESSAGE
   IDENTIFIER_TITLE
   IDENTIFIER_DESCRIPTION
   IDENTIFIER_VALIDATION_ERROR_MESSAGE
@@ -5813,6 +5831,7 @@ type Mutation {
   shareComplianceReport(input: ShareComplianceReportInput!): ShareComplianceReportPayload!
   showTcfVendorInUI(input: ShowTCFVendorInput!): ShowTcfVendorInUiPayload!
   skipProfileDataPointsByIdentifierType(input: SkipProfileDataPointsByIdentifierTypeInput!): SkipProfileDataPointsByIdentifierTypePayload!
+  skipRequestDataSilos(input: SkipRequestDataSilosInput!): SkipRequestDataSilosPayload!
   skipRequestEnricher(id: ID!): SkipRequestEnricherPayload!
   sombraDataSubjectLogin(dhEncrypted: String!, lookup: PrivacyCenterLookupInput): SombraDataSubjectLoginPayload!
   sombraSingleTenantConfigSync(input: SombraSingleTenantConfigSyncInput!): SombraSingleTenantConfigSyncPayload!
@@ -5904,6 +5923,7 @@ type Mutation {
   updateOrCreateDataPoint(input: UpdateOrCreateDataPointInput!, dhEncrypted: String): UpdateOrCreateDataPointPayload!
   updateOrCreateWorkflowDataPoint(input: UpdateOrCreateWorkflowDataPointInput!): UpdateOrCreateWorkflowDataPointPayload!
   updateOrganizationInfo(input: UpdateOrganizationInput!): UpdateOrganizationInfoPayload!
+  updateOrganizationRequireSsoSettings(input: UpdateOrganizationRequireSsoSettingsInput!): UpdateOrganizationRequireSsoSettingsPayload!
   updateOrgTCFPurposes(input: UpdateOrgTCFPurposesInput!): UpdateOrgTcfPurposesPayload!
   updateOrgTcfSpecialFeature(input: UpdateTCFSpecialFeatureTrackingPurposesInput!): UpdateOrgTcfSpecialFeaturePayload!
   updatePassword(input: UpdatePasswordInput!): UpdatePasswordPayload!
@@ -9342,6 +9362,7 @@ type ConfiguredSombra implements SombraInterface {
   version: String
   tenantParameters: TenantParamsInputSchema
   audience: String!
+  samlAudience: String!
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
@@ -11161,6 +11182,8 @@ input CreateSubjectInput {
   actions: [RequestAction!]
   loginInstructions: String
   disabledInstructions: String
+  missingPreferenceRecordBehavior: MissingPreferenceRecordBehavior
+  missingPreferenceRecordMessage: String
   redirectUrl: String
   displayOrder: Int
   oauthClientId: String
@@ -12490,6 +12513,8 @@ type DataSubject implements DataSubjectInterface {
   displayDescription: DefinedMessage
   loginInstructions: DefinedMessage
   disabledInstructions: DefinedMessage
+  missingPreferenceRecordBehavior: MissingPreferenceRecordBehavior
+  missingPreferenceRecordMessage: DefinedMessage
   redirectUrl: DefinedMessage
   oauthClientId: String
   oauthScope: String
@@ -12530,6 +12555,8 @@ interface DataSubjectInterface {
   displayDescription: DefinedMessage
   loginInstructions: DefinedMessage
   disabledInstructions: DefinedMessage
+  missingPreferenceRecordBehavior: MissingPreferenceRecordBehavior
+  missingPreferenceRecordMessage: DefinedMessage
   redirectUrl: DefinedMessage
   oauthClientId: String
   oauthScope: String
@@ -12548,6 +12575,8 @@ type DataSubjectInternal implements DataSubjectInterface {
   displayDescription: DefinedMessage
   loginInstructions: DefinedMessage
   disabledInstructions: DefinedMessage
+  missingPreferenceRecordBehavior: MissingPreferenceRecordBehavior
+  missingPreferenceRecordMessage: DefinedMessage
   redirectUrl: DefinedMessage
   oauthClientId: String
   oauthScope: String
@@ -17242,16 +17271,6 @@ input RecordDropStatusOverridesInput {
   overrides: [DropStatusOverrideInput!]!
 }
 
-type RecordOfConsentNextToken {
-  statementId: String!
-  nextToken: String!
-}
-
-input RecordOfConsentNextTokenInput {
-  statementId: String!
-  nextToken: String!
-}
-
 input RedactPathInput {
   path: String!
   selections: [SelectionInput!]!
@@ -17644,6 +17663,8 @@ type RequestDataSiloDataPointsPayload {
 
 input RequestDataSiloFiltersInput {
   dataSiloId: ID
+  ids: [ID!]
+  requestTypes: [RequestAction!]
   requestId: ID
   requestIds: [ID!]
   status: [RequestDataSiloStatus!]
@@ -19731,6 +19752,20 @@ type SkipProfileDataPointsByIdentifierTypeResult {
   transitionedRequestCount: Int!
 }
 
+type SkipRequestDataSilosPayload {
+  clientMutationId: String
+  count: Int!
+  remainingCount: Int!
+}
+
+input SkipRequestDataSilosInput {
+  dataSiloId: ID!
+  status: SkipRequestDataSiloStatus!
+  ids: [ID!]
+  requestIds: [ID!]
+  requestTypes: [RequestAction!]
+}
+
 type SkipRequestEnricherPayload {
   clientMutationId: String
   requestEnricher: RequestEnricher!
@@ -19838,6 +19873,7 @@ type Sombra implements SombraInterface {
   version: String
   tenantParameters: TenantParamsInputSchema
   audience: String!
+  samlAudience: String!
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
@@ -19914,6 +19950,7 @@ interface SombraInterface {
   version: String
   tenantParameters: TenantParamsInputSchema
   audience: String!
+  samlAudience: String!
   employeeAuthenticationMethods: [SombraEmployeeAuthMethod!]
   dataSubjectAuthenticationMethods: [SombraDataSubjectAuthMethod!]
   isReverseTunneledSombra: Boolean!
@@ -20009,38 +20046,6 @@ type SombraProfile {
   picture: String
   nickname: String
   email: String
-}
-
-type SombraReplicaResourceTelemetry {
-  instanceId: String!
-  hostname: String!
-  reportedAt: String!
-  memoryRssBytes: String!
-  memoryLimitBytes: String!
-  cpuPercent: Float!
-  eventLoopLagP99Ms: Float!
-  inflightRequests: Int!
-  uptimeSeconds: Float!
-}
-
-type SombraReverseTunnelGatewayHealth {
-  status: SombraReverseTunnelGatewayHealthStatus!
-  connectedUpstreams: Int!
-  reasons: [String!]!
-  replicas: [SombraReverseTunnelGatewayHealthReplica!]
-  telemetrySupported: Boolean
-  minimumTelemetryVersion: String
-}
-
-type SombraReverseTunnelGatewayHealthReplica {
-  hostname: String!
-  memoryRssBytes: Float
-  memoryLimitBytes: Float
-  memoryUtilizationPercent: Float
-  cpuPercent: Float
-  eventLoopLagP99Ms: Float
-  inflightRequests: Int
-  reportedAt: String
 }
 
 type SombraSession {
@@ -20631,17 +20636,6 @@ type TestSombraGatewayConnectionPayload {
 
 type Text {
   textColor: String!
-}
-
-type TextCategory {
-  value: String!
-  category: String!
-  snippet: String!
-}
-
-type TextCategoryMatch {
-  category: String!
-  snippet: String!
 }
 
 input TextInput {
@@ -21661,6 +21655,11 @@ type UpdateDataRetentionSchedulePolicyPayload {
   retentionSchedule: RetentionSchedule!
 }
 
+type UpdateDataSiloAsAdminDataSilo {
+  id: ID!
+  connectionState: DataSiloConnectionState!
+}
+
 input UpdateDataSiloAsAdminInput {
   id: ID!
   connectionState: DataSiloConnectionState
@@ -21888,6 +21887,7 @@ input UpdateEnricherInWorkflowConfigInput {
   id: ID!
   isIdentifierSource: Boolean
   enricherDependencyIds: [ID!]
+  overridesGlobalEnricherDependencies: Boolean
 }
 
 type UpdateExperiencePayload {
@@ -22197,6 +22197,19 @@ input UpdateOrganizationInput {
   defaultEmailAlias: String
   promptAPersonEmailTokenDuration: Int
   restartTimeLimitDays: Int
+}
+
+type UpdateOrganizationRequireSsoSettingsPayload {
+  clientMutationId: String
+  organization: Organization!
+  deletedUserCount: Int!
+}
+
+input UpdateOrganizationRequireSsoSettingsInput {
+  requireSso: Boolean
+  unsetRequireSso: Boolean
+  requireSsoForAllChildren: Boolean
+  confirmation: String
 }
 
 type UpdateOrgTcfPurposesPayload {
@@ -22844,6 +22857,8 @@ input UpdateSubjectInput {
   saleOfInfoRegionList: [String!]
   loginInstructions: String
   disabledInstructions: String
+  missingPreferenceRecordBehavior: MissingPreferenceRecordBehavior
+  missingPreferenceRecordMessage: String
   adminDashboardDefaultSilentMode: Boolean
   supportsAuthorizedAgent: Boolean
   active: Boolean
@@ -23104,6 +23119,7 @@ type User implements UserInterface {
   isInvited: Boolean!
   isInviteSent: Boolean!
   isLocked: Boolean!
+  isBreakGlass: Boolean!
   locale: String!
   teams: [TeamPreview!]!
   scopes: [ScopePreview!]!
@@ -23478,6 +23494,7 @@ type WorkflowEnricher {
   outputIdentifiers: [WorkflowIdentifierBase!]!
   identifierSources: [IdentifierSourceEnricher!]!
   enricherDependencies: [Enricher!]!
+  overridesGlobalEnricherDependencies: Boolean!
 }
 
 type WorkflowEnrichersPayload {
