@@ -32,7 +32,7 @@
     "@modelcontextprotocol/ext-apps": "1.7.5",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@transcend-io/design-tokens": "workspace:*",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "react": "19.2.8",
