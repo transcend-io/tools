@@ -4674,6 +4674,7 @@ enum ApiKeyAuditSource {
 
 enum AuditEventBaseModelCode {
   ACTION_ITEM
+  ACTION
   ASSESSMENT_ANSWER
   ASSESSMENT_FORM
   ASSESSMENT_FORM_COMMENT
@@ -4757,6 +4758,7 @@ enum AuditEventBaseModelCode {
 
 enum AuditEventCode {
   ACTION_ITEM
+  ACTION
   AIRGAP_BUNDLE
   AIRGAP_BUNDLE_VERSION
   AIRGAP_BUNDLE_DEPLOYMENT
@@ -6070,6 +6072,7 @@ type ActionInternal implements ActionInterface {
   secondaryTemplate: Template
   steps: [Step!]!
   expiryTimeRegions: [ExpiryTime!]!
+  extensionTimeRegions: [ExpiryTime!]!
   downloadAvailabilityDuration: Int!
   archiveDurationDays: Int!
   waitingPeriod: Int!
@@ -7916,6 +7919,7 @@ input AuditEventFiltersInput {
   purposeIds: [ID!]
   airgapThemeIds: [ID!]
   dataReportIds: [ID!]
+  actionIds: [ID!]
   actionItemIds: [ID!]
   preferenceIds: [ID!]
   assessmentFormTemplateIds: [ID!]
@@ -7988,6 +7992,7 @@ type AuditEventPreviewRaw {
   purposeId: ID
   airgapThemeId: ID
   dataReportId: ID
+  actionId: ID
   actionItemId: ID
   preferenceId: ID
   assessmentFormTemplateId: ID
@@ -14314,6 +14319,11 @@ input ExpiryTimeInput {
   value: Int!
 }
 
+type ExtensionDeadlines {
+  beforeDate: Date!
+  afterDate: Date!
+}
+
 type ExternalAccessTokenPair {
   token: String!
   refreshToken: String
@@ -16537,7 +16547,7 @@ type PrivacyCenterWorkflowConfig {
   title: LocalizedMessage!
   subtitle: LocalizedMessage
   description: LocalizedMessage
-  action: Action!
+  action: WorkflowAction!
   subject: DataSubject
   regionList: [String!]
   collectDataSubjectRegions: CollectDataSubjectRegions!
@@ -17567,6 +17577,7 @@ type Request implements RequestInterface {
   overduePercentage: Float!
   daysRemaining: Int
   extensionTimeDays: Int!
+  isExtended: Boolean!
   bounced: Int!
   isTest: Boolean!
   isSilent: Boolean!
@@ -20117,6 +20128,8 @@ type Step implements StepInterface {
   icon: String!
   status: StepStatus
   time: Date
+  extensionDeadlines: ExtensionDeadlines
+  extensionDescription: String
   steps: [ChildStep!]!
 }
 
@@ -21001,6 +21014,7 @@ input UpdateActionInput {
   requiresSecondaryReview: Boolean
   icon: String
   expiryTimeRegions: [ExpiryTimeInput!]
+  extensionTimeRegions: [ExpiryTimeInput!]
   downloadAvailabilityDuration: Int
   archiveDurationDays: Int
   confirmations: [ActionConfirmationInput!]
@@ -23332,6 +23346,22 @@ type WiredIdentifier implements IdentifierInterface {
   isConnected: Boolean!
 }
 
+type WorkflowAction implements ActionInterface {
+  id: ID!
+  type: RequestAction!
+  title: DefinedMessage!
+  description: DefinedMessage!
+  secondaryDescription: DefinedMessage!
+  postCompileStatus: PostCompileStatus!
+  regionDetectionMethod: RegionDetectionMethod!
+  regionList: [String!]!
+  allowPostCompileChoice: Boolean
+  formItems: [FormItem!]!
+  icon: String
+  delay: ActionDelay
+  extensionTimeRegions: [ExpiryTime!]!
+}
+
 type WorkflowCommunicationSettings {
   templateType: WorkflowCommunicationTemplateType!
   enabled: Boolean!
@@ -23370,7 +23400,7 @@ type WorkflowConfig {
   title: LocalizedMessage!
   subtitle: LocalizedMessage
   description: LocalizedMessage
-  action: Action!
+  action: WorkflowAction!
   lastRun: Date
   deletedAt: Date
   collectDataSubjectRegions: CollectDataSubjectRegions!
