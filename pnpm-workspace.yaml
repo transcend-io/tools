@@ -19,6 +19,8 @@ minimumReleaseAgeExclude:
   - vite@8.1.6
   # Renovate security update: undici@6.29.1
   - undici@6.29.1
+  # Renovate security update: zod@4.6.6
+  - zod@4.6.6
 
 onlyBuiltDependencies:
   - esbuild
