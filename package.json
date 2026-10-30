@@ -52,7 +52,7 @@
     "@transcend-io/mcp-server-inventory": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",
     "@transcend-io/mcp-server-workflows": "workspace:*",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.5",
     "graphql": "16.14.2",
     "husky": "9.1.7",
     "oxfmt": "0.54.0",

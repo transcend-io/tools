@@ -58,7 +58,7 @@
     "@transcend-io/design-tokens": "workspace:*",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.5",
     "@types/react": "19.2.18",
     "publint": "0.3.21",
     "react": "19.2.8",

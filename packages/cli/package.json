@@ -142,7 +142,7 @@
     "@types/json-schema": "7.0.15",
     "@types/jsonwebtoken": "9.0.10",
     "@types/lodash-es": "4.17.12",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.5",
     "@types/semver": "7.7.1",
     "@types/yargs-parser": "21.0.3",
     "date-fns": "4.4.0",
