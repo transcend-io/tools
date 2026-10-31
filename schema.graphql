@@ -5328,6 +5328,7 @@ type Query {
   contractEntitlements: ContractEntitlementsResult!
   cookies(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: CookiesFiltersInput, orderBy: [CookieOrder!], useMaster: Boolean, isExportCsv: Boolean): CookiesPayload!
   cookieStats(input: AirgapBundleInput!): CookieStatsPayload!
+  currentApiKey: CurrentApiKey!
   currentDnsRecords(input: CurrentDnsRecordsInput!): CurrentDnsRecordsPayload!
   currentEmailDomains: [EmailDomain!]!
   currentEmailSenderAddresses(input: CurrentEmailSenderAddressesInput!): CurrentEmailSenderAddressesPayload!
@@ -11246,6 +11247,11 @@ input CreateWorkflowInput {
   workflowConfigType: WorkflowConfigType
   purposeId: ID
   subjectId: ID
+}
+
+type CurrentApiKey {
+  id: ID!
+  title: String!
 }
 
 type CurrentDnsRecordsPayload {
