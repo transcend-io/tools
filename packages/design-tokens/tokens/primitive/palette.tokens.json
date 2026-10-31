@@ -107,6 +107,18 @@
           "components": [0.37254902720451355, 0.35686275362968445, 0.9686274528503418]
         }
       },
+      "500-alpha-50": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            { "$ref": "#/palette/indigo/500/$value/components/0" },
+            { "$ref": "#/palette/indigo/500/$value/components/1" },
+            { "$ref": "#/palette/indigo/500/$value/components/2" }
+          ],
+          "alpha": 0.5
+        },
+        "$description": "palette.indigo.500 at 50% opacity"
+      },
       "600": {
         "$value": {
           "colorSpace": "srgb",
