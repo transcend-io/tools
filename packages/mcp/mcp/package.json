@@ -59,7 +59,7 @@
     "@arethetypeswrong/cli": "0.18.3",
     "@sanity/client": "7.6.0",
     "@transcend-io/privacy-types": "workspace:*",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.6",
     "publint": "0.3.21",
     "tsdown": "0.21.10",
     "tsx": "4.22.4",

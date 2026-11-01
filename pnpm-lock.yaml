@@ -10,16 +10,16 @@ importers:
     devDependencies:
       '@changesets/cli':
         specifier: 2.31.0
-        version: 2.31.0(@types/node@24.13.3)
+        version: 2.31.0(@types/node@26.6.6)
       '@graphql-codegen/cli':
         specifier: 7.1.3
-        version: 7.1.3(@types/node@24.13.3)(graphql@16.14.2)(typescript@6.0.3)
+        version: 7.1.3(@types/node@26.6.6)(graphql@16.14.2)(typescript@6.0.3)
       '@graphql-codegen/client-preset':
         specifier: 6.0.1
         version: 6.0.1(graphql@16.14.2)
       '@tailwindcss/vite':
         specifier: 4.3.3
-        version: 4.3.3(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.3.3(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       '@transcend-io/mcp-server-admin':
         specifier: workspace:*
         version: link:packages/mcp/mcp-server-admin
@@ -51,8 +51,8 @@ importers:
         specifier: workspace:*
         version: link:packages/mcp/mcp-server-workflows
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       graphql:
         specifier: 16.14.2
         version: 16.14.2
@@ -85,10 +85,10 @@ importers:
         version: 6.0.3
       vite:
         specifier: 8.1.6
-        version: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+        version: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -109,8 +109,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/design-tokens
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -134,10 +134,10 @@ importers:
         version: 6.0.3
       vite:
         specifier: 8.1.6
-        version: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+        version: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -189,8 +189,8 @@ importers:
         specifier: 0.18.3
         version: 0.18.3
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -202,7 +202,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/cli:
     dependencies:
@@ -289,10 +289,10 @@ importers:
         version: 5.2.0(graphql@16.14.2)
       inquirer:
         specifier: ^8.0.0
-        version: 8.2.7(@types/node@24.13.3)
+        version: 8.2.7(@types/node@26.6.6)
       inquirer-autocomplete-prompt:
         specifier: ^1.3.0
-        version: 1.3.0(inquirer@8.2.7(@types/node@24.13.3))
+        version: 1.3.0(inquirer@8.2.7(@types/node@26.6.6))
       io-ts:
         specifier: ^2.2.21
         version: 2.2.22(fp-ts@2.16.11)
@@ -373,8 +373,8 @@ importers:
         specifier: 4.17.12
         version: 4.17.12
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       '@types/semver':
         specifier: 7.7.1
         version: 7.7.1
@@ -404,7 +404,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/custom-function-types:
     devDependencies:
@@ -415,8 +415,8 @@ importers:
         specifier: workspace:*
         version: link:../privacy-types
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -431,7 +431,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/design-tokens:
     devDependencies:
@@ -440,16 +440,16 @@ importers:
         version: 0.18.3
       '@terrazzo/cli':
         specifier: 2.0.3
-        version: 2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+        version: 2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
       '@terrazzo/plugin-css':
         specifier: 2.0.3
-        version: 2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))
+        version: 2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))
       '@types/lodash':
         specifier: 4.14.202
         version: 4.14.202
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       colorjs.io:
         specifier: 0.6.1
         version: 0.6.1
@@ -470,7 +470,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/internationalization:
     devDependencies:
@@ -478,8 +478,8 @@ importers:
         specifier: 0.18.3
         version: 0.18.3
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -491,7 +491,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/mcp/mcp:
     dependencies:
@@ -548,8 +548,8 @@ importers:
         specifier: workspace:*
         version: link:../../privacy-types
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -564,7 +564,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/mcp/mcp-server-admin:
     dependencies:
@@ -588,8 +588,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -601,7 +601,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -628,8 +628,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -641,7 +641,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -686,8 +686,8 @@ importers:
         specifier: 5.0.6
         version: 5.0.6
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -708,7 +708,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -744,8 +744,8 @@ importers:
         specifier: workspace:*
         version: link:../../../dev/mcp-ui-common
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -775,10 +775,10 @@ importers:
         version: 6.0.3
       vite:
         specifier: 8.1.6
-        version: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+        version: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -805,8 +805,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -818,7 +818,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -845,8 +845,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -858,7 +858,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -882,8 +882,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -895,7 +895,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -922,8 +922,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -935,7 +935,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -962,8 +962,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -975,7 +975,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -1005,8 +1005,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1018,7 +1018,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -1042,8 +1042,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1055,7 +1055,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -1082,8 +1082,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0(zod@4.4.3)
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1095,7 +1095,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -1119,8 +1119,8 @@ importers:
         specifier: 0.18.3
         version: 0.18.3
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1132,7 +1132,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/sdk:
     dependencies:
@@ -1189,8 +1189,8 @@ importers:
         specifier: 4.17.12
         version: 4.17.12
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       '@types/semver':
         specifier: 7.7.1
         version: 7.7.1
@@ -1205,7 +1205,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/secret-value:
     dependencies:
@@ -1223,8 +1223,8 @@ importers:
         specifier: 0.18.3
         version: 0.18.3
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1236,7 +1236,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/type-utils:
     dependencies:
@@ -1254,8 +1254,8 @@ importers:
         specifier: 7.0.15
         version: 7.0.15
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1267,7 +1267,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/utils:
     dependencies:
@@ -1291,8 +1291,8 @@ importers:
         specifier: 3.5.42
         version: 3.5.42
       '@types/node':
-        specifier: 24.13.3
-        version: 24.13.3
+        specifier: 26.6.6
+        version: 26.6.6
       publint:
         specifier: 0.3.21
         version: 0.3.21
@@ -1304,7 +1304,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 4.1.11
-        version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
 packages:
 
@@ -3171,8 +3171,8 @@ packages:
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
 
-  '@types/node@24.13.3':
-    resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
+  '@types/node@26.6.6':
+    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -5668,8 +5668,8 @@ packages:
   unconfig-core@7.5.0:
     resolution: {integrity: sha512-Su3FauozOGP44ZmKdHy2oE6LPjk51M/TRRjHv2HNCWiDvfvCoxC2lno6jevMA91MYAdCdwP05QnWdWpSbncX/w==}
 
-  undici-types@7.18.2:
-    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
   undici@6.29.1:
     resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
@@ -6224,7 +6224,7 @@ snapshots:
     dependencies:
       '@changesets/types': 6.1.0
 
-  '@changesets/cli@2.31.0(@types/node@24.13.3)':
+  '@changesets/cli@2.31.0(@types/node@26.6.6)':
     dependencies:
       '@changesets/apply-release-plan': 7.1.1
       '@changesets/assemble-release-plan': 6.0.10
@@ -6240,7 +6240,7 @@ snapshots:
       '@changesets/should-skip-package': 0.1.2
       '@changesets/types': 6.1.0
       '@changesets/write': 0.4.0
-      '@inquirer/external-editor': 1.0.3(@types/node@24.13.3)
+      '@inquirer/external-editor': 1.0.3(@types/node@26.6.6)
       '@manypkg/get-packages': 1.1.3
       ansi-colors: 4.1.3
       enquirer: 2.4.1
@@ -6525,7 +6525,7 @@ snapshots:
       graphql: 16.14.2
       tslib: 2.8.1
 
-  '@graphql-codegen/cli@7.1.3(@types/node@24.13.3)(graphql@16.14.2)(typescript@6.0.3)':
+  '@graphql-codegen/cli@7.1.3(@types/node@26.6.6)(graphql@16.14.2)(typescript@6.0.3)':
     dependencies:
       '@babel/generator': 7.29.7
       '@babel/template': 7.29.7
@@ -6536,21 +6536,21 @@ snapshots:
       '@graphql-tools/apollo-engine-loader': 8.0.31(graphql@16.14.2)
       '@graphql-tools/code-file-loader': 8.1.33(graphql@16.14.2)
       '@graphql-tools/git-loader': 8.0.37(graphql@16.14.2)
-      '@graphql-tools/github-loader': 9.1.3(@types/node@24.13.3)(graphql@16.14.2)
+      '@graphql-tools/github-loader': 9.1.3(@types/node@26.6.6)(graphql@16.14.2)
       '@graphql-tools/graphql-file-loader': 8.1.15(graphql@16.14.2)
       '@graphql-tools/json-file-loader': 8.0.29(graphql@16.14.2)
       '@graphql-tools/load': 8.1.11(graphql@16.14.2)
       '@graphql-tools/merge': 9.1.10(graphql@16.14.2)
-      '@graphql-tools/url-loader': 9.1.3(@types/node@24.13.3)(graphql@16.14.2)
+      '@graphql-tools/url-loader': 9.1.3(@types/node@26.6.6)(graphql@16.14.2)
       '@graphql-tools/utils': 11.1.1(graphql@16.14.2)
-      '@inquirer/prompts': 8.5.2(@types/node@24.13.3)
+      '@inquirer/prompts': 8.5.2(@types/node@26.6.6)
       '@whatwg-node/fetch': 0.10.13
       chalk: 5.6.2
       cosmiconfig: 9.0.2(typescript@6.0.3)
       debounce: 3.0.0
       detect-indent: 7.0.2
       graphql: 16.14.2
-      graphql-config: 5.1.6(@types/node@24.13.3)(graphql@16.14.2)(typescript@6.0.3)
+      graphql-config: 5.1.6(@types/node@26.6.6)(graphql@16.14.2)(typescript@6.0.3)
       is-glob: 4.0.3
       jiti: 2.7.0
       json-to-pretty-yaml: 1.2.2
@@ -6734,7 +6734,7 @@ snapshots:
       - crossws
       - utf-8-validate
 
-  '@graphql-tools/executor-http@3.3.0(@types/node@24.13.3)(graphql@16.14.2)':
+  '@graphql-tools/executor-http@3.3.0(@types/node@26.6.6)(graphql@16.14.2)':
     dependencies:
       '@graphql-hive/signal': 2.0.0
       '@graphql-tools/executor-common': 1.0.6(graphql@16.14.2)
@@ -6744,7 +6744,7 @@ snapshots:
       '@whatwg-node/fetch': 0.10.13
       '@whatwg-node/promise-helpers': 1.3.2
       graphql: 16.14.2
-      meros: 1.3.2(@types/node@24.13.3)
+      meros: 1.3.2(@types/node@26.6.6)
       tslib: 2.8.1
     transitivePeerDependencies:
       - '@types/node'
@@ -6783,9 +6783,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@graphql-tools/github-loader@9.1.3(@types/node@24.13.3)(graphql@16.14.2)':
+  '@graphql-tools/github-loader@9.1.3(@types/node@26.6.6)(graphql@16.14.2)':
     dependencies:
-      '@graphql-tools/executor-http': 3.3.0(@types/node@24.13.3)(graphql@16.14.2)
+      '@graphql-tools/executor-http': 3.3.0(@types/node@26.6.6)(graphql@16.14.2)
       '@graphql-tools/graphql-tag-pluck': 8.3.32(graphql@16.14.2)
       '@graphql-tools/utils': 11.1.1(graphql@16.14.2)
       '@whatwg-node/fetch': 0.10.13
@@ -6867,10 +6867,10 @@ snapshots:
       graphql: 16.14.2
       tslib: 2.8.1
 
-  '@graphql-tools/url-loader@9.1.3(@types/node@24.13.3)(graphql@16.14.2)':
+  '@graphql-tools/url-loader@9.1.3(@types/node@26.6.6)(graphql@16.14.2)':
     dependencies:
       '@graphql-tools/executor-graphql-ws': 3.1.5(graphql@16.14.2)
-      '@graphql-tools/executor-http': 3.3.0(@types/node@24.13.3)(graphql@16.14.2)
+      '@graphql-tools/executor-http': 3.3.0(@types/node@26.6.6)(graphql@16.14.2)
       '@graphql-tools/executor-legacy-ws': 1.1.29(graphql@16.14.2)
       '@graphql-tools/utils': 11.1.1(graphql@16.14.2)
       '@graphql-tools/wrap': 11.1.16(graphql@16.14.2)
@@ -6918,129 +6918,129 @@ snapshots:
 
   '@inquirer/ansi@2.0.7': {}
 
-  '@inquirer/checkbox@5.2.1(@types/node@24.13.3)':
+  '@inquirer/checkbox@5.2.1(@types/node@26.6.6)':
     dependencies:
       '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/confirm@6.1.1(@types/node@24.13.3)':
+  '@inquirer/confirm@6.1.1(@types/node@26.6.6)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/core@11.2.1(@types/node@24.13.3)':
+  '@inquirer/core@11.2.1(@types/node@26.6.6)':
     dependencies:
       '@inquirer/ansi': 2.0.7
       '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
       cli-width: 4.1.0
       fast-wrap-ansi: 0.2.2
       mute-stream: 3.0.0
       signal-exit: 4.1.0
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/editor@5.2.2(@types/node@24.13.3)':
+  '@inquirer/editor@5.2.2(@types/node@26.6.6)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/external-editor': 3.0.3(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/external-editor': 3.0.3(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/expand@5.1.1(@types/node@24.13.3)':
+  '@inquirer/expand@5.1.1(@types/node@26.6.6)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/external-editor@1.0.3(@types/node@24.13.3)':
-    dependencies:
-      chardet: 2.1.1
-      iconv-lite: 0.7.2
-    optionalDependencies:
-      '@types/node': 24.13.3
-
-  '@inquirer/external-editor@3.0.3(@types/node@24.13.3)':
+  '@inquirer/external-editor@1.0.3(@types/node@26.6.6)':
     dependencies:
       chardet: 2.1.1
       iconv-lite: 0.7.2
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
+
+  '@inquirer/external-editor@3.0.3(@types/node@26.6.6)':
+    dependencies:
+      chardet: 2.1.1
+      iconv-lite: 0.7.2
+    optionalDependencies:
+      '@types/node': 26.6.6
 
   '@inquirer/figures@2.0.7': {}
 
-  '@inquirer/input@5.1.2(@types/node@24.13.3)':
+  '@inquirer/input@5.1.2(@types/node@26.6.6)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/number@4.1.1(@types/node@24.13.3)':
+  '@inquirer/number@4.1.1(@types/node@26.6.6)':
     dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/password@5.1.1(@types/node@24.13.3)':
-    dependencies:
-      '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
-    optionalDependencies:
-      '@types/node': 24.13.3
-
-  '@inquirer/prompts@8.5.2(@types/node@24.13.3)':
-    dependencies:
-      '@inquirer/checkbox': 5.2.1(@types/node@24.13.3)
-      '@inquirer/confirm': 6.1.1(@types/node@24.13.3)
-      '@inquirer/editor': 5.2.2(@types/node@24.13.3)
-      '@inquirer/expand': 5.1.1(@types/node@24.13.3)
-      '@inquirer/input': 5.1.2(@types/node@24.13.3)
-      '@inquirer/number': 4.1.1(@types/node@24.13.3)
-      '@inquirer/password': 5.1.1(@types/node@24.13.3)
-      '@inquirer/rawlist': 5.3.1(@types/node@24.13.3)
-      '@inquirer/search': 4.2.1(@types/node@24.13.3)
-      '@inquirer/select': 5.2.1(@types/node@24.13.3)
-    optionalDependencies:
-      '@types/node': 24.13.3
-
-  '@inquirer/rawlist@5.3.1(@types/node@24.13.3)':
-    dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
-    optionalDependencies:
-      '@types/node': 24.13.3
-
-  '@inquirer/search@4.2.1(@types/node@24.13.3)':
-    dependencies:
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
-    optionalDependencies:
-      '@types/node': 24.13.3
-
-  '@inquirer/select@5.2.1(@types/node@24.13.3)':
+  '@inquirer/password@5.1.1(@types/node@26.6.6)':
     dependencies:
       '@inquirer/ansi': 2.0.7
-      '@inquirer/core': 11.2.1(@types/node@24.13.3)
-      '@inquirer/figures': 2.0.7
-      '@inquirer/type': 4.0.7(@types/node@24.13.3)
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
-  '@inquirer/type@4.0.7(@types/node@24.13.3)':
+  '@inquirer/prompts@8.5.2(@types/node@26.6.6)':
+    dependencies:
+      '@inquirer/checkbox': 5.2.1(@types/node@26.6.6)
+      '@inquirer/confirm': 6.1.1(@types/node@26.6.6)
+      '@inquirer/editor': 5.2.2(@types/node@26.6.6)
+      '@inquirer/expand': 5.1.1(@types/node@26.6.6)
+      '@inquirer/input': 5.1.2(@types/node@26.6.6)
+      '@inquirer/number': 4.1.1(@types/node@26.6.6)
+      '@inquirer/password': 5.1.1(@types/node@26.6.6)
+      '@inquirer/rawlist': 5.3.1(@types/node@26.6.6)
+      '@inquirer/search': 4.2.1(@types/node@26.6.6)
+      '@inquirer/select': 5.2.1(@types/node@26.6.6)
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
+
+  '@inquirer/rawlist@5.3.1(@types/node@26.6.6)':
+    dependencies:
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
+    optionalDependencies:
+      '@types/node': 26.6.6
+
+  '@inquirer/search@4.2.1(@types/node@26.6.6)':
+    dependencies:
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/figures': 2.0.7
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
+    optionalDependencies:
+      '@types/node': 26.6.6
+
+  '@inquirer/select@5.2.1(@types/node@26.6.6)':
+    dependencies:
+      '@inquirer/ansi': 2.0.7
+      '@inquirer/core': 11.2.1(@types/node@26.6.6)
+      '@inquirer/figures': 2.0.7
+      '@inquirer/type': 4.0.7(@types/node@26.6.6)
+    optionalDependencies:
+      '@types/node': 26.6.6
+
+  '@inquirer/type@4.0.7(@types/node@26.6.6)':
+    optionalDependencies:
+      '@types/node': 26.6.6
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -7591,14 +7591,14 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.3
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.3
 
-  '@tailwindcss/vite@4.3.3(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@tailwindcss/vite@4.3.3(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
-      vite: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
 
-  '@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)':
+  '@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)':
     dependencies:
       '@clack/prompts': 1.7.0
       '@hono/node-server': 1.19.14(hono@4.12.25)
@@ -7615,8 +7615,8 @@ snapshots:
       mime: 4.1.0
       picocolors: 1.1.1
       scule: 1.3.0
-      vite: 8.0.0-beta.16(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
-      vite-node: 5.3.0(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.0.0-beta.16(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite-node: 5.3.0(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
       yaml: 2.9.0
       yaml-to-momoa: 0.0.9
     transitivePeerDependencies:
@@ -7657,9 +7657,9 @@ snapshots:
     optionalDependencies:
       yaml-to-momoa: 0.0.9
 
-  '@terrazzo/plugin-css@2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))':
+  '@terrazzo/plugin-css@2.0.3(@terrazzo/cli@2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))(@terrazzo/parser@2.4.0(yaml-to-momoa@0.0.9))':
     dependencies:
-      '@terrazzo/cli': 2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+      '@terrazzo/cli': 2.0.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(hono@4.12.25)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
       '@terrazzo/parser': 2.4.0(yaml-to-momoa@0.0.9)
       '@terrazzo/token-tools': 2.4.0
 
@@ -7736,7 +7736,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/chai@5.2.3':
     dependencies:
@@ -7745,7 +7745,7 @@ snapshots:
 
   '@types/cli-progress@3.11.6':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/colors@1.2.4':
     dependencies:
@@ -7753,11 +7753,11 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/deep-eql@4.0.2': {}
 
@@ -7769,7 +7769,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.1':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
       '@types/qs': 6.15.1
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -7805,12 +7805,12 @@ snapshots:
 
   '@types/jsonstream@0.8.33':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/lodash-es@4.17.12':
     dependencies:
@@ -7828,9 +7828,9 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-  '@types/node@24.13.3':
+  '@types/node@26.6.6':
     dependencies:
-      undici-types: 7.18.2
+      undici-types: 8.9.0
 
   '@types/qs@6.15.1': {}
 
@@ -7848,22 +7848,22 @@ snapshots:
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/through@0.0.33':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/unist@2.0.11': {}
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -7876,13 +7876,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.11(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.11(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -8767,13 +8767,13 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  graphql-config@5.1.6(@types/node@24.13.3)(graphql@16.14.2)(typescript@6.0.3):
+  graphql-config@5.1.6(@types/node@26.6.6)(graphql@16.14.2)(typescript@6.0.3):
     dependencies:
       '@graphql-tools/graphql-file-loader': 8.1.15(graphql@16.14.2)
       '@graphql-tools/json-file-loader': 8.0.29(graphql@16.14.2)
       '@graphql-tools/load': 8.1.11(graphql@16.14.2)
       '@graphql-tools/merge': 9.1.10(graphql@16.14.2)
-      '@graphql-tools/url-loader': 9.1.3(@types/node@24.13.3)(graphql@16.14.2)
+      '@graphql-tools/url-loader': 9.1.3(@types/node@26.6.6)(graphql@16.14.2)
       '@graphql-tools/utils': 11.1.1(graphql@16.14.2)
       cosmiconfig: 8.3.6(typescript@6.0.3)
       graphql: 16.14.2
@@ -8883,18 +8883,18 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  inquirer-autocomplete-prompt@1.3.0(inquirer@8.2.7(@types/node@24.13.3)):
+  inquirer-autocomplete-prompt@1.3.0(inquirer@8.2.7(@types/node@26.6.6)):
     dependencies:
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       figures: 3.2.0
-      inquirer: 8.2.7(@types/node@24.13.3)
+      inquirer: 8.2.7(@types/node@26.6.6)
       run-async: 2.4.1
       rxjs: 6.6.7
 
-  inquirer@8.2.7(@types/node@24.13.3):
+  inquirer@8.2.7(@types/node@26.6.6):
     dependencies:
-      '@inquirer/external-editor': 1.0.3(@types/node@24.13.3)
+      '@inquirer/external-editor': 1.0.3(@types/node@26.6.6)
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       cli-cursor: 3.1.0
@@ -9326,9 +9326,9 @@ snapshots:
 
   meriyah@7.1.1: {}
 
-  meros@1.3.2(@types/node@24.13.3):
+  meros@1.3.2(@types/node@26.6.6):
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
 
   micromark-extension-footnote@0.3.2:
     dependencies:
@@ -10334,7 +10334,7 @@ snapshots:
       '@quansync/fs': 1.0.0
       quansync: 1.0.0
 
-  undici-types@7.18.2: {}
+  undici-types@8.9.0: {}
 
   undici@6.29.1: {}
 
@@ -10399,13 +10399,13 @@ snapshots:
       unist-util-stringify-position: 2.0.3
       vfile-message: 2.0.4
 
-  vite-node@5.3.0(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0):
+  vite-node@5.3.0(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0):
     dependencies:
       cac: 6.7.14
       es-module-lexer: 2.1.0
       obug: 2.1.3
       pathe: 2.0.3
-      vite: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 7.3.6(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -10419,7 +10419,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0):
+  vite@7.3.6(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0):
     dependencies:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.4)
@@ -10428,14 +10428,14 @@ snapshots:
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.32.0
       tsx: 4.22.4
       yaml: 2.9.0
 
-  vite@8.0.0-beta.16(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0):
+  vite@8.0.0-beta.16(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0):
     dependencies:
       '@oxc-project/runtime': 0.115.0
       lightningcss: 1.32.0
@@ -10444,7 +10444,7 @@ snapshots:
       rolldown: 1.0.0-rc.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
       esbuild: 0.28.1
       fsevents: 2.3.3
       jiti: 2.7.0
@@ -10454,7 +10454,7 @@ snapshots:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0):
+  vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.7
@@ -10462,17 +10462,17 @@ snapshots:
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
       esbuild: 0.28.1
       fsevents: 2.3.3
       jiti: 2.7.0
       tsx: 4.22.4
       yaml: 2.9.0
 
-  vitest@4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
+  vitest@4.1.11(@types/node@26.6.6)(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.11(vite@8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -10489,10 +10489,10 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.6(@types/node@26.6.6)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.6.6
     transitivePeerDependencies:
       - msw
 
