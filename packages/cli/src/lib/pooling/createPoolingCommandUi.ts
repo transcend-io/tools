@@ -4,7 +4,7 @@ import type { ObjByString } from '@transcend-io/type-utils';
 import type { RunPoolOptions } from '@transcend-io/utils';
 
 import type { LocalContext } from '../../context.js';
-import { createExtraKeyHandler } from './createExtraKeyHandler.js';
+import { createExtraKeyHandler, type CreateExtraKeyHandlerOpts } from './createExtraKeyHandler.js';
 import { dashboardPlugin, type DashboardPlugin } from './dashboardPlugin.js';
 import { installInteractiveSwitcher } from './installInteractiveSwitcher.js';
 
@@ -19,12 +19,14 @@ type PoolingCommandUi<TTotals extends ObjByString, TSlotState extends ObjByStrin
  * @param context - Command-owned streams.
  * @param plugin - Command-specific dashboard renderer.
  * @param viewerMode - Whether interactive worker attachment is disabled.
+ * @param extraKeys - Optional export hotkeys, export status panel, and command-specific keys.
  * @returns Pool runner callbacks using the command context.
  */
 export function createPoolingCommandUi<TTotals extends ObjByString, TSlotState extends ObjByString>(
   context: Pick<LocalContext, 'process'>,
   plugin: DashboardPlugin<TTotals, TSlotState>,
   viewerMode: boolean,
+  extraKeys: Pick<CreateExtraKeyHandlerOpts, 'exportMgr' | 'exportStatus' | 'custom'> = {},
 ): PoolingCommandUi<TTotals, TSlotState> {
   const { process } = context;
 
@@ -69,6 +71,7 @@ export function createPoolingCommandUi<TTotals extends ObjByString, TSlotState e
         repaint,
         setPaused,
         stdout: process.stdout,
+        ...extraKeys,
       }),
   };
 }
