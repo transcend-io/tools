@@ -1,7 +1,7 @@
 {
   "name": "transcend-agent-governance",
   "displayName": "Transcend Rails Agent Controls",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Connect Cursor to Transcend Rails Agent Controls for policy-enforced MCP tool access via browser sign-in.",
   "author": {
     "name": "Transcend",
@@ -16,8 +16,8 @@
       "GATEWAY_BASE_URL": {
         "type": "string",
         "title": "Gateway base URL",
-        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to https://mcp.dev.myelin-internal.com. Do not append /mcp/... — the plugin adds that.",
-        "default": "https://mcp.dev.myelin-internal.com"
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to https://mcp.us.withrails.ai. Do not append /mcp/... — the plugin adds that.",
+        "default": "https://mcp.us.withrails.ai"
       }
     }
   }
