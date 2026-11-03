@@ -62,6 +62,23 @@ describe('Custom Function authoring contract', () => {
     >();
   });
 
+  it('exposes the request file and report helpers', () => {
+    // Why: customers compose report functions from these helpers.
+    // Given: the Custom Function sdk contract.
+    // When: the helper signatures are inspected.
+    // Then: files, theme and utils resolve to the published types.
+    expectTypeOf<ReturnType<CustomFunction.SDK['listRequestFiles']>>().toEqualTypeOf<
+      Promise<CustomFunction.RequestFile[]>
+    >();
+    expectTypeOf<ReturnType<CustomFunction.SDK['getPrivacyCenterTheme']>>().toEqualTypeOf<
+      Promise<CustomFunction.PrivacyCenterTheme>
+    >();
+    expectTypeOf<CustomFunction.SDK['utils']>().toEqualTypeOf<CustomFunction.SdkUtils>();
+    expectTypeOf<CustomFunction.PrivacyCenterTheme['colorMode']>().toEqualTypeOf<
+      'light' | 'dark'
+    >();
+  });
+
   it('makes Transcend-provided identifiers optional in test payloads', () => {
     // Why: local test payloads may omit values added during execution.
     // Given: datapoint and General test payload contracts.
