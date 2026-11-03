@@ -293,15 +293,6 @@ enum ProcessingPurpose {
   UNSPECIFIED
 }
 
-enum IntegrationQueueType {
-  RequestEnricher
-  RequestDataSilo
-  ProfileDataPoint
-  requestFile
-  plugin
-  lookupProcess
-}
-
 enum RequestAction {
   AUTOMATED_DECISION_MAKING_OPT_OUT
   USE_OF_SENSITIVE_INFORMATION_OPT_OUT
@@ -2127,17 +2118,17 @@ enum AirgapIssueSeverityGQL {
 }
 
 enum AnalyticsDimension {
+  NEW_VALUE
   REGIME
+  PURPOSE
   SIGNAL
   SIGNAL_GPC
   SIGNAL_DNT
   COOKIE
   HOST
   PATH
-  PURPOSE
   PURPOSE_DEFAULT_CONSENT_VALUE
   PURPOSE_CURRENT_CONSENT_VALUE
-  NEW_VALUE
   WAS_ALLOWED
   CONSENT_MANAGER_ID
   ENCOUNTERED_AT
@@ -2152,18 +2143,18 @@ enum AnalyticsDimension {
 
 enum AnalyticsEvent {
   CONSENT_CHANGED
+  SIGNAL_DETECTED
+  SITE_SESSIONS
+  PAGE_VIEWS
   OUTGOING_REQUEST
   COOKIE_MUTATION
   COOKIE_MATCHER_MUTATION
   PATH_MATCHER_REQUEST
   PATH_REQUEST
-  PAGE_VIEWS
-  SITE_SESSIONS
   BOUNCES
   TELEMETRY_REQUESTS
   INITIAL_SITE_SESSION_CONSENT
   REGIME_DETECTED
-  SIGNAL_DETECTED
   INITIAL_SESSION_SIGNAL
   TRACKING_PURPOSE_STATS
 }
@@ -2175,10 +2166,6 @@ enum BundleDeployStatus {
   ROLLBACK_PENDING
   ERROR
   TEST_ERROR
-}
-
-enum ConsentEvent {
-  CONSENT_CHANGED
 }
 
 enum ConsentTrackerFilter {
@@ -2248,7 +2235,6 @@ enum RegimeEvent {
 }
 
 enum SignalEvent {
-  SIGNAL_DETECTED
   INITIAL_SESSION_SIGNAL
 }
 
@@ -2267,8 +2253,6 @@ enum TrafficEvent {
   COOKIE_MATCHER_MUTATION
   PATH_MATCHER_REQUEST
   PATH_REQUEST
-  PAGE_VIEWS
-  SITE_SESSIONS
   BOUNCES
   TELEMETRY_REQUESTS
   INITIAL_SITE_SESSION_CONSENT
@@ -3497,6 +3481,19 @@ enum AuthenticationMethod {
   Jwt
 }
 
+enum BacklogQueueType {
+  RequestEnricher
+  RequestDataSilo
+  ProfileDataPoint
+  requestFile
+  plugin
+  lookupProcess
+  enricherWorkflowJob
+  dataSiloWorkflowJob
+  dataPointWorkflowJob
+  profileDataPointWorkflowJob
+}
+
 enum CommonLambdaStatus {
   SILO_CREDENTIALS_EXPIRED
   SILO_CREDENTIALS_UPDATED
@@ -3594,6 +3591,11 @@ enum DataPointTypeDisplayName {
   USER_LIST
 }
 
+enum DataSiloConnectionFlowState {
+  FIRST_CONNECT
+  RECONNECT
+}
+
 enum DataSiloConnectionState {
   EXPIRED
   NOT_CONFIGURED
@@ -3661,6 +3663,20 @@ enum FormType {
   SelectUsers
   SelectTeams
   SelectTemplate
+}
+
+enum IntegrationEnv {
+  DEV
+  PROD
+}
+
+enum IntegrationQueueType {
+  RequestEnricher
+  RequestDataSilo
+  ProfileDataPoint
+  requestFile
+  plugin
+  lookupProcess
 }
 
 enum LookupProcessAlgorithm {
@@ -3799,6 +3815,19 @@ enum SiloFormType {
 enum SnippetLanguage {
   js
   json
+}
+
+enum SynchronousLambdaMethod {
+  RUN_ENRICHMENT_CHECK
+  GET_ENRICHMENT_METADATA
+  FETCH_AND_TEST
+  REVOKE
+  REMOTE_SEED
+  CREATE_LOOKUP_PROCESS_INPUTS
+}
+
+enum TeradataIdentifierType {
+  teradataAggregator
 }
 
 enum UnstructuredDataSamplingStatus {
@@ -4870,6 +4899,7 @@ enum AuditEventCode {
   UNSTRUCTURED_SUB_DATA_POINT_RECOMMENDATION
   SOMBRA
   SOMBRA_API_KEY
+  SOMBRA_VERSION
   ORG_TCF_PURPOSE
   ORG_TCF_SPECIAL_FEATURE
   ORG_TCF_PURPOSE_PURPOSE
@@ -5053,9 +5083,9 @@ enum AnalyticsDataSource {
   HISTORICAL_REQUESTS_BY_STATUS
   VISITOR_CHOICES
   CONSENT_SIGNALS
-  CONSENT_SESSIONS_BY_REGIME
-  CONSENT_CHANGES_TIMESERIES
   PRIVACY_SIGNAL_TIMESERIES
+  CONSENT_CHANGES_TIMESERIES
+  CONSENT_SESSIONS_BY_REGIME
   AUDITOR_REQUESTS_BY_PURPOSE
   AUDITOR_COOKIES_BY_PURPOSE
   AUDITOR_REQUESTS_REGULATED_BY_AIRGAP
@@ -6177,6 +6207,7 @@ type Activity {
 
 input ActivityFiltersInput {
   requestId: ID
+  requestIds: [ID!]
   dataSiloId: ID
   dataSiloIds: [ID!]
   userIds: [ID!]
@@ -6673,17 +6704,17 @@ type AnalyticsDataSeries {
 }
 
 type AnalyticsDimensions {
+  NEW_VALUE: String
   REGIME: String
+  PURPOSE: String
   SIGNAL: String
   SIGNAL_GPC: String
   SIGNAL_DNT: String
   COOKIE: String
   HOST: String
   PATH: String
-  PURPOSE: String
   PURPOSE_DEFAULT_CONSENT_VALUE: String
   PURPOSE_CURRENT_CONSENT_VALUE: String
-  NEW_VALUE: String
   WAS_ALLOWED: String
   CONSENT_MANAGER_ID: String
   ENCOUNTERED_AT: String
@@ -14359,7 +14390,6 @@ type FeatureDefinition {
 
 type FeatureForPrivacyCenter {
   id: ID!
-  lastEditor: UserPreview @deprecated(reason: "This is not needed on privacy center")
   definition: FeatureDefinition!
   featureName: FeatureDefinitionName!
   isBetaEnabled: Boolean
@@ -19514,6 +19544,12 @@ input SetResourceAttributesInput {
   attributeKeyId: ID!
   attributeValueIds: [ID!]
   attributeValueNames: [String!]
+}
+
+input SetSombraHostedMethodAsAdminInput {
+  organizationId: ID!
+  sombraId: ID!
+  hostedMethod: SombraHostedMethod!
 }
 
 input SetSyncEndpointInput {
