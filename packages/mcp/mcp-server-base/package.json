@@ -11,7 +11,8 @@
     "directory": "packages/mcp/mcp-server-base"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
