@@ -23401,6 +23401,7 @@ type WorkflowAction implements ActionInterface {
   formItems: [FormItem!]!
   icon: String
   delay: ActionDelay
+  expiryTimeRegions: [ExpiryTime!]!
   extensionTimeRegions: [ExpiryTime!]!
 }
 
@@ -23415,6 +23416,7 @@ type WorkflowCommunicationsSettingsPayload {
   clientMutationId: String
   nodes: [WorkflowCommunicationSettings!]!
   totalCount: Int!
+  skipDownloadableStep: Boolean!
 }
 
 type WorkflowCompletedStep implements WorkflowCompletedStepInterface {
