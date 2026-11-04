@@ -511,7 +511,7 @@ export namespace CustomFunction {
     /**
      * Call a Transcend API path and parse the JSON response.
      *
-     * Throws when the response is not successful. Requires Sombra 7.656.0 or later.
+     * Throws when the response is not successful. Requires Sombra 7.657.0 or later.
      *
      * @param path - Transcend API path
      * @param options - Fetch request options, plus an optional `apiKey`
@@ -521,7 +521,7 @@ export namespace CustomFunction {
     /**
      * Run a GraphQL query against the Transcend API.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param query - GraphQL document
      * @param variables - Query variables
@@ -536,7 +536,7 @@ export namespace CustomFunction {
     /**
      * Return profiles for the current request and mark the data silo ready.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param options - Profiles to return and the status to set
      */
@@ -551,7 +551,7 @@ export namespace CustomFunction {
     /**
      * Mark this data silo complete without returning data.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param options - Per-call options
      */
@@ -559,7 +559,7 @@ export namespace CustomFunction {
     /**
      * Upload one file to a datapoint.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param options - Datapoint, content and archive placement
      */
@@ -580,7 +580,7 @@ export namespace CustomFunction {
     /**
      * List every file in the archive for a request.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param options - Request and filters
      * @returns All request files
@@ -596,7 +596,7 @@ export namespace CustomFunction {
     /**
      * Download and decrypt one request file through Sombra.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param file - File to download
      * @param options - Per-call options
@@ -609,13 +609,13 @@ export namespace CustomFunction {
     /**
      * Load Privacy Center colors and logo, falling back to a neutral theme.
      *
-     * Requires Sombra 7.656.0 or later.
+     * Requires Sombra 7.657.0 or later.
      *
      * @param options - Per-call options
      * @returns Privacy Center theme
      */
     getPrivacyCenterTheme(options?: SdkApiOptions): Promise<PrivacyCenterTheme>;
-    /** Pure helpers for building pages and processing files. Requires Sombra 7.656.0 or later. */
+    /** Pure helpers for building pages and processing files. Requires Sombra 7.657.0 or later. */
     utils: SdkUtils;
   }
 
