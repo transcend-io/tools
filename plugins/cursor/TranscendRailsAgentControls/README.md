@@ -31,7 +31,7 @@ Your Cursor team admin imports [`transcend-io/tools`](https://github.com/transce
 
 1. Open **Customize** in the Cursor sidebar.
 2. Find **Transcend Rails Agent Controls** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
-3. Accept the default gateway settings. The default gateway is `https://mcp.us.withrails.ai`; set **Gateway base URL** only for a self-hosted or other-region deployment. Do **not** paste a full MCP path into any base URL field — the plugin appends `/mcp/agent`.
+3. Accept the default gateway settings. The default gateway is `https://mcp.us.withrails.ai`; set **Gateway base URL** only for a self-hosted deployment, another region, or Dev dogfood. Do **not** paste a full MCP path into any base URL field — the plugin appends `/mcp/agent`.
 4. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
 5. Complete sign-in and consent in the browser (pick your organization if asked). Cursor receives tokens; no client secret is involved.
 6. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).

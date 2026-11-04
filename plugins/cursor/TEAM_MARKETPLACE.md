@@ -91,7 +91,7 @@ For **Transcend Rails Agent Controls** during dogfood:
 1. In Cursor Desktop, open **Customize** in the sidebar.
 2. Find **Transcend Rails Agent Controls** under the team marketplace (not only `~/.cursor/plugins/local`).
 3. Install (or confirm Default On / Required already applied).
-4. Accept the default gateway (or set optional `GATEWAY_BASE_URL` for self-host only) — **no** `TENANT_ID`, **no** credential paste.
+4. Accept the default gateway (or set optional `GATEWAY_BASE_URL` for self-host or Dev dogfood only) — **no** `TENANT_ID`, **no** credential paste.
 5. Complete browser Connect / OAuth (org chosen at consent); confirm tools load after an Agent Governance admin assigns MCP servers to the auto-registered agent.
 
 ### A5. Independent clean-machine verification (acceptance)
@@ -115,7 +115,7 @@ Record pass/fail and any friction as follow-up tickets (Part E).
 2. Open **Customize** in the sidebar.
 3. Locate **Transcend Rails Agent Controls** (team marketplace section).
 4. Click **Install** (skip if your admin set **Default On** / **Required**).
-5. When prompted for plugin variables (self-host only), enter `GATEWAY_BASE_URL` — scheme + host only. SaaS / Dev dogfood should need no prompt; do **not** paste `/mcp/...` into the base URL. There is no `TENANT_ID` variable.
+5. When prompted for plugin variables (self-host or Dev dogfood only), enter `GATEWAY_BASE_URL` — scheme + host only. SaaS (US production, `https://mcp.us.withrails.ai`) should need no prompt; do **not** paste `/mcp/...` into the base URL. There is no `TENANT_ID` variable.
 6. Open **Settings → Tools & MCP** if Connect did not start automatically; authenticate / **Connect**.
 7. Complete browser sign-in and consent (pick your organization if asked).
 8. Ask an Agent Governance administrator to assign MCP servers / policy to your auto-registered connected agent (starts empty — fail-closed).
@@ -137,7 +137,7 @@ Share this checklist (email / Notion / ticket):
 2. **Marketplace source:** `https://github.com/transcend-io/tools` (branch `main` unless Transcend names a release branch).
 3. **Plugin id / name:** `transcend-agent-governance` / **Transcend Rails Agent Controls**.
 4. **Install mode recommendation:** **Default Off** for the first pilot cohort.
-5. **Environment:** SaaS / Dev uses the plugin default gateway. Self-host partners need their `mcp.*` origin as optional `GATEWAY_BASE_URL` (scheme + host only). Organization is chosen at consent — no `TENANT_ID`.
+5. **Environment:** SaaS uses the plugin default gateway (`https://mcp.us.withrails.ai`). Self-host partners and Dev dogfooders need their `mcp.*` origin as optional `GATEWAY_BASE_URL` (scheme + host only). Organization is chosen at consent — no `TENANT_ID`.
 6. **Post-auth admin step in Agent Governance:** assign MCP servers / policy to each auto-registered Cursor agent.
 7. **Link** to [Transcend Rails Agent Controls plugin README](./TranscendRailsAgentControls/README.md) (sign-in, revoke, troubleshooting) and this document.
 
