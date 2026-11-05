@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import type { JSONSchema7 } from 'json-schema';
+import type { JSONSchema7, JSONSchema7Definition } from 'json-schema';
 
 /**
  * `io-ts` types compatible with JSON Schema.
@@ -128,32 +128,34 @@ const convertToJsonSchema = (
     });
   }
 
-  if (type._tag === 'IntersectionType' && !alwaysIncludeRequired) {
-    return tracked({
-      allOf: type.types.map((subtype: any) =>
-        convertToJsonSchema(subtype, strict, alwaysIncludeRequired, context),
-      ),
-    });
-  }
-
-  if (type._tag === 'IntersectionType' && alwaysIncludeRequired) {
+  if (type._tag === 'IntersectionType') {
     const results = type.types.map((subtype: any) =>
       convertToJsonSchema(subtype, strict, alwaysIncludeRequired, context),
     );
 
-    if (!results.every((result: any) => result.type === 'object')) {
-      throw new Error('InterfaceType must have all children as type=object');
+    if (alwaysIncludeRequired) {
+      if (!results.every((result: any) => result.type === 'object')) {
+        throw new Error('InterfaceType must have all children as type=object');
+      }
+
+      return tracked({
+        type: 'object',
+        required: results.map((result: any) => result.required).flat(),
+        properties: results.reduce(
+          (accumulator: any, result: any) => ({ ...accumulator, ...result.properties }),
+          {},
+        ),
+        ...(strict ? { additionalProperties: false } : {}),
+      });
     }
 
-    return tracked({
-      type: 'object',
-      required: results.map((result: any) => result.required).flat(),
-      properties: results.reduce(
-        (accumulator: any, result: any) => ({ ...accumulator, ...result.properties }),
-        {},
-      ),
-      ...(strict ? { additionalProperties: false } : {}),
-    });
+    // Each strict object forbids keys it does not declare, so an `allOf` of
+    // them rejects a value that is valid for the intersection.
+    if (strict && results.every(isMergeableObjectSchema)) {
+      return tracked(mergeObjectSchemas(results));
+    }
+
+    return tracked({ allOf: results });
   }
 
   if (type._tag === 'InterfaceType') {
@@ -239,8 +241,105 @@ const convertToJsonSchema = (
     });
   }
 
+  if (isNoExcessCodec(rawType)) {
+    return tracked(
+      closeNoExcessSchema(
+        convertToJsonSchema(rawType.type, strict, alwaysIncludeRequired, context),
+      ),
+    );
+  }
+
   return tracked(unhandledType(type as never));
 };
+
+/** Keys an object schema may have and still be merged with its siblings. */
+const MERGEABLE_OBJECT_KEYS = new Set(['type', 'properties', 'required', 'additionalProperties']);
+
+/**
+ * An `io-ts` `noExcess` wrapper. It is not part of the `io-ts` type union.
+ */
+interface NoExcessCodec {
+  /** Discriminator set by `NoExcessType`. */
+  _tag: 'NoExcessType';
+  /** Codec whose keys are the only ones allowed. */
+  type: t.Mixed;
+}
+
+/**
+ * @param value - Codec being converted.
+ * @returns Whether the codec is a `noExcess` wrapper.
+ */
+function isNoExcessCodec(value: unknown): value is NoExcessCodec {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { _tag?: unknown })._tag === 'NoExcessType' &&
+    'type' in value
+  );
+}
+
+/**
+ * Whether a schema is one object declaration, safe to merge into an intersection.
+ *
+ * A dictionary uses `additionalProperties` for its value schema, so it is not
+ * mergeable. Merging it would drop that schema.
+ *
+ * @param schema - Schema produced for one intersection member.
+ * @returns Whether the member can be merged.
+ */
+function isMergeableObjectSchema(schema: JSONSchema7Definition): schema is JSONSchema7 {
+  return (
+    typeof schema === 'object' &&
+    schema.type === 'object' &&
+    (schema.additionalProperties === undefined || schema.additionalProperties === false) &&
+    Object.keys(schema).every((key) => MERGEABLE_OBJECT_KEYS.has(key))
+  );
+}
+
+/**
+ * Combine object schemas that describe one intersection.
+ *
+ * @param schemas - Object schemas for each intersection member.
+ * @returns One object schema. Unknown keys are rejected.
+ */
+function mergeObjectSchemas(schemas: readonly JSONSchema7[]): JSONSchema7 {
+  const required = schemas.flatMap((schema) =>
+    Array.isArray(schema.required) ? schema.required : [],
+  );
+
+  return {
+    type: 'object',
+    ...(required.length > 0 ? { required } : {}),
+    properties: Object.assign({}, ...schemas.map((schema) => schema.properties ?? {})),
+    additionalProperties: false,
+  };
+}
+
+/**
+ * Reject unknown keys on the object a `noExcess` codec wraps.
+ *
+ * Nested objects keep the caller's strictness. `noExcess` only checks the
+ * keys of the value it wraps.
+ *
+ * @param schema - Schema for the wrapped codec.
+ * @returns Schema that rejects unknown keys when the wrapped codec is an object.
+ */
+function closeNoExcessSchema(schema: JSONSchema7): JSONSchema7 {
+  const members = schema.allOf ?? [];
+  if (members.length > 0 && members.every(isMergeableObjectSchema)) {
+    return mergeObjectSchemas(members);
+  }
+
+  if (
+    schema.type === 'object' &&
+    !schema.allOf &&
+    (schema.additionalProperties === undefined || schema.additionalProperties === false)
+  ) {
+    return { ...schema, additionalProperties: false };
+  }
+
+  return schema;
+}
 
 /**
  * Associate a generated schema object with the codec that produced it.
