@@ -2,7 +2,9 @@ import {
   assertOffsetInRange,
   createListResult,
   defineTool,
-  describeNoMatches,
+  describeOutcome,
+  nonEmptyList,
+  nonEmptyListMessage,
   OffsetPaginationSchema,
   z,
   type ToolClients,
@@ -12,14 +14,10 @@ import type { AssessmentsMixin } from '../graphql.js';
 
 export const ListTemplatesSchema = OffsetPaginationSchema.extend({
   text: z.string().optional().describe('Free-text match on the template title and description'),
-  ids: z
-    .array(z.string())
-    .min(1, { message: 'Pass at least one template ID, or omit the filter entirely.' })
-    .optional()
-    .describe('Specific template IDs to fetch'),
+  ids: nonEmptyList('Specific template IDs to fetch', 'template ID'),
   statuses: z
     .array(z.enum(['DRAFT', 'PUBLISHED']))
-    .min(1, { message: 'Pass at least one status, or omit the filter entirely.' })
+    .min(1, { message: nonEmptyListMessage('status') })
     .optional()
     .describe('Publication statuses to include. Omit for both.'),
 });
@@ -60,8 +58,13 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
       return createListResult(result.nodes, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
-        ...(totalCount === 0 && {
-          paginationNote: describeNoMatches('templates', appliedFilters),
+        paginationNote: describeOutcome({
+          subject: 'templates',
+          returned: result.nodes.length,
+          totalCount,
+          offset,
+          limit,
+          appliedFilters,
         }),
       });
     },
