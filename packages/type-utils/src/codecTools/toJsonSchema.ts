@@ -319,15 +319,16 @@ function mergeObjectSchemas(schemas: readonly JSONSchema7[]): JSONSchema7 {
  * Reject unknown keys on the object a `noExcess` codec wraps.
  *
  * Nested objects keep the caller's strictness. `noExcess` only checks the
- * keys of the value it wraps.
+ * keys of the value it wraps. A record inside the intersection still
+ * constrains those keys, but its open key set is closed.
  *
  * @param schema - Schema for the wrapped codec.
  * @returns Schema that rejects unknown keys when the wrapped codec is an object.
  */
 function closeNoExcessSchema(schema: JSONSchema7): JSONSchema7 {
   const members = schema.allOf ?? [];
-  if (members.length > 0 && members.every(isMergeableObjectSchema)) {
-    return mergeObjectSchemas(members);
+  if (members.length > 0 && Object.keys(schema).every((key) => key === 'allOf')) {
+    return closeNoExcessIntersection(members.flatMap(flattenPureAllOf));
   }
 
   if (
@@ -339,6 +340,141 @@ function closeNoExcessSchema(schema: JSONSchema7): JSONSchema7 {
   }
 
   return schema;
+}
+
+/**
+ * Close an intersection wrapped by `noExcess`.
+ *
+ * Object members are merged, so one member's `additionalProperties: false`
+ * does not reject another member's keys. Anything that cannot be merged, such
+ * as a record, stays in `allOf` and still applies to the declared keys.
+ *
+ * @param members - Intersection member schemas.
+ * @returns One object schema that rejects unknown keys.
+ */
+function closeNoExcessIntersection(members: readonly JSONSchema7Definition[]): JSONSchema7 {
+  const mergeable = members.filter(isMergeableObjectSchema);
+  const rest = members.filter((member) => !isMergeableObjectSchema(member));
+
+  if (rest.length === 0) {
+    return mergeObjectSchemas(mergeable);
+  }
+
+  const merged = mergeable.length > 0 ? mergeObjectSchemas(mergeable) : undefined;
+  const declared = declaredObjectConstraints(rest);
+  const required = [
+    ...new Set([
+      ...(merged && Array.isArray(merged.required) ? merged.required : []),
+      ...declared.required,
+    ]),
+  ];
+  const properties = {
+    ...declared.properties,
+    ...(merged?.properties ?? {}),
+  };
+
+  return {
+    type: 'object',
+    ...(required.length > 0 ? { required } : {}),
+    ...(Object.keys(properties).length > 0 ? { properties } : {}),
+    additionalProperties: false,
+    allOf: rest.map(stripAdditionalPropertiesFalse),
+  };
+}
+
+/**
+ * Unwrap intersections that are only an `allOf`, so their members can be merged.
+ *
+ * @param schema - Schema that may itself be an intersection.
+ * @returns Member schemas.
+ */
+function flattenPureAllOf(schema: JSONSchema7Definition): JSONSchema7Definition[] {
+  if (typeof schema === 'object' && schema.allOf && Object.keys(schema).length === 1) {
+    return schema.allOf.flatMap(flattenPureAllOf);
+  }
+
+  return [schema];
+}
+
+/**
+ * Whether a schema is a dictionary: any key is allowed, with a value schema.
+ *
+ * `noExcess` does not treat those keys as declared properties.
+ *
+ * @param schema - Schema to test.
+ * @returns Whether the schema is a dictionary.
+ */
+function isDictionarySchema(schema: JSONSchema7): boolean {
+  return (
+    schema.type === 'object' &&
+    typeof schema.additionalProperties === 'object' &&
+    schema.properties === undefined
+  );
+}
+
+/**
+ * Properties and required keys declared by members that could not be merged.
+ *
+ * Dictionary keys are skipped. `noExcess` does not treat them as declared.
+ *
+ * @param schemas - Intersection members that were not merged.
+ * @returns Declared properties and required keys.
+ */
+function declaredObjectConstraints(schemas: readonly JSONSchema7Definition[]): {
+  /** Property schemas declared by the members. */
+  properties: Record<string, JSONSchema7Definition>;
+  /** Required keys declared by the members. */
+  required: string[];
+} {
+  const properties: Record<string, JSONSchema7Definition> = {};
+  const required: string[] = [];
+
+  const visit = (schema: JSONSchema7Definition): void => {
+    if (typeof schema !== 'object' || schema.anyOf || schema.oneOf || isDictionarySchema(schema)) {
+      return;
+    }
+
+    if (schema.allOf) {
+      schema.allOf.forEach(visit);
+      return;
+    }
+
+    Object.assign(properties, schema.properties ?? {});
+    if (Array.isArray(schema.required)) {
+      required.push(...schema.required);
+    }
+  };
+
+  schemas.forEach(visit);
+  return { properties, required };
+}
+
+/**
+ * Drop `additionalProperties: false` from a member now closed by its parent.
+ *
+ * A record's value schema is left in place. Nested property schemas are left
+ * in place, because `noExcess` does not close nested objects.
+ *
+ * @param schema - Intersection member.
+ * @returns Member that no longer rejects sibling keys.
+ */
+function stripAdditionalPropertiesFalse(schema: JSONSchema7Definition): JSONSchema7Definition {
+  if (typeof schema !== 'object') {
+    return schema;
+  }
+
+  const { additionalProperties, ...rest } = schema;
+  const opened = additionalProperties === false ? rest : schema;
+
+  if (opened.allOf) {
+    return { ...opened, allOf: opened.allOf.map(stripAdditionalPropertiesFalse) };
+  }
+
+  if (opened.anyOf) {
+    return { ...opened, anyOf: opened.anyOf.map(stripAdditionalPropertiesFalse) };
+  }
+
+  return opened;
 }
 
 /**

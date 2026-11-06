@@ -283,6 +283,80 @@ describe('toJsonSchema', () => {
     });
   });
 
+  it('rejects unknown keys when a noExcess intersection includes a record', () => {
+    // `noExcess` only accepts `HasProps`, and a record is not one. The runtime
+    // wrapper still closes this intersection, so the cast covers that shape.
+    const schema = toJsonSchema(
+      noExcess(
+        t.intersection([t.type({ name: t.string }), t.record(t.string, t.string)]) as t.HasProps,
+      ),
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['name'],
+      additionalProperties: false,
+      properties: {
+        name: { type: 'string' },
+      },
+      allOf: [{ type: 'object', additionalProperties: { type: 'string' } }],
+    });
+  });
+
+  it('keeps declared keys when a strict noExcess intersection includes a record', () => {
+    const schema = toJsonSchema(
+      noExcess(
+        t.intersection([
+          t.type({ name: t.string }),
+          t.partial({ note: t.string }),
+          t.record(t.string, t.string),
+        ]) as t.HasProps,
+      ),
+      true,
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['name'],
+      additionalProperties: false,
+      properties: {
+        name: { type: 'string' },
+        note: { type: 'string' },
+      },
+      allOf: [{ type: 'object', additionalProperties: { type: 'string' } }],
+    });
+  });
+
+  it('rejects unknown keys when a noExcess intersection includes a refinement', () => {
+    const hasNote = (value: { note: string }): boolean => value.note.length > 0;
+    const schema = toJsonSchema(
+      noExcess(
+        t.intersection([
+          t.type({ name: t.string }),
+          t.refinement(t.type({ note: t.string }), hasNote),
+        ]),
+      ),
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['name', 'note'],
+      additionalProperties: false,
+      properties: {
+        note: { type: 'string' },
+        name: { type: 'string' },
+      },
+      allOf: [
+        {
+          type: 'object',
+          required: ['note'],
+          properties: { note: { type: 'string' } },
+          description: 'Predicate: hasNote',
+        },
+      ],
+    });
+  });
+
   it('merges a noExcess intersection into one object', () => {
     const schema = toJsonSchema(
       noExcess(t.intersection([t.type({ a: t.string }), t.partial({ b: t.string })])),
