@@ -535,7 +535,7 @@ importers:
         specifier: workspace:^
         version: link:../mcp-server-workflows
       zod:
-        specifier: ^4.4.3
+        specifier: ^4.6.6
         version: 4.6.6
     devDependencies:
       '@arethetypeswrong/cli':
