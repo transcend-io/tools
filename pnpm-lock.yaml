@@ -90,8 +90,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   dev/mcp-server-examples:
     dependencies:
@@ -101,10 +101,10 @@ importers:
     devDependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.6.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.6.6)
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -139,8 +139,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   dev/mcp-ui-common:
     dependencies:
@@ -150,7 +150,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.6.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.6.6)
       '@types/react':
         specifier: 19.2.18
         version: 19.2.18
@@ -497,7 +497,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@transcend-io/mcp-server-admin':
         specifier: workspace:^
         version: link:../mcp-server-admin
@@ -536,7 +536,7 @@ importers:
         version: link:../mcp-server-workflows
       zod:
         specifier: ^4.4.3
-        version: 4.4.3
+        version: 4.6.6
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
@@ -586,7 +586,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -603,8 +603,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-assessment:
     dependencies:
@@ -626,7 +626,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -643,8 +643,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-base:
     dependencies:
@@ -672,10 +672,10 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.6.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.6.6)
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -710,8 +710,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-consent:
     dependencies:
@@ -733,10 +733,10 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/ext-apps':
         specifier: 1.7.5
-        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
+        version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.6.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.6.6)
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@transcend-io/design-tokens':
         specifier: workspace:*
         version: link:../../design-tokens
@@ -780,8 +780,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-custom-functions:
     dependencies:
@@ -803,7 +803,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -820,8 +820,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-discovery:
     dependencies:
@@ -843,7 +843,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -860,8 +860,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-docs:
     dependencies:
@@ -880,7 +880,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -897,8 +897,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-dsr:
     dependencies:
@@ -920,7 +920,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -937,8 +937,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-inventory:
     dependencies:
@@ -960,7 +960,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -977,8 +977,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-policy:
     dependencies:
@@ -1003,7 +1003,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1020,8 +1020,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-preferences:
     dependencies:
@@ -1040,7 +1040,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1057,8 +1057,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/mcp/mcp-server-workflows:
     dependencies:
@@ -1080,7 +1080,7 @@ importers:
         version: 0.18.3
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
-        version: 1.29.0(zod@4.4.3)
+        version: 1.29.0(zod@4.6.6)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -1097,8 +1097,8 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.1.6(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: 4.4.3
-        version: 4.4.3
+        specifier: 4.6.6
+        version: 4.6.6
 
   packages/privacy-types:
     dependencies:
@@ -6024,8 +6024,8 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
   zwitch@1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
@@ -7083,16 +7083,16 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)':
+  '@modelcontextprotocol/ext-apps@1.7.5(@modelcontextprotocol/sdk@1.29.0(zod@4.6.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.6.6)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@4.6.6)
       '@standard-schema/spec': 1.1.0
-      zod: 4.4.3
+      zod: 4.6.6
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.6.6)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.25)
       ajv: 8.20.0
@@ -7109,8 +7109,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
+      zod: 4.6.6
+      zod-to-json-schema: 3.25.2(zod@4.6.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -10595,10 +10595,10 @@ snapshots:
 
   yoctocolors@2.1.2: {}
 
-  zod-to-json-schema@3.25.2(zod@4.4.3):
+  zod-to-json-schema@3.25.2(zod@4.6.6):
     dependencies:
-      zod: 4.4.3
+      zod: 4.6.6
 
-  zod@4.4.3: {}
+  zod@4.6.6: {}
 
   zwitch@1.0.5: {}
