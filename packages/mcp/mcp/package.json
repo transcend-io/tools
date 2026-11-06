@@ -53,7 +53,7 @@
     "@transcend-io/mcp-server-policy": "workspace:^",
     "@transcend-io/mcp-server-preferences": "workspace:^",
     "@transcend-io/mcp-server-workflows": "workspace:^",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.3",
