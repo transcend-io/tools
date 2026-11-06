@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-custom-functions
 
+## 0.3.2
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+- Updated dependencies [d166b89]
+  - @transcend-io/mcp-server-base@2.5.7
+
 ## 0.3.1
 
 ### Patch Changes

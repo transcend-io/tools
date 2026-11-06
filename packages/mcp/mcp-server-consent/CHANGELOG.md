@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-consent
 
+## 1.3.3
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+- Updated dependencies [d166b89]
+  - @transcend-io/mcp-server-base@2.5.7
+
 ## 1.3.2
 
 ### Patch Changes

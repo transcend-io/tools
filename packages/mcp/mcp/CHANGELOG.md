@@ -1,5 +1,24 @@
 # @transcend-io/mcp
 
+## 1.7.2
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+- Updated dependencies [d166b89]
+  - @transcend-io/mcp-server-admin@1.1.5
+  - @transcend-io/mcp-server-assessment@2.1.15
+  - @transcend-io/mcp-server-base@2.5.7
+  - @transcend-io/mcp-server-consent@1.3.3
+  - @transcend-io/mcp-server-custom-functions@0.3.2
+  - @transcend-io/mcp-server-discovery@1.0.18
+  - @transcend-io/mcp-server-docs@0.4.17
+  - @transcend-io/mcp-server-dsr@2.0.15
+  - @transcend-io/mcp-server-inventory@1.0.19
+  - @transcend-io/mcp-server-policy@0.2.7
+  - @transcend-io/mcp-server-preferences@0.7.22
+  - @transcend-io/mcp-server-workflows@1.0.18
+
 ## 1.7.1
 
 ### Patch Changes
