@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "transcend-rails-agent-controls": {
+      "type": "http",
+      "url": "https://mcp.withrails.ai/mcp/agent",
+      "headers": {
+        "Accept": "application/json, text/event-stream"
+      }
+    }
+  }
+}
