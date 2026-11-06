@@ -931,6 +931,7 @@ enum DatabaseModelName {
   FailedLoginAttempt
   userAuthFactor
   userAuthFactorChallenge
+  userDevice
   featureDefinition
   feature
   formItem
@@ -6280,7 +6281,7 @@ input AddFileUploadsToWorkflowConfigInput {
 }
 
 input AddFileUploadToWorkflowConfigItemInput {
-  internalName: String!
+  internalName: String
   label: String!
   info: String
   acceptedMimeTypes: [String!]
@@ -14924,6 +14925,16 @@ type IdentifiersPayload {
   totalCount: Int!
 }
 
+type IdentifierUpdate {
+  identifierName: String!
+  newValue: String!
+}
+
+input IdentifierUpdateInput {
+  identifierName: String!
+  newValue: String!
+}
+
 type ImportOneTrustAssessmentFormsPayload {
   clientMutationId: String
   assessmentForms: [AssessmentFormRaw!]!
@@ -17633,6 +17644,7 @@ type Request implements RequestInterface {
   workflowConfig: WorkflowConfig
   workflowInstance: WorkflowInstance
   statusTimestamps: StatusTimestamps
+  identifierUpdates: [IdentifierUpdate!]
 }
 
 type RequestAttachment {
@@ -23690,6 +23702,7 @@ input WorkflowRequestInput {
   attributes: [AttributeInput!]
   idempotencyKey: String
   workflowConfigId: ID!
+  identifierUpdates: [IdentifierUpdateInput!]
 }
 
 type WorkflowsResponse {
