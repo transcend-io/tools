@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 2.5.7
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+
 ## 2.5.6
 
 ### Patch Changes
