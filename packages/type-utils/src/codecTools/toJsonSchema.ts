@@ -1,5 +1,7 @@
 import * as t from 'io-ts';
-import type { JSONSchema7 } from 'json-schema';
+import type { JSONSchema7, JSONSchema7Definition } from 'json-schema';
+
+import type { NoExcessType } from '../noExcess.js';
 
 /**
  * `io-ts` types compatible with JSON Schema.
@@ -18,7 +20,8 @@ type MappableType =
   | t.ArrayType<any>
   | t.TupleType<any>
   | t.IntersectionType<any>
-  | t.RefinementType<any>;
+  | t.RefinementType<any>
+  | NoExcessType<any>;
 
 /**
  * Options for converting an `io-ts` codec to JSON Schema.
@@ -146,12 +149,7 @@ const convertToJsonSchema = (
     }
 
     return tracked({
-      type: 'object',
-      required: results.map((result: any) => result.required).flat(),
-      properties: results.reduce(
-        (accumulator: any, result: any) => ({ ...accumulator, ...result.properties }),
-        {},
-      ),
+      ...mergeObjectSchemas(results),
       ...(strict ? { additionalProperties: false } : {}),
     });
   }
@@ -239,8 +237,42 @@ const convertToJsonSchema = (
     });
   }
 
+  if (type._tag === 'NoExcessType') {
+    const { allOf, ...schema } = convertToJsonSchema(
+      type.type,
+      strict,
+      alwaysIncludeRequired,
+      context,
+    );
+
+    // `noExcess` rejects keys outside the wrapped codec's props. An
+    // intersection is merged first because `additionalProperties: false` on
+    // each `allOf` member would reject the other members' keys.
+    return tracked({
+      ...schema,
+      ...(allOf ? mergeObjectSchemas(allOf) : {}),
+      additionalProperties: false,
+    });
+  }
+
   return tracked(unhandledType(type as never));
 };
+
+/**
+ * Merge the object schemas of intersection members into one object schema.
+ *
+ * @param schemas - Schema generated for each intersection member
+ * @returns Object schema with the combined required keys and properties
+ */
+function mergeObjectSchemas(schemas: JSONSchema7Definition[]): JSONSchema7 {
+  const objects = schemas.filter((schema) => typeof schema === 'object');
+
+  return {
+    type: 'object',
+    required: objects.flatMap((schema) => schema.required ?? []),
+    properties: Object.assign({}, ...objects.map((schema) => schema.properties)),
+  };
+}
 
 /**
  * Associate a generated schema object with the codec that produced it.
