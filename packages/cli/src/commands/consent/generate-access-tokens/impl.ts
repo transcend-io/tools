@@ -26,6 +26,8 @@ export type GenerateAccessTokenCommandFlags = {
   subjectType: string;
   emailColumnName: string;
   coreIdentifierColumnName?: string;
+  /** JWT is the default. SHORT is a 43-character token. */
+  tokenFormat: 'JWT' | 'SHORT';
 };
 
 /**
@@ -48,6 +50,7 @@ export async function generateAccessTokens(
     subjectType,
     emailColumnName,
     coreIdentifierColumnName,
+    tokenFormat,
   }: GenerateAccessTokenCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
@@ -126,6 +129,7 @@ export async function generateAccessTokens(
     const t0 = Date.now();
     const results = await createPreferenceAccessTokens(client, {
       records: inputs,
+      tokenFormat,
       logger: this.logger,
       emitProgress: (progress) => {
         progressBar.update(progress);

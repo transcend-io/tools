@@ -35,6 +35,17 @@ const examples = buildExamples<GenerateAccessTokenCommandFlags>(
       },
     },
     {
+      description: 'Short tokens for email and SMS tools that limit URL length',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        file: './users.csv',
+        subjectType: 'customer',
+        tokenFormat: 'SHORT',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        duration: '1 year' as any,
+      },
+    },
+    {
       description: 'Specifying the backend URL (US-hosted backend infrastructure)',
       flags: {
         auth: '$TRANSCEND_API_KEY',

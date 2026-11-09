@@ -1796,7 +1796,7 @@ transcend consent build-xdi-sync-endpoint \
 
 ```txt
 USAGE
-  transcend consent generate-access-tokens (--auth value) (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--duration value] [--transcendUrl value]
+  transcend consent generate-access-tokens (--auth value) (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--tokenFormat JWT|SHORT] [--duration value] [--transcendUrl value]
   transcend consent generate-access-tokens --help
 
 This command allows for the generation of access tokens for users specified in a CSV file.
@@ -1807,6 +1807,7 @@ FLAGS
       --subjectType                Slug for the data subject that the user will be logged in as on the Privacy Center. e.g. "customer" or "employee"
      [--emailColumnName]           Name of the column in the CSV that contains user email addresses                                                                                                                                                                           [default = email]
      [--coreIdentifierColumnName]  Name of the column in the CSV that contains user core identifiers
+     [--tokenFormat]               Token written into the link. JWT is the signed token. SHORT is a 43-character token for email and SMS tools that limit URL length.                                                                                                         [JWT|SHORT, default = JWT]
      [--duration]                  How long the access tokens should be valid. Accepts human-friendly values like "2 days", "10h", "90 minutes". A bare number is interpreted as seconds (e.g., "300" = 5 minutes). Powered by the `ms` library: https://github.com/vercel/ms [default = 1y]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                         [default = https://api.transcend.io]
   -h  --help                       Print help information and exit
@@ -1843,6 +1844,17 @@ transcend consent generate-access-tokens \
   --emailColumnName=user_email \
   --coreIdentifierColumnName=crm_id \
   --duration="90 days"
+```
+
+**Short tokens for email and SMS tools that limit URL length**
+
+```sh
+transcend consent generate-access-tokens \
+  --auth="$TRANSCEND_API_KEY" \
+  --file=./users.csv \
+  --subjectType=customer \
+  --tokenFormat=SHORT \
+  --duration="1 year"
 ```
 
 **Specifying the backend URL (US-hosted backend infrastructure)**
