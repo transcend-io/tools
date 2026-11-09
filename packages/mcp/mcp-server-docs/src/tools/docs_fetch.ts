@@ -28,7 +28,12 @@ export function createDocsFetchTool(_clients?: ToolClients) {
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     zodSchema: DocsFetchSchema,
     handler: async ({ url }) => {
       assertDocsHost(url);

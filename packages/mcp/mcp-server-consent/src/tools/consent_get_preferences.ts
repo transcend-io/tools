@@ -13,7 +13,12 @@ export function createConsentGetPreferencesTool(clients: ToolClients) {
     description: 'Get consent preferences for a specific user/identifier',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: GetPreferencesSchema,
     handler: async ({ identifier, partition }) => {

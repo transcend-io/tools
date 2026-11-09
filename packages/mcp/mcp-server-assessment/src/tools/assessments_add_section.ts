@@ -30,7 +30,12 @@ export function createAssessmentsAddSectionTool(clients: ToolClients) {
       'Same auto-corrections as assessments_create_template apply to questions.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: AddSectionSchema,
     handler: async ({ templateId, title, questions }) => {
       const result = await graphql.createAssessmentSection({

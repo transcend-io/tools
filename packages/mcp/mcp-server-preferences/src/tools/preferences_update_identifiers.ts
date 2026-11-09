@@ -28,7 +28,12 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
         'attached to each old value onto the new one. The old values stop resolving. Check the ' +
         'old and new values in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,
     handler: async ({ partition, records }) => {

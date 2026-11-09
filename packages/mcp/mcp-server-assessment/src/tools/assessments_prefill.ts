@@ -154,7 +154,12 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       'Surface the returned `url` verbatim.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     zodSchema: PrefillSchema,
     handler: async ({
       answers,
