@@ -106,6 +106,12 @@ async function main(): Promise<void> {
       {
         name: 'transcend-mcp',
         version: VERSION,
+        // Only used when --public-url / TRANSCEND_MCP_PUBLIC_URL is set (OAuth discovery).
+        authorizationServerUrl: graphqlUrl,
+        scopesSupported: resolveUmbrellaOAuthScopes(
+          allowlist,
+          parseConfigResourceAllowlistFromEnv(),
+        ),
         createServer: async (auth) => {
           logger.info('Creating unified MCP server for new HTTP session...', {
             sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
