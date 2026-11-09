@@ -44,7 +44,12 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
         'version into effect for agent and tool traffic; deactivate clears the live version. ' +
         'Check action, bundle, and version in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: PolicySetLiveSchema,
     handler: async ({ action, bundleId, bundleName, versionId, version }) => {
       const client = createPolicyEngineClient(clients);

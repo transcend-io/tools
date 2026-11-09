@@ -23,7 +23,12 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
       'Assign internal users (by ID) or external users (by email) to an assessment form. This also transitions DRAFT assessments to SHARED status.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     zodSchema: UpdateAssigneesSchema,
     handler: async ({ assessmentId, assigneeIds, externalAssigneeEmails }) => {
       const result = await graphql.updateAssessmentFormAssignees({

@@ -41,7 +41,12 @@ export function createPolicyPublishTool(clients: PolicyToolClients) {
         'until activated, but the Rego and manifest in the call arguments become stored policy ' +
         'code. Check bundleName and the files or directory before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: PolicyPublishSchema,
     handler: async ({ dir, files, bundleName, version, description }) => {
       const client = createPolicyEngineClient(clients);

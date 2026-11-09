@@ -33,7 +33,12 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
       'Surface the returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: CreateAssessmentSchema,
     handler: async ({ title, assessmentGroupId, assigneeIds }) => {
       const result = await graphql.createAssessment({

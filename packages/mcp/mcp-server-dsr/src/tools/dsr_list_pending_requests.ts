@@ -32,7 +32,12 @@ export function createDsrListPendingRequestsTool(clients: ToolClients) {
       'OAuth-only auth returns 401.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: listPendingRequestsSchema,
     handler: async ({ dataSiloId, requestType }) => {

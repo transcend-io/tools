@@ -28,7 +28,12 @@ export function createInventoryListProcessingPurposesTool(clients: ToolClients) 
       '`purpose`/`name` pairs when assigning field-level purposes via inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListProcessingPurposesSchema,
     handler: async ({ text, limit, offset }) => {
       const result = await graphql.listProcessingPurposes({

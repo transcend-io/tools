@@ -20,7 +20,12 @@ export function createPolicyGetTemplatesTool(_clients: PolicyToolClients) {
     category: 'Policy Engine',
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: PolicyGetTemplatesSchema,
     handler: async ({ templateId }) => {
       const content = resolvePolicyGetTemplatesContent(templateId);

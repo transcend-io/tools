@@ -37,7 +37,12 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
       'assign tracking purposes, or set a service.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: UpdateDataFlowsSchema,
     handler: async ({ dataFlows }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

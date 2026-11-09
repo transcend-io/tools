@@ -24,7 +24,12 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients) {
       'assessments. Surface the returned `groupUrl` verbatim.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: CreateGroupSchema,
     handler: async ({ title, templateId, description, reviewerIds }) => {
       const result = await graphql.createAssessmentGroup({

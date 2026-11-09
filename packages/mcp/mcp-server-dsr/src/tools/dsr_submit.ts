@@ -38,7 +38,12 @@ export function createDsrSubmitTool(clients: ToolClients) {
         'is emailed unless isSilent is set. Check workflowConfigId and email in the call ' +
         'arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     requireSombra: true,
     zodSchema: submitDsrSchema,
     handler: async ({ workflowConfigId, email, coreIdentifier, locale, isSilent }) => {

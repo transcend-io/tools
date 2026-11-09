@@ -28,7 +28,12 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
         "user's consent can be looked up. Check userId and identifiers in the call " +
         'arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: AppendIdentifiersSchema,
     handler: async ({ partition, records }) => {

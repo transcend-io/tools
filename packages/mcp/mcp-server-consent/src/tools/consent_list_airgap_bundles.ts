@@ -20,7 +20,12 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients) {
       'Returns the bundle ID, URLs, configuration, and domains.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListAirgapBundlesSchema,
     handler: async (_args) => {
       const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(

@@ -22,7 +22,12 @@ export function createAdminListScopesTool(_clients?: ToolClients) {
       '(name, title, type, dependencies). Filter with text; set includeDetails only when titles are not enough.',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListScopesSchema,
     handler: async ({ text, includeDetails }) => {
       const needle = text?.trim().toLowerCase();

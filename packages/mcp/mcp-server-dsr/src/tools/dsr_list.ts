@@ -42,7 +42,12 @@ export function createDsrListTool(clients: ToolClients) {
       'owners, use dsr_list_request_data_silos on a specific request.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: listRequestsSchema,
     handler: async ({ limit, cursor, identifierValue, emails }) => {
       const result = await graphql.listRequests({

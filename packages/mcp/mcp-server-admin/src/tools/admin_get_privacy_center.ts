@@ -14,7 +14,12 @@ export function createAdminGetPrivacyCenterTool(clients: ToolClients) {
     description: 'Get privacy center configuration for your organization',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: EmptySchema,
     handler: async (_args) => {
       const result = await graphql.getPrivacyCenter();

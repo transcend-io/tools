@@ -25,7 +25,12 @@ export function createConsentDeleteCookiesTool(clients: ToolClients) {
     category: 'Consent Management',
     readOnly: false,
     visibility: ['app'],
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: DeleteCookiesSchema,
     handler: async ({ ids }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

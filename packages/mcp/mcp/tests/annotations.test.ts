@@ -63,6 +63,35 @@ describe('MCP Tool Annotations', () => {
     }
   });
 
+  it('every tool declares an explicit boolean openWorldHint', () => {
+    for (const tool of allTools) {
+      expect(
+        typeof tool.annotations.openWorldHint,
+        `${tool.name}.openWorldHint should be boolean`,
+      ).toBe('boolean');
+    }
+  });
+
+  // Exact so a tool cannot start reaching outside the org's own data without review.
+  it('exactly the expected tools are open-world', () => {
+    const actual = allTools
+      .filter((t) => t.annotations.openWorldHint)
+      .map((t) => t.name)
+      .sort();
+    expect(actual).toEqual(
+      [
+        'assessments_prefill',
+        'assessments_update_assignees',
+        'custom_functions_test_run',
+        'docs_fetch',
+        'docs_list',
+        'dsr_cancel',
+        'dsr_enrich_identifiers',
+        'dsr_submit',
+      ].sort(),
+    );
+  });
+
   it('readOnlyHint matches the readOnly field on every tool', () => {
     for (const tool of allTools) {
       expect(

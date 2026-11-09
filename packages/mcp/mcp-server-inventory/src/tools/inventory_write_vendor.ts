@@ -44,7 +44,12 @@ export function createInventoryWriteVendorTool(clients: ToolClients) {
       'to upsert by title (creates when missing). Mirrors CLI inventory vendor sync.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteVendorSchema,
     handler: async (input) => {
       const { vendor, created } = await graphql.writeVendor({

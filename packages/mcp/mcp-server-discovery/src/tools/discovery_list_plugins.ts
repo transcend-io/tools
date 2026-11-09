@@ -21,7 +21,12 @@ export function createDiscoveryListPluginsTool(clients: ToolClients) {
       'than queried directly, union the results across pages for a complete list.',
     category: 'Data Discovery',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListPluginsSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listDiscoveryPlugins({

@@ -26,7 +26,12 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
         'consent state cannot be recovered, and the people affected fall back to default ' +
         'consent. Check the identifiers in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: DeletePreferencesSchema,
     handler: async ({ partition, records }) => {

@@ -62,7 +62,12 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     description: 'Query consent preferences for multiple users by their identifiers',
     category: 'Preference Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: QueryPreferencesSchema,
     handler: async ({ partition, identifiers, limit, cursor }) => {
