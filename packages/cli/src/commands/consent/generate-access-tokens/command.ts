@@ -40,6 +40,13 @@ export const generateAccessTokensCommand = buildCommand({
         optional: true,
         brief: 'Name of the column in the CSV that contains user core identifiers',
       },
+      tokenFormat: {
+        kind: 'enum',
+        values: ['JWT', 'SHORT'] as const,
+        brief:
+          'Token written into the link. JWT is the signed token. SHORT is a 43-character token for email and SMS tools that limit URL length.',
+        default: 'JWT',
+      },
       duration: {
         kind: 'parsed',
         parse: parseDurationToMs,
