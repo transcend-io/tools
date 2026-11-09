@@ -567,3 +567,196 @@ describe('HTTP Transport', () => {
     });
   });
 });
+
+describe('HTTP Transport — public hosted mode (OAuth protected resource metadata)', () => {
+  const PUBLIC_URL = 'https://mcp.example.com';
+  const AUTH_SERVER_URL = 'https://api.example.com/graphql';
+  const INIT_BODY = JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'initialize',
+    params: {
+      protocolVersion: '2025-11-25',
+      capabilities: {},
+      clientInfo: { name: 'test-client', version: '0.1.0' },
+    },
+    id: 1,
+  });
+
+  const serversToClose: McpHttpServer[] = [];
+  let previousEnvKey: string | undefined;
+
+  beforeAll(() => {
+    previousEnvKey = process.env.TRANSCEND_API_KEY;
+  });
+
+  afterAll(async () => {
+    for (const server of serversToClose) await server.shutdown();
+    if (previousEnvKey === undefined) delete process.env.TRANSCEND_API_KEY;
+    else process.env.TRANSCEND_API_KEY = previousEnvKey;
+  });
+
+  async function start(
+    publicUrl: string | undefined,
+    extra: Partial<TransportConfig> = {},
+  ): Promise<{ baseUrl: string; authSeen: Array<AuthCredentials | null> }> {
+    const authSeen: Array<AuthCredentials | null> = [];
+    const server = await runMcpHttp(
+      {
+        name: 'test-server',
+        version: '0.0.1',
+        authorizationServerUrl: AUTH_SERVER_URL,
+        scopesSupported: ['read:things', 'write:things'],
+        createServer: (auth) => {
+          authSeen.push(auth);
+          return buildMcpServer({
+            name: 'test-server',
+            version: '0.0.1',
+            tools: [echoTool],
+            transport: 'http',
+          });
+        },
+      },
+      { ...testConfig(0), ...(publicUrl && { publicUrl }), ...extra },
+    );
+    serversToClose.push(server);
+    const addr = server.httpServer.address() as AddressInfo;
+    return { baseUrl: `http://127.0.0.1:${addr.port}`, authSeen };
+  }
+
+  it('serves RFC 9728 metadata at the bare and path-suffixed well-known URLs', async () => {
+    const { baseUrl } = await start(`${PUBLIC_URL}/`);
+    for (const path of [
+      '/.well-known/oauth-protected-resource',
+      '/.well-known/oauth-protected-resource/mcp',
+    ]) {
+      const res = await fetch(`${baseUrl}${path}`);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        resource: `${PUBLIC_URL}/mcp`,
+        authorization_servers: ['https://api.example.com'],
+        bearer_methods_supported: ['header'],
+        scopes_supported: ['read:things', 'write:things'],
+      });
+    }
+  });
+
+  it('honors a custom mcpPath in the metadata and challenge', async () => {
+    const { baseUrl } = await start(PUBLIC_URL, { mcpPath: '/v1/mcp' });
+    const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource/v1/mcp`);
+    expect((await meta.json()).resource).toBe(`${PUBLIC_URL}/v1/mcp`);
+
+    const res = await fetch(`${baseUrl}/v1/mcp`, {
+      method: 'POST',
+      headers: MCP_HEADERS,
+      body: INIT_BODY,
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toBe(
+      `Bearer resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/v1/mcp"`,
+    );
+  });
+
+  it('answers 401 with a WWW-Authenticate challenge on POST, GET and DELETE without auth', async () => {
+    const { baseUrl } = await start(PUBLIC_URL);
+    const expectedChallenge = `Bearer resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/mcp"`;
+
+    for (const method of ['POST', 'GET', 'DELETE']) {
+      const res = await fetch(`${baseUrl}/mcp`, {
+        method,
+        headers: MCP_HEADERS,
+        ...(method === 'POST' && { body: INIT_BODY }),
+      });
+      expect(res.status, method).toBe(401);
+      expect(res.headers.get('www-authenticate'), method).toBe(expectedChallenge);
+      expect(await res.json()).toMatchObject({ jsonrpc: '2.0', error: { code: -32001 }, id: null });
+    }
+  });
+
+  it('does not let the TRANSCEND_API_KEY env fallback authenticate public callers', async () => {
+    process.env.TRANSCEND_API_KEY = 'server-side-key-must-be-ignored';
+    const { baseUrl, authSeen } = await start(PUBLIC_URL);
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: MCP_HEADERS,
+      body: INIT_BODY,
+    });
+    expect(res.status).toBe(401);
+    expect(authSeen).toEqual([]);
+  });
+
+  it('leaves /health public', async () => {
+    const { baseUrl } = await start(PUBLIC_URL);
+    const res = await fetch(`${baseUrl}/health`);
+    expect(res.status).toBe(200);
+  });
+
+  it('initializes with a Bearer token and forwards it as the caller credential', async () => {
+    delete process.env.TRANSCEND_API_KEY;
+    const { baseUrl, authSeen } = await start(PUBLIC_URL);
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, Authorization: 'Bearer oauth-access-token' },
+      body: INIT_BODY,
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
+    expect(authSeen).toEqual([{ type: 'apiKey', apiKey: 'oauth-access-token' }]);
+  });
+
+  it('exposes WWW-Authenticate to browser clients via CORS', async () => {
+    const { baseUrl } = await start(PUBLIC_URL, { corsOrigins: ['https://client.example.com'] });
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, Origin: 'https://client.example.com' },
+      body: INIT_BODY,
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
+  });
+
+  it('requires an authorization server when a public URL is configured', async () => {
+    await expect(
+      runMcpHttp(
+        {
+          name: 'test-server',
+          version: '0.0.1',
+          createServer: () =>
+            buildMcpServer({
+              name: 'test-server',
+              version: '0.0.1',
+              tools: [echoTool],
+              transport: 'http',
+            }),
+        },
+        { ...testConfig(0), publicUrl: PUBLIC_URL },
+      ),
+    ).rejects.toThrow(/authorizationServerUrl/);
+  });
+
+  it('is unchanged when the public URL is unset: no metadata, no challenge, env key still works', async () => {
+    process.env.TRANSCEND_API_KEY = 'env-key';
+    const { baseUrl, authSeen } = await start(undefined);
+
+    const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
+    expect(meta.status).toBe(404);
+
+    const withEnvKey = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: MCP_HEADERS,
+      body: INIT_BODY,
+    });
+    expect(withEnvKey.status).toBe(200);
+    expect(withEnvKey.headers.get('www-authenticate')).toBeNull();
+    expect(authSeen).toEqual([{ type: 'apiKey', apiKey: 'env-key' }]);
+
+    // Sidecar case: no credentials anywhere still initializes (auth-free handshake).
+    delete process.env.TRANSCEND_API_KEY;
+    const sidecar = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: MCP_HEADERS,
+      body: INIT_BODY,
+    });
+    expect(sidecar.status).toBe(200);
+    expect(authSeen[1]).toBeNull();
+  });
+});
