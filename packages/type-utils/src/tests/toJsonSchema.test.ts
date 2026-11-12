@@ -3,6 +3,7 @@ import type { JSONSchema7 } from 'json-schema';
 import { describe, expect, it } from 'vitest';
 
 import { toJsonSchema } from '../codecTools/toJsonSchema.js';
+import { noExcess } from '../noExcess.js';
 
 const largeEnumValues = [
   'a-value-long-enough-to-benefit-from-a-reference',
@@ -254,6 +255,64 @@ describe('toJsonSchema', () => {
     expect(schema.properties).toEqual({
       first: { $ref: '#/definitions/Locale' },
       second: { $ref: '#/definitions/Locale' },
+    });
+  });
+
+  it('rejects unknown keys on a noExcess object without closing nested objects', () => {
+    const schema = toJsonSchema(
+      noExcess(
+        t.type({
+          name: t.string,
+          meta: t.type({ value: t.string }),
+        }),
+      ),
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['name', 'meta'],
+      properties: {
+        name: { type: 'string' },
+        meta: {
+          type: 'object',
+          required: ['value'],
+          properties: { value: { type: 'string' } },
+        },
+      },
+      additionalProperties: false,
+    });
+  });
+
+  it('merges a noExcess intersection into one object', () => {
+    const schema = toJsonSchema(
+      noExcess(t.intersection([t.type({ a: t.string }), t.partial({ b: t.string })])),
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['a'],
+      properties: {
+        a: { type: 'string' },
+        b: { type: 'string' },
+      },
+      additionalProperties: false,
+    });
+  });
+
+  it('merges a strict noExcess intersection so members do not reject each other', () => {
+    const schema = toJsonSchema(
+      noExcess(t.intersection([t.type({ a: t.string }), t.partial({ b: t.string })])),
+      true,
+    );
+
+    expect(schema).toEqual({
+      type: 'object',
+      required: ['a'],
+      properties: {
+        a: { type: 'string' },
+        b: { type: 'string' },
+      },
+      additionalProperties: false,
     });
   });
 });
