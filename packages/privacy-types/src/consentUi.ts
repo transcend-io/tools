@@ -110,6 +110,7 @@ const SharedLoadOptions = t.intersection([
     fontUrlMap: t.record(ThemeKey, AbsoluteUrlString),
     // Override the locale used to load localized messages
     overrideLocale: t.string,
+    deploymentId: t.string,
   }),
 ]);
 
