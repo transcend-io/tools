@@ -1,5 +1,18 @@
 # @transcend-io/cli
 
+## 13.1.0
+
+### Minor Changes
+
+- 62eb047: Add a SHORT token format for preference access links.
+
+### Patch Changes
+
+- Updated dependencies [2e995fd]
+- Updated dependencies [62eb047]
+  - @transcend-io/type-utils@3.3.0
+  - @transcend-io/sdk@2.2.0
+
 ## 13.0.8
 
 ### Patch Changes
