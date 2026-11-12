@@ -1,5 +1,11 @@
 # @transcend-io/type-utils
 
+## 3.3.0
+
+### Minor Changes
+
+- 2e995fd: `toJsonSchema` now supports `noExcess` codecs. The wrapped object schema gets `additionalProperties: false`, and a wrapped intersection is merged into one object schema first.
+
 ## 3.2.0
 
 ### Minor Changes

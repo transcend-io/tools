@@ -1,5 +1,16 @@
 # @transcend-io/sdk
 
+## 2.2.0
+
+### Minor Changes
+
+- 62eb047: Add a SHORT token format for preference access links.
+
+### Patch Changes
+
+- Updated dependencies [2e995fd]
+  - @transcend-io/type-utils@3.3.0
+
 ## 2.1.17
 
 ### Patch Changes
