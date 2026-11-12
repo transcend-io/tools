@@ -107,6 +107,7 @@ const SharedLoadOptions = t.intersection([
     cssFolder: AbsoluteUrlString,
     hostThemeMap: t.record(URLHostString, ThemeKey),
     customCssUrlMap: t.record(ThemeKey, AbsoluteUrlString),
+    fontUrlMap: t.record(ThemeKey, AbsoluteUrlString),
     // Override the locale used to load localized messages
     overrideLocale: t.string,
   }),
