@@ -1,5 +1,12 @@
 # @transcend-io/privacy-types
 
+## 6.7.1
+
+### Patch Changes
+
+- edac3ad: add fontUrlMap to load options
+- 91f9cfc: add deploymentId to SharedLoadOptions
+
 ## 6.7.0
 
 ### Minor Changes
