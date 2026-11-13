@@ -294,7 +294,12 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         'creates a data silo. Check name, type, code, allowedHosts, and environmentVariables ' +
         'before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: CustomFunctionsUpsertSchema,
     handler: async ({
       id,

@@ -63,7 +63,12 @@ export function createPreferencesListPartitionsTool(clients: ToolClients) {
       'unless the user named another partition.',
     category: 'Preference Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListPartitionsSchema,
     handler: async (_args) => {
       const managerData =

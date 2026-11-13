@@ -14,7 +14,12 @@ export function createAdminGetOrganizationTool(clients: ToolClients) {
     description: 'Get information about your Transcend organization',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: EmptySchema,
     handler: async (_args) => {
       const result = await graphql.getOrganization();

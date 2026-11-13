@@ -39,7 +39,12 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
       'Surface the `groupUrl` on each row verbatim.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListGroupsSchema,
     handler: async ({ limit, offset, text, ids, templateIds }) => {
       const result = await graphql.listAssessmentGroups({

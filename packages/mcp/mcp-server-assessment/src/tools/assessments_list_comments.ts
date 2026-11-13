@@ -134,7 +134,12 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       'resolve a thread, call assessments_write_comment with the root id, level, and targetId.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListAssessmentCommentsSchema,
     handler: async ({ assessmentId, authorIds, resolution, levels, limit, offset }) => {
       const wanted = (level: AssessmentCommentLevel): boolean =>

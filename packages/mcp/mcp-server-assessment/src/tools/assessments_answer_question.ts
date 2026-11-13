@@ -37,7 +37,12 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
       'Answer an assessment question by selecting existing answer options or providing free-text values. For SINGLE_SELECT/MULTI_SELECT questions, provide assessmentAnswerIds from the answerOptions. For SHORT_ANSWER_TEXT/LONG_ANSWER_TEXT, provide assessmentAnswerValues with {value, isUserCreated: true}.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: AnswerQuestionSchema,
     handler: async ({ assessmentQuestionId, assessmentAnswerIds, assessmentAnswerValues }) => {
       const input: {

@@ -70,7 +70,12 @@ export function createInventoryWriteDataSiloTool(clients: ToolClients) {
       'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: WriteDataSiloSchema,
     handler: async ({ dataSiloId, integrationName, ...fields }) => {
       const { dataSilo, created } = await graphql.writeDataSilo({

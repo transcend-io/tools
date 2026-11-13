@@ -25,7 +25,12 @@ export function createCustomFunctionsGetCodeTool(clients: ToolClients) {
     category: 'Custom Functions',
     readOnly: true,
     requireSombra: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: CustomFunctionsGetCodeSchema,
     handler: async ({ id, versionId }) => {
       const versions = await graphql.listCustomFunctionVersions(id);

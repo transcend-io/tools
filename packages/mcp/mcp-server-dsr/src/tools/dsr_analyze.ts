@@ -27,7 +27,12 @@ export function createDsrAnalyzeTool(clients: ToolClients) {
       'Summarize the 100 most recent DSRs: counts by type and status, completion rate, and a configurable recent-days window (default 30). For full-fleet analytics, page through dsr_list and aggregate yourself.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: analyzeDsrSchema,
     handler: async ({ days }) => {
       const result = await graphql.listRequests({ first: 100 });

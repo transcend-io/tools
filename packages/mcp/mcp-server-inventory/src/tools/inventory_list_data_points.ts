@@ -34,7 +34,12 @@ export function createInventoryListDataPointsTool(clients: ToolClients) {
       'follow up with inventory_list_sub_data_points.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListDataPointsSchema,
     handler: async ({ dataSiloId, text, limit, offset }) => {
       const result = await graphql.listDataPoints(dataSiloId, {

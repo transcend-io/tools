@@ -19,7 +19,12 @@ export function createDsrGetDetailsTool(clients: ToolClients) {
       'owners, use dsr_list_request_data_silos.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: getDetailsSchema,
     handler: async ({ requestId }) => {
       const result = await graphql.getRequest(requestId);

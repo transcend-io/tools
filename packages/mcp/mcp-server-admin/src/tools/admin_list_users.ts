@@ -99,7 +99,12 @@ export function createAdminListUsersTool(clients: ToolClients) {
       'Default sort is name ASC.',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListUsersSchema,
     handler: async ({
       limit,

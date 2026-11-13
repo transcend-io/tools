@@ -37,7 +37,12 @@ export function createPolicyListBundlesTool(clients: PolicyToolClients) {
       'Mirrors transcend policy bundles / versions / download. Requires View Policy scope (included in Activate scope).',
     category: 'Policy Engine',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: PolicyListBundlesSchema,
     handler: async ({ limit, offset, bundleId, bundleName, versionId, cursor }) => {
       const client = createPolicyEngineClient(clients);

@@ -16,7 +16,12 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
       'Analyze your data inventory including data silos by type, vendor distribution, and data point coverage',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: EmptySchema,
     handler: async (_args) => {
       // `all: true` fully paginates each entity so the reported totals and

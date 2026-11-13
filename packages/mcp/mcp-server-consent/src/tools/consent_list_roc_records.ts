@@ -46,7 +46,12 @@ export function createConsentListRocRecordsTool(clients: ToolClients) {
     readOnly: true,
     requireAuth: true,
     requireSombra: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ConsentListRocRecordsSchema,
     handler: async ({
       partition,

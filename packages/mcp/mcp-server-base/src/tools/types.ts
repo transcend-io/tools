@@ -13,6 +13,13 @@ export interface ToolAnnotations {
   destructiveHint: boolean;
   /** Whether repeated calls with same args produce same result */
   idempotentHint: boolean;
+  /**
+   * Whether this tool interacts with an "open world" of external entities beyond
+   * the caller's own Transcend organization data (MCP spec `openWorldHint`), e.g.
+   * emailing data subjects, calling third-party vendors, or scanning customer systems.
+   * `defineTool` fills in `false` when a tool omits it, so `tools/list` always emits it.
+   */
+  openWorldHint?: boolean;
 }
 
 /**
@@ -179,7 +186,13 @@ export function defineTool<T>(config: {
       throw new Error(confirmationViewError(config.name, 'an MCP App view'));
     }
   }
-  return config;
+  return {
+    ...config,
+    annotations: {
+      ...config.annotations,
+      openWorldHint: config.annotations.openWorldHint ?? false,
+    },
+  };
 }
 
 /** Gated tools must use a z.object schema so `approvalToken` can be added. */

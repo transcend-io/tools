@@ -21,7 +21,12 @@ export function createInventoryGetDataSiloTool(clients: ToolClients) {
       'For datapoints on this silo, call inventory_list_data_points with dataSiloId.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetDataSiloSchema,
     handler: async ({ dataSiloId }) => {
       const result = await graphql.getDataSilo(dataSiloId);

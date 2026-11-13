@@ -41,7 +41,12 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
       'For data flows, same behavior. Optionally assign tracking purposes and service when approving.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: BulkTriageSchema,
     handler: async ({ items }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

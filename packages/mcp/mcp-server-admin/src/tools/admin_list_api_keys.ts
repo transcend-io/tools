@@ -18,7 +18,12 @@ export function createAdminListApiKeysTool(clients: ToolClients) {
     description: 'List all API keys configured for your organization (tokens are not shown).',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListApiKeysSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listApiKeys({

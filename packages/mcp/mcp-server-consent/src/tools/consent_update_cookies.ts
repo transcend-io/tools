@@ -40,7 +40,12 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
       'for upsert — existing cookies with matching names will be updated.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: UpdateCookiesSchema,
     handler: async ({ cookies }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

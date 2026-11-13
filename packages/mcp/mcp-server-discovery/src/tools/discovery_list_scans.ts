@@ -21,7 +21,12 @@ export function createDiscoveryListScansTool(clients: ToolClients) {
       'when you want the silos themselves.',
     category: 'Data Discovery',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListScansSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listClassificationScans({

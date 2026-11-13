@@ -104,7 +104,12 @@ export function createAssessmentsListTool(clients: ToolClients) {
       'Surface the `url` on each row verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListAssessmentsSchema,
     handler: async ({
       statuses,

@@ -45,7 +45,12 @@ export function createConsentGetAggregateAnalyticsTool(clients: ToolClients) {
       'SITE_SESSIONS or PAGE_VIEWS for total traffic. Requires ViewConsentManager API key scope.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetAggregateAnalyticsSchema,
     handler: async ({ metric, start, end, days, include_dimensions }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
