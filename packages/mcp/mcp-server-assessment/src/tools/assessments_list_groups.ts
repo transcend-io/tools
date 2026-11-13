@@ -2,7 +2,8 @@ import {
   assertOffsetInRange,
   createListResult,
   defineTool,
-  describeNoMatches,
+  describeOutcome,
+  nonEmptyList,
   OffsetPaginationSchema,
   z,
   type ToolClients,
@@ -13,16 +14,14 @@ import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
 
 export const ListGroupsSchema = OffsetPaginationSchema.extend({
   text: z.string().optional().describe('Free-text match on the group title and description'),
-  ids: z
-    .array(z.string())
-    .min(1, { message: 'Pass at least one group ID, or omit the filter entirely.' })
-    .optional()
-    .describe('Specific group IDs, e.g. the `assessmentGroupId` on an `assessments_list` row'),
-  templateIds: z
-    .array(z.string())
-    .min(1, { message: 'Pass at least one template ID, or omit the filter entirely.' })
-    .optional()
-    .describe('Groups built from these templates; see `assessments_list_templates`'),
+  ids: nonEmptyList(
+    'Specific group IDs, e.g. the `assessmentGroupId` on an `assessments_list` row',
+    'group ID',
+  ),
+  templateIds: nonEmptyList(
+    'Groups built from these templates; see `assessments_list_templates`',
+    'template ID',
+  ),
 });
 export type ListGroupsInput = z.infer<typeof ListGroupsSchema>;
 
@@ -71,8 +70,13 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
       return createListResult(nodesWithLinks, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
-        ...(totalCount === 0 && {
-          paginationNote: describeNoMatches('assessment groups', appliedFilters),
+        paginationNote: describeOutcome({
+          subject: 'assessment groups',
+          returned: nodesWithLinks.length,
+          totalCount,
+          offset,
+          limit,
+          appliedFilters,
         }),
       });
     },
