@@ -23,6 +23,7 @@ export * from './gqls/index.js';
 export * from './api/index.js';
 export * from './data-inventory/index.js';
 export * from './preference-management/index.js';
+export * from './preference-upload/index.js';
 export * from './administration/index.js';
 export * from './consent/index.js';
 export * from './dsr-automation/index.js';
