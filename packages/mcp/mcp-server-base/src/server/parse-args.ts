@@ -13,6 +13,13 @@ export interface TransportConfig {
   corsOrigins: string[];
   /** Session idle TTL in milliseconds */
   sessionTtlMs: number;
+  /**
+   * Public base URL this server is reachable at (e.g. `https://mcp.transcend.io`).
+   * Opt-in: when set, the HTTP transport serves OAuth Protected Resource Metadata
+   * and rejects unauthenticated MCP requests with a `401` + `WWW-Authenticate`
+   * challenge. When unset, the transport behaves exactly as before.
+   */
+  publicUrl?: string;
 }
 
 const DEFAULT_PORT = 3000;
@@ -30,11 +37,31 @@ function parseIntOrDefault(raw: string | undefined, fallback: number): number {
 }
 
 /**
+ * Validates and normalizes the public URL: must be an absolute http(s) URL; trailing
+ * slashes are dropped. Returns `undefined` for unset or blank values.
+ */
+function normalizePublicUrl(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`Invalid public URL: "${trimmed}"`);
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error(`Invalid public URL (must be http or https): "${trimmed}"`);
+  }
+  return trimmed.replace(/\/+$/, '');
+}
+
+/**
  * Parses CLI flags and environment variables for transport configuration.
  *
- * Flags: --transport stdio|http, --port, --host, --mcp-path, --cors-origin (repeatable)
+ * Flags: --transport stdio|http, --port, --host, --mcp-path, --cors-origin (repeatable),
+ *        --public-url
  * Env:   TRANSCEND_HTTP_PORT, TRANSCEND_HTTP_HOST, TRANSCEND_MCP_CORS_ORIGINS (comma-separated),
- *        TRANSCEND_MCP_SESSION_TTL_MS
+ *        TRANSCEND_MCP_SESSION_TTL_MS, TRANSCEND_MCP_PUBLIC_URL
  */
 export function parseTransportArgs(): TransportConfig {
   const { values } = parseArgs({
@@ -44,6 +71,7 @@ export function parseTransportArgs(): TransportConfig {
       host: { type: 'string' },
       'mcp-path': { type: 'string' },
       'cors-origin': { type: 'string', multiple: true },
+      'public-url': { type: 'string' },
     },
     strict: false,
     allowPositionals: true,
@@ -72,5 +100,17 @@ export function parseTransportArgs(): TransportConfig {
     DEFAULT_SESSION_TTL_MS,
   );
 
-  return { transport, port, host, mcpPath, corsOrigins, sessionTtlMs };
+  const publicUrl = normalizePublicUrl(
+    (values['public-url'] as string | undefined) ?? process.env.TRANSCEND_MCP_PUBLIC_URL,
+  );
+
+  return {
+    transport,
+    port,
+    host,
+    mcpPath,
+    corsOrigins,
+    sessionTtlMs,
+    ...(publicUrl && { publicUrl }),
+  };
 }

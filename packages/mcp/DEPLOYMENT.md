@@ -22,13 +22,14 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### CLI flags
 
-| Flag            | Default     | Description                       |
-| --------------- | ----------- | --------------------------------- |
-| `--transport`   | `stdio`     | Transport type: `stdio` or `http` |
-| `--port`        | `3000`      | HTTP listen port                  |
-| `--host`        | `127.0.0.1` | HTTP listen host                  |
-| `--mcp-path`    | `/mcp`      | MCP JSON-RPC endpoint path        |
-| `--cors-origin` | —           | Allowed CORS origin (repeatable)  |
+| Flag            | Default     | Description                                                                                    |
+| --------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `--transport`   | `stdio`     | Transport type: `stdio` or `http`                                                              |
+| `--port`        | `3000`      | HTTP listen port                                                                               |
+| `--host`        | `127.0.0.1` | HTTP listen host                                                                               |
+| `--mcp-path`    | `/mcp`      | MCP JSON-RPC endpoint path                                                                     |
+| `--cors-origin` | —           | Allowed CORS origin (repeatable)                                                               |
+| `--public-url`  | —           | Public base URL; enables [public hosted mode](#public-hosted-mode-chatgpt--remote-mcp-clients) |
 
 ### Environment variables
 
@@ -42,6 +43,27 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 | `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                | HTTP listen host (overridden by `--host`)                                                                                                                                                                                                                                                |
 | `TRANSCEND_MCP_CORS_ORIGINS`   | —                          | Comma-separated allowed CORS origins                                                                                                                                                                                                                                                     |
 | `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)         | Idle session timeout in milliseconds                                                                                                                                                                                                                                                     |
+| `TRANSCEND_MCP_PUBLIC_URL`     | —                          | Public base URL (e.g. `https://mcp.transcend.io`). Enables OAuth protected resource metadata, `401` challenges, and ignores `TRANSCEND_API_KEY` (overridden by `--public-url`)                                                                                                           |
+
+## Public hosted mode (ChatGPT / remote MCP clients)
+
+Remote MCP clients such as ChatGPT discover how to sign in from the server itself, using OAuth 2.0 Protected Resource Metadata ([RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)). Turn this on by telling the server the public URL it is served at:
+
+```bash
+TRANSCEND_MCP_PUBLIC_URL=https://mcp.transcend.io npx @transcend-io/mcp --transport http
+# or: npx @transcend-io/mcp --transport http --public-url https://mcp.transcend.io
+```
+
+This mode is **opt-in**. When `TRANSCEND_MCP_PUBLIC_URL` / `--public-url` is unset, nothing below applies and the server behaves exactly as before (including auth-free session initialization for the sidecar pattern).
+
+When set:
+
+- `GET /.well-known/oauth-protected-resource` and `GET /.well-known/oauth-protected-resource<mcpPath>` return metadata with `resource` (`<public url><mcpPath>`), `authorization_servers` (the origin of the resolved `TRANSCEND_API_URL`, e.g. `https://api.transcend.io`, which serves `/.well-known/oauth-authorization-server`), `bearer_methods_supported: ["header"]`, and `scopes_supported` (the umbrella server's OAuth scopes).
+- `POST`, `GET` and `DELETE` on the MCP path answer `401` with `WWW-Authenticate: Bearer resource_metadata="<public url>/.well-known/oauth-protected-resource<mcpPath>"` and a JSON-RPC error body when the request carries no credentials. `/health` and the metadata routes stay public.
+- `WWW-Authenticate` is added to the CORS exposed headers.
+- The `TRANSCEND_API_KEY` environment fallback is **ignored**, so a server-side key can never silently authenticate anonymous callers. Callers must send credentials per request.
+
+The server does not validate tokens. Any `Authorization: Bearer <token>` (a Transcend OAuth access token from the authorization server, or an API key) is forwarded to the Transcend API, which accepts or rejects it. Terminate TLS in front of the server (see [Reverse proxy](#reverse-proxy-nginx)) so the public URL is `https`.
 
 ## Authentication
 
@@ -69,7 +91,7 @@ For programmatic access (Claude Enterprise, Cursor, custom agents), send an API 
 
 ### 3. Environment variable fallback
 
-If no auth headers are present in HTTP mode, the server falls back to the `TRANSCEND_API_KEY` environment variable. For stdio transport, use OAuth (recommended — see package READMEs) or `TRANSCEND_API_KEY` as an alternative.
+If no auth headers are present in HTTP mode, the server falls back to the `TRANSCEND_API_KEY` environment variable (not in [public hosted mode](#public-hosted-mode-chatgpt--remote-mcp-clients), where the fallback is ignored). For stdio transport, use OAuth (recommended — see package READMEs) or `TRANSCEND_API_KEY` as an alternative.
 
 ### Multi-tenant deployments
 

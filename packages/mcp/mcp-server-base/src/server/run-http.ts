@@ -37,6 +37,15 @@ export interface McpHttpServerOptions {
    * (resolved automatically via {@link requestAuthContext}).
    */
   createServer: (auth: AuthCredentials | null) => Server | Promise<Server>;
+  /**
+   * Origin of the OAuth authorization server that issues tokens for this resource
+   * (the Transcend API, e.g. `https://api.transcend.io`, which serves
+   * `/.well-known/oauth-authorization-server`). Required when
+   * {@link TransportConfig.publicUrl} is set; ignored otherwise.
+   */
+  authorizationServerUrl?: string;
+  /** OAuth scopes advertised as `scopes_supported` in the protected resource metadata. */
+  scopesSupported?: readonly string[];
 }
 
 export interface McpHttpServer {
@@ -46,11 +55,15 @@ export interface McpHttpServer {
   shutdown: () => Promise<void>;
 }
 
+/** Path prefix of OAuth Protected Resource Metadata (RFC 9728). */
+const PROTECTED_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource';
+
 async function runWithInboundHttpContext(
   headers: Record<string, string | string[] | undefined>,
   fn: () => Promise<void>,
+  authOptions?: Parameters<typeof tryResolveAuth>[1],
 ): Promise<void> {
-  const auth = tryResolveAuth(headers);
+  const auth = tryResolveAuth(headers, authOptions);
   const mcpCaller = extractMcpCallerFromHeaders(headers);
 
   let contextWrappedFn = fn;
@@ -95,6 +108,22 @@ export async function runMcpHttp(
 
   const app = createMcpExpressApp({ host: config.host });
 
+  // Public hosted mode is opt-in. When unset, none of the code paths below change.
+  const publicUrl = config.publicUrl?.replace(/\/+$/, '') || undefined;
+  const authOptions = publicUrl ? { ignoreEnvApiKey: true } : undefined;
+  const protectedResourceMetadataUrl = publicUrl
+    ? `${publicUrl}${PROTECTED_RESOURCE_METADATA_PATH}${config.mcpPath}`
+    : undefined;
+  let authorizationServerOrigin: string | undefined;
+  if (publicUrl) {
+    if (!options.authorizationServerUrl) {
+      throw new Error(
+        'runMcpHttp: `authorizationServerUrl` is required when a public URL is configured.',
+      );
+    }
+    authorizationServerOrigin = new URL(options.authorizationServerUrl).origin;
+  }
+
   if (config.corsOrigins.length > 0) {
     app.use(
       cors({
@@ -111,7 +140,7 @@ export async function runMcpHttp(
           MCP_CALLER_HEADER,
           'Last-Event-ID',
         ],
-        exposedHeaders: [MCP_SESSION_ID_HEADER],
+        exposedHeaders: [MCP_SESSION_ID_HEADER, 'WWW-Authenticate'],
       }),
     );
   }
@@ -124,6 +153,49 @@ export async function runMcpHttp(
       version: options.version,
     });
   });
+
+  if (publicUrl && protectedResourceMetadataUrl && authorizationServerOrigin) {
+    // RFC 9728 OAuth Protected Resource Metadata. Served at the bare well-known path and
+    // at the path-suffixed form that clients derive from the resource URL.
+    const metadata = {
+      resource: `${publicUrl}${config.mcpPath}`,
+      authorization_servers: [authorizationServerOrigin],
+      bearer_methods_supported: ['header'],
+      ...(options.scopesSupported &&
+        options.scopesSupported.length > 0 && { scopes_supported: [...options.scopesSupported] }),
+    };
+    const serveMetadata = (_req: Request, res: Response) => {
+      res.json(metadata);
+    };
+    app.get(PROTECTED_RESOURCE_METADATA_PATH, serveMetadata);
+    app.get(`${PROTECTED_RESOURCE_METADATA_PATH}${config.mcpPath}`, serveMetadata);
+
+    // Challenge unauthenticated MCP calls so clients can discover the authorization server.
+    // Registered after /health and the metadata routes, which stay public.
+    const requireAuthChallenge = (req: Request, res: Response, next: () => void) => {
+      if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
+        next();
+        return;
+      }
+      const auth = tryResolveAuth(
+        req.headers as Record<string, string | string[] | undefined>,
+        authOptions,
+      );
+      if (auth) {
+        next();
+        return;
+      }
+      res
+        .status(401)
+        .set('WWW-Authenticate', `Bearer resource_metadata="${protectedResourceMetadataUrl}"`)
+        .json({
+          jsonrpc: '2.0',
+          error: { code: -32001, message: 'Unauthorized: authentication required' },
+          id: null,
+        });
+    };
+    app.use(config.mcpPath, requireAuthChallenge);
+  }
 
   // POST /mcp — main JSON-RPC endpoint
   app.post(config.mcpPath, async (req: Request, res: Response) => {
@@ -139,13 +211,17 @@ export async function runMcpHttp(
         await runWithInboundHttpContext(
           req.headers as Record<string, string | string[] | undefined>,
           handleReq,
+          authOptions,
         );
         return;
       }
 
       // New initialization request — auth is optional (MCPClient handshake)
       if (!sessionId && isInitializeRequest(req.body)) {
-        const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
+        const auth = tryResolveAuth(
+          req.headers as Record<string, string | string[] | undefined>,
+          authOptions,
+        );
         const server = await options.createServer(auth);
 
         const eventStore = new InMemoryEventStore();
@@ -175,6 +251,7 @@ export async function runMcpHttp(
         await runWithInboundHttpContext(
           req.headers as Record<string, string | string[] | undefined>,
           handleReq,
+          authOptions,
         );
         return;
       }

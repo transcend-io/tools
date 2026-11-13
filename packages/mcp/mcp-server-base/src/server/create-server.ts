@@ -3,7 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger, TranscendGraphQLBase } from '../clients/graphql/base.js';
 import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
-import { configureOAuthScopes } from '../oauth/scopes.js';
+import { configureOAuthScopes, mergeOAuthScopes } from '../oauth/scopes.js';
 import type { PromptDefinition } from '../prompts/types.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
@@ -103,6 +103,8 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
       {
         name: options.name,
         version: options.version,
+        authorizationServerUrl: graphqlUrl,
+        scopesSupported: mergeOAuthScopes(options.oauthScopes),
         createServer: async (auth) => {
           logger.info('Creating MCP server for new HTTP session...', {
             sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
