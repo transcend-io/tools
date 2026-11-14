@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { defineConfig } from '@terrazzo/cli';
 import css from '@terrazzo/plugin-css';
 
@@ -15,6 +17,13 @@ function withRestStateAliases(contents: string): string {
   );
 }
 
+const semanticColorGroups = Object.keys(
+  JSON.parse(readFileSync('./tokens/semantic/color.tokens.json', 'utf8')) as Record<
+    string,
+    unknown
+  >,
+).filter((key) => !key.startsWith('$'));
+
 export default defineConfig({
   tokens: ['./tokens/tokens.resolver.json'],
   outDir: './src',
@@ -26,10 +35,16 @@ export default defineConfig({
       variableName: (token) => `--${token.id.replace(/\./g, '-')}`,
       permutations: [
         {
-          // Dark mode omitted until color-dark.tokens.json has real overrides.
           input: { theme: 'light' },
           prepare: (contents) =>
             `:root {\n  color-scheme: light;\n  ${withRestStateAliases(contents)}\n}`,
+        },
+        {
+          input: { theme: 'dark' },
+          // Palette and typography are mode-invariant and already set on `:root`.
+          include: semanticColorGroups.map((group) => `${group}.**`),
+          prepare: (contents) =>
+            `[data-theme="dark"] {\n  color-scheme: dark;\n  ${withRestStateAliases(contents)}\n}`,
         },
       ],
     }),

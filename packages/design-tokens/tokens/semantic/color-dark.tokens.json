@@ -1,5 +1,339 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Dark mode overrides — add tokens here as dark values are designed. Only tokens that differ from light mode need to be listed.",
-  "$type": "color"
+  "$description": "Dark mode overrides. Only tokens that differ from light mode need to be listed.",
+  "$type": "color",
+  "background": {
+    "accent": {
+      "blue": {
+        "bold": {
+          "$value": "{palette.blue.800}"
+        },
+        "subtle": {
+          "$value": "{palette.blue.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.blue.950}"
+        }
+      },
+      "lime": {
+        "bold": {
+          "$value": "{palette.lime.800}"
+        },
+        "subtle": {
+          "$value": "{palette.lime.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.lime.950}"
+        }
+      },
+      "orange": {
+        "bold": {
+          "$value": "{palette.orange.800}"
+        },
+        "subtle": {
+          "$value": "{palette.orange.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.orange.950}"
+        }
+      },
+      "pink": {
+        "bold": {
+          "$value": "{palette.pink.800}"
+        },
+        "subtle": {
+          "$value": "{palette.pink.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.pink.950}"
+        }
+      },
+      "purple": {
+        "bold": {
+          "$value": "{palette.purple.700}"
+        },
+        "subtle": {
+          "$value": "{palette.purple.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.purple.950}"
+        }
+      },
+      "teal": {
+        "bold": {
+          "$value": "{palette.teal.800}"
+        },
+        "subtle": {
+          "$value": "{palette.teal.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.teal.950}"
+        }
+      },
+      "yellow": {
+        "bold": {
+          "$value": "{palette.yellow.800}"
+        },
+        "subtle": {
+          "$value": "{palette.yellow.900}"
+        },
+        "subtlest": {
+          "$value": "{palette.yellow.950}"
+        }
+      }
+    },
+    "brand": {
+      "subtle": {
+        "$value": "{palette.indigo.700}"
+      },
+      "subtlest": {
+        "$value": "{palette.indigo.900}"
+      }
+    },
+    "danger": {
+      "bold": {
+        "default": {
+          "$value": "{palette.red.600}"
+        },
+        "hovered": {
+          "$value": "{palette.red.700}"
+        },
+        "pressed": {
+          "$value": "{palette.red.800}"
+        }
+      },
+      "subtle": {
+        "$value": "{palette.red.700}"
+      },
+      "subtlest": {
+        "$value": "{palette.red.950}"
+      }
+    },
+    "default": {
+      "default": {
+        "$value": "{palette.gray.900}"
+      },
+      "hover": {
+        "$value": "{palette.gray.950}"
+      },
+      "pressed": {
+        "$value": "{palette.indigo.800}"
+      }
+    },
+    "disabled": {
+      "$value": "{palette.gray.950}"
+    },
+    "neutral": {
+      "default": {
+        "$value": "{palette.gray.800}"
+      },
+      "hovered": {
+        "$value": "{palette.gray.700}"
+      },
+      "pressed": {
+        "$value": "{palette.gray.600}"
+      }
+    },
+    "success": {
+      "bold": {
+        "default": {
+          "$value": "{palette.green.600}"
+        },
+        "hovered": {
+          "$value": "{palette.green.700}"
+        },
+        "pressed": {
+          "$value": "{palette.green.800}"
+        }
+      },
+      "subtle": {
+        "$value": "{palette.green.700}"
+      },
+      "subtlest": {
+        "$value": "{palette.green.950}"
+      }
+    },
+    "warning": {
+      "subtle": {
+        "$value": "{palette.gold.700}"
+      },
+      "subtlest": {
+        "$value": "{palette.gold.950}"
+      }
+    }
+  },
+  "border": {
+    "accent": {
+      "blue": {
+        "$value": "{palette.blue.600}"
+      },
+      "lime": {
+        "$value": "{palette.lime.600}"
+      },
+      "orange": {
+        "$value": "{palette.orange.600}"
+      },
+      "pink": {
+        "$value": "{palette.pink.600}"
+      },
+      "purple": {
+        "$value": "{palette.purple.500}"
+      },
+      "teal": {
+        "$value": "{palette.teal.600}"
+      },
+      "yellow": {
+        "$value": "{palette.yellow.700}"
+      }
+    },
+    "bold": {
+      "$value": "{palette.gray.700}"
+    },
+    "default": {
+      "$value": "{palette.gray.800}"
+    },
+    "danger": {
+      "$value": "{palette.red.700}"
+    },
+    "disabled": {
+      "$value": "{palette.gray.700}"
+    },
+    "focused": {
+      "$value": "{palette.indigo.400}"
+    },
+    "subtle": {
+      "$value": "{palette.gray.800}"
+    },
+    "success": {
+      "$value": "{palette.green.700}"
+    },
+    "warning": {
+      "$value": "{palette.gold.700}"
+    }
+  },
+  "icon": {
+    "brand": {
+      "$value": "{palette.indigo.300}"
+    },
+    "danger": {
+      "$value": "{palette.red.300}"
+    },
+    "default": {
+      "$value": "{palette.gray.300}"
+    },
+    "disabled": {
+      "$value": "{palette.gray.700}"
+    },
+    "subtle": {
+      "$value": "{palette.gray.400}"
+    },
+    "subtlest": {
+      "$value": "{palette.gray.500}"
+    },
+    "success": {
+      "$value": "{palette.green.300}"
+    },
+    "warning": {
+      "$value": "{palette.gold.300}"
+    }
+  },
+  "link": {
+    "default": {
+      "$value": "{palette.indigo.300}"
+    },
+    "pressed": {
+      "$value": "{palette.indigo.200}"
+    },
+    "visited": {
+      "default": {
+        "$value": "{palette.gray.400}"
+      },
+      "pressed": {
+        "$value": "{palette.gray.300}"
+      }
+    }
+  },
+  "text": {
+    "accent": {
+      "blue": {
+        "bold": {
+          "$value": "{palette.blue.100}"
+        }
+      },
+      "lime": {
+        "bold": {
+          "$value": "{palette.lime.100}"
+        }
+      },
+      "orange": {
+        "bold": {
+          "$value": "{palette.orange.100}"
+        }
+      },
+      "pink": {
+        "bold": {
+          "$value": "{palette.pink.100}"
+        }
+      },
+      "purple": {
+        "bold": {
+          "$value": "{palette.purple.100}"
+        }
+      },
+      "teal": {
+        "bold": {
+          "$value": "{palette.teal.100}"
+        }
+      },
+      "yellow": {
+        "bold": {
+          "$value": "{palette.yellow.100}"
+        }
+      }
+    },
+    "brand": {
+      "bold": {
+        "$value": "{palette.indigo.200}"
+      },
+      "subtle": {
+        "$value": "{palette.indigo.300}"
+      }
+    },
+    "danger": {
+      "bold": {
+        "$value": "{palette.red.100}"
+      },
+      "subtle": {
+        "$value": "{palette.red.200}"
+      }
+    },
+    "default": {
+      "$value": "{palette.gray.100}"
+    },
+    "disabled": {
+      "$value": "{palette.gray.600}"
+    },
+    "subtle": {
+      "$value": "{palette.gray.400}"
+    },
+    "subtlest": {
+      "$value": "{palette.gray.500}"
+    },
+    "success": {
+      "bold": {
+        "$value": "{palette.green.100}"
+      },
+      "subtle": {
+        "$value": "{palette.green.200}"
+      }
+    },
+    "warning": {
+      "bold": {
+        "$value": "{palette.gold.100}"
+      },
+      "subtle": {
+        "$value": "{palette.gold.200}"
+      }
+    }
+  }
 }

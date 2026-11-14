@@ -56,8 +56,18 @@ describe('@transcend-io/design-tokens', () => {
     expect(css).toContain('--background-brand-bold: var(--background-brand-bold-default)');
     expect(css).toContain('--background-brand-bold-hovered:');
     expect(css).not.toContain('--background-brand-bold-$root');
-    expect(css).not.toContain('[data-theme="dark"]');
     expect(css).not.toContain('prefers-color-scheme');
+  });
+
+  test('scopes dark semantic colors to [data-theme="dark"]', () => {
+    const css = readFileSync(join(packageRoot, 'dist/tokens.css'), 'utf8');
+    const dark = css.slice(css.indexOf('[data-theme="dark"] {'));
+    expect(dark).toContain('color-scheme: dark;');
+    expect(dark).toContain('--text-default: var(--palette-gray-100)');
+    // Aliases are redeclared so nested dark scopes don't inherit the light value.
+    expect(dark).toContain('--text: var(--text-default)');
+    expect(dark).not.toMatch(/^\s*--palette-/m);
+    expect(dark).not.toMatch(/^\s*--display-/m);
   });
 
   test('exports raw DTCG token sources for custom pipelines', () => {
