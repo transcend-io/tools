@@ -1,5 +1,11 @@
 # @transcend-io/design-tokens
 
+## 1.3.0
+
+### Minor Changes
+
+- dc352f1: Add the admin-dashboard dark palette. `color.dark` now carries real dark values instead of mirroring light, and `tokens.css` applies them under `[data-theme="dark"]`.
+
 ## 1.2.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-admin
 
+## 1.1.6
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
 ## 1.1.5
 
 ### Patch Changes

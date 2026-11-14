@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-inventory",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Transcend MCP Server — Data Inventory tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-inventory",
   "license": "Apache-2.0",

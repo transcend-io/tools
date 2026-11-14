@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-custom-functions
 
+## 0.3.3
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
 ## 0.3.2
 
 ### Patch Changes

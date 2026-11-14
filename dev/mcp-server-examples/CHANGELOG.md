@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-examples
 
+## 0.0.33
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
 ## 0.0.32
 
 ### Patch Changes

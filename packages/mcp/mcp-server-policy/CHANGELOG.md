@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-policy
 
+## 0.2.8
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
 ## 0.2.7
 
 ### Patch Changes
