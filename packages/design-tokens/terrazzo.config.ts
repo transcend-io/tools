@@ -26,7 +26,7 @@ export default defineConfig({
       variableName: (token) => `--${token.id.replace(/\./g, '-')}`,
       permutations: [
         {
-          // Dark mode omitted until color-dark.tokens.json has real overrides.
+          // Dark CSS omitted until a dark selector is chosen; TS consumers read `color.dark`.
           input: { theme: 'light' },
           prepare: (contents) =>
             `:root {\n  color-scheme: light;\n  ${withRestStateAliases(contents)}\n}`,
