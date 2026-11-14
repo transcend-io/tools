@@ -1,0 +1,17 @@
+{
+  "name": "transcend-rails-agent-controls",
+  "displayName": "Transcend Rails Agent Controls",
+  "version": "0.1.0",
+  "description": "Connect Claude to Transcend Rails Agent Controls for policy-enforced MCP tool access via browser sign-in.",
+  "author": {
+    "name": "Transcend",
+    "email": "support@transcend.io"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["transcend", "agent-governance", "mcp", "claude", "governance", "policy", "oauth"],
+  "icon": "./assets/logo.svg",
+  "documentationUrl": "https://docs.transcend.io/docs/articles/artificial-intelligence/mcp/mcp-claude-desktop-setup",
+  "supportUrl": "https://transcend.io/legal/customer-support",
+  "privacyPolicyUrl": "https://privacy.transcend.io/policies",
+  "termsOfServiceUrl": "https://transcend.io/legal/rails-beta-terms"
+}
