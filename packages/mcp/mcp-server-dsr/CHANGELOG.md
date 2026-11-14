@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.0.16
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
 ## 2.0.15
 
 ### Patch Changes
