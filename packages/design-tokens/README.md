@@ -27,6 +27,12 @@ CSS custom properties on `:root`:
 }
 ```
 
+Dark semantic colors apply under `[data-theme="dark"]`, on `<html>` or any subtree:
+
+```html
+<html data-theme="dark"></html>
+```
+
 Raw DTCG JSON (resolver + token files) for custom pipelines:
 
 ```ts
