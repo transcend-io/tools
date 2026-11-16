@@ -5,8 +5,9 @@
  *
  * Checks JSON parseability and required fields, and enforces the
  * Transcend Rails Agent Controls packaging rules for v1 (org marketplace
- * only): a fixed `https://mcp.withrails.ai/mcp/agent` gateway URL, no
- * Cursor-style OAuth "auth" block, and no secret literals. Intentionally
+ * only): `${user_config.GATEWAY_BASE_URL}/mcp/agent` with default prod US
+ * base URL, no Cursor-style OAuth "auth" block, and no secret literals.
+ * Intentionally
  * dependency-free (plain Node) so CI can run without pnpm bootstrap, and
  * so this check still runs when the `claude` CLI isn't installed.
  *
@@ -23,8 +24,11 @@ const warnings = [];
 const pluginNamePattern = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 const marketplaceNamePattern = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
-/** Fixed gateway URL required for the v1 (org-marketplace-only) release. */
-const expectedGatewayUrl = 'https://mcp.withrails.ai/mcp/agent';
+/** MCP server URL shape for Transcend Rails Agent Controls (Claude userConfig substitution). */
+const expectedMcpUrl = '${user_config.GATEWAY_BASE_URL}/mcp/agent';
+
+/** Default prod US gateway base when the user does not override GATEWAY_BASE_URL. */
+const expectedDefaultGatewayBaseUrl = 'https://mcp.us.withrails.ai';
 
 /** Hostnames / product-internal strings that must not appear in committed plugin config. */
 const forbiddenHostnamePatterns = [/myelin-internal\.com/i, /\.myelin\./i, /mcp\.dev\./i];
@@ -177,16 +181,15 @@ function validateMcpConfig(mcpConfig, pluginName, entryName) {
     } else {
       rejectSecretsAndInternalHosts(server.url, `${serverLabel}.url`);
 
-      if (/\$\{/.test(server.url)) {
+      if (pluginName === 'transcend-rails-agent-controls') {
+        if (server.url !== expectedMcpUrl) {
+          addError(
+            `${serverLabel}.url: must be "${expectedMcpUrl}" (got "${server.url}").`,
+          );
+        }
+      } else if (/\$\{/.test(server.url)) {
         addError(
-          `${serverLabel}.url: must be a fixed literal URL. No "\${user_config.*}" or other placeholder — Claude ignores servers that reference undeclared placeholders, and v1 ships no install-time variables.`,
-        );
-      } else if (
-        pluginName === 'transcend-rails-agent-controls' &&
-        server.url !== expectedGatewayUrl
-      ) {
-        addError(
-          `${serverLabel}.url: must be the fixed v1 gateway URL "${expectedGatewayUrl}" (got "${server.url}").`,
+          `${serverLabel}.url: placeholders are not allowed unless declared in plugin userConfig.`,
         );
       }
     }
@@ -202,6 +205,42 @@ function validateMcpConfig(mcpConfig, pluginName, entryName) {
         }
       }
     }
+  }
+}
+
+/**
+ * @param {object} pluginManifest
+ * @param {string} entryName
+ */
+function validateTranscendGatewayUserConfig(pluginManifest, entryName) {
+  const userConfig = pluginManifest.userConfig;
+  if (!userConfig || typeof userConfig !== 'object' || Array.isArray(userConfig)) {
+    addError(`${entryName}: "userConfig" with GATEWAY_BASE_URL is required.`);
+    return;
+  }
+
+  const gateway = userConfig.GATEWAY_BASE_URL;
+  const fieldLabel = `${entryName}: userConfig.GATEWAY_BASE_URL`;
+  if (!gateway || typeof gateway !== 'object' || Array.isArray(gateway)) {
+    addError(`${fieldLabel} is required.`);
+    return;
+  }
+
+  if (gateway.type !== 'string') {
+    addError(`${fieldLabel}.type must be "string".`);
+  }
+  if (typeof gateway.title !== 'string' || gateway.title.length === 0) {
+    addError(`${fieldLabel}.title is required.`);
+  }
+  if (typeof gateway.description !== 'string' || gateway.description.length === 0) {
+    addError(`${fieldLabel}.description is required.`);
+  }
+  if (gateway.default !== expectedDefaultGatewayBaseUrl) {
+    addError(
+      `${fieldLabel}.default must be "${expectedDefaultGatewayBaseUrl}" (got "${gateway.default}").`,
+    );
+  } else {
+    rejectSecretsAndInternalHosts(gateway.default, `${fieldLabel}.default`);
   }
 }
 
@@ -277,9 +316,13 @@ async function validatePluginManifest(pluginManifest, entryName, pluginDir) {
     }
   }
 
+  if (entryName === 'transcend-rails-agent-controls') {
+    validateTranscendGatewayUserConfig(pluginManifest, entryName);
+  }
+
   // Cursor's "variables" / "logo" fields don't apply to Claude's schema.
   if (pluginManifest.variables !== undefined) {
-    addError(`${entryName}: "variables" is a Cursor-only field; Claude has no equivalent.`);
+    addError(`${entryName}: "variables" is a Cursor-only field; Claude uses userConfig instead.`);
   }
   if (pluginManifest.logo !== undefined) {
     addError(`${entryName}: "logo" is a Cursor-only field; Claude uses "icon".`);

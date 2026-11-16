@@ -1,7 +1,7 @@
 {
   "name": "transcend-rails-agent-controls",
   "displayName": "Transcend Rails Agent Controls",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connect Claude to Transcend Rails Agent Controls for policy-enforced MCP tool access via browser sign-in.",
   "author": {
     "name": "Transcend",
@@ -13,5 +13,13 @@
   "documentationUrl": "https://docs.transcend.io/docs/articles/artificial-intelligence/mcp/mcp-claude-desktop-setup",
   "supportUrl": "https://transcend.io/legal/customer-support",
   "privacyPolicyUrl": "https://privacy.transcend.io/policies",
-  "termsOfServiceUrl": "https://transcend.io/legal/rails-beta-terms"
+  "termsOfServiceUrl": "https://transcend.io/legal/rails-beta-terms",
+  "userConfig": {
+    "GATEWAY_BASE_URL": {
+      "type": "string",
+      "title": "Gateway base URL",
+      "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to https://mcp.us.withrails.ai (US). For EU use https://mcp.eu.withrails.ai. Do not append /mcp/... — the plugin adds that.",
+      "default": "https://mcp.us.withrails.ai"
+    }
+  }
 }

@@ -5,8 +5,8 @@ Claude plugin for [Transcend Rails Agent Controls](https://www.withrails.ai). In
 ## What it does
 
 - Surfaces **Transcend Rails Agent Controls** inside Claude as an installable plugin
-- Connects Claude to the Agent Governance MCP gateway over Streamable HTTP, at a **fixed** address (`https://mcp.withrails.ai/mcp/agent`)
-- Ships **no** bundled credential, OAuth client, or `${user_config.*}` variable — there is nothing to configure at install time
+- Connects Claude to the Agent Governance MCP gateway over Streamable HTTP at `${user_config.GATEWAY_BASE_URL}/mcp/agent` (default **US** prod: `https://mcp.us.withrails.ai`)
+- Ships **no** bundled credential or OAuth client — organization is chosen at consent when sign-in is required
 
 This plugin does **not** bundle Transcend's separate DD&C MCP packages.
 
@@ -20,13 +20,32 @@ You need:
 
 1. An active **Transcend Agent Governance** organization
 2. Claude Desktop, claude.ai, or Claude Code with plugin / marketplace support
-3. A deployed Agent Governance environment reachable at `https://mcp.withrails.ai/mcp/agent`
+3. A deployed Agent Governance environment in the region you connect to (default **US**: `https://mcp.us.withrails.ai/mcp/agent`; **EU**: `https://mcp.eu.withrails.ai/mcp/agent`)
 
 Ask your Agent Governance administrator if you are unsure whether your organization is provisioned.
 
+## Gateway base URL (optional override)
+
+Most installs can accept the default **Gateway base URL** (`https://mcp.us.withrails.ai`). Override it when your organization uses another regional cluster or a self-hosted gateway.
+
+| Deployment | Gateway base URL (scheme + host only) |
+| ---------- | ------------------------------------- |
+| US production (default) | `https://mcp.us.withrails.ai` |
+| EU production | `https://mcp.eu.withrails.ai` |
+| Self-host / Dev dogfood | Your organization's `mcp.*` origin |
+
+Set the value in Claude Code via **/config**, **/plugin** configure, or at install:
+
+```bash
+claude plugin install transcend-rails-agent-controls@transcend-plugins \
+  --config GATEWAY_BASE_URL=https://mcp.eu.withrails.ai
+```
+
+Do **not** paste a full MCP path into **Gateway base URL** — the plugin appends `/mcp/agent`. There is no `TENANT_ID` variable; organization is chosen at consent.
+
 ## Install
 
-Install from this repository as an org marketplace — no repo clone or `.mcp.json` editing needed for end users.
+Install from this repository as an org marketplace — no repo clone or hand-edited `.mcp.json` for end users.
 
 ```bash
 # Register the marketplace once per machine
@@ -41,8 +60,9 @@ In Claude Desktop / claude.ai, an organization admin can also add `transcend-io/
 After install:
 
 1. Open **Customize → Connectors** (Claude Desktop / claude.ai) and find **Transcend Rails Agent Controls**, or run `/mcp` in Claude Code.
-2. Choose **Connect** if the gateway requires a sign-in step. See the known gap below for Claude Code.
-3. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
+2. Accept the default gateway settings, or set **Gateway base URL** for EU or self-host (see above).
+3. Choose **Connect** if the gateway requires a sign-in step. See the known gap below for Claude Code.
+4. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
 
 ### After first connection
 
@@ -50,7 +70,7 @@ A successful connection auto-registers a **connected agent** for your user in th
 
 ## Known gap: Claude Code sign-in
 
-This plugin's `.mcp.json` declares a fixed gateway URL and **no** auth block — by design, so nothing here hardcodes a credential or a half-finished OAuth flow. Whether that connection needs a browser sign-in, and whether sign-in succeeds, depends on the Claude surface:
+This plugin's `.mcp.json` points at the gateway via `userConfig` and declares **no** auth block — by design, so nothing here hardcodes a credential or a half-finished OAuth flow. Whether that connection needs a browser sign-in, and whether sign-in succeeds, depends on the Claude surface:
 
 - **Claude Desktop / claude.ai**: browser sign-in through **Customize → Connectors → Connect** is the expected path once your organization's gateway requires it.
 - **Claude Code**: browser sign-in to this gateway does **not** work today. Claude Code installs plugins, but the sign-in flow this gateway needs is not yet supported there. This is tracked in [LINK-8760](https://linear.app/transcend/issue/LINK-8760/epic-claude-code-org-wide-myelin-mcp-and-hooks-governance), and submitting this plugin to Anthropic's public directory waits on that work.
@@ -70,11 +90,12 @@ Your organization's Agent Governance gateway documents its own MCP tool-calling 
 
 `version` in [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) is bumped **by hand** on meaningful releases (starting at `0.1.0`). There is no automated version-bump tooling for this plugin yet.
 
-Tagged releases use the pattern `claude-plugin-v*` (for example `claude-plugin-v0.1.0`). A future Anthropic directory submission pins a specific release tag, not `main`, so a tag marks a known-good snapshot of this plugin directory independent of unrelated monorepo changes.
+Tagged releases use the pattern `claude-plugin-v*` (for example `claude-plugin-v0.1.1`). A future Anthropic directory submission pins a specific release tag, not `main`, so a tag marks a known-good snapshot of this plugin directory independent of unrelated monorepo changes.
 
 | Version | Tag              | Notes                                |
 | ------- | ---------------- | ------------------------------------ |
 | 0.1.0   | _not yet tagged_ | Initial org-marketplace-only release |
+| 0.1.1   | _not yet tagged_ | Prod US default gateway; EU/self-host `GATEWAY_BASE_URL` override |
 
 ## License
 

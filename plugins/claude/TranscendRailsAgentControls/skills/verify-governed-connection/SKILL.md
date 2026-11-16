@@ -11,7 +11,7 @@ description: >-
 
 # Verify governed connection health
 
-Confirm that Claude can reach Transcend Agent Governance through the **policy gateway** at the fixed address this plugin ships (`https://mcp.withrails.ai/mcp/agent`).
+Confirm that Claude can reach Transcend Agent Governance through the **policy gateway** at `${user_config.GATEWAY_BASE_URL}/mcp/agent`. The shipped default is **US** production (`https://mcp.us.withrails.ai`). **EU** organizations should set **Gateway base URL** to `https://mcp.eu.withrails.ai` if connections fail or hit the wrong cluster.
 
 ## When this skill applies
 
@@ -22,7 +22,7 @@ Confirm that Claude can reach Transcend Agent Governance through the **policy ga
 
 ## Known gap: Claude Code sign-in
 
-This plugin's `.mcp.json` points at a **fixed** gateway URL and declares **no** built-in auth configuration — there is no credential-paste variable and no bundled OAuth client. Whether a browser sign-in step runs at all, and whether it succeeds, depends on your organization's Agent Governance gateway and on the Claude surface you are using:
+This plugin's `.mcp.json` uses **Gateway base URL** from `userConfig` and declares **no** built-in auth configuration — there is no credential-paste variable and no bundled OAuth client. Whether a browser sign-in step runs at all, and whether it succeeds, depends on your organization's Agent Governance gateway and on the Claude surface you are using:
 
 - **Claude Desktop / claude.ai**: Customize → Connectors → Connect can prompt a browser sign-in if the gateway requires one.
 - **Claude Code**: browser sign-in to this gateway does **not** work yet. This is a known, tracked gap (see the plugin [README](../../README.md)), not something to work around with a pasted credential.
@@ -34,7 +34,7 @@ Do **not** invent a credential-paste path to route around a sign-in failure. If 
 Work through these in order. Prefer Claude's own connector / MCP status surfaces — do not invent hostnames or internal service names.
 
 1. **Plugin installed and enabled**
-   Confirm **Transcend Rails Agent Controls** is installed from your org's marketplace (`claude plugin list`, or **Customize → Connectors** in Claude Desktop / claude.ai). There is no org or tenant identifier to configure — the gateway URL is fixed in `.mcp.json`.
+   Confirm **Transcend Rails Agent Controls** is installed from your org's marketplace (`claude plugin list`, or **Customize → Connectors** in Claude Desktop / claude.ai). Default **Gateway base URL** is US prod; verify **/config** or plugin settings match the user's region (EU vs US) if the gateway is unreachable.
 
 2. **Connector status**
    Check whether `transcend-rails-agent-controls` shows as connected. In Claude Desktop / claude.ai, open **Customize → Connectors** and look for **Transcend Rails Agent Controls**; choose **Connect** if it is not already connected. In Claude Code, run `/mcp` to see the server's status. Treat a disconnected or errored state as a connection problem first, not a policy denial.
@@ -47,7 +47,7 @@ Work through these in order. Prefer Claude's own connector / MCP status surfaces
 4. **Smoke a low-risk list/read tool (optional)**
    If a harmless discovery tool is available, call it once.
    - Success → connection is healthy; later denials are likely policy (hand off to **troubleshoot-policy-denial**).
-   - Immediate connection/auth failure → gateway reachability or the Claude Code sign-in gap above.
+   - Immediate connection/auth failure → gateway reachability, wrong regional **Gateway base URL**, or the Claude Code sign-in gap above.
    - Explicit deny on that tool → policy, not "gateway down."
 
 ## Reporting back to the user
@@ -55,9 +55,10 @@ Work through these in order. Prefer Claude's own connector / MCP status surfaces
 Be concrete and short:
 
 - Connected or not, per Claude's connector / `/mcp` status
+- Effective gateway base URL if known (US default vs EU/self-host override)
 - How many / which tools are visible (names only)
-- Whether the failure looks like a **connection problem** (unreachable gateway, Claude Code sign-in gap), **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
-- Next step: retry Connect, ask an Agent Governance admin to assign MCP servers / policy, or open a policy/approval conversation
+- Whether the failure looks like a **connection problem** (unreachable gateway, wrong region, Claude Code sign-in gap), **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
+- Next step: confirm **Gateway base URL**, retry Connect, ask an Agent Governance admin to assign MCP servers / policy, or open a policy/approval conversation
 
 ## Forbidden workarounds
 
