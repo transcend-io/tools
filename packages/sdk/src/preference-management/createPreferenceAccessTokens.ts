@@ -1,4 +1,7 @@
-import type { SombraStandardScope } from '@transcend-io/privacy-types';
+import {
+  PrivacyCenterAccessTokenFormat,
+  type SombraStandardScope,
+} from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
@@ -27,7 +30,7 @@ export interface PreferenceAccessTokenInputWithIndex extends PreferenceAccessTok
 const MAX_BATCH_SIZE = 50;
 
 /** Wire format of a preference access token. JWT is the API default. */
-export type PreferenceAccessTokenFormat = 'JWT' | 'SHORT';
+export type PreferenceAccessTokenFormat = PrivacyCenterAccessTokenFormat;
 
 /**
  * Create preference access tokens for a single page of identifiers.
@@ -59,7 +62,7 @@ async function createPreferenceAccessTokensPage(
     variables: {
       input: {
         records,
-        ...(tokenFormat === 'SHORT' ? { tokenFormat } : {}),
+        ...(tokenFormat === PrivacyCenterAccessTokenFormat.Short ? { tokenFormat } : {}),
       },
     },
   });
