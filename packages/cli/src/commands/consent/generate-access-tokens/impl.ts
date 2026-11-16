@@ -1,4 +1,4 @@
-import { SombraStandardScope } from '@transcend-io/privacy-types';
+import { PrivacyCenterAccessTokenFormat, SombraStandardScope } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createPreferenceAccessTokens,
@@ -27,7 +27,7 @@ export type GenerateAccessTokenCommandFlags = {
   emailColumnName: string;
   coreIdentifierColumnName?: string;
   /** JWT is the default. SHORT is a 43-character token. */
-  tokenFormat: 'JWT' | 'SHORT';
+  tokenFormat: PrivacyCenterAccessTokenFormat;
 };
 
 /**

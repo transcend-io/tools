@@ -1,3 +1,5 @@
+import { PrivacyCenterAccessTokenFormat } from '@transcend-io/privacy-types';
+
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
 import type { GenerateAccessTokenCommandFlags } from './impl.js';
 
@@ -40,7 +42,7 @@ const examples = buildExamples<GenerateAccessTokenCommandFlags>(
         auth: '$TRANSCEND_API_KEY',
         file: './users.csv',
         subjectType: 'customer',
-        tokenFormat: 'SHORT',
+        tokenFormat: PrivacyCenterAccessTokenFormat.Short,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         duration: '1 year' as any,
       },

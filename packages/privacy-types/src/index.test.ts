@@ -4,6 +4,7 @@ import {
   DefaultDataSubCategoryType,
   DefaultPurposeSubCategoryType,
   LocaleCodec,
+  PrivacyCenterAccessTokenFormat,
   RequestAction,
 } from './index.js';
 
@@ -22,6 +23,10 @@ describe('@transcend-io/privacy-types', () => {
 
   it('exports ESSENTIAL as a purpose subcategory', () => {
     expect(Object.values(DefaultPurposeSubCategoryType)).toContain('ESSENTIAL');
+  });
+
+  it('exports JWT and SHORT access token formats', () => {
+    expect(Object.values(PrivacyCenterAccessTokenFormat)).toEqual(['JWT', 'SHORT']);
   });
 
   it('exports the shared locale codec', () => {

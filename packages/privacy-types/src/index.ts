@@ -33,6 +33,7 @@ export * from './oneTrust/index.js';
 export * from './permissionsPolicyInput.js';
 export * from './preferences.js';
 export * from './policy.js';
+export * from './privacyCenterAccessToken.js';
 export * from './processingActivity.js';
 export * from './prompt.js';
 export * from './promptAVendor.js';
