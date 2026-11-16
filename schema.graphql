@@ -816,7 +816,6 @@ enum DatabaseModelName {
   WorkflowConfigCommunication
   WorkflowConfigEnricher
   WorkflowConfigEnricherDependency
-  WorkflowConfigFileUpload
   WorkflowJobWorkflowJob
   WorkflowConfigAttributeKey
   WorkflowConfigDataSiloAttributeValue
@@ -969,6 +968,7 @@ enum DatabaseModelName {
   requestFile
   requestAttachment
   requestDownloadAttempt
+  requestIdentifierUpdate
   saaSCategory
   catalogCategory
   aiFeature
@@ -1023,7 +1023,6 @@ enum DatabaseModelName {
   consentWorkflowTriggerPurpose
   workflowConfig
   migrateRequestConfigurationsToWorkflowsRun
-  fileUpload
   workflowInstance
   workflowJob
   riskFramework
@@ -4468,6 +4467,11 @@ enum PreferenceManagementOnboardingStatus {
   DONE
 }
 
+enum PrivacyCenterAccessTokenFormat {
+  JWT
+  SHORT
+}
+
 enum ProcessingActivitiesColumnName {
   title
   description
@@ -4738,6 +4742,7 @@ enum AuditEventBaseModelCode {
   SUB_DATA_POINT
   MESSAGE
   PRIVACY_CENTER
+  PRIVACY_CENTER_PUBLISH
   EMAIL_DOMAIN
   EMAIL_SENDER_ADDRESS
   THEME
@@ -4883,6 +4888,7 @@ enum AuditEventCode {
   SUB_DATA_POINT_SUBJECT
   MESSAGE
   PRIVACY_CENTER
+  PRIVACY_CENTER_PUBLISH
   PRIVACY_CENTER_EMAIL_SENDER_ADDRESS
   EMAIL_DOMAIN
   EMAIL_SENDER_ADDRESS
@@ -5501,7 +5507,6 @@ type Query {
   sdks(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: SdkFiltersInput!, orderBy: [SdkOrder!]): SdksPayload!
   searchCatalogs(input: CatalogSearchInput!): SearchCatalogsPayload!
   sensitiveCategories(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: SensitiveCategoriesFiltersInput): SensitiveCategoriesPayload!
-  signupCode(input: SignupCodeInput!): SignupCode!
   siloDiscoveryMetrics: SiloDiscoveryMetrics!
   siloDiscoveryResults(first: Int, offset: Int = 0, last: Int, filterBy: SiloDiscoveryResultFiltersInput, orderBy: [SiloDiscoveryResultOrder!]): SiloDiscoveryResultsPayload!
   slackWorkspaceMetadata: SlackWorkspaceMetadata!
@@ -5530,6 +5535,8 @@ type Query {
   workflowCommunicationsSettings(input: WorkflowConfigIdInput!): WorkflowCommunicationsSettingsPayload!
   workflowConfig(input: WorkflowConfigInput!): WorkflowConfigPayload!
   workflowConfigFileUploads(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsPayload!
+  workflowConfigFileUploadsAndConfirmations(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsAndConfirmationsPayload!
+  workflowConfigFormItems(input: WorkflowConfigFormItemsInput!): WorkflowConfigFormItemsPayload!
   workflowEnrichers(first: Int, offset: Int = 0, last: Int, input: WorkflowEnrichersInput!): WorkflowEnrichersPayload!
   workflowIdentifiers(first: Int, offset: Int = 0, last: Int, input: WorkflowConfigIdInput!): WorkflowIdentifiersPayload!
   workflowMigrationRun(filterBy: WorkflowMigrationRunFiltersInput!): WorkflowMigrationRunPayload!
@@ -5740,7 +5747,7 @@ type Mutation {
   employeeDeleteConsentPreferenceRecords(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeDeleteConsentPreferenceRecordsPayload!
   employeeDownloadCEK(id: ID!, dhEncrypted: String!): EmployeeDownloadCekPayload!
   employeeMakeDataSubjectRequest(input: EmployeeRequestInput!, dhEncrypted: String): EmployeeMakeDataSubjectRequestPayload!
-  employeeMakeDataSubjectRequests(input: [EmployeeBulkRequestInput!]!, dhEncrypted: String): EmployeeMakeDataSubjectRequestsPayload!
+  employeeMakeDataSubjectRequests(input: [EmployeeBulkRequestInput!]!, dhEncrypted: String, submittedInputCount: Int): EmployeeMakeDataSubjectRequestsPayload!
   employeeReSignEncryptedCEKContexts(input: ReSignEncryptedCEKContextsInput!, dhEncrypted: String!): EmployeeReSignEncryptedCekContextsPayload!
   employeeUpdateConsentPreferenceIdentifiers(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeUpdateConsentPreferenceIdentifiersPayload!
   employeeUpdateConsentPreferences(input: UpdateConsentPreferenceInput!, dhEncrypted: String!): EmployeeUpdateConsentPreferencesPayload!
@@ -5820,6 +5827,7 @@ type Mutation {
   resolveAssessmentFormComments(input: ResolveAssessmentFormCommentsInput!): ResolveAssessmentFormCommentsPayload!
   resolveAssessmentQuestionComments(input: ResolveAssessmentQuestionCommentsInput!): ResolveAssessmentQuestionCommentsPayload!
   resolveAssessmentSectionComments(input: ResolveAssessmentSectionCommentsInput!): ResolveAssessmentSectionCommentsPayload!
+  resolvePrivacyCenterAccessToken(lookup: PrivacyCenterLookupInput, input: TokenInput!): ResolvePrivacyCenterAccessTokenPayload!
   restartSiloObjectClassifications(input: RestartSiloObjectClassificationsInput!): RestartSiloObjectClassificationsPayload!
   restoreCustomFunction(input: RestoreCustomFunctionInput!): RestoreCustomFunctionPayload!
   restoreCustomFunctionVersion(input: RestoreCustomFunctionVersionInput!): RestoreCustomFunctionVersionPayload!
@@ -5846,7 +5854,6 @@ type Mutation {
   savePaVCompletionStatus(input: MarkBulkRequestsAsCompletedInput!): SavePaVCompletionStatusPayload!
   selectAssessmentQuestionAnswers(input: SelectAssessmentQuestionAnswerInput!): SelectAssessmentQuestionAnswersPayload!
   selectAssessmentQuestionAnswersToken(input: SelectAssessmentQuestionAnswersTokenInput!): SelectAssessmentQuestionAnswersTokenPayload!
-  selfServeSignup(input: SelfServeSignupInput!): SelfServeSignupPayload!
   sendCommunication(input: SendMessageInput!, dhEncrypted: String!): SendCommunicationPayload!
   sendTestEmail(input: SendTestEmailInput!): SendTestEmailPayload!
   sendTestSlackNotification(input: SendTestSlackNotificationInput!): SendTestSlackNotificationPayload!
@@ -5889,6 +5896,7 @@ type Mutation {
   unwrapCustomFunction(input: UnwrapCustomFunctionInput!, dhEncrypted: String!): UnwrapCustomFunctionPayload!
   unwrapEmailContents(input: DecryptCommunicationInput!, dhEncrypted: String!): UnwrapEmailContentsPayload!
   unwrapFileSnippets(input: UnwrapFileSnippetFiltersInput!, dhEncrypted: String!): UnwrapFileSnippetsPayload!
+  unwrapIdentifierUpdates(id: ID!, dhEncrypted: String!): UnwrapIdentifierUpdatesPayload!
   unwrapProfileIdentifier(id: ID!, dhEncrypted: String!): UnwrapProfileIdentifierPayload!
   unwrapRequestIdentifier(id: ID!, dhEncrypted: String!): UnwrapRequestIdentifierPayload!
   unwrapSubDataPointSamples(input: UnwrapSubDataPointSamplesFiltersInput!, dhEncrypted: String!): UnwrapSubDataPointSamplesPayload!
@@ -6002,6 +6010,7 @@ type Mutation {
   updateVendors(input: UpdateVendorsInput!): UpdateVendorsPayload!
   updateWorkflowCommunicationSettings(input: UpdateWorkflowCommunicationSettingsInput!): UpdateWorkflowCommunicationSettingsPayload!
   updateWorkflowConfig(input: UpdateWorkflowConfigInput!): UpdateWorkflowConfigPayload!
+  updateWorkflowConfigConfirmations(input: UpdateWorkflowConfigConfirmationsInput!): UpdateWorkflowConfigConfirmationsPayload!
   updateWorkflowConfigDataSilo(input: UpdateWorkflowConfigDataSiloInput!): UpdateWorkflowConfigDataSiloPayload!
   verifyPrivacyCenterLoginEmail(lookup: PrivacyCenterLookupInput, input: TokenInput!): VerifyPrivacyCenterLoginEmailPayload!
   verifyRequestToken(lookup: PrivacyCenterLookupInput, input: TokenInput!): VerifyRequestTokenPayload!
@@ -6193,6 +6202,7 @@ type Activity {
   id: ID!
   code: ActivityCode!
   createdAt: Date!
+  overdueTime: ActivityOverdueTime
   request: RequestDetails!
   user: UserPreview
   requestFile: RequestFile
@@ -6222,6 +6232,11 @@ input ActivityFiltersInput {
 input ActivityOrder {
   field: ActivityOrderField!
   direction: OrderDirection!
+}
+
+type ActivityOverdueTime {
+  beforeTime: Int!
+  afterTime: Int!
 }
 
 input AddAirgapPrefixModuleToAirgapBundleInput {
@@ -6281,7 +6296,6 @@ input AddFileUploadsToWorkflowConfigInput {
 }
 
 input AddFileUploadToWorkflowConfigItemInput {
-  internalName: String
   label: String!
   info: String
   acceptedMimeTypes: [String!]
@@ -9791,12 +9805,14 @@ type ConsentUiTheme {
 
 type ConsentUiThemeConfig {
   buttonThemes: [ButtonTheme!]!
+  fontUrl: String
   firstLayer: FirstLayerTheme
   secondLayer: SecondLayerTheme
 }
 
 input ConsentUiThemeConfigInput {
   buttonThemes: [ButtonThemeInput!]!
+  fontUrl: String
   firstLayer: FirstLayerThemeInput
   secondLayer: SecondLayerThemeInput
 }
@@ -9929,6 +9945,7 @@ type ConsentWorkflowTriggersPayload {
 }
 
 input ConsentWorkflowTriggersFilterInput {
+  ids: [ID!]
   purposeIds: [ID!]
   trackingTypes: [String!]
   text: String
@@ -9938,6 +9955,7 @@ input ConsentWorkflowTriggersFilterInput {
   isSilent: Boolean
   allowUnauthenticated: Boolean
   workflowConfigId: ID
+  excludedWorkflowConfigTypes: [WorkflowConfigType!]
 }
 
 type ContainerTheme {
@@ -10985,6 +11003,7 @@ type CreatePrivacyCenterAccessTokensPayload {
 
 input CreatePrivacyCenterAccessTokensInput {
   records: [CreatePrivacyCenterAccessTokenInput!]!
+  tokenFormat: PrivacyCenterAccessTokenFormat
 }
 
 type CreateProcessingActivityPayload {
@@ -12675,6 +12694,12 @@ type DecryptedEmailContents {
   subject: DecryptionContext
   template: DecryptionContext!
   attachments: [DecryptedEmailAttachment!]!
+}
+
+type DecryptedIdentifierUpdate {
+  id: ID!
+  identifierName: String!
+  newValue: DecryptionContext!
 }
 
 type DecryptionContext {
@@ -14926,13 +14951,10 @@ type IdentifiersPayload {
 }
 
 type IdentifierUpdate {
+  id: ID!
   identifierName: String!
   newValue: String!
-}
-
-input IdentifierUpdateInput {
-  identifierName: String!
-  newValue: String!
+  isEncrypted: Boolean!
 }
 
 type ImportOneTrustAssessmentFormsPayload {
@@ -17629,6 +17651,7 @@ type Request implements RequestInterface {
   isTest: Boolean!
   isSilent: Boolean!
   origin: RequestOrigin!
+  consentWorkflowTriggerId: ID
   dropRunId: ID
   dropRecordCount: Int!
   link: String!
@@ -18457,6 +18480,11 @@ type ResolveAssessmentSectionCommentsPayload {
 input ResolveAssessmentSectionCommentsInput {
   ids: [ID!]!
   isResolved: Boolean!
+}
+
+type ResolvePrivacyCenterAccessTokenPayload {
+  clientMutationId: String
+  jwtSession: String!
 }
 
 type Resource {
@@ -19387,11 +19415,6 @@ type SelectOption {
   label: DefinedMessage!
 }
 
-type SelfServeSignupPayload {
-  clientMutationId: String
-  user: CurrentUser!
-}
-
 input SelfServeSignupInput {
   name: String!
   email: String!
@@ -19399,7 +19422,7 @@ input SelfServeSignupInput {
   companyWebsite: String!
   uri: String
   domain: String!
-  code: String
+  code: String!
 }
 
 input SendAssessmentActionInput {
@@ -19615,10 +19638,12 @@ input ShareComplianceReportInput {
 
 type SharedTopLevelTheme {
   buttonThemes: [ButtonTheme!]!
+  fontUrl: String
 }
 
 input SharedTopLevelThemeInput {
   buttonThemes: [ButtonThemeInput!]!
+  fontUrl: String
 }
 
 input ShowTCFVendorInput {
@@ -21022,6 +21047,11 @@ type UnwrapFileSnippetsPayload {
   contextSnippetDecryptionContexts: [FileSnippetDecryptionContext!]!
 }
 
+type UnwrapIdentifierUpdatesPayload {
+  clientMutationId: String
+  identifierUpdates: [DecryptedIdentifierUpdate!]!
+}
+
 type UnwrapProfileIdentifierPayload {
   clientMutationId: String
   decryptionContext: DecryptionContext!
@@ -22015,7 +22045,6 @@ input UpdateFeaturesInternalInput {
 
 input UpdateFileUploadOnWorkflowConfigItemInput {
   id: ID!
-  internalName: String
   label: String
   info: String
   acceptedMimeTypes: [String!]
@@ -23112,6 +23141,17 @@ type UpdateWorkflowConfigPayload {
   privacyCenterDeployStatus: String!
 }
 
+type UpdateWorkflowConfigConfirmationsPayload {
+  clientMutationId: String
+  success: Boolean!
+  privacyCenterDeployStatus: String!
+}
+
+input UpdateWorkflowConfigConfirmationsInput {
+  workflowConfigId: ID!
+  confirmations: [WorkflowConfigConfirmationInput!]!
+}
+
 type UpdateWorkflowConfigDataSiloPayload {
   clientMutationId: String
   success: Boolean!
@@ -23491,6 +23531,18 @@ type WorkflowConfigAttributeKey {
   attributeKey: AttributeKey!
 }
 
+type WorkflowConfigConfirmation {
+  id: ID!
+  index: Int!
+  isRequired: Boolean!
+  label: LocalizedMessage!
+}
+
+input WorkflowConfigConfirmationInput {
+  id: ID
+  message: String!
+}
+
 type WorkflowConfigDataSilo {
   id: ID!
   workflowConfigId: ID!
@@ -23522,6 +23574,56 @@ type WorkflowConfigFileUpload {
 type WorkflowConfigFileUploadsPayload {
   clientMutationId: String
   nodes: [WorkflowConfigFileUpload!]!
+}
+
+type WorkflowConfigFileUploadsAndConfirmationsPayload {
+  clientMutationId: String
+  fileUploads: [WorkflowConfigFileUpload!]!
+  confirmations: [WorkflowConfigConfirmation!]!
+}
+
+type WorkflowConfigFormItem {
+  id: ID!
+  name: String!
+  index: Int!
+  label: DefinedMessage!
+  type: FormType!
+  placeholder: DefinedMessage
+  info: DefinedMessage
+  isRequired: Boolean!
+  disabled: Boolean
+  validator: FormRule
+  snippet: SnippetConfig
+  format: FormFormat
+  acceptedMimeTypes: [String!]
+  maxFileSize: String
+  maxFiles: Int
+  minLength: Int
+  multiline: Int
+  autoComplete: FormAutoComplete
+  value: String
+  initialValue: String
+  initialBooleanValue: Boolean
+  dataSubjectIds: [ID!]
+  sendUnencrypted: Boolean
+  isPlaintext: Boolean
+  options: [SelectOption!]
+  mode: ModeOption
+  parseNewlines: Boolean
+  isMulti: Boolean
+  authenticationMethods: [AuthenticationMethod!]
+  jsonSchema: String
+  examples: [FormItemJsonExample!]
+}
+
+type WorkflowConfigFormItemsPayload {
+  clientMutationId: String
+  nodes: [WorkflowConfigFormItem!]!
+}
+
+input WorkflowConfigFormItemsInput {
+  workflowConfigId: ID!
+  types: [FormType!]!
 }
 
 type WorkflowConfigIdentifier {
@@ -23702,7 +23804,7 @@ input WorkflowRequestInput {
   attributes: [AttributeInput!]
   idempotencyKey: String
   workflowConfigId: ID!
-  identifierUpdates: [IdentifierUpdateInput!]
+  identifierUpdateNames: [String!]
 }
 
 type WorkflowsResponse {
