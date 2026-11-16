@@ -1,5 +1,14 @@
 # @transcend-io/cli
 
+## 13.1.1
+
+### Patch Changes
+
+- 5bd03e2: Share the Privacy Center access token format from privacy-types.
+- Updated dependencies [5bd03e2]
+  - @transcend-io/privacy-types@6.8.0
+  - @transcend-io/sdk@2.2.1
+
 ## 13.1.0
 
 ### Minor Changes

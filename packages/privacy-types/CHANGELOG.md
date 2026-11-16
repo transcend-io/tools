@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 6.8.0
+
+### Minor Changes
+
+- 5bd03e2: Share the Privacy Center access token format from privacy-types.
+
 ## 6.7.1
 
 ### Patch Changes
