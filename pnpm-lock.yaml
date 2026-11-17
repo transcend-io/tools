@@ -1179,9 +1179,6 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
-      '@types/json-schema':
-        specifier: 7.0.15
-        version: 7.0.15
       '@types/jsonwebtoken':
         specifier: 9.0.10
         version: 9.0.10
