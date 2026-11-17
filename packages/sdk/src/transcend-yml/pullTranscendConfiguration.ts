@@ -1,4 +1,4 @@
-import { LocaleValue } from '@transcend-io/internationalization';
+import type { LocaleValue } from '@transcend-io/internationalization';
 import {
   RequestAction,
   ConsentTrackerStatus,

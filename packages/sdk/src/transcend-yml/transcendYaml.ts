@@ -1,4 +1,4 @@
-import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
+import { decodeCodec, type ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
 
 import { normalizeTranscendInput, TranscendInput } from './codecs.js';

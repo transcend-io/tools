@@ -7,7 +7,7 @@ import { chunk, keyBy } from 'lodash-es';
 import {
   NOOP_LOGGER,
   makeGraphQLRequest,
-  ApiKey,
+  type ApiKey,
   convertToDataSubjectBlockList,
   type DataSubject,
   fetchAllDataSilos,
