@@ -13,6 +13,10 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_enrich_identifiers',
   'dsr_cancel',
   'dsr_analyze',
+  'dsr_list_enrichers',
+  'dsr_write_enrichers',
+  'dsr_list_actions',
+  'dsr_write_actions',
 ] as const;
 
 describe('DSR Tools', () => {
@@ -54,9 +58,9 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 10 tools with expected names', () => {
+  it('registers exactly 14 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(10);
+    expect(tools).toHaveLength(14);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

@@ -24,7 +24,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['inventory_list_data_silos', 'inventory_get_data_silo'],
     write: ['inventory_write_data_silo'],
   },
-  [TranscendPullResource.Enrichers]: { read: [], write: [] },
+  [TranscendPullResource.Enrichers]: {
+    read: ['dsr_list_enrichers'],
+    write: ['dsr_write_enrichers'],
+  },
   [TranscendPullResource.DataFlows]: {
     read: ['consent_list_data_flows'],
     write: ['consent_update_data_flows'],
@@ -34,7 +37,7 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     write: [],
   },
   [TranscendPullResource.ProcessingActivities]: { read: [], write: [] },
-  [TranscendPullResource.Actions]: { read: [], write: [] },
+  [TranscendPullResource.Actions]: { read: ['dsr_list_actions'], write: ['dsr_write_actions'] },
   [TranscendPullResource.DataSubjects]: { read: ['inventory_list_data_subjects'], write: [] },
   [TranscendPullResource.Identifiers]: { read: ['inventory_list_identifiers'], write: [] },
   [TranscendPullResource.Cookies]: {
@@ -96,10 +99,8 @@ export interface SectionGap {
  */
 export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
   [TranscendPullResource.Attributes]: { read: true, write: true },
-  [TranscendPullResource.Enrichers]: { read: true, write: true },
   [TranscendPullResource.BusinessEntities]: { write: true },
   [TranscendPullResource.ProcessingActivities]: { read: true, write: true },
-  [TranscendPullResource.Actions]: { read: true, write: true },
   [TranscendPullResource.DataSubjects]: { write: true },
   [TranscendPullResource.Identifiers]: { write: true },
   [TranscendPullResource.ConsentManager]: { write: true },
