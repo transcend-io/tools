@@ -553,6 +553,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../../privacy-types
+      '@transcend-io/sdk':
+        specifier: workspace:*
+        version: link:../../sdk
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
