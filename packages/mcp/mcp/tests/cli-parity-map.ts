@@ -19,7 +19,10 @@ export interface SectionTools {
 export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   [TranscendPullResource.ApiKeys]: { read: ['admin_list_api_keys'], write: [] },
   [TranscendPullResource.Attributes]: { read: [], write: [] },
-  [TranscendPullResource.Templates]: { read: ['workflows_list_email_templates'], write: [] },
+  [TranscendPullResource.Templates]: {
+    read: ['workflows_list_email_templates'],
+    write: ['workflows_write_email_templates'],
+  },
   [TranscendPullResource.DataSilos]: {
     read: ['inventory_list_data_silos', 'inventory_get_data_silo'],
     write: ['inventory_write_data_silo'],
@@ -110,7 +113,6 @@ export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = 
   [TranscendPullResource.PrivacyCenters]: { write: true },
   [TranscendPullResource.Policies]: { read: true, write: true },
   [TranscendPullResource.Messages]: { read: true, write: true },
-  [TranscendPullResource.Templates]: { write: true },
   [TranscendPullResource.Purposes]: { write: true },
   [TranscendPullResource.PreferenceOptions]: { read: true, write: true },
   [TranscendPullResource.SystemDiscovery]: { read: true, write: true },
