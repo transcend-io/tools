@@ -7,6 +7,7 @@ const EXPECTED_TOOL_NAMES = [
   'discovery_ner_extract',
   'discovery_list_scans',
   'discovery_list_plugins',
+  'discovery_list_system_discovery',
 ] as const;
 
 describe('Discovery Tools', () => {
@@ -38,9 +39,9 @@ describe('Discovery Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 4 tools with expected names', () => {
+  it('registers exactly 5 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(4);
+    expect(tools).toHaveLength(5);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

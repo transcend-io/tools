@@ -106,6 +106,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `discovery_list_plugins` — List discovery plugins
 - `discovery_classify_text` — Classify text into data categories
 - `discovery_ner_extract` — Extract named entities from text
+- `discovery_list_system_discovery` — List system discovery results
 
 ## Related packages
 

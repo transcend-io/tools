@@ -3,6 +3,7 @@ import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base'
 import { createDiscoveryClassifyTextTool } from './discovery_classify_text.js';
 import { createDiscoveryListPluginsTool } from './discovery_list_plugins.js';
 import { createDiscoveryListScansTool } from './discovery_list_scans.js';
+import { createDiscoveryListSystemDiscoveryTool } from './discovery_list_system_discovery.js';
 import { createDiscoveryNerExtractTool } from './discovery_ner_extract.js';
 
 export function getDiscoveryTools(clients: ToolClients): ToolDefinition[] {
@@ -11,5 +12,6 @@ export function getDiscoveryTools(clients: ToolClients): ToolDefinition[] {
     createDiscoveryNerExtractTool(clients),
     createDiscoveryListScansTool(clients),
     createDiscoveryListPluginsTool(clients),
+    createDiscoveryListSystemDiscoveryTool(clients),
   ];
 }

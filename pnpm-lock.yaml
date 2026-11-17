@@ -886,6 +886,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:^
         version: link:../../privacy-types
+      '@transcend-io/sdk':
+        specifier: workspace:^
+        version: link:../../sdk
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
@@ -1123,6 +1126,12 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:^
         version: link:../../privacy-types
+      '@transcend-io/sdk':
+        specifier: workspace:^
+        version: link:../../sdk
+      '@transcend-io/type-utils':
+        specifier: workspace:^
+        version: link:../../type-utils
       graphql:
         specifier: ^16.14.2
         version: 16.14.2

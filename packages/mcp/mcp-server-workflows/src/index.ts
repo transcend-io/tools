@@ -11,3 +11,19 @@ export {
   UpdateWorkflowConfigSchema,
   type UpdateWorkflowConfigInput,
 } from './tools/workflows_update_config.js';
+export {
+  ListActionItemsSchema,
+  type ListActionItemsInput,
+} from './tools/workflows_list_action_items.js';
+export {
+  ListActionItemCollectionsSchema,
+  type ListActionItemCollectionsInput,
+} from './tools/workflows_list_action_item_collections.js';
+export {
+  WriteActionItemsSchema,
+  type WriteActionItemsInput,
+} from './tools/workflows_write_action_items.js';
+export {
+  WriteActionItemCollectionsSchema,
+  type WriteActionItemCollectionsInput,
+} from './tools/workflows_write_action_item_collections.js';

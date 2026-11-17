@@ -60,7 +60,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`                                                 |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `ViewDataMap`, `ViewAssignedIntegrations`, `ManageDataMap`, `ManageAssignedIntegrations`, `ViewDataInventory`, `ViewAssignedDataInventory`, `ManageDataInventory`, `ManageAssignedDataInventory` |
 | [`mcp-server-preferences`](./mcp-server-preferences/)           | `ViewPrivacyCenter`, `ManagePrivacyCenter`                                                                                                                                                       |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`                                                                                                                               |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`, `ManageActionItemCollections`, `ViewGlobalAttributes`                                                                        |
 
 Canonical scope lists live in each package's `src/scopes.ts`.
 
@@ -246,12 +246,12 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |
-| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     6 | Data discovery, classification, NER              |
+| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     5 | Data discovery, classification, NER              |
 | [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     2 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    12 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    10 | Data inventory, silos, vendors, data points      |
 | [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     6 | Privacy preference store (query, upsert, delete) |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     3 | Workflow & email-template configuration          |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     7 | Workflow & email-template configuration          |
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.
 

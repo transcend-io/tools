@@ -55,8 +55,14 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['inventory_list_processing_purposes'],
     write: ['inventory_write_processing_purpose'],
   },
-  [TranscendPullResource.ActionItems]: { read: [], write: [] },
-  [TranscendPullResource.ActionItemCollections]: { read: [], write: [] },
+  [TranscendPullResource.ActionItems]: {
+    read: ['workflows_list_action_items'],
+    write: ['workflows_write_action_items'],
+  },
+  [TranscendPullResource.ActionItemCollections]: {
+    read: ['workflows_list_action_item_collections'],
+    write: ['workflows_write_action_item_collections'],
+  },
   [TranscendPullResource.Teams]: { read: ['admin_list_teams'], write: [] },
   [TranscendPullResource.PrivacyCenters]: { read: ['admin_get_privacy_center'], write: [] },
   [TranscendPullResource.Policies]: { read: [], write: [] },
@@ -71,7 +77,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   },
   [TranscendPullResource.Purposes]: { read: ['consent_list_purposes'], write: [] },
   [TranscendPullResource.PreferenceOptions]: { read: [], write: [] },
-  [TranscendPullResource.SystemDiscovery]: { read: [], write: [] },
+  [TranscendPullResource.SystemDiscovery]: {
+    read: ['discovery_list_system_discovery'],
+    write: [],
+  },
   [TranscendPullResource.PreferenceWorkflowConfigs]: { read: [], write: [] },
   // `workflows_update_config` edits title, subtitle and description only. The CLI
   // push also creates configs and sets their steps.
@@ -104,8 +113,6 @@ export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = 
   [TranscendPullResource.Identifiers]: { write: true },
   [TranscendPullResource.ConsentManager]: { write: true },
   [TranscendPullResource.Partitions]: { write: true },
-  [TranscendPullResource.ActionItems]: { read: true, write: true },
-  [TranscendPullResource.ActionItemCollections]: { read: true, write: true },
   [TranscendPullResource.Teams]: { write: true },
   [TranscendPullResource.PrivacyCenters]: { write: true },
   [TranscendPullResource.Policies]: { read: true, write: true },
@@ -113,14 +120,15 @@ export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = 
   [TranscendPullResource.Templates]: { write: true },
   [TranscendPullResource.Purposes]: { write: true },
   [TranscendPullResource.PreferenceOptions]: { read: true, write: true },
-  [TranscendPullResource.SystemDiscovery]: { read: true, write: true },
   [TranscendPullResource.PreferenceWorkflowConfigs]: { read: true, write: true },
 };
 
 /**
- * Sections with no write tool by design. CLI push only resolves API key titles
- * for these, so there is nothing to create or update.
+ * Sections with no write tool by design. CLI push does not create or update
+ * anything for these: API keys are only resolved by title, and system discovery
+ * is not read by `syncConfigurationToTranscend` at all (pull only).
  */
 export const READ_ONLY_BY_DESIGN: readonly TranscendPullResource[] = [
   TranscendPullResource.ApiKeys,
+  TranscendPullResource.SystemDiscovery,
 ];
