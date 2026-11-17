@@ -1,6 +1,6 @@
 import { getEntries } from '@transcend-io/type-utils';
 
-import { normalizeTranscendInput, TranscendInput } from '../codecs.js';
+import { normalizeTranscendInput, TranscendInput } from './codecs.js';
 
 /**
  * Combine a set of TranscendInput yaml files into a single yaml

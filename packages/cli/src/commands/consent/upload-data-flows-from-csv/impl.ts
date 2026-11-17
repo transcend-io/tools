@@ -1,8 +1,8 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, syncDataFlows } from '@transcend-io/sdk';
+import { DataFlowCsvInput } from '@transcend-io/sdk/transcend-yml';
 import colors from 'colors';
 
-import { DataFlowCsvInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { mapDataFlowCsvRowsToInputs } from '../../../lib/consent-manager/mapConsentCsvRowsToInputs.js';

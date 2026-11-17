@@ -3,12 +3,12 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import type { CustomFunctionConfigInput } from '@transcend-io/sdk';
+import { replaceVariablesInYaml } from '@transcend-io/sdk/transcend-yml';
 import { decodeCodec, type ObjByString } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 import yaml from 'js-yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 
-import { replaceVariablesInYaml } from '../readTranscendYaml.js';
 import { validateCustomFunctionExecutionContext } from './execution-context.js';
 
 export const CustomFunctionManifestEntry = t.intersection([

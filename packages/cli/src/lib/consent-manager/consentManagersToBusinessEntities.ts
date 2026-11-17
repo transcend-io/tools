@@ -1,4 +1,4 @@
-import { BusinessEntityInput, ConsentManagerInput } from '../../codecs.js';
+import { BusinessEntityInput, ConsentManagerInput } from '@transcend-io/sdk/transcend-yml';
 
 /**
  * Combine multiple consent manager configurations into a list of business entity configurations

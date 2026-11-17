@@ -5,6 +5,7 @@ import {
   DSR_REQUEST_ENRICHER_CUSTOM_FUNCTION_PAYLOAD_SCHEMA,
   GENERAL_CUSTOM_FUNCTION_PAYLOAD_SCHEMA,
 } from '@transcend-io/custom-function-types';
+import { replaceVariablesInYaml } from '@transcend-io/sdk/transcend-yml';
 import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import { createTwoFilesPatch } from 'diff';
 import { parse as parseJsonc } from 'jsonc-parser';
@@ -33,7 +34,6 @@ import {
 } from '../../../lib/custom-functions/manifest.js';
 import { findNonSelfContainedRuntimeImports } from '../../../lib/custom-functions/module-graph.js';
 import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
-import { replaceVariablesInYaml } from '../../../lib/readTranscendYaml.js';
 import {
   assertPathPhysicallyContained,
   isPathPhysicallyContained,

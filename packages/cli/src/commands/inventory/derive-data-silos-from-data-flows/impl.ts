@@ -1,14 +1,17 @@
 import path from 'node:path';
 
 import { buildTranscendGraphQLClient, fetchAndIndexCatalogs } from '@transcend-io/sdk';
+import {
+  DataFlowInput,
+  parseTranscendYaml,
+  serializeTranscendYaml,
+} from '@transcend-io/sdk/transcend-yml';
 import colors from 'colors';
 
-import { DataFlowInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
 import { filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { dataFlowsToDataSilos } from '../../../lib/consent-manager/dataFlowsToDataSilos.js';
-import { parseTranscendYaml, serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 export interface DeriveDataSilosFromDataFlowsCommandFlags {
   auth: string;

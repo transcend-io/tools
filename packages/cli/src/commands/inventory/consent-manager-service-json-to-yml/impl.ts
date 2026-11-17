@@ -1,12 +1,16 @@
 import { ConsentTrackerStatus, DataFlowScope } from '@transcend-io/privacy-types';
+import {
+  ConsentManagerServiceMetadata,
+  CookieInput,
+  DataFlowInput,
+  serializeTranscendYaml,
+} from '@transcend-io/sdk/transcend-yml';
 import { decodeCodec } from '@transcend-io/type-utils';
 import colors from 'colors';
 import * as t from 'io-ts';
 
-import { ConsentManagerServiceMetadata, CookieInput, DataFlowInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 export interface ConsentManagerServiceJsonToYmlCommandFlags {
   file: string;

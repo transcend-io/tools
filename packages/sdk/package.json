@@ -16,11 +16,23 @@
   "type": "module",
   "sideEffects": false,
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "transcend-yml": [
+        "./dist/transcend-yml.d.mts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./transcend-yml": {
+      "@transcend-io/source": "./src/transcend-yml/index.ts",
+      "types": "./dist/transcend-yml.d.mts",
+      "default": "./dist/transcend-yml.mjs"
     }
   },
   "publishConfig": {
@@ -44,12 +56,14 @@
     "graphql": "^16.14.2",
     "graphql-request": "^5.0.0",
     "io-ts": "^2.2.21",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "lodash-es": "^4.17.21",
     "semver": "^7.8.4"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.3",
+    "@types/js-yaml": "4.0.9",
     "@types/json-schema": "7.0.15",
     "@types/jsonwebtoken": "9.0.10",
     "@types/lodash-es": "4.17.12",

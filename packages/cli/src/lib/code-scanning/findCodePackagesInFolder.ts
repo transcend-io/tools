@@ -1,8 +1,8 @@
+import { CodePackageInput } from '@transcend-io/sdk/transcend-yml';
 import { getEntries } from '@transcend-io/type-utils';
 import colors from 'colors';
 import fastGlob from 'fast-glob';
 
-import { CodePackageInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { CODE_SCANNING_CONFIGS } from './constants.js';
 

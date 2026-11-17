@@ -1,7 +1,11 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import type {
+  CookieCsvInput,
+  CookieInput,
+  DataFlowCsvInput,
+  DataFlowInput,
+} from '@transcend-io/sdk/transcend-yml';
 import { splitCsvToList } from '@transcend-io/utils';
-
-import type { CookieCsvInput, CookieInput, DataFlowCsvInput, DataFlowInput } from '../../codecs.js';
 
 const OMITTED_CONSENT_CSV_COLUMNS = new Set([
   'ID',

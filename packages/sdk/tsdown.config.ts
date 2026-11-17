@@ -4,5 +4,8 @@ import sharedConfig from '../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...sharedConfig,
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    'transcend-yml': 'src/transcend-yml/index.ts',
+  },
 });

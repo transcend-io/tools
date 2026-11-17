@@ -1,9 +1,9 @@
 import { join } from 'node:path';
 
+import type { CodePackageInput } from '@transcend-io/sdk/transcend-yml';
 /* eslint-disable max-lines */
 import { expect, describe, it } from 'vitest';
 
-import type { CodePackageInput } from '../../codecs.js';
 import { findCodePackagesInFolder } from '../code-scanning/findCodePackagesInFolder.js';
 
 const expected: CodePackageInput[] = [

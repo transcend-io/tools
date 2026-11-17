@@ -1,7 +1,6 @@
 import { type IndexedCatalogs } from '@transcend-io/sdk';
+import { DataFlowInput, DataSiloInput } from '@transcend-io/sdk/transcend-yml';
 import { union } from 'lodash-es';
-
-import { DataFlowInput, DataSiloInput } from '../../codecs.js';
 
 /**
  * Convert data flow configurations into a set of data silo configurations
