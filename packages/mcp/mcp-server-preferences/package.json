@@ -39,7 +39,8 @@
   "dependencies": {
     "@transcend-io/mcp-server-base": "workspace:^",
     "@transcend-io/privacy-types": "workspace:^",
-    "@transcend-io/sdk": "workspace:^"
+    "@transcend-io/sdk": "workspace:^",
+    "@transcend-io/type-utils": "workspace:^"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.3",

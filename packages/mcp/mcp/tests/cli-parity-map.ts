@@ -42,7 +42,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     write: ['consent_update_cookies'],
   },
   [TranscendPullResource.ConsentManager]: { read: ['consent_list_airgap_bundles'], write: [] },
-  [TranscendPullResource.Partitions]: { read: ['preferences_list_partitions'], write: [] },
+  [TranscendPullResource.Partitions]: {
+    read: ['preferences_list_partitions'],
+    write: ['preferences_write_partitions'],
+  },
   [TranscendPullResource.Vendors]: {
     read: ['inventory_list_vendors'],
     write: ['inventory_write_vendor'],
@@ -70,9 +73,15 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     write: ['assessments_create_template'],
   },
   [TranscendPullResource.Purposes]: { read: ['consent_list_purposes'], write: [] },
-  [TranscendPullResource.PreferenceOptions]: { read: [], write: [] },
+  [TranscendPullResource.PreferenceOptions]: {
+    read: ['preferences_list_option_values'],
+    write: ['preferences_write_option_values'],
+  },
   [TranscendPullResource.SystemDiscovery]: { read: [], write: [] },
-  [TranscendPullResource.PreferenceWorkflowConfigs]: { read: [], write: [] },
+  [TranscendPullResource.PreferenceWorkflowConfigs]: {
+    read: ['preferences_list_workflow_configs'],
+    write: ['preferences_write_workflow_configs'],
+  },
   // `workflows_update_config` edits title, subtitle and description only. The CLI
   // push also creates configs and sets their steps.
   [TranscendPullResource.WorkflowConfigs]: {
@@ -103,7 +112,6 @@ export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = 
   [TranscendPullResource.DataSubjects]: { write: true },
   [TranscendPullResource.Identifiers]: { write: true },
   [TranscendPullResource.ConsentManager]: { write: true },
-  [TranscendPullResource.Partitions]: { write: true },
   [TranscendPullResource.ActionItems]: { read: true, write: true },
   [TranscendPullResource.ActionItemCollections]: { read: true, write: true },
   [TranscendPullResource.Teams]: { write: true },
@@ -112,9 +120,7 @@ export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = 
   [TranscendPullResource.Messages]: { read: true, write: true },
   [TranscendPullResource.Templates]: { write: true },
   [TranscendPullResource.Purposes]: { write: true },
-  [TranscendPullResource.PreferenceOptions]: { read: true, write: true },
   [TranscendPullResource.SystemDiscovery]: { read: true, write: true },
-  [TranscendPullResource.PreferenceWorkflowConfigs]: { read: true, write: true },
 };
 
 /**

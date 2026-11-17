@@ -51,8 +51,7 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
-  parsePurposesFromTriggerCondition,
-  resolveWorkflowTitleFromId,
+  convertConsentWorkflowTriggersToInputs,
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
@@ -90,7 +89,6 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
-  PreferenceWorkflowConfigInput,
   WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
@@ -1408,46 +1406,10 @@ export async function pullTranscendConfiguration(
     preferenceWorkflowConfigs.length > 0 &&
     resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
   ) {
-    const needsWorkflowTitles = preferenceWorkflowConfigs.some(
-      (trigger) => trigger.workflowConfigId,
-    );
-    const dsrWorkflows = needsWorkflowTitles
-      ? await fetchAllWorkflowConfigs(client, {
-          logger,
-          workflowConfigType: WorkflowConfigType.DSR,
-        })
-      : [];
-
-    result['preference-workflow-configs'] = preferenceWorkflowConfigs.map(
-      (trigger): PreferenceWorkflowConfigInput => {
-        const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
-        const shared = {
-          name: trigger.name,
-          'data-subject-type': trigger.subject.type,
-          'is-silent': trigger.isSilent,
-          'allow-unauthenticated': trigger.allowUnauthenticated,
-          'is-active': trigger.isActive,
-          purposes,
-        };
-
-        if (trigger.workflowConfigId) {
-          const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
-          if (workflowTitle) {
-            return {
-              ...shared,
-              'workflow-title': workflowTitle,
-            };
-          }
-          // Workflow deleted or unreadable — fall back to legacy fields so YAML stays usable
-        }
-
-        return {
-          ...shared,
-          'action-type': trigger.action.type,
-          'data-silo-titles':
-            trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
-        };
-      },
+    result['preference-workflow-configs'] = await convertConsentWorkflowTriggersToInputs(
+      client,
+      preferenceWorkflowConfigs,
+      { logger },
     );
   }
 
