@@ -44,7 +44,12 @@ import {
 } from '../tools/define-tool-with-capabilities.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import { toolInputSchema } from '../tools/input-schema.js';
-import { isVisibleToModel, shouldRegisterTool, type ToolDefinition } from '../tools/types.js';
+import {
+  isAvailableOnTransport,
+  isVisibleToModel,
+  shouldRegisterTool,
+  type ToolDefinition,
+} from '../tools/types.js';
 import {
   buildUiResourceMeta,
   MCP_APP_MIME_TYPE,
@@ -219,7 +224,12 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   const seenNames = new Set<string>();
 
   const skippedExperimental: string[] = [];
+  const skippedLocalFilesystem: string[] = [];
   for (const tool of options.tools) {
+    if (!isAvailableOnTransport(tool, options.transport)) {
+      skippedLocalFilesystem.push(tool.name);
+      continue;
+    }
     if (!shouldRegisterTool(tool)) {
       skippedExperimental.push(tool.name);
       continue;
@@ -266,6 +276,14 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       `Skipped ${skippedExperimental.length} experimental tools (set ` +
         `${TRANSCEND_MCP_EXPERIMENTAL_ENV}=1 to load)`,
       { tools: skippedExperimental },
+    );
+  }
+
+  if (skippedLocalFilesystem.length > 0) {
+    logger.info(
+      `Skipped ${skippedLocalFilesystem.length} tools that need a local filesystem ` +
+        `(not available over ${options.transport})`,
+      { tools: skippedLocalFilesystem },
     );
   }
 
