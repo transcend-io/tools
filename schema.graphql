@@ -1526,6 +1526,7 @@ enum CommunicationMessage {
   ROPA_VIEW_INVITE
   INTEGRATION_RECONNECT_REQUIRED
   MAESTRO_RULE_TERMINAL_FAILURE
+  NEW_DEVICE_SIGN_IN
 }
 
 enum RetentionScheduleType {
@@ -3937,6 +3938,11 @@ enum MaestroWebhookAuthType {
   BASIC_AUTH
 }
 
+enum PrivacyCenterAccessTokenFormat {
+  JWT
+  SHORT
+}
+
 enum AssetFileOrderField {
   createdAt
   updatedAt
@@ -4465,11 +4471,6 @@ enum OrganizationTier {
 enum PreferenceManagementOnboardingStatus {
   STARTED
   DONE
-}
-
-enum PrivacyCenterAccessTokenFormat {
-  JWT
-  SHORT
 }
 
 enum ProcessingActivitiesColumnName {
@@ -9514,6 +9515,7 @@ type ConsentManager {
   testBundleURL: String!
   onboardingStatus: ConsentManagerOnboardingStatus!
   lastDeployedAt: Date
+  lastTelemetrySync: Date
   version: String!
   canUpdateVersion: Boolean!
   useDefaultTcfSettings: Boolean
@@ -11590,6 +11592,7 @@ type DataFlow {
   siteTeams: [TeamPreview!]!
   pendingTelemetryMetadataSync: Boolean!
   occurrences: Float!
+  lastKnownOccurrences: Float!
   consentSiteCountAllTime: Int!
   consentSiteCountLastWeek: Int!
   tcfVendorLink: TcfVendorLink
