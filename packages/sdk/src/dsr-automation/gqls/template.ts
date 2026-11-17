@@ -22,7 +22,9 @@ export const TEMPLATES = gql`
 
 export const CREATE_TEMPLATE = gql`
   mutation TranscendCliCreateTemplate($title: String!) {
-    createTemplate(input: { title: $title, template: "", subject: $title }) {
+    createTemplate(
+      input: { title: $title, template: "", subject: $title, type: EMAIL, product: DSR }
+    ) {
       clientMutationId
     }
   }
