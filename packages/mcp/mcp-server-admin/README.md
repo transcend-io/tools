@@ -110,6 +110,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `admin_list_teams` — List teams
 - `admin_list_api_keys` — List API keys
 - `admin_list_scopes` — List valid API-key scope names (compact catalog)
+- `admin_write_teams` — Create or update teams (asks for confirmation)
+- `admin_write_privacy_center` — Update privacy center settings
+- `admin_list_intl_messages` — List internationalized messages
+- `admin_write_intl_messages` — Create or update internationalized messages
+- `admin_list_privacy_policies` — List privacy center policies
+- `admin_write_privacy_policies` — Create or update privacy center policies
 
 ## Related packages
 

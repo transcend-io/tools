@@ -87,6 +87,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
+      'admin_write_privacy_center',
       'assessments_submit_response',
       'config_push',
       'consent_bulk_triage',
@@ -130,6 +131,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'admin_write_teams',
       'config_push',
       'custom_functions_promote_version',
       'custom_functions_test_run',
@@ -147,6 +149,7 @@ describe('MCP Tool Annotations', () => {
     ];
 
     const expectedGatedNonDestructive = [
+      'admin_write_teams',
       'custom_functions_test_run',
       'custom_functions_upsert',
       'policy_publish',
@@ -187,6 +190,10 @@ describe('MCP Tool Annotations', () => {
 
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
+      'admin_write_teams',
+      'admin_write_privacy_center',
+      'admin_write_intl_messages',
+      'admin_write_privacy_policies',
       'workflows_update_config',
       'preferences_upsert',
       'preferences_update_identifiers',

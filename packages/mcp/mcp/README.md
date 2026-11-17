@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 93 Transcend tools at once.
+Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 99 Transcend tools at once.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
