@@ -87,6 +87,12 @@ export interface ToolDefinition {
    * surfaces that should stay out of the default catalog.
    */
   experimental?: boolean;
+  /**
+   * When true, this tool reads or writes files on the machine running the
+   * server. A shared HTTP server has no user filesystem, so the tool is omitted
+   * unless the transport is `stdio`.
+   */
+  requireLocalFilesystem?: boolean;
 }
 
 export interface ToolClients {
@@ -152,6 +158,12 @@ export function defineTool<T>(config: {
    * surfaces that should stay out of the default catalog.
    */
   experimental?: boolean;
+  /**
+   * When true, this tool reads or writes files on the machine running the
+   * server. A shared HTTP server has no user filesystem, so the tool is omitted
+   * unless the transport is `stdio`.
+   */
+  requireLocalFilesystem?: boolean;
 }): ToolDefinition {
   // Descriptions are the only signal an LLM caller has for what each argument
   // means, so refuse to construct a tool whose input schema has any field
@@ -243,4 +255,17 @@ export function shouldRegisterTool(
   tool: ToolDefinition,
 ): boolean {
   return !tool.experimental || experimentalToolsEnabled();
+}
+
+/**
+ * Whether a tool can run on the given transport. Tools that need a local
+ * filesystem are available over `stdio` only.
+ */
+export function isAvailableOnTransport(
+  /** Tool to test */
+  tool: ToolDefinition,
+  /** Transport the server runs on */
+  transport: 'stdio' | 'http',
+): boolean {
+  return !tool.requireLocalFilesystem || transport === 'stdio';
 }
