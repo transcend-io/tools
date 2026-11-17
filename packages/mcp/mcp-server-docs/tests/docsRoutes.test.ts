@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  findProductTitle,
   lookupRoute,
+  normalizeDocUrl,
   normalizeRoute,
   patternMatchesPath,
+  resolveRouteProduct,
+  type DashboardRouteData,
   type RouteEntry,
   type RouteIndex,
 } from '../src/docsRoutes.js';
@@ -138,5 +142,47 @@ describe('lookupRoute', () => {
   it('returns undefined when nothing matches', () => {
     expect(lookupRoute(index, '/unknown/page')).toBeUndefined();
     expect(lookupRoute(index, '/')).toBeUndefined();
+  });
+});
+
+describe('product helpers', () => {
+  const data: DashboardRouteData = {
+    routes: {
+      '/privacy-center/general-settings': { ...entry(['A']), product: 'Privacy Center' },
+      '/privacy-center/legacy': entry(['B']),
+    },
+    productPrefixes: [
+      { prefix: '/privacy-center/special', product: 'Web Auditor' },
+      { prefix: '/privacy-center', product: 'Privacy Center' },
+      { prefix: '/settings', product: null },
+    ],
+  };
+
+  it('prefers the matched route entry product', () => {
+    const lookup = lookupRoute(data.routes, '/privacy-center/general-settings');
+    expect(resolveRouteProduct(data, '/privacy-center/general-settings', lookup)).toBe(
+      'Privacy Center',
+    );
+  });
+
+  it('falls back to the longest matching prefix on segment boundaries', () => {
+    expect(resolveRouteProduct(data, '/privacy-center/special/x')).toBe('Web Auditor');
+    expect(resolveRouteProduct(data, '/privacy-center/legacy')).toBe('Privacy Center');
+    expect(resolveRouteProduct(data, '/privacy-centers')).toBeUndefined();
+  });
+
+  it('returns undefined for platform routes and indexes without prefixes', () => {
+    expect(resolveRouteProduct(data, '/settings/sso')).toBeUndefined();
+    expect(resolveRouteProduct({ routes: {} }, '/privacy-center')).toBeUndefined();
+  });
+
+  it('matches product titles case-insensitively', () => {
+    expect(findProductTitle(' dsr automation ')).toBe('DSR Automation');
+    expect(findProductTitle('billing')).toBeUndefined();
+  });
+
+  it('normalizes doc URLs across .md, trailing slash, and relative forms', () => {
+    expect(normalizeDocUrl('https://docs.transcend.io/docs/a/B.md')).toBe('/docs/a/b');
+    expect(normalizeDocUrl('/docs/a/b/')).toBe('/docs/a/b');
   });
 });

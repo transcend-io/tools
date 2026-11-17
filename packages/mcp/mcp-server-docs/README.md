@@ -70,7 +70,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `docs_list` — Browse the Transcend docs sections (`llms.txt`), list one section's articles with `section`, or full-text search titles and article bodies with `query` (ranked snippets; then `docs_fetch`), or find docs for an Admin Dashboard page with `route` (a route pattern, path, or app URL)
+- `docs_list` — Browse the Transcend docs sections (`llms.txt`), list one section's articles with `section`, or full-text search titles and article bodies with `query` (ranked snippets; then `docs_fetch`), find docs for an Admin Dashboard page with `route` (a route pattern, path, or app URL; then more docs for its product), or list one product's docs with `product`. `route` and `product` can each be combined with `query`
 - `docs_fetch` — Fetch full markdown for a docs article URL (host restricted to `docs.transcend.io`)
 
 ## Related packages

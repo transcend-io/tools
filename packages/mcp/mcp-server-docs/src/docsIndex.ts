@@ -1,7 +1,7 @@
 import { z } from '@transcend-io/mcp-server-base';
 import { LRUCache } from 'lru-cache';
 
-import type { RouteIndex } from './docsRoutes.js';
+import type { DashboardRouteData } from './docsRoutes.js';
 import { clearSearchIndexCache } from './docsSearch.js';
 
 /** Public docs index URL (llms.txt). */
@@ -72,6 +72,7 @@ const RoutePageSchema = z.object({
 });
 
 const RouteEntrySchema = z.object({
+  product: z.string().nullish().optional(),
   primary: z.array(RoutePageSchema).default([]),
   mentions: z.array(RoutePageSchema).default([]),
 });
@@ -79,11 +80,16 @@ const RouteEntrySchema = z.object({
 /** Schema for dashboard-routes.json. */
 export const DashboardRoutesSchema = z.object({
   routes: z.record(z.string(), RouteEntrySchema),
+  // Product fields are optional so an older index with only `routes` still parses.
+  products: z.record(z.string(), z.array(RoutePageSchema)).optional(),
+  productPrefixes: z
+    .array(z.object({ prefix: z.string(), product: z.string().nullable() }))
+    .optional(),
 });
 
 /** Parses and validates dashboard-routes.json. Throws when the shape is invalid. */
-export function parseDashboardRoutes(raw: string): RouteIndex {
-  return DashboardRoutesSchema.parse(JSON.parse(raw)).routes;
+export function parseDashboardRoutes(raw: string): DashboardRouteData {
+  return DashboardRoutesSchema.parse(JSON.parse(raw));
 }
 
 /** Thrown when dashboard-routes.json cannot be fetched or is invalid. */
@@ -125,7 +131,7 @@ const indexCache = new LRUCache<string, DocEntry[]>({
   },
 });
 
-const routeIndexCache = new LRUCache<string, RouteIndex>({
+const routeIndexCache = new LRUCache<string, DashboardRouteData>({
   max: 1,
   ttl: DEFAULT_INDEX_TTL_MS,
   allowStale: true,
@@ -157,8 +163,8 @@ export async function getIndex(): Promise<DocEntry[]> {
  * Returns the parsed dashboard-routes.json index (cached with TTL).
  * Throws {@link RouteIndexUnavailableError} when it is missing or invalid.
  */
-export async function getRouteIndex(): Promise<RouteIndex> {
-  let result: RouteIndex | undefined;
+export async function getRouteIndex(): Promise<DashboardRouteData> {
+  let result: DashboardRouteData | undefined;
   try {
     result = await routeIndexCache.fetch(ROUTES_CACHE_KEY);
   } catch (error) {

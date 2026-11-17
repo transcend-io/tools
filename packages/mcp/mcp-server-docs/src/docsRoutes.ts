@@ -10,6 +10,8 @@ export interface RoutePage {
 
 /** Pages linked to one Admin Dashboard route pattern. */
 export interface RouteEntry {
+  /** Product title the route belongs to, or null for a platform route. Absent on older indexes. */
+  product?: string | null;
   /** Pages that are about the route. */
   primary: RoutePage[];
   /** Pages that only link to the route. */
@@ -18,6 +20,40 @@ export interface RouteEntry {
 
 /** Parsed dashboard-routes.json: route pattern to linked pages. */
 export type RouteIndex = Record<string, RouteEntry>;
+
+/** Product title to its docs pages, overview pages first. */
+export type ProductIndex = Record<string, RoutePage[]>;
+
+/** Route path prefix mapped to a product title (null for platform routes). */
+export interface ProductPrefix {
+  /** Path prefix such as `/privacy-center`. */
+  prefix: string;
+  /** Product title, or null when the prefix is a platform area with no product. */
+  product: string | null;
+}
+
+/** Parsed dashboard-routes.json. Product fields are absent on older indexes. */
+export interface DashboardRouteData {
+  /** Route pattern to linked pages. */
+  routes: RouteIndex;
+  /** Product title to pages. Absent on older indexes. */
+  products?: ProductIndex;
+  /** Path prefixes to products. Absent on older indexes. */
+  productPrefixes?: ProductPrefix[];
+}
+
+/** The nine product titles published in dashboard-routes.json. */
+export const PRODUCT_TITLES = [
+  'Data Inventory',
+  'System Discovery',
+  'Classification',
+  'DSR Automation',
+  'Consent Management',
+  'Preference Management',
+  'Privacy Center',
+  'Web Auditor',
+  'Assessments',
+] as const;
 
 /** One docs page returned for a route lookup. */
 export interface RouteMatchPage extends RoutePage {
@@ -175,4 +211,55 @@ export function lookupRoute(index: RouteIndex, input: string): RouteLookup | und
     }
   }
   return undefined;
+}
+
+/** Finds the published product title for a user-supplied value, ignoring case. */
+export function findProductTitle(input: string): string | undefined {
+  const wanted = input.trim().toLowerCase();
+  return PRODUCT_TITLES.find((title) => title.toLowerCase() === wanted);
+}
+
+/** Finds the key of `products` that equals `title`, ignoring case. */
+export function findProductKey(products: ProductIndex, title: string): string | undefined {
+  const wanted = title.toLowerCase();
+  return Object.keys(products).find((key) => key.toLowerCase() === wanted);
+}
+
+function pathHasPrefix(path: string, prefix: string): boolean {
+  const normalized = normalizeRoute(prefix);
+  return normalized === '/' || path === normalized || path.startsWith(`${normalized}/`);
+}
+
+/**
+ * Resolves the product for a route. Uses the matched route entry's product when
+ * it has one, else the longest `productPrefixes` prefix that contains the path.
+ * Returns undefined for a platform route or when the index has no product fields.
+ */
+export function resolveRouteProduct(
+  data: DashboardRouteData,
+  path: string,
+  lookup?: RouteLookup,
+): string | undefined {
+  const entryProduct = lookup ? data.routes[lookup.pattern]?.product : undefined;
+  if (entryProduct) {
+    return entryProduct;
+  }
+  const prefix = [...(data.productPrefixes ?? [])]
+    .sort((a, b) => b.prefix.length - a.prefix.length)
+    .find((candidate) => pathHasPrefix(path, candidate.prefix));
+  return prefix?.product ?? undefined;
+}
+
+/**
+ * Normalizes a docs URL for comparison: path only, lowercase, no `.md`, no
+ * trailing slash. The route index uses extensionless URLs, llms.txt uses `.md`.
+ */
+export function normalizeDocUrl(url: string): string {
+  let pathname: string;
+  try {
+    pathname = new URL(url, 'https://docs.transcend.io').pathname;
+  } catch {
+    pathname = url;
+  }
+  return pathname.replace(/\.md$/i, '').replace(/\/+$/, '').toLowerCase();
 }
