@@ -30,3 +30,4 @@ export * from './ai/index.js';
 export * from './assessments/index.js';
 export * from './code-intelligence/index.js';
 export * from './custom-functions/index.js';
+export { TranscendInput } from './transcend-yml/codecs.js';
