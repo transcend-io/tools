@@ -44,6 +44,7 @@ function umbrellaTools(): ToolDefinition[] {
 
 /** Minimal valid args so widened schemas can be parsed with an approval token. */
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  config_push: { filePath: '/tmp/transcend.yml' },
   custom_functions_promote_version: {
     customFunctionId: 'cf-1',
     versionId: 'ver-1',

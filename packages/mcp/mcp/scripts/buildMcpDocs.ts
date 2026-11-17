@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { ADMIN_OAUTH_SCOPES, getAdminTools } from '@transcend-io/mcp-server-admin';
 import { ASSESSMENT_OAUTH_SCOPES, getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients, ToolDefinition } from '@transcend-io/mcp-server-base';
+import { CONFIG_OAUTH_SCOPES, getConfigTools } from '@transcend-io/mcp-server-config';
 import { CONSENT_OAUTH_SCOPES, getConsentTools } from '@transcend-io/mcp-server-consent';
 import {
   CUSTOM_FUNCTIONS_OAUTH_SCOPES,
@@ -85,6 +86,16 @@ const DOMAINS: DomainMeta[] = [
     domain: 'Privacy assessments',
     scopes: ASSESSMENT_OAUTH_SCOPES,
     getTools: getAssessmentTools,
+  },
+  {
+    id: 'config',
+    dir: 'mcp-server-config',
+    npmName: '@transcend-io/mcp-server-config',
+    binary: 'transcend-mcp-config',
+    description: 'transcend.yml pull and push (local files, stdio only)',
+    domain: 'Configuration as code',
+    scopes: CONFIG_OAUTH_SCOPES,
+    getTools: getConfigTools,
   },
   {
     id: 'consent',
