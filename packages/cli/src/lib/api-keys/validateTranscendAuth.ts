@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import { StoredApiKey } from '@transcend-io/sdk/transcend-yml';
+import { StoredApiKey } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import colors from 'colors';
 import * as t from 'io-ts';

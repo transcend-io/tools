@@ -1,4 +1,4 @@
-import { CodePackageInput } from '@transcend-io/sdk/transcend-yml';
+import { CodePackageInput } from '@transcend-io/sdk';
 
 export interface CodeScanningConfig {
   /** Directories to ignore when traversing */

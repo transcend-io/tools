@@ -13,7 +13,7 @@ import {
   CREATE_PROCESSING_PURPOSE_SUB_CATEGORY,
 } from './gqls/processingPurpose.js';
 
-export interface ProcessingPurposeInput {
+interface ProcessingPurposeInput {
   /** Name of processing purpose */
   name: string;
   /** Type of processing purpose */

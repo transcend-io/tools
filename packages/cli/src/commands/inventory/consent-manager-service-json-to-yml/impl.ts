@@ -4,7 +4,7 @@ import {
   CookieInput,
   DataFlowInput,
   serializeTranscendYaml,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import colors from 'colors';
 import * as t from 'io-ts';
