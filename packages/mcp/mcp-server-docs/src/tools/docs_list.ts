@@ -7,10 +7,10 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { DocsProduct } from '@transcend-io/privacy-types';
 
 import { getIndex, getRouteIndex, RouteIndexUnavailableError } from '../docsIndex.js';
 import {
-  DashboardDocsProduct,
   findProductKey,
   findProductTitle,
   lookupRoute,
@@ -29,12 +29,13 @@ import { searchDocs } from '../docsSearch.js';
  */
 const SECTION_LISTING_LIMIT = 50;
 
-const dashboardDocsProductTitles = Object.values(DashboardDocsProduct);
+const docsProductTitles = Object.values(DocsProduct);
+const docsProductEnumValues = docsProductTitles as [DocsProduct, ...DocsProduct[]];
 
-export const DashboardDocsProductSchema = z.preprocess(
+export const DocsProductSchema = z.preprocess(
   (value) => (typeof value === 'string' ? findProductTitle(value) : value),
-  z.nativeEnum(DashboardDocsProduct, {
-    message: `Unknown product. Valid products: ${dashboardDocsProductTitles.join(', ')}.`,
+  z.enum(docsProductEnumValues, {
+    message: `Unknown product. Valid products: ${docsProductTitles.join(', ')}.`,
   }),
 );
 
@@ -48,8 +49,8 @@ export const DocsListSchema = z.object({
         "about that page, then pages that link to it, then the page's product docs. Can " +
         'combine with query. Not with section or product.',
     ),
-  product: DashboardDocsProductSchema.optional().describe(
-    `List docs for one product, overview pages first. One of: ${dashboardDocsProductTitles.join(', ')} ` +
+  product: DocsProductSchema.optional().describe(
+    `List docs for one product, overview pages first. One of: ${docsProductTitles.join(', ')} ` +
       '(case-insensitive). Can combine with query. Not with section or route.',
   ),
   section: z
@@ -97,7 +98,7 @@ async function listDocsByProduct({
   query,
 }: {
   /** Canonical dashboard product title. */
-  product: DashboardDocsProduct;
+  product: DocsProduct;
   /** Optional full-text terms to search within the product. */
   query?: string;
 }) {
@@ -105,7 +106,7 @@ async function listDocsByProduct({
   if (!title) {
     throw new ToolError(
       ErrorCode.VALIDATION_ERROR,
-      `Unknown product '${product}'. Valid products: ${dashboardDocsProductTitles.join(', ')}.`,
+      `Unknown product '${product}'. Valid products: ${docsProductTitles.join(', ')}.`,
     );
   }
 

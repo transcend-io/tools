@@ -1,3 +1,5 @@
+import { DocsProduct } from '@transcend-io/privacy-types';
+
 /** A docs page linked to an Admin Dashboard route. */
 export interface RoutePage {
   /** Human-readable article title. */
@@ -40,20 +42,6 @@ export interface DashboardRouteData {
   products?: ProductIndex;
   /** Path prefixes to products. Absent on older indexes. */
   productPrefixes?: ProductPrefix[];
-}
-
-/** Product titles published in dashboard-routes.json. */
-export enum DashboardDocsProduct {
-  DataInventory = 'Data Inventory',
-  SystemDiscovery = 'System Discovery',
-  Classification = 'Classification',
-  DsrAutomation = 'DSR Automation',
-  ConsentManagement = 'Consent Management',
-  PreferenceManagement = 'Preference Management',
-  PrivacyCenter = 'Privacy Center',
-  WebAuditor = 'Web Auditor',
-  Assessments = 'Assessments',
-  Platform = 'Platform',
 }
 
 /** One docs page returned for a route lookup. */
@@ -215,9 +203,9 @@ export function lookupRoute(index: RouteIndex, input: string): RouteLookup | und
 }
 
 /** Finds the published product title for a user-supplied value, ignoring case. */
-export function findProductTitle(input: string): DashboardDocsProduct | undefined {
+export function findProductTitle(input: string): DocsProduct | undefined {
   const wanted = input.trim().toLowerCase();
-  return Object.values(DashboardDocsProduct).find((title) => title.toLowerCase() === wanted);
+  return Object.values(DocsProduct).find((title) => title.toLowerCase() === wanted);
 }
 
 /** Finds the key of `products` that equals `title`, ignoring case. */

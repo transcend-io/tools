@@ -1,3 +1,4 @@
+import { DocsProduct } from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -450,7 +451,9 @@ describe('docs_list tiers', () => {
   it('rejects an unknown product and lists the valid titles', async () => {
     withProducts();
     await expect(createDocsListTool().handler({ product: 'Billing' })).rejects.toThrow(
-      /Unknown product 'Billing'\. Valid products: Data Inventory, System Discovery, .*Assessments, Platform\./,
+      new RegExp(
+        `Unknown product 'Billing'\\. Valid products: ${Object.values(DocsProduct).join(', ')}\\.`,
+      ),
     );
   });
 
