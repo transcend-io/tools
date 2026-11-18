@@ -13,7 +13,7 @@ import {
   type PrivacyCenterFooterLinkInput,
 } from './syncPrivacyCenterFooterLinks.js';
 
-export interface PrivacyCenterInput {
+interface PrivacyCenterInput {
   /** Whether or not the entire privacy center is enabled or disabled */
   isDisabled?: boolean;
   /** Whether or not to show the privacy requests button */

@@ -7,8 +7,9 @@ import {
   makeGraphQLRequest,
   syncRepositories,
   syncSoftwareDevelopmentKits,
+  CodePackageInput,
+  RepositoryInput,
 } from '@transcend-io/sdk';
-import { CodePackageInput, RepositoryInput } from '@transcend-io/sdk/transcend-yml';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';

@@ -1,12 +1,12 @@
 import path from 'node:path';
 
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import {
-  TranscendPullResource,
+  buildTranscendGraphQLClient,
   pullTranscendConfiguration,
   serializeTranscendYaml,
-} from '@transcend-io/sdk/transcend-yml';
+  TranscendPullResource,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 

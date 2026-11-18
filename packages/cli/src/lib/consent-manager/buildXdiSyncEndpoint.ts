@@ -1,5 +1,4 @@
-import { buildTranscendGraphQLClient, fetchConsentManager } from '@transcend-io/sdk';
-import { StoredApiKey } from '@transcend-io/sdk/transcend-yml';
+import { buildTranscendGraphQLClient, fetchConsentManager, StoredApiKey } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { difference } from 'lodash-es';

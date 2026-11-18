@@ -7,7 +7,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataCategories, type DataSubCategory } from './fetchAllDataCategories.js';
 import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/dataCategory.js';
 
-export interface DataCategoryInput {
+interface DataCategoryInput {
   /** Name of data category */
   name: string;
   /** Type of data category */
