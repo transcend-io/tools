@@ -13,7 +13,7 @@ import {
 
 const PAGE_SIZE = 50;
 
-export interface PartitionInput {
+interface PartitionInput {
   /** Name of partition */
   name: string;
   /** Value of partition, cannot be pushed, can only be pulled */

@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { parseTranscendYaml, serializeTranscendYaml } from '@transcend-io/sdk/transcend-yml';
+import { parseTranscendYaml, serializeTranscendYaml } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';

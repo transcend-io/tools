@@ -9,7 +9,7 @@ import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_POLICIES } from './gqls/policy.js';
 
-export interface PolicyInput {
+interface PolicyInput {
   /** The title of the policy */
   title: string;
   /**

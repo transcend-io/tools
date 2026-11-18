@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-import { CodePackageSdk } from '@transcend-io/sdk/transcend-yml';
+import { CodePackageSdk } from '@transcend-io/sdk';
 
 import { CodeScanningConfig } from '../types.js';
 

@@ -5,7 +5,7 @@ import {
   DSR_REQUEST_ENRICHER_CUSTOM_FUNCTION_PAYLOAD_SCHEMA,
   GENERAL_CUSTOM_FUNCTION_PAYLOAD_SCHEMA,
 } from '@transcend-io/custom-function-types';
-import { replaceVariablesInYaml } from '@transcend-io/sdk/transcend-yml';
+import { replaceVariablesInYaml } from '@transcend-io/sdk';
 import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import { createTwoFilesPatch } from 'diff';
 import { parse as parseJsonc } from 'jsonc-parser';

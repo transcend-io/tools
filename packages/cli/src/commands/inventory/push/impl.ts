@@ -1,12 +1,12 @@
 import path from 'node:path';
 
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import {
-  TranscendInput,
+  buildTranscendGraphQLClient,
   mergeTranscendInputs,
   parseTranscendYaml,
   syncConfigurationToTranscend,
-} from '@transcend-io/sdk/transcend-yml';
+  TranscendInput,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';

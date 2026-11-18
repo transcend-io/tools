@@ -1,5 +1,5 @@
 import { ConsentTrackerStatus, DataFlowScope } from '@transcend-io/privacy-types';
-import type { CookieCsvInput, DataFlowCsvInput } from '@transcend-io/sdk/transcend-yml';
+import type { CookieCsvInput, DataFlowCsvInput } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
 import {
