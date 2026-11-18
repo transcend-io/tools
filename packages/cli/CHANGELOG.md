@@ -1,5 +1,16 @@
 # @transcend-io/cli
 
+## 13.2.1
+
+### Patch Changes
+
+- 7f568ab: Remove `PROMPT_MANAGER` from `TranscendProduct` and reassign prompt-related API scopes to Data Inventory and Structured/Unstructured Discovery product lines. Regenerate `transcend.yml` JSON schemas.
+- Updated dependencies [fb660b4]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/airgap.js-types@14.2.51
+  - @transcend-io/sdk@3.0.1
+
 ## 13.2.0
 
 ### Minor Changes
