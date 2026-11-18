@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-import type { CodePackageInput } from '@transcend-io/sdk/transcend-yml';
+import type { CodePackageInput } from '@transcend-io/sdk';
 /* eslint-disable max-lines */
 import { expect, describe, it } from 'vitest';
 

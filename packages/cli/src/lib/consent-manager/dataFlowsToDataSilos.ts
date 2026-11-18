@@ -1,5 +1,4 @@
-import { type IndexedCatalogs } from '@transcend-io/sdk';
-import { DataFlowInput, DataSiloInput } from '@transcend-io/sdk/transcend-yml';
+import { DataFlowInput, DataSiloInput, type IndexedCatalogs } from '@transcend-io/sdk';
 import { union } from 'lodash-es';
 
 /**

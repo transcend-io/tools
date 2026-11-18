@@ -12,7 +12,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import type { Identifier } from '../data-inventory/fetchAllIdentifiers.js';
 import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/enricher.js';
 
-export interface EnricherInput {
+interface EnricherInput {
   /** The display title of the enricher */
   title: string;
   /** The names of the identifiers that can be resolved by this enricher */

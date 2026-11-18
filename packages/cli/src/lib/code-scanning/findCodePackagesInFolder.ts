@@ -1,4 +1,4 @@
-import { CodePackageInput } from '@transcend-io/sdk/transcend-yml';
+import { CodePackageInput } from '@transcend-io/sdk';
 import { getEntries } from '@transcend-io/type-utils';
 import colors from 'colors';
 import fastGlob from 'fast-glob';
