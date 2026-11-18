@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@transcend-io/sdk', () => ({
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   buildTranscendGraphQLClient: mocks.buildTranscendGraphQLClient,
   syncDataFlows: mocks.syncDataFlows,
 }));
