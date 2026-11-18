@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { CodePackageType } from '@transcend-io/privacy-types';
-import { CodePackageSdk } from '@transcend-io/sdk/transcend-yml';
+import { CodePackageSdk } from '@transcend-io/sdk';
 import { findAllWithRegex } from '@transcend-io/type-utils';
 
 import { CodeScanningConfig } from '../types.js';

@@ -241,14 +241,6 @@ export const ASSESSMENTS = gql`
             id
             title
           }
-          ... on AttributePromptRunResource {
-            id
-            title
-          }
-          ... on AttributePromptGroupResource {
-            id
-            title
-          }
         }
         syncedRows {
           resourceType

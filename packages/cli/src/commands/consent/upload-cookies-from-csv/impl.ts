@@ -1,6 +1,5 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, syncCookies } from '@transcend-io/sdk';
-import { CookieCsvInput } from '@transcend-io/sdk/transcend-yml';
+import { buildTranscendGraphQLClient, CookieCsvInput, syncCookies } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';

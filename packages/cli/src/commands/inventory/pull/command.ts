@@ -1,6 +1,6 @@
 import { buildCommand, numberParser } from '@stricli/core';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 import {
   createAuthParameter,

@@ -1,8 +1,9 @@
 import { join } from 'node:path';
 
+import { parseTranscendYaml, serializeTranscendYaml } from '@transcend-io/sdk';
 import { expect, describe, it } from 'vitest';
 
-import { parseTranscendYaml, readTranscendYaml, serializeTranscendYaml } from '../../index.js';
+import { readTranscendYaml } from '../readTranscendYaml.js';
 
 const EXAMPLE_DIR = join(__dirname, '..', '..', '..', 'examples');
 

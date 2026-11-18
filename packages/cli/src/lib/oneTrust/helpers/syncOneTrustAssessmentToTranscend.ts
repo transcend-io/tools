@@ -1,6 +1,9 @@
 import { OneTrustEnrichedAssessment } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest, IMPORT_ONE_TRUST_ASSESSMENT_FORMS } from '@transcend-io/sdk';
-import { ImportOnetrustAssessmentsInput } from '@transcend-io/sdk/transcend-yml';
+import {
+  IMPORT_ONE_TRUST_ASSESSMENT_FORMS,
+  ImportOnetrustAssessmentsInput,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 

@@ -7,7 +7,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllBusinessEntities, type BusinessEntity } from './fetchAllBusinessEntities.js';
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
 
-export interface BusinessEntityInput {
+interface BusinessEntityInput {
   /** Display title of the business entity */
   title: string;
   /** Description of the business entity */
