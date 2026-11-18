@@ -1,4 +1,4 @@
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 /** MCP tools that read and write one `transcend.yml` section. */
 export interface SectionTools {
