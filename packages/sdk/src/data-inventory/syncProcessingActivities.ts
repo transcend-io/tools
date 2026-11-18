@@ -21,7 +21,7 @@ import {
   CREATE_PROCESSING_ACTIVITY,
 } from './gqls/processingActivity.js';
 
-export interface ProcessingActivityInput {
+interface ProcessingActivityInput {
   /** The title of the processing activity */
   title: string;
   /** Description of the processing activity */

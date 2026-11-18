@@ -1,11 +1,12 @@
 import path from 'node:path';
 
-import { buildTranscendGraphQLClient, fetchAndIndexCatalogs } from '@transcend-io/sdk';
 import {
+  buildTranscendGraphQLClient,
   DataFlowInput,
+  fetchAndIndexCatalogs,
   parseTranscendYaml,
   serializeTranscendYaml,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';

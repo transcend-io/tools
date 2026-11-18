@@ -7,9 +7,10 @@ import {
   DATAPOINT_EXPORT,
   DATA_SILO_EXPORT,
   SUB_DATA_POINTS_COUNT,
+  type DataCategoryInput,
   type DataSiloAttributeValue,
+  type ProcessingPurposeInput,
 } from '@transcend-io/sdk';
-import type { DataCategoryInput, ProcessingPurposeInput } from '@transcend-io/sdk/transcend-yml';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
