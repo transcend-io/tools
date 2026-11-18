@@ -1,6 +1,13 @@
+import { apply } from '@transcend-io/type-utils';
+import { mapSeries, map, type Logger } from '@transcend-io/utils';
+/* eslint-disable max-lines */
+import { GraphQLClient } from 'graphql-request';
+import { chunk, keyBy } from 'lodash-es';
+
 import {
+  NOOP_LOGGER,
   makeGraphQLRequest,
-  ApiKey,
+  type ApiKey,
   convertToDataSubjectBlockList,
   type DataSubject,
   fetchAllDataSilos,
@@ -8,19 +15,20 @@ import {
   CREATE_DATA_SILOS,
   UPDATE_DATA_SILOS,
   UPDATE_OR_CREATE_DATA_POINT,
-} from '@transcend-io/sdk';
-import { apply } from '@transcend-io/type-utils';
-import { mapSeries, map } from '@transcend-io/utils';
-/* eslint-disable max-lines */
-import cliProgress from 'cli-progress';
-import colors from 'colors';
-import { GraphQLClient } from 'graphql-request';
-import { chunk, keyBy } from 'lodash-es';
-
-import { DataSiloInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+} from '../index.js';
+import { DataSiloInput } from './codecs.js';
 
 const BATCH_SILOS_LIMIT = 20;
+
+/** Receives progress updates while datapoints sync. */
+export interface ProgressReporter {
+  /** Called once with the total number of datapoints before syncing starts */
+  start(total: number, completed: number): void;
+  /** Called with the running count of synced datapoints */
+  update(completed: number): void;
+  /** Called after the last datapoint */
+  stop(): void;
+}
 
 /**
  * Sync a data silo configuration
@@ -37,6 +45,8 @@ export async function syncDataSilos(
     pageSize,
     dataSubjectsByName,
     apiKeysByTitle,
+    logger = NOOP_LOGGER,
+    progressReporter,
   }: {
     /** Page size */
     pageSize: number;
@@ -44,6 +54,10 @@ export async function syncDataSilos(
     dataSubjectsByName: { [type in string]: DataSubject };
     /** API key title to API key */
     apiKeysByTitle: { [title in string]: ApiKey };
+    /** Logger for progress messages. Defaults to discarding them. */
+    logger?: Logger;
+    /** Receives datapoint sync progress. A `cli-progress` SingleBar satisfies this. */
+    progressReporter?: ProgressReporter;
   },
 ): Promise<{
   /** Whether successfully updated */
@@ -55,7 +69,7 @@ export async function syncDataSilos(
 
   // Time duration
   const t0 = new Date().getTime();
-  logger.info(colors.magenta(`Syncing "${dataSilos.length}" data silos...`));
+  logger.info(`Syncing "${dataSilos.length}" data silos...`);
 
   // Determine the set of data silos that already exist
   const existingDataSilos = await fetchAllDataSilos(client, {
@@ -70,9 +84,7 @@ export async function syncDataSilos(
   // Create new silos that do not exist
   const newDataSiloInputs = dataSilos.filter(({ title }) => !existingDataSiloByTitle[title]);
   if (newDataSiloInputs.length > 0) {
-    logger.info(
-      colors.magenta(`Creating "${newDataSiloInputs.length}" data silos that did not exist...`),
-    );
+    logger.info(`Creating "${newDataSiloInputs.length}" data silos that did not exist...`);
 
     // Batch the creation
     const chunked = chunk(newDataSiloInputs, BATCH_SILOS_LIMIT);
@@ -104,18 +116,16 @@ export async function syncDataSilos(
       });
     });
 
-    logger.info(colors.green(`Successfully created "${newDataSiloInputs.length}" data silos!`));
+    logger.info(`Successfully created "${newDataSiloInputs.length}" data silos!`);
   }
 
   // Batch the updates
   const chunkedUpdates = chunk(dataSilos, BATCH_SILOS_LIMIT);
   await mapSeries(chunkedUpdates, async (dataSiloUpdateChunk, ind) => {
     logger.info(
-      colors.magenta(
-        `[Batch ${ind + 1}/${chunkedUpdates.length}] Syncing "${
-          dataSiloUpdateChunk.length
-        }" data silos`,
-      ),
+      `[Batch ${ind + 1}/${chunkedUpdates.length}] Syncing "${
+        dataSiloUpdateChunk.length
+      }" data silos`,
     );
     await makeGraphQLRequest<{
       /** Mutation result */
@@ -127,7 +137,7 @@ export async function syncDataSilos(
       variables: {
         input: {
           dataSilos: dataSiloUpdateChunk.map((input) => ({
-            id: existingDataSiloByTitle[input.title].id,
+            id: existingDataSiloByTitle[input.title]!.id,
             country: input.country,
             countrySubDivision: input.countrySubDivision,
             url: input.url,
@@ -141,7 +151,7 @@ export async function syncDataSilos(
             // applied after all data silos are created
             dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
             apiKeyId: input['api-key-title']
-              ? apiKeysByTitle[input['api-key-title']].id
+              ? apiKeysByTitle[input['api-key-title']]!.id
               : undefined,
             dataSubjectBlockListIds: input['data-subjects']
               ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
@@ -163,28 +173,22 @@ export async function syncDataSilos(
       logger,
     });
     logger.info(
-      colors.green(
-        `[Batch ${ind + 1}/${chunkedUpdates.length}] Synced "${
-          dataSiloUpdateChunk.length
-        }" data silos!`,
-      ),
+      `[Batch ${ind + 1}/${chunkedUpdates.length}] Synced "${
+        dataSiloUpdateChunk.length
+      }" data silos!`,
     );
   });
 
   // Sync datapoints
 
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   const dataSilosWithDataPoints = dataSilos.filter(({ datapoints = [] }) => datapoints.length > 0);
   const totalDataPoints = dataSilos
     .map(({ datapoints = [] }) => datapoints.length)
     .reduce((acc, count) => acc + count, 0);
   logger.info(
-    colors.magenta(
-      `Syncing "${totalDataPoints}" datapoints from "${dataSilosWithDataPoints.length}" data silos...`,
-    ),
+    `Syncing "${totalDataPoints}" datapoints from "${dataSilosWithDataPoints.length}" data silos...`,
   );
-  progressBar.start(totalDataPoints, 0);
+  progressReporter?.start(totalDataPoints, 0);
   let total = 0;
 
   await map(
@@ -219,7 +223,7 @@ export async function syncDataSilos(
             : undefined;
 
           const payload = {
-            dataSiloId: existingDataSiloByTitle[title].id,
+            dataSiloId: existingDataSiloByTitle[title]!.id,
             path: datapoint.path,
             name: datapoint.key,
             title: datapoint.title,
@@ -254,13 +258,11 @@ export async function syncDataSilos(
           );
           if (duplicateDataPoints.length > 0) {
             logger.info(
-              colors.red(
-                `\nCannot update datapoint "${
-                  datapoint.key
-                }" as it has duplicate sub-datapoints with the same name: \n${duplicateDataPoints.join(
-                  '\n',
-                )}`,
-              ),
+              `\nCannot update datapoint "${
+                datapoint.key
+              }" as it has duplicate sub-datapoints with the same name: \n${duplicateDataPoints.join(
+                '\n',
+              )}`,
             );
             encounteredError = true;
           } else {
@@ -271,15 +273,13 @@ export async function syncDataSilos(
               });
             } catch (err) {
               logger.info(
-                colors.red(
-                  `\nFailed to update datapoint "${datapoint.key}" for data silo "${title}"! - \n${err.message}`,
-                ),
+                `\nFailed to update datapoint "${datapoint.key}" for data silo "${title}"! - \n${(err as Error).message}`,
               );
               encounteredError = true;
             }
           }
           total += 1;
-          progressBar.update(total);
+          progressReporter?.update(total);
         });
       }
     },
@@ -288,16 +288,14 @@ export async function syncDataSilos(
     },
   );
 
-  progressBar.stop();
+  progressReporter?.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
   logger.info(
-    colors.green(
-      `Synced "${dataSilos.length}" data silos and "${totalDataPoints}" datapoints in "${
-        totalTime / 1000
-      }" seconds!`,
-    ),
+    `Synced "${dataSilos.length}" data silos and "${totalDataPoints}" datapoints in "${
+      totalTime / 1000
+    }" seconds!`,
   );
   return {
     success: !encounteredError,

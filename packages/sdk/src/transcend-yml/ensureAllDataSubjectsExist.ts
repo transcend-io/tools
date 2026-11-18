@@ -1,10 +1,14 @@
-import { createDataSubject, fetchAllDataSubjects, type DataSubject } from '@transcend-io/sdk';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, flatten, uniq, difference } from 'lodash-es';
 
-import { TranscendInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import {
+  NOOP_LOGGER,
+  createDataSubject,
+  fetchAllDataSubjects,
+  type DataSubject,
+} from '../index.js';
+import { TranscendInput } from './codecs.js';
 
 /**
  * Fetch all of the data subjects in the organization
@@ -12,6 +16,7 @@ import { logger } from '../../logger.js';
  * @param input - Input to fetch
  * @param client - GraphQL client
  * @param fetchAll - When true, always fetch all subjects
+ * @param options - Optional logger
  * @returns The list of data subjects
  */
 export async function ensureAllDataSubjectsExist(
@@ -23,6 +28,12 @@ export async function ensureAllDataSubjectsExist(
   }: TranscendInput,
   client: GraphQLClient,
   fetchAll = false,
+  {
+    logger = NOOP_LOGGER,
+  }: {
+    /** Logger for progress messages */
+    logger?: Logger;
+  } = {},
 ): Promise<{ [type in string]: DataSubject }> {
   const expectedDataSubjects = uniq([
     ...flatten(dataSilos.map((silo) => silo['data-subjects'] || []) || []),
@@ -43,11 +54,11 @@ export async function ensureAllDataSubjectsExist(
   );
 
   if (missingDataSubjects.length > 0) {
-    logger.info(colors.magenta(`Creating ${missingDataSubjects.length} new data subjects...`));
+    logger.info(`Creating ${missingDataSubjects.length} new data subjects...`);
     for (const dataSubjectType of missingDataSubjects) {
-      logger.info(colors.magenta(`Creating data subject ${dataSubjectType}...`));
+      logger.info(`Creating data subject ${dataSubjectType}...`);
       const created = await createDataSubject(client, { input: dataSubjectType, logger });
-      logger.info(colors.green(`Created data subject ${dataSubjectType}!`));
+      logger.info(`Created data subject ${dataSubjectType}!`);
       dataSubjectByName[dataSubjectType] = created;
     }
   }

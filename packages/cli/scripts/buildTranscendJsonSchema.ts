@@ -15,10 +15,10 @@
 import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { TranscendInput } from '@transcend-io/sdk';
 import { toJsonSchema } from '@transcend-io/type-utils';
 
 import * as packageJson from '../package.json';
-import { TranscendInput } from '../src/codecs';
 
 const packageRoot = join(import.meta.dirname, '..');
 const schemaRoot = join(packageRoot, 'schema');

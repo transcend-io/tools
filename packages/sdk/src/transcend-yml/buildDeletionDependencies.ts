@@ -1,6 +1,5 @@
-import type { DataSiloEnriched } from '@transcend-io/sdk';
-
-import type { DataSiloInput } from '../../codecs.js';
+import type { DataSiloEnriched } from '../index.js';
+import type { DataSiloInput } from './codecs.js';
 
 /**
  * Build the `deletion-dependencies` entries for a data silo being pulled into transcend.yml.

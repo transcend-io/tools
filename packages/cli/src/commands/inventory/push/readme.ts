@@ -1,7 +1,6 @@
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
+import { TR_PUSH_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
-import { TR_PUSH_RESOURCE_SCOPE_MAP } from '../../../constants.js';
-import { TranscendPullResource } from '../../../enums.js';
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';
 import type { GenerateApiKeysCommandFlags } from '../../admin/generate-api-keys/impl.js';

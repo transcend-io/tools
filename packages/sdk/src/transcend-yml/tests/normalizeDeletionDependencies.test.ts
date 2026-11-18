@@ -1,7 +1,7 @@
 import { expect, describe, it } from 'vitest';
 
-import type { DeletionDependencyInput } from '../../codecs.js';
-import { normalizeDeletionDependencies } from '../graphql/normalizeDeletionDependencies.js';
+import type { DeletionDependencyInput } from '../codecs.js';
+import { normalizeDeletionDependencies } from '../normalizeDeletionDependencies.js';
 
 describe('normalizeDeletionDependencies', () => {
   it('converts the string list into a single global entry', () => {

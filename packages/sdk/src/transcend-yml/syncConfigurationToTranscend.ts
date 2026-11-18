@@ -1,4 +1,8 @@
+import { map, type Logger, type SyncError, type SyncResult } from '@transcend-io/utils';
+import { GraphQLClient } from 'graphql-request';
+
 import {
+  NOOP_LOGGER,
   fetchAllActions,
   fetchAllAttributes,
   fetchAllDataSubjects,
@@ -33,18 +37,13 @@ import {
   syncVendors,
   type DependedOnDataSiloInput,
   type Identifier,
-} from '@transcend-io/sdk';
-import { map, type Logger, type SyncError, type SyncResult } from '@transcend-io/utils';
-import colors from 'colors';
-import { GraphQLClient } from 'graphql-request';
-
+} from '../index.js';
 /* eslint-disable max-lines */
-import { TranscendInput, normalizeTranscendInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
+import { TranscendInput, normalizeTranscendInput } from './codecs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { normalizeDeletionDependencies } from './normalizeDeletionDependencies.js';
-import { syncDataSilos } from './syncDataSilos.js';
+import { syncDataSilos, type ProgressReporter } from './syncDataSilos.js';
+import { validatePreferenceManagementSlugs } from './validatePreferenceManagementSlugs.js';
 
 const CONCURRENCY = 10;
 
@@ -66,6 +65,7 @@ export async function syncConfigurationToTranscend(
     classifyService = false,
     deleteExtraAttributeValues = false,
     logger: syncLogger,
+    progressReporter,
     warnings = [],
   }: {
     /** Page size */
@@ -78,12 +78,14 @@ export async function syncConfigurationToTranscend(
     classifyService?: boolean;
     /** Optional logger (e.g. collecting logger for MCP debug responses) */
     logger?: Logger;
+    /** Receives datapoint sync progress (a `cli-progress` SingleBar satisfies this) */
+    progressReporter?: ProgressReporter;
     /** Non-fatal warnings to include in the result */
     warnings?: string[];
   },
 ): Promise<SyncResult> {
   const input = normalizeTranscendInput(rawInput);
-  const activeLogger = syncLogger ?? logger;
+  const logger = syncLogger ?? NOOP_LOGGER;
   const errors: SyncError[] = [];
   let encounteredError = false;
 
@@ -92,7 +94,7 @@ export async function syncConfigurationToTranscend(
     encounteredError = true;
   };
 
-  activeLogger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
+  logger.info(`Fetching data with page size ${pageSize}...`);
 
   const {
     templates,
@@ -142,19 +144,19 @@ export async function syncConfigurationToTranscend(
       ? fetchIdentifiersAndCreateMissing(client, {
           input,
           skipPublish: !publishToPrivacyCenter,
-          logger: activeLogger,
+          logger,
         })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || preflights || processingActivities
-      ? ensureAllDataSubjectsExist(input, client)
+      ? ensureAllDataSubjectsExist(input, client, false, { logger })
       : {},
     // Grab API keys
     dataSilos &&
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(client, { apiKeyInputs: input, logger: activeLogger })
+      ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
 
@@ -163,7 +165,7 @@ export async function syncConfigurationToTranscend(
       client,
       preferenceWorkflowConfigs,
       {
-        logger: activeLogger,
+        logger,
         pageSize,
       },
     );
@@ -174,7 +176,7 @@ export async function syncConfigurationToTranscend(
 
   if (workflowConfigs?.length) {
     const workflowConfigsSuccess = await syncWorkflowConfigs(client, workflowConfigs, {
-      logger: activeLogger,
+      logger,
     });
     if (!workflowConfigsSuccess) {
       recordError('workflow-configs', 'Failed to sync workflow configs');
@@ -183,7 +185,7 @@ export async function syncConfigurationToTranscend(
 
   if (preferenceOptions?.length) {
     const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions, {
-      logger: activeLogger,
+      logger,
     });
     if (!preferenceOptionsSuccess) {
       recordError('preference-options', 'Failed to sync preference option values');
@@ -197,7 +199,7 @@ export async function syncConfigurationToTranscend(
     const { success: purposesSuccess, purposeIdByTrackingType } = await syncPurposes(
       client,
       purposes,
-      { logger: activeLogger },
+      { logger },
     );
     if (!purposesSuccess) {
       recordError('purposes', 'Failed to sync one or more purposes');
@@ -211,7 +213,7 @@ export async function syncConfigurationToTranscend(
     );
     if (topics.length > 0) {
       const topicsSuccess = await syncPreferenceTopics(client, topics, {
-        logger: activeLogger,
+        logger,
         purposeIdByTrackingType,
       });
       if (!topicsSuccess) {
@@ -222,18 +224,18 @@ export async function syncConfigurationToTranscend(
 
   // Sync consent manager
   if (consentManager) {
-    activeLogger.info(colors.magenta('Syncing consent manager...'));
+    logger.info('Syncing consent manager...');
     try {
-      await syncConsentManager(client, consentManager, { logger: activeLogger });
-      activeLogger.info(colors.green('Successfully synced consent manager!'));
+      await syncConsentManager(client, consentManager, { logger });
+      logger.info('Successfully synced consent manager!');
     } catch (err) {
       recordError('consent-manager', (err as Error).message);
-      activeLogger.error(colors.red(`Failed to sync consent manager! - ${(err as Error).message}`));
+      logger.error(`Failed to sync consent manager! - ${(err as Error).message}`);
     }
   }
 
   if (teams) {
-    const teamsSuccess = await syncTeams(client, teams, { logger: activeLogger });
+    const teamsSuccess = await syncTeams(client, teams, { logger });
     if (!teamsSuccess) {
       recordError('teams', 'Failed to sync teams');
     }
@@ -241,33 +243,29 @@ export async function syncConfigurationToTranscend(
 
   // Sync email templates
   if (templates) {
-    activeLogger.info(colors.magenta(`Syncing "${templates.length}" email templates...`));
+    logger.info(`Syncing "${templates.length}" email templates...`);
     await map(
       templates,
       async (template) => {
-        activeLogger.info(colors.magenta(`Syncing template "${template.title}"...`));
+        logger.info(`Syncing template "${template.title}"...`);
         try {
-          await syncTemplate(client, template, { logger: activeLogger });
-          activeLogger.info(colors.green(`Successfully synced template "${template.title}"!`));
+          await syncTemplate(client, template, { logger });
+          logger.info(`Successfully synced template "${template.title}"!`);
         } catch (err) {
-          recordError('templates', err.message, template.title);
-          activeLogger.error(
-            colors.red(`Failed to sync template "${template.title}"! - ${err.message}`),
-          );
+          recordError('templates', (err as Error).message, template.title);
+          logger.error(`Failed to sync template "${template.title}"! - ${(err as Error).message}`);
         }
       },
       {
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${templates.length}" email templates!`));
+    logger.info(`Synced "${templates.length}" email templates!`);
   }
 
   // Sync business entities
   if (businessEntities) {
-    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities, {
-      logger: activeLogger,
-    });
+    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities, { logger });
     if (!businessEntitySuccess) {
       recordError('business-entities', 'Failed to sync business-entities');
     }
@@ -275,7 +273,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync vendors
   if (vendors) {
-    const vendorsSuccess = await syncVendors(client, vendors, { logger: activeLogger });
+    const vendorsSuccess = await syncVendors(client, vendors, { logger });
     if (!vendorsSuccess) {
       recordError('vendors', 'Failed to sync vendors');
     }
@@ -283,9 +281,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync data categories
   if (dataCategories) {
-    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, {
-      logger: activeLogger,
-    });
+    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, { logger });
     if (!dataCategoriesSuccess) {
       recordError('data-categories', 'Failed to sync data-categories');
     }
@@ -294,7 +290,7 @@ export async function syncConfigurationToTranscend(
   // Sync processing purposes
   if (processingPurposes) {
     const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes, {
-      logger: activeLogger,
+      logger,
     });
     if (!processingPurposesSuccess) {
       recordError('processing-purposes', 'Failed to sync processing-purposes');
@@ -303,7 +299,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync partitions
   if (partitions) {
-    const partitionsSuccess = await syncPartitions(client, partitions, { logger: activeLogger });
+    const partitionsSuccess = await syncPartitions(client, partitions, { logger });
     if (!partitionsSuccess) {
       recordError('partitions', 'Failed to sync partitions');
     }
@@ -311,7 +307,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync cookies
   if (cookies) {
-    const cookiesSuccess = await syncCookies(client, cookies, { logger: activeLogger });
+    const cookiesSuccess = await syncCookies(client, cookies, { logger });
     if (!cookiesSuccess) {
       recordError('cookies', 'Failed to sync cookies');
     }
@@ -322,7 +318,7 @@ export async function syncConfigurationToTranscend(
     const actionItemCollectionsSuccess = await syncActionItemCollections(
       client,
       actionItemCollections,
-      { logger: activeLogger },
+      { logger },
     );
     if (!actionItemCollectionsSuccess) {
       recordError('action-item-collections', 'Failed to sync action-item-collections');
@@ -332,38 +328,36 @@ export async function syncConfigurationToTranscend(
   // Sync attributes
   if (attributes) {
     // Fetch existing
-    activeLogger.info(colors.magenta(`Syncing "${attributes.length}" attributes...`));
-    const existingAttributes = await fetchAllAttributes(client, { logger: activeLogger });
+    logger.info(`Syncing "${attributes.length}" attributes...`);
+    const existingAttributes = await fetchAllAttributes(client, { logger });
     await map(
       attributes,
       async (attribute) => {
         const existing = existingAttributes.find((attr) => attr.name === attribute.name);
 
-        activeLogger.info(colors.magenta(`Syncing attribute "${attribute.name}"...`));
+        logger.info(`Syncing attribute "${attribute.name}"...`);
         try {
           await syncAttribute(client, attribute, {
             existingAttribute: existing,
             deleteExtraAttributeValues,
-            logger: activeLogger,
+            logger,
           });
-          activeLogger.info(colors.green(`Successfully synced attribute "${attribute.name}"!`));
+          logger.info(`Successfully synced attribute "${attribute.name}"!`);
         } catch (err) {
-          recordError('attributes', err.message, attribute.name);
-          activeLogger.error(
-            colors.red(`Failed to sync attribute "${attribute.name}"! - ${err.message}`),
-          );
+          recordError('attributes', (err as Error).message, attribute.name);
+          logger.error(`Failed to sync attribute "${attribute.name}"! - ${(err as Error).message}`);
         }
       },
       {
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${attributes.length}" attributes!`));
+    logger.info(`Synced "${attributes.length}" attributes!`);
   }
 
   // Sync action items
   if (actionItems) {
-    const actionItemsSuccess = await syncActionItems(client, actionItems, { logger: activeLogger });
+    const actionItemsSuccess = await syncActionItems(client, actionItems, { logger });
     if (!actionItemsSuccess) {
       recordError('action-items', 'Failed to sync action-items');
     }
@@ -371,25 +365,23 @@ export async function syncConfigurationToTranscend(
 
   // Sync preflight checks
   if (preflights) {
-    activeLogger.info(colors.magenta(`Syncing "${preflights.length}" preflight checks...`));
+    logger.info(`Syncing "${preflights.length}" preflight checks...`);
     await map(
       preflights,
       async (preflight) => {
-        activeLogger.info(colors.magenta(`Syncing preflight check "${preflight.title}"...`));
+        logger.info(`Syncing preflight check "${preflight.title}"...`);
         try {
           await syncEnricher(client, {
             input: preflight,
             identifierByName,
             dataSubjectsByName,
-            logger: activeLogger,
+            logger,
           });
-          activeLogger.info(
-            colors.green(`Successfully synced preflight check "${preflight.title}"!`),
-          );
+          logger.info(`Successfully synced preflight check "${preflight.title}"!`);
         } catch (err) {
-          recordError('preflights', err.message, preflight.title);
-          activeLogger.error(
-            colors.red(`Failed to sync preflight check "${preflight.title}"! - ${err.message}`),
+          recordError('preflights', (err as Error).message, preflight.title);
+          logger.error(
+            `Failed to sync preflight check "${preflight.title}"! - ${(err as Error).message}`,
           );
         }
       },
@@ -397,13 +389,13 @@ export async function syncConfigurationToTranscend(
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${preflights.length}" preflight checks!`));
+    logger.info(`Synced "${preflights.length}" preflight checks!`);
   }
 
   // Sync identifiers
   if (identifiers) {
     // Fetch existing
-    activeLogger.info(colors.magenta(`Syncing "${identifiers.length}" identifiers...`));
+    logger.info(`Syncing "${identifiers.length}" identifiers...`);
     await map(
       identifiers,
       async (identifier) => {
@@ -417,20 +409,20 @@ export async function syncConfigurationToTranscend(
           return;
         }
 
-        activeLogger.info(colors.magenta(`Syncing identifier "${identifier.type}"...`));
+        logger.info(`Syncing identifier "${identifier.type}"...`);
         try {
           await syncIdentifier(client, {
             input: identifier,
             dataSubjectsByName,
             identifierId: existing.id,
             skipPublish: !publishToPrivacyCenter,
-            logger: activeLogger,
+            logger,
           });
-          activeLogger.info(colors.green(`Successfully synced identifier "${identifier.type}"!`));
+          logger.info(`Successfully synced identifier "${identifier.type}"!`);
         } catch (err) {
-          recordError('identifiers', err.message, identifier.name);
-          activeLogger.error(
-            colors.red(`Failed to sync identifier "${identifier.type}"! - ${err.message}`),
+          recordError('identifiers', (err as Error).message, identifier.name);
+          logger.error(
+            `Failed to sync identifier "${identifier.type}"! - ${(err as Error).message}`,
           );
         }
       },
@@ -438,14 +430,14 @@ export async function syncConfigurationToTranscend(
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${identifiers.length}" identifiers!`));
+    logger.info(`Synced "${identifiers.length}" identifiers!`);
   }
 
   // Sync actions
   if (actions) {
     // Fetch existing
-    activeLogger.info(colors.magenta(`Syncing "${actions.length}" actions...`));
-    const existingActions = await fetchAllActions(client, { logger: activeLogger });
+    logger.info(`Syncing "${actions.length}" actions...`);
+    const existingActions = await fetchAllActions(client, { logger });
     await map(
       actions,
       async (action) => {
@@ -459,7 +451,7 @@ export async function syncConfigurationToTranscend(
           return;
         }
 
-        activeLogger.info(colors.magenta(`Syncing action "${action.type}"...`));
+        logger.info(`Syncing action "${action.type}"...`);
         try {
           await syncAction(
             client,
@@ -468,28 +460,26 @@ export async function syncConfigurationToTranscend(
               actionId: existing.id,
               skipPublish: !publishToPrivacyCenter,
             },
-            { logger: activeLogger },
+            { logger },
           );
-          activeLogger.info(colors.green(`Successfully synced action "${action.type}"!`));
+          logger.info(`Successfully synced action "${action.type}"!`);
         } catch (err) {
-          recordError('actions', err.message, action.type);
-          activeLogger.error(
-            colors.red(`Failed to sync action "${action.type}"! - ${err.message}`),
-          );
+          recordError('actions', (err as Error).message, action.type);
+          logger.error(`Failed to sync action "${action.type}"! - ${(err as Error).message}`);
         }
       },
       {
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${actions.length}" actions!`));
+    logger.info(`Synced "${actions.length}" actions!`);
   }
 
   // Sync data subjects
   if (dataSubjects) {
     // Fetch existing
-    activeLogger.info(colors.magenta(`Syncing "${dataSubjects.length}" data subjects...`));
-    const existingDataSubjects = await fetchAllDataSubjects(client, { logger: activeLogger });
+    logger.info(`Syncing "${dataSubjects.length}" data subjects...`);
+    const existingDataSubjects = await fetchAllDataSubjects(client, { logger });
     await map(
       dataSubjects,
       async (dataSubject) => {
@@ -503,30 +493,26 @@ export async function syncConfigurationToTranscend(
           return;
         }
 
-        activeLogger.info(colors.magenta(`Syncing data subject "${dataSubject.type}"...`));
+        logger.info(`Syncing data subject "${dataSubject.type}"...`);
         try {
           await syncDataSubject(client, {
             input: dataSubject,
             dataSubjectId: existing.id,
             skipPublish: !publishToPrivacyCenter,
-            logger: activeLogger,
+            logger,
           });
-          activeLogger.info(
-            colors.green(`Successfully synced data subject "${dataSubject.type}"!`),
-          );
+          logger.info(`Successfully synced data subject "${dataSubject.type}"!`);
         } catch (err) {
           // supportsAuthorizedAgent is gated on the Authorized Agents feature being
           // enabled for the organization; surface a clearer hint than the raw API error
           const hint =
             dataSubject.supportsAuthorizedAgent !== undefined &&
-            /authorized.agent/i.test(err.message)
+            /authorized.agent/i.test((err as Error).message)
               ? ' (enable the Authorized Agents feature for this organization before setting "supportsAuthorizedAgent")'
               : '';
-          recordError('data-subjects', `${err.message}${hint}`, dataSubject.type);
-          activeLogger.error(
-            colors.red(
-              `Failed to sync data subject "${dataSubject.type}"! - ${err.message}${hint}`,
-            ),
+          recordError('data-subjects', `${(err as Error).message}${hint}`, dataSubject.type);
+          logger.error(
+            `Failed to sync data subject "${dataSubject.type}"! - ${(err as Error).message}${hint}`,
           );
         }
       },
@@ -534,15 +520,12 @@ export async function syncConfigurationToTranscend(
         concurrency: CONCURRENCY,
       },
     );
-    activeLogger.info(colors.green(`Synced "${dataSubjects.length}" data subjects!`));
+    logger.info(`Synced "${dataSubjects.length}" data subjects!`);
   }
 
   // Sync data flows
   if (dataFlows) {
-    const syncedDataFlows = await syncDataFlows(client, dataFlows, {
-      classifyService,
-      logger: activeLogger,
-    });
+    const syncedDataFlows = await syncDataFlows(client, dataFlows, { classifyService, logger });
     if (!syncedDataFlows) {
       recordError('data-flows', 'Failed to sync data-flows');
     }
@@ -552,7 +535,7 @@ export async function syncConfigurationToTranscend(
   if (privacyCenter) {
     try {
       const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, {
-        logger: activeLogger,
+        logger,
         skipPublish: !publishToPrivacyCenter,
       });
       if (!privacyCenterSuccess) {
@@ -565,7 +548,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync messages
   if (messages) {
-    const messagesSuccess = await syncIntlMessages(client, messages, { logger: activeLogger });
+    const messagesSuccess = await syncIntlMessages(client, messages, { logger });
     if (!messagesSuccess) {
       recordError('messages', 'Failed to sync messages');
     }
@@ -573,7 +556,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync policies
   if (policies) {
-    const policiesSuccess = await syncPolicies(client, policies, { logger: activeLogger });
+    const policiesSuccess = await syncPolicies(client, policies, { logger });
     if (!policiesSuccess) {
       recordError('policies', 'Failed to sync policies');
     }
@@ -587,6 +570,8 @@ export async function syncConfigurationToTranscend(
       dataSubjectsByName,
       apiKeysByTitle: apiKeyTitleMap,
       pageSize,
+      logger,
+      progressReporter,
     });
     dataSilos?.forEach((dataSilo) => {
       // Queue up dependency update
@@ -594,12 +579,12 @@ export async function syncConfigurationToTranscend(
       if (dependencies) {
         try {
           dependencyUpdates.push([
-            dataSiloTitleToId[dataSilo.title],
+            dataSiloTitleToId[dataSilo.title]!,
             normalizeDeletionDependencies(dependencies, dataSilo.title),
           ]);
         } catch (err) {
           recordError('data-silos', (err as Error).message, dataSilo.title);
-          activeLogger.error(colors.red((err as Error).message));
+          logger.error((err as Error).message);
         }
       }
     });
@@ -612,7 +597,7 @@ export async function syncConfigurationToTranscend(
   if (dependencyUpdates.length > 0) {
     const dependenciesSuccess = await syncDataSiloDependencies(client, {
       input: dependencyUpdates,
-      logger: activeLogger,
+      logger,
     });
     if (!dependenciesSuccess) {
       recordError('data-silo-dependencies', 'Failed to sync data-silo-dependencies');
@@ -622,7 +607,7 @@ export async function syncConfigurationToTranscend(
   // Update processing activities
   if (processingActivities) {
     const processingActivitySuccess = await syncProcessingActivities(client, processingActivities, {
-      logger: activeLogger,
+      logger,
     });
     if (!processingActivitySuccess) {
       recordError('processing-activities', 'Failed to sync processing-activities');

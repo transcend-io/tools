@@ -19,6 +19,7 @@ export function createMonorepoPackageDefinition(
   };
 }
 
+export * from './transcend-yml/index.js';
 export * from './gqls/index.js';
 export * from './api/index.js';
 export * from './data-inventory/index.js';

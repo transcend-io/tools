@@ -1,7 +1,7 @@
-import type { DependedOnDataSiloInput } from '@transcend-io/sdk';
 import { uniq } from 'lodash-es';
 
-import type { DeletionDependencies, DeletionDependencyInput } from '../../codecs.js';
+import type { DependedOnDataSiloInput } from '../index.js';
+import type { DeletionDependencies, DeletionDependencyInput } from './codecs.js';
 
 /**
  * Convert the `deletion-dependencies` entries for a single data silo into the

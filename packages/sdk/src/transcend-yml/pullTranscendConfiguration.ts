@@ -1,4 +1,4 @@
-import { LocaleValue } from '@transcend-io/internationalization';
+import type { LocaleValue } from '@transcend-io/internationalization';
 import {
   RequestAction,
   ConsentTrackerStatus,
@@ -9,7 +9,13 @@ import {
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
+import type { Logger } from '@transcend-io/utils';
+import { GraphQLClient } from 'graphql-request';
+import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
+
 import {
+  NOOP_LOGGER,
+  fetchAllAssessmentTemplates,
   fetchAllActionItemCollections,
   fetchAllActionItems,
   fetchAllActions,
@@ -52,11 +58,8 @@ import {
   fetchEnrichedDataSilos,
   workflowConfigMatchKey,
   type AssessmentRule,
-} from '@transcend-io/sdk';
-import colors from 'colors';
-import { GraphQLClient } from 'graphql-request';
-import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
-
+} from '../index.js';
+import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
 /* eslint-disable max-lines */
 import {
   TranscendInput,
@@ -92,11 +95,8 @@ import {
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
-} from '../../codecs.js';
-import { TranscendPullResource } from '../../enums.js';
-import { logger } from '../../logger.js';
-import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
-import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
+} from './codecs.js';
+import { TranscendPullResource } from './enums.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
   TranscendPullResource.DataSilos,
@@ -124,6 +124,8 @@ export interface TranscendPullConfigurationInput {
   skipSubDatapoints?: boolean;
   /** When true, metadata around guessed data categories should be included */
   includeGuessedCategories?: boolean;
+  /** Logger for progress and request messages. Defaults to discarding them. */
+  logger?: Logger;
 }
 
 /**
@@ -145,13 +147,14 @@ export async function pullTranscendConfiguration(
     includeGuessedCategories,
     skipSubDatapoints,
     trackerStatuses = Object.values(ConsentTrackerStatus),
+    logger = NOOP_LOGGER,
   }: TranscendPullConfigurationInput,
 ): Promise<TranscendInput> {
   if (dataSiloIds.length > 0 && integrationNames.length > 0) {
     throw new Error('Only 1 of integrationNames OR dataSiloIds can be provided');
   }
 
-  logger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
+  logger.info(`Fetching data with page size ${pageSize}...`);
 
   // Fetch all data, but only conditional fetch data that is requested
   const [
@@ -326,7 +329,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch assessmentTemplates
     resources.includes(TranscendPullResource.AssessmentTemplates)
-      ? fetchAllAssessmentTemplates(client)
+      ? fetchAllAssessmentTemplates(client, { logger })
       : [],
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
@@ -882,7 +885,7 @@ export async function pullTranscendConfiguration(
 
   // Save privacy center
   if (privacyCenters.length > 0) {
-    const privacyCenter = privacyCenters[0];
+    const privacyCenter = privacyCenters[0]!;
     result['privacy-center'] = {
       isDisabled: privacyCenter.isDisabled,
       showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
@@ -1387,7 +1390,7 @@ export async function pullTranscendConfiguration(
     const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
     for (const configs of Object.values(configsByMatchKey)) {
       if (configs.length > 1) {
-        const sample = configs[0];
+        const sample = configs[0]!;
         logger.warn(
           `Found "${configs.length}" workflow configs with the same title, action-type, ` +
             `data-subject-type, and region-list for "${sample.title.defaultMessage}" ` +

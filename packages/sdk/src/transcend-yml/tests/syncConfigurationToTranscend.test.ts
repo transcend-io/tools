@@ -5,10 +5,15 @@ const syncDataSubject = vi.fn();
 const fetchAllDataSubjects = vi.fn();
 const syncTeams = vi.fn();
 
-vi.mock('@transcend-io/sdk', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
+vi.mock('../../dsr-automation/syncDataSubject.js', () => ({
   syncDataSubject: (...args: unknown[]) => syncDataSubject(...args),
+}));
+
+vi.mock('../../dsr-automation/fetchDataSubjects.js', () => ({
   fetchAllDataSubjects: (...args: unknown[]) => fetchAllDataSubjects(...args),
+}));
+
+vi.mock('../../administration/syncTeams.js', () => ({
   syncTeams: (...args: unknown[]) => syncTeams(...args),
 }));
 

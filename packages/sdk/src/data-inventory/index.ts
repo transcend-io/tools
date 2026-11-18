@@ -8,8 +8,17 @@ export * from './fetchAllVendors.js';
 export * from './fetchEnrichedDataSilos.js';
 export * from './gqls/dataPoint.js';
 export * from './gqls/dataSilo.js';
-export * from './syncBusinessEntities.js';
-export * from './syncDataCategories.js';
-export * from './syncDataSiloDependencies.js';
-export * from './syncProcessingActivities.js';
-export * from './syncVendors.js';
+export {
+  createBusinessEntity,
+  syncBusinessEntities,
+  updateBusinessEntities,
+} from './syncBusinessEntities.js';
+export {
+  createDataCategory,
+  syncDataCategories,
+  updateDataCategories,
+} from './syncDataCategories.js';
+export { syncDataSiloDependencies } from './syncDataSiloDependencies.js';
+export type { DependedOnDataSiloInput } from './syncDataSiloDependencies.js';
+export { syncProcessingActivities } from './syncProcessingActivities.js';
+export { createVendor, syncVendors, updateVendors } from './syncVendors.js';

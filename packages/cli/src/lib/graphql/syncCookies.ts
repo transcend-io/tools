@@ -1,5 +1,6 @@
 // import { keyBy } from 'lodash-es';
 import {
+  CookieInput,
   fetchConsentManagerId,
   makeGraphQLRequest,
   UPDATE_OR_CREATE_COOKIES,
@@ -9,7 +10,6 @@ import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { CookieInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 
 const MAX_PAGE_SIZE = 100;
