@@ -37,11 +37,3 @@ export const UPDATE_DATA_SUBJECT: DocumentNode = parse(gql`
     }
   }
 `);
-
-export const TOGGLE_DATA_SUBJECT: DocumentNode = parse(gql`
-  mutation TranscendCliToggleDataSubject($input: ToggleSubjectInput!) {
-    toggleSubject(input: $input) {
-      clientMutationId
-    }
-  }
-`);
