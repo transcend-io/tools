@@ -3,7 +3,7 @@ import {
   TR_YML_RESOURCE_TO_FIELD_NAME,
   TranscendPullResource,
   type TranscendInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 
 /** Whether a top-level `transcend.yml` section has anything to sync. */
 export function hasConfigSection(value: unknown): boolean {

@@ -3,7 +3,7 @@ import {
   TR_YML_RESOURCE_TO_FIELD_NAME,
   TranscendInput,
   TranscendPullResource,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { toJsonSchema } from '@transcend-io/type-utils';
 
 import { parseResources } from '../helpers/resources.js';

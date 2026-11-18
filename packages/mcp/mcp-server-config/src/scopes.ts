@@ -1,8 +1,5 @@
 import { ScopeName } from '@transcend-io/privacy-types';
-import {
-  TR_PULL_RESOURCE_SCOPE_MAP,
-  TR_PUSH_RESOURCE_SCOPE_MAP,
-} from '@transcend-io/sdk/transcend-yml';
+import { TR_PULL_RESOURCE_SCOPE_MAP, TR_PUSH_RESOURCE_SCOPE_MAP } from '@transcend-io/sdk';
 
 /**
  * OAuth scopes for the config MCP tools (offline_access added by base).

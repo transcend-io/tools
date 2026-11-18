@@ -10,7 +10,7 @@ import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,
   type TranscendInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { assertScopesAvailable } from '../src/helpers/assertScopesAvailable.js';

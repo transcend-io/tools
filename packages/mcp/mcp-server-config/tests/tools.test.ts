@@ -10,8 +10,8 @@ const sdk = vi.hoisted(() => ({
   sync: vi.fn(),
 }));
 
-vi.mock('@transcend-io/sdk/transcend-yml', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/sdk/transcend-yml')>()),
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
 }));
