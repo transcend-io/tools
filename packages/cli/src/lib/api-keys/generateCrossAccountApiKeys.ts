@@ -6,8 +6,8 @@ import {
   fetchAllApiKeys,
   deleteApiKey,
   assumeRole,
+  StoredApiKey,
 } from '@transcend-io/sdk';
-import { StoredApiKey } from '@transcend-io/sdk/transcend-yml';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 

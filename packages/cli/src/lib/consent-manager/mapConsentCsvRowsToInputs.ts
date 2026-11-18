@@ -4,7 +4,7 @@ import type {
   CookieInput,
   DataFlowCsvInput,
   DataFlowInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { splitCsvToList } from '@transcend-io/utils';
 
 const OMITTED_CONSENT_CSV_COLUMNS = new Set([

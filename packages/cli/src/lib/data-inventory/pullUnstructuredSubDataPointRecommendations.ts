@@ -1,6 +1,5 @@
 import type { UnstructuredSubDataPointRecommendationStatus } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import type { DataCategoryInput } from '@transcend-io/sdk/transcend-yml';
+import { makeGraphQLRequest, type DataCategoryInput } from '@transcend-io/sdk';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql, type GraphQLClient } from 'graphql-request';

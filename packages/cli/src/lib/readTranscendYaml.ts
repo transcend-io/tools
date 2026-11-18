@@ -1,10 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import {
-  parseTranscendYaml,
-  serializeTranscendYaml,
-  type TranscendInput,
-} from '@transcend-io/sdk/transcend-yml';
+import { parseTranscendYaml, serializeTranscendYaml, type TranscendInput } from '@transcend-io/sdk';
 import type { ObjByString } from '@transcend-io/type-utils';
 
 /**

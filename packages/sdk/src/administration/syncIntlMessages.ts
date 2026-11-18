@@ -5,7 +5,7 @@ import { chunk } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
 
-export interface IntlMessageInput {
+interface IntlMessageInput {
   /** React Intl message ID */
   id: string;
   /** Target React Intl ID to map this message to */
