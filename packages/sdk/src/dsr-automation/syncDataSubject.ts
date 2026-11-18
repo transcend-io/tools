@@ -3,7 +3,7 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { TOGGLE_DATA_SUBJECT, UPDATE_DATA_SUBJECT } from './gqls/dataSubject.js';
+import { UPDATE_DATA_SUBJECT } from './gqls/dataSubject.js';
 
 export interface DataSubjectInput {
   /** The type of the data subject */
@@ -48,22 +48,11 @@ export async function syncDataSubject(
         adminDashboardDefaultSilentMode: dataSubject.adminDashboardDefaultSilentMode,
         supportsAuthorizedAgent: dataSubject.supportsAuthorizedAgent,
         actions: dataSubject.actions,
-        skipPublish: skipPublish && typeof dataSubject.active === 'undefined',
+        // `active` is part of UpdateSubjectInput; the backend has no separate toggle mutation
+        active: dataSubject.active,
+        skipPublish,
       },
     },
     logger,
   });
-
-  if (typeof dataSubject.active === 'boolean') {
-    await makeGraphQLRequest(client, TOGGLE_DATA_SUBJECT, {
-      variables: {
-        input: {
-          id: dataSubjectId,
-          active: dataSubject.active,
-          skipPublish,
-        },
-      },
-      logger,
-    });
-  }
 }

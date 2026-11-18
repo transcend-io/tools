@@ -1439,6 +1439,7 @@ export async function pullTranscendConfiguration(
     result.preflights = enrichers.map(
       ({
         title,
+        description,
         url,
         type,
         inputIdentifier,
@@ -1453,6 +1454,7 @@ export async function pullTranscendConfiguration(
         regionList,
       }): EnricherInput => ({
         title,
+        description: description || undefined,
         url: url || undefined,
         type,
         'input-identifier': inputIdentifier?.name,

@@ -14,6 +14,7 @@ export const ENRICHERS = gql`
       nodes {
         id
         title
+        description
         url
         type
         expirationDuration
