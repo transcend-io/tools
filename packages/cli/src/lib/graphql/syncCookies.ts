@@ -1,10 +1,10 @@
 // import { keyBy } from 'lodash-es';
 import {
+  CookieInput,
   fetchConsentManagerId,
   makeGraphQLRequest,
   UPDATE_OR_CREATE_COOKIES,
 } from '@transcend-io/sdk';
-import { CookieInput } from '@transcend-io/sdk/transcend-yml';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';

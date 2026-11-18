@@ -1,5 +1,5 @@
 import { ConsentTrackerStatus, ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
-import { TR_PULL_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TR_PULL_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';

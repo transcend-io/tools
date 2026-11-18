@@ -19,7 +19,7 @@ export interface ActionItemAttributeKey {
   name: string;
 }
 
-export interface ActionItemInput {
+interface ActionItemInput {
   /** The display title of the action item */
   title: string;
   /** Action item type */

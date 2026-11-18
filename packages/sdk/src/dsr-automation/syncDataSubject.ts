@@ -5,7 +5,7 @@ import { GraphQLClient } from 'graphql-request';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { UPDATE_DATA_SUBJECT } from './gqls/dataSubject.js';
 
-export interface DataSubjectInput {
+interface DataSubjectInput {
   /** The type of the data subject */
   type: string;
   /** Whether the data subject is active on the Privacy Center & DSR API */

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { TranscendInput } from '@transcend-io/sdk/transcend-yml';
+import { TranscendInput } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { describe, expect, it } from 'vitest';
 

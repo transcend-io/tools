@@ -1,10 +1,7 @@
 /* eslint-disable no-multi-str -- Break long strings into multiple lines. This syntax is required for the TS compiler to check against MarkdownLink */
 
 import { TRANSCEND_SCOPES, type ScopeName } from '@transcend-io/privacy-types';
-import {
-  TR_YML_RESOURCE_TO_FIELD_NAME,
-  TranscendPullResource,
-} from '@transcend-io/sdk/transcend-yml';
+import { TR_YML_RESOURCE_TO_FIELD_NAME, TranscendPullResource } from '@transcend-io/sdk';
 
 /** A markdown link */
 type MarkdownLink = `[${string}](https://${string})`;
