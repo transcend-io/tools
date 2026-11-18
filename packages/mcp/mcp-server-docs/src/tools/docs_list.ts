@@ -43,18 +43,14 @@ export const DocsListSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Find docs for an Admin Dashboard page. Accepts a route pattern ' +
-        "('/privacy-center/general-settings'), a concrete path " +
-        "('/privacy-center/general-settings/deployment'), or a full app URL " +
-        "('https://app.transcend.io/privacy-center/general-settings?tab=x'). Returns pages " +
-        'about that page first, then pages that only link to it, then more docs for the ' +
-        "page's product. Combine with query to append full-text results. Cannot be combined " +
-        'with section or product.',
+      'Find docs for an Admin Dashboard page. Accepts a route pattern, a concrete path ' +
+        "('/privacy-center/general-settings/deployment'), or a full app URL. Returns pages " +
+        "about that page, then pages that link to it, then the page's product docs. Can " +
+        'combine with query. Not with section or product.',
     ),
   product: DashboardDocsProductSchema.optional().describe(
-    `List docs for one Transcend dashboard product, overview pages first. One of: ${dashboardDocsProductTitles.join(', ')} ` +
-      '(case-insensitive). Platform covers admin, infrastructure, prompts, and action items. Combine with query to search only within that product. Cannot be combined with ' +
-      'section or route.',
+    `List docs for one product, overview pages first. One of: ${dashboardDocsProductTitles.join(', ')} ` +
+      '(case-insensitive). Can combine with query. Not with section or route.',
   ),
   section: z
     .string()
