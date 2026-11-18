@@ -1,5 +1,33 @@
 # @transcend-io/sdk
 
+## 3.0.0
+
+### Major Changes
+
+- f99575b: Removed SDK helpers for the dropped agents GraphQL API (tables no longer exist on the backend).
+
+  **Removed exports:** `fetchAllAgents`, `createAgent`, `updateAgents`, `syncAgents`, `Agent`, `AgentInput`; `fetchAllAgentFiles`, `createAgentFile`, `updateAgentFiles`, `syncAgentFiles`, `AgentFile`, `AgentFileInput`, `AgentFileFilterBy`; `fetchAllAgentFunctions`, `createAgentFunction`, `updateAgentFunctions`, `syncAgentFunctions`, `AgentFunction`, `AgentFunctionInput`.
+
+- 1bb32a0: Removed the SDK `ai` module and its root export. The backend no longer exposes the underlying large language model catalog, prompt thread, or prompt run message APIs.
+
+  **Removed exports:** `addMessagesToPromptRun`, `AddMessagesToPromptRunInput`; `fetchAllLargeLanguageModels`, `LargeLanguageModel`; `fetchAllPromptThreads`, `PromptThread`.
+
+### Minor Changes
+
+- d3584ee: Move the `transcend.yml` pull, sync and codec logic into `@transcend-io/sdk`. Import codecs and sync helpers from the main SDK entry point. Pull and sync no longer print by default. Pass a `logger` (and a `progressReporter` for sync) to get output. Moved log messages no longer use ANSI colors.
+
+### Patch Changes
+
+- 08b28b8: Fix `transcend.yml` push and pull for organization-to-organization copies.
+  - Data subject `active` now applies through `updateSubject`. The removed `toggleSubject` mutation caused every `active` push to fail.
+  - `syncConfigurationToTranscend` records every failure in `SyncResult.errors` with its resource and item, and uses the injected logger.
+  - Enricher `description` is now pulled, and a push no longer clears it when the input omits it.
+  - `createTemplate` now sends the required `type` and `product` fields.
+
+- 3fb7e15: Fix two GraphQL documents that no longer match the schema.
+  - `approveRequest` in the CLI now declares `ApproveRequestInput`. `CommunicationInput` is rejected by the current schema.
+  - The assessments query no longer selects the removed `AttributePromptRunResource` and `AttributePromptGroupResource` types.
+
 ## 2.2.1
 
 ### Patch Changes
