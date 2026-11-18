@@ -42,18 +42,18 @@ export interface DashboardRouteData {
   productPrefixes?: ProductPrefix[];
 }
 
-/** The nine product titles published in dashboard-routes.json. */
-export const PRODUCT_TITLES = [
-  'Data Inventory',
-  'System Discovery',
-  'Classification',
-  'DSR Automation',
-  'Consent Management',
-  'Preference Management',
-  'Privacy Center',
-  'Web Auditor',
-  'Assessments',
-] as const;
+/** Product titles published in dashboard-routes.json. */
+export enum DashboardDocsProduct {
+  DataInventory = 'Data Inventory',
+  SystemDiscovery = 'System Discovery',
+  Classification = 'Classification',
+  DsrAutomation = 'DSR Automation',
+  ConsentManagement = 'Consent Management',
+  PreferenceManagement = 'Preference Management',
+  PrivacyCenter = 'Privacy Center',
+  WebAuditor = 'Web Auditor',
+  Assessments = 'Assessments',
+}
 
 /** One docs page returned for a route lookup. */
 export interface RouteMatchPage extends RoutePage {
@@ -214,9 +214,9 @@ export function lookupRoute(index: RouteIndex, input: string): RouteLookup | und
 }
 
 /** Finds the published product title for a user-supplied value, ignoring case. */
-export function findProductTitle(input: string): string | undefined {
+export function findProductTitle(input: string): DashboardDocsProduct | undefined {
   const wanted = input.trim().toLowerCase();
-  return PRODUCT_TITLES.find((title) => title.toLowerCase() === wanted);
+  return Object.values(DashboardDocsProduct).find((title) => title.toLowerCase() === wanted);
 }
 
 /** Finds the key of `products` that equals `title`, ignoring case. */

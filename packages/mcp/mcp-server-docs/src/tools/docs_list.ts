@@ -10,12 +10,12 @@ import {
 
 import { getIndex, getRouteIndex, RouteIndexUnavailableError } from '../docsIndex.js';
 import {
+  DashboardDocsProduct,
   findProductKey,
   findProductTitle,
   lookupRoute,
   normalizeDocUrl,
   normalizeRoute,
-  PRODUCT_TITLES,
   resolveRouteProduct,
   type RoutePage,
 } from '../docsRoutes.js';
@@ -28,6 +28,15 @@ import { searchDocs } from '../docsSearch.js';
  * articles and ~22KB.
  */
 const SECTION_LISTING_LIMIT = 50;
+
+const dashboardDocsProductTitles = Object.values(DashboardDocsProduct);
+
+export const DashboardDocsProductSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? findProductTitle(value) : value),
+  z.nativeEnum(DashboardDocsProduct, {
+    message: `Unknown product. Valid products: ${dashboardDocsProductTitles.join(', ')}.`,
+  }),
+);
 
 export const DocsListSchema = z.object({
   route: z
@@ -42,14 +51,11 @@ export const DocsListSchema = z.object({
         "page's product. Combine with query to append full-text results. Cannot be combined " +
         'with section or product.',
     ),
-  product: z
-    .string()
-    .optional()
-    .describe(
-      `List docs for one Transcend product, overview pages first. One of: ${PRODUCT_TITLES.join(', ')} ` +
-        '(case-insensitive). Combine with query to search only within that product. Cannot ' +
-        'be combined with section or route.',
-    ),
+  product: DashboardDocsProductSchema.optional().describe(
+    'List docs for one Transcend dashboard product, overview pages first (case-insensitive ' +
+      'title). Combine with query to search only within that product. Cannot be combined with ' +
+      'section or route.',
+  ),
   section: z
     .string()
     .optional()
@@ -94,8 +100,8 @@ async function listDocsByProduct({
   product,
   query,
 }: {
-  /** Product title as supplied by the caller. */
-  product: string;
+  /** Canonical dashboard product title. */
+  product: DashboardDocsProduct;
   /** Optional full-text terms to search within the product. */
   query?: string;
 }) {
@@ -103,7 +109,7 @@ async function listDocsByProduct({
   if (!title) {
     throw new ToolError(
       ErrorCode.VALIDATION_ERROR,
-      `Unknown product '${product}'. Valid products: ${PRODUCT_TITLES.join(', ')}.`,
+      `Unknown product '${product}'. Valid products: ${dashboardDocsProductTitles.join(', ')}.`,
     );
   }
 
