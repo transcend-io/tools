@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
 import { experimentalToolsEnabled } from '../oauth/env.js';
+import { McpTransport } from '../server/transport.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
 import type { UiResourceDefinition } from './ui-resource.js';
 
@@ -265,7 +266,7 @@ export function isAvailableOnTransport(
   /** Tool to test */
   tool: ToolDefinition,
   /** Transport the server runs on */
-  transport: 'stdio' | 'http',
+  transport: McpTransport,
 ): boolean {
-  return !tool.requireLocalFilesystem || transport === 'stdio';
+  return !tool.requireLocalFilesystem || transport === McpTransport.Stdio;
 }

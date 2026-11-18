@@ -168,6 +168,9 @@ export class TranscendGraphQLBase {
    * Headers for an outbound request: auth for the current call plus the MCP
    * attribution headers. Re-read on every call because HTTP auth is per-request.
    *
+   * The result holds live credentials (bearer token or session cookie). Never
+   * log it or put it in a tool result.
+   *
    * @throws ToolError when no authentication is configured
    */
   requestHeaders(): Record<string, string> {
