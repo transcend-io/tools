@@ -1,5 +1,6 @@
 // import { keyBy } from 'lodash-es';
 import {
+  CookieInput,
   fetchConsentManagerId,
   makeGraphQLRequest,
   UPDATE_OR_CREATE_COOKIES,

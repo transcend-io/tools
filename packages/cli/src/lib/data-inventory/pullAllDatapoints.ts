@@ -7,8 +7,8 @@ import {
   DATAPOINT_EXPORT,
   DATA_SILO_EXPORT,
   SUB_DATA_POINTS_COUNT,
-  type DataSiloAttributeValue,
   type DataCategoryInput,
+  type DataSiloAttributeValue,
   type ProcessingPurposeInput,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
