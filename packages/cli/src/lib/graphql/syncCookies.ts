@@ -4,7 +4,6 @@ import {
   fetchConsentManagerId,
   makeGraphQLRequest,
   UPDATE_OR_CREATE_COOKIES,
-  CookieInput,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
