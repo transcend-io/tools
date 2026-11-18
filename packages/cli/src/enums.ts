@@ -19,39 +19,3 @@ export enum OneTrustPullSource {
   OneTrust = 'oneTrust',
   File = 'file',
 }
-
-/**
- * Resources that can be pulled in
- */
-export enum TranscendPullResource {
-  ApiKeys = 'apiKeys',
-  Attributes = 'customFields',
-  Templates = 'templates',
-  DataSilos = 'dataSilos',
-  Enrichers = 'enrichers',
-  DataFlows = 'dataFlows',
-  BusinessEntities = 'businessEntities',
-  ProcessingActivities = 'processingActivities',
-  Actions = 'actions',
-  DataSubjects = 'dataSubjects',
-  Identifiers = 'identifiers',
-  Cookies = 'cookies',
-  ConsentManager = 'consentManager',
-  Partitions = 'partitions',
-  Vendors = 'vendors',
-  DataCategories = 'dataCategories',
-  ProcessingPurposes = 'processingPurposes',
-  ActionItems = 'actionItems',
-  ActionItemCollections = 'actionItemCollections',
-  Teams = 'teams',
-  PrivacyCenters = 'privacyCenters',
-  Policies = 'policies',
-  Messages = 'messages',
-  Assessments = 'assessments',
-  AssessmentTemplates = 'assessmentTemplates',
-  Purposes = 'purposes',
-  PreferenceOptions = 'preferenceOptions',
-  SystemDiscovery = 'systemDiscovery',
-  PreferenceWorkflowConfigs = 'preferenceWorkflowConfigs',
-  WorkflowConfigs = 'workflowConfigs',
-}

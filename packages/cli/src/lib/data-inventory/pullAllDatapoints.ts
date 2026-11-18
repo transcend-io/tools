@@ -7,7 +7,9 @@ import {
   DATAPOINT_EXPORT,
   DATA_SILO_EXPORT,
   SUB_DATA_POINTS_COUNT,
+  type DataCategoryInput,
   type DataSiloAttributeValue,
+  type ProcessingPurposeInput,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -16,7 +18,6 @@ import { gql, type GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { keyBy, uniq, chunk, sortBy } from 'lodash-es';
 
-import type { DataCategoryInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 
 export interface DataSiloCsvPreview {

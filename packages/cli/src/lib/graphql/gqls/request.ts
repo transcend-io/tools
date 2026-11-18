@@ -92,7 +92,7 @@ export const REQUESTS = gql`
 `;
 
 export const APPROVE_PRIVACY_REQUEST = gql`
-  mutation TranscendCliApprovePrivacyRequest($input: CommunicationInput!) {
+  mutation TranscendCliApprovePrivacyRequest($input: ApproveRequestInput!) {
     approveRequest(input: $input) {
       request {
         id

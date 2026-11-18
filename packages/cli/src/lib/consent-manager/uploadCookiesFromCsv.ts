@@ -1,8 +1,7 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, syncCookies } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, CookieCsvInput, syncCookies } from '@transcend-io/sdk';
 import colors from 'colors';
 
-import { CookieCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/readCsv.js';

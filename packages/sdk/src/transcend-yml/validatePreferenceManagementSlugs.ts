@@ -1,4 +1,4 @@
-import type { TranscendInput } from '../../codecs.js';
+import type { TranscendInput } from './codecs.js';
 
 /** Slugs for preference topics and option values must be alphabetical letters only. */
 export const PREFERENCE_SLUG_REGEX = /^[A-Za-z]+$/;

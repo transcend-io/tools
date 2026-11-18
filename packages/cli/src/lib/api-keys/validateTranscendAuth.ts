@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 
+import { StoredApiKey } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import colors from 'colors';
 import * as t from 'io-ts';
 
-import { StoredApiKey } from '../../codecs.js';
 import type { LocalContext } from '../../context.js';
 import { logger } from '../../logger.js';
 

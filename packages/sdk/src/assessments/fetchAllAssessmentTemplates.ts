@@ -2,16 +2,12 @@ import {
   AssessmentFormTemplateSource,
   AssessmentFormTemplateStatus,
 } from '@transcend-io/privacy-types';
-import {
-  makeGraphQLRequest,
-  type AssessmentSection,
-  type RetentionSchedule,
-  type UserPreview,
-} from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ASSESSMENT_TEMPLATES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import type { AssessmentSection, RetentionSchedule, UserPreview } from './fetchAllAssessments.js';
+import { ASSESSMENT_TEMPLATES } from './gqls/assessmentTemplate.js';
 
 /**
  * Represents an assessment template with various properties and metadata.
@@ -53,10 +49,17 @@ const PAGE_SIZE = 20;
  * Fetch all assessment templates in the organization
  *
  * @param client - GraphQL client
+ * @param options - Optional logger
  * @returns All assessment templates in the organization
  */
 export async function fetchAllAssessmentTemplates(
   client: GraphQLClient,
+  {
+    logger,
+  }: {
+    /** Logger for GraphQL request failures */
+    logger?: Logger;
+  } = {},
 ): Promise<AssessmentTemplate[]> {
   const assessmentTemplates: AssessmentTemplate[] = [];
   let offset = 0;

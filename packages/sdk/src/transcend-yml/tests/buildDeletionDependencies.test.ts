@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 
-import { buildDeletionDependenciesInput } from '../graphql/buildDeletionDependencies.js';
+import { buildDeletionDependenciesInput } from '../buildDeletionDependencies.js';
 
 describe('buildDeletionDependenciesInput', () => {
   it('omits the field when there are no dependencies', () => {

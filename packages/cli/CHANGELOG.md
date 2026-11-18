@@ -1,5 +1,41 @@
 # @transcend-io/cli
 
+## 13.2.1
+
+### Patch Changes
+
+- 7f568ab: Remove `PROMPT_MANAGER` from `TranscendProduct` and reassign prompt-related API scopes to Data Inventory and Structured/Unstructured Discovery product lines. Regenerate `transcend.yml` JSON schemas.
+- Updated dependencies [fb660b4]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/airgap.js-types@14.2.51
+  - @transcend-io/sdk@3.0.1
+
+## 13.2.0
+
+### Minor Changes
+
+- d3584ee: Move the `transcend.yml` pull, sync and codec logic into `@transcend-io/sdk`. Import codecs and sync helpers from the main SDK entry point. Pull and sync no longer print by default. Pass a `logger` (and a `progressReporter` for sync) to get output. Moved log messages no longer use ANSI colors.
+
+### Patch Changes
+
+- 08b28b8: Fix `transcend.yml` push and pull for organization-to-organization copies.
+  - Data subject `active` now applies through `updateSubject`. The removed `toggleSubject` mutation caused every `active` push to fail.
+  - `syncConfigurationToTranscend` records every failure in `SyncResult.errors` with its resource and item, and uses the injected logger.
+  - Enricher `description` is now pulled, and a push no longer clears it when the input omits it.
+  - `createTemplate` now sends the required `type` and `product` fields.
+
+- 3fb7e15: Fix two GraphQL documents that no longer match the schema.
+  - `approveRequest` in the CLI now declares `ApproveRequestInput`. `CommunicationInput` is rejected by the current schema.
+  - The assessments query no longer selects the removed `AttributePromptRunResource` and `AttributePromptGroupResource` types.
+
+- Updated dependencies [08b28b8]
+- Updated dependencies [f99575b]
+- Updated dependencies [1bb32a0]
+- Updated dependencies [d3584ee]
+- Updated dependencies [3fb7e15]
+  - @transcend-io/sdk@3.0.0
+
 ## 13.1.1
 
 ### Patch Changes

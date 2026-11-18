@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 
-import { mergeTranscendInputs, TranscendInput } from '../../index.js';
+import { mergeTranscendInputs, TranscendInput } from '../index.js';
 
 describe('mergeTranscendInputs', () => {
   const test: TranscendInput = {

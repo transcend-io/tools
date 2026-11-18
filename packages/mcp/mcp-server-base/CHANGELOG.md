@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 3.1.0
+
+### Minor Changes
+
+- 581b1a9: Add `requireLocalFilesystem` to tool definitions. The server omits these tools over HTTP. Add `createGraphqlRequestClient` and `TranscendGraphQLBase.requestHeaders()` so SDK functions can reuse the MCP client's auth. Add the `McpTransport` enum. `buildMcpServer` now takes `McpTransport.Stdio` or `McpTransport.Http` instead of a string.
+
 ## 3.0.0
 
 ### Patch Changes

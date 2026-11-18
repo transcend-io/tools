@@ -164,6 +164,39 @@ export class TranscendGraphQLBase {
     return getRequestAuth() ?? this.auth;
   }
 
+  /**
+   * Headers for an outbound request: auth for the current call plus the MCP
+   * attribution headers. Re-read on every call because HTTP auth is per-request.
+   *
+   * The result holds live credentials (bearer token or session cookie). Never
+   * log it or put it in a tool result.
+   *
+   * @throws ToolError when no authentication is configured
+   */
+  requestHeaders(): Record<string, string> {
+    const effectiveAuth = this.effectiveAuth();
+    if (!effectiveAuth) {
+      throw new ToolError(
+        ErrorCode.AUTH_ERROR,
+        'No authentication configured. Provide an API key or session cookie.',
+        false,
+      );
+    }
+
+    const toolCallId = getToolCallIdHeader();
+    const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
+    return {
+      ...authHeaders(effectiveAuth),
+      'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
+      ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+      ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+      ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
+    };
+  }
+
   private async rateLimitWait(): Promise<void> {
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
@@ -208,30 +241,12 @@ export class TranscendGraphQLBase {
           attempt,
         });
 
-        const effectiveAuth = this.effectiveAuth();
-        if (!effectiveAuth) {
-          throw new ToolError(
-            ErrorCode.AUTH_ERROR,
-            'No authentication configured. Provide an API key or session cookie.',
-            false,
-          );
-        }
-
-        const toolCallId = getToolCallIdHeader();
-        const mcpCaller = resolveMcpCallerAttribution();
-        const mcpClientName = resolveMcpClientName();
-        const mcpPackageVersion = resolveMcpPackageVersion();
         const response = await fetch(url, {
           method: 'POST',
           headers: {
-            ...authHeaders(effectiveAuth),
+            ...this.requestHeaders(),
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'User-Agent': TRANSCEND_MCP_USER_AGENT,
-            ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
-            ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
-            ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
-            ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
           },
           body: JSON.stringify({ query: queryString, variables: variables ?? {} }),
           signal: controller.signal,

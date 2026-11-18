@@ -1,18 +1,21 @@
 import path from 'node:path';
 
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  mergeTranscendInputs,
+  parseTranscendYaml,
+  syncConfigurationToTranscend,
+  TranscendInput,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 
-import { TranscendInput } from '../../../codecs.js';
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
-import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
-import { parseTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 /**
  * Sync configuration to Transcend
@@ -57,6 +60,7 @@ async function syncConfiguration({
       classifyService,
       deleteExtraAttributeValues,
       logger,
+      progressReporter: new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic),
     });
     if (!result.success) {
       result.errors.forEach(({ resource, item, message }) => {

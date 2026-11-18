@@ -1,5 +1,15 @@
 # @transcend-io/privacy-types
 
+## 7.0.0
+
+### Major Changes
+
+- 7f568ab: Remove `PROMPT_MANAGER` from `TranscendProduct` and reassign prompt-related API scopes to Data Inventory and Structured/Unstructured Discovery product lines. Regenerate `transcend.yml` JSON schemas.
+
+### Minor Changes
+
+- fb660b4: Add `DocsProduct` for docs.transcend.io and Admin Dashboard route index product titles.
+
 ## 6.8.0
 
 ### Minor Changes

@@ -9,6 +9,7 @@ import * as lazyAuth from '../src/oauth/lazy-auth.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
+import { McpTransport } from '../src/server/transport.js';
 import { defineToolWithCapabilities } from '../src/tools/define-tool-with-capabilities.js';
 import { defineTool, type ToolDefinition } from '../src/tools/types.js';
 import {
@@ -30,7 +31,7 @@ const MCP_APP_CAPABILITIES: ClientCapabilities = {
 
 function testConfig(port: number): TransportConfig {
   return {
-    transport: 'http',
+    transport: McpTransport.Http,
     port,
     host: '127.0.0.1',
     mcpPath: '/mcp',
@@ -207,7 +208,7 @@ describe('buildMcpServer per-tool requireAuth', () => {
             name: 'build-server-test',
             version: '0.0.1',
             tools: [publicTool, protectedTool],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -261,7 +262,7 @@ describe('buildMcpServer instructions', () => {
             version: '0.0.1',
             tools: [publicTool],
             instructions: 'Call docs_list before API tools.',
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -323,7 +324,7 @@ describe('buildMcpServer requireSombra ListTools meta', () => {
             name: 'require-sombra-test',
             version: '0.0.1',
             tools: [publicTool, sombraTool],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -427,7 +428,7 @@ describe('buildMcpServer without UI resources', () => {
             name: 'no-ui-test',
             version: '0.0.1',
             tools: [publicTool],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -501,7 +502,7 @@ describe('buildMcpServer prompts', () => {
                 ],
               },
             ],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -571,7 +572,7 @@ describe('buildMcpServer MCP Apps', () => {
             name: 'ui-test',
             version: '0.0.1',
             tools: [publicTool, capabilityAwareTool()],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),

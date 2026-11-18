@@ -663,6 +663,9 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
+      graphql-request:
+        specifier: ^5.0.0
+        version: 5.2.0(graphql@16.14.2)
       open:
         specifier: ^11.0.0
         version: 11.0.0
@@ -1169,6 +1172,9 @@ importers:
       io-ts:
         specifier: ^2.2.21
         version: 2.2.22(fp-ts@2.16.11)
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.2.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3
@@ -1182,6 +1188,9 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 0.18.3
         version: 0.18.3
+      '@types/js-yaml':
+        specifier: 4.0.9
+        version: 4.0.9
       '@types/json-schema':
         specifier: 7.0.15
         version: 7.0.15

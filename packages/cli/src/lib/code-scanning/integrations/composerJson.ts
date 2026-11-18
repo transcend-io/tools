@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-import { CodePackageSdk } from '../../../codecs.js';
+import { CodePackageSdk } from '@transcend-io/sdk';
+
 import { CodeScanningConfig } from '../types.js';
 
 export const composerJson: CodeScanningConfig = {

@@ -12,6 +12,7 @@ import { resolveMcpDashboardUrl } from './resolve-dashboard-url.js';
 import { resolveMcpGraphqlUrl } from './resolve-graphql-url.js';
 import { createTranscendRestClient, readSombraEnvConfig } from './resolve-sombra-url.js';
 import { runMcpHttp } from './run-http.js';
+import { McpTransport } from './transport.js';
 
 /**
  * Arguments for a custom client factory.
@@ -91,7 +92,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   configureOAuthScopes(options.oauthScopes);
 
   const config = parseTransportArgs();
-  const isHttpTransport = config.transport === 'http';
+  const isHttpTransport = config.transport === McpTransport.Http;
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const { sombraUrl, sombraCustomerKey } = readSombraEnvConfig();
@@ -123,7 +124,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             tools,
             prompts,
             instructions: options.instructions,
-            transport: 'http',
+            transport: McpTransport.Http,
           });
         },
       },
@@ -146,7 +147,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     tools,
     prompts,
     instructions: options.instructions,
-    transport: 'stdio',
+    transport: McpTransport.Stdio,
   });
 
   logger.info(`Starting ${options.name} v${options.version}...`, {
