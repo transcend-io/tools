@@ -28,15 +28,6 @@ const REMOVED_AI_OPERATION =
  * becomes valid, so this list cannot go stale.
  */
 const KNOWN_INVALID: Record<string, string> = {
-  'packages/sdk/src/ai/gqls/agent.ts#AGENTS': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agent.ts#CREATE_AGENT': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agent.ts#UPDATE_AGENTS': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFile.ts#AGENT_FILES': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFile.ts#CREATE_AGENT_FILE': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFile.ts#UPDATE_AGENT_FILES': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFunction.ts#AGENT_FUNCTIONS': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFunction.ts#CREATE_AGENT_FUNCTION': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/agentFunction.ts#UPDATE_AGENT_FUNCTIONS': REMOVED_AI_OPERATION,
   'packages/sdk/src/ai/gqls/largeLanguageModel.ts#LARGE_LANGUAGE_MODELS': REMOVED_AI_OPERATION,
   'packages/sdk/src/ai/gqls/promptRun.ts#ADD_MESSAGES_TO_PROMPT_RUN': REMOVED_AI_OPERATION,
   'packages/sdk/src/ai/gqls/promptThread.ts#PROMPT_THREADS': REMOVED_AI_OPERATION,
