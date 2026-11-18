@@ -15,6 +15,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildMcpServer } from '../src/server/build-server.js';
+import { McpTransport } from '../src/server/transport.js';
 import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation/index.js';
 import { defineTool } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
@@ -64,7 +65,7 @@ async function connectFormlessHost(): Promise<{
         requireAuth: false,
       },
     ],
-    transport: 'stdio',
+    transport: McpTransport.Stdio,
   });
 
   // No elicitation capability, so the gate cannot ask and must mint a token.

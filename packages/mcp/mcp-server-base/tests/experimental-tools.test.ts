@@ -7,6 +7,7 @@ import { experimentalToolsEnabled, TRANSCEND_MCP_EXPERIMENTAL_ENV } from '../src
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
+import { McpTransport } from '../src/server/transport.js';
 import { defineTool, shouldRegisterTool } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -17,7 +18,7 @@ const MCP_HEADERS = {
 
 function testConfig(port: number): TransportConfig {
   return {
-    transport: 'http',
+    transport: McpTransport.Http,
     port,
     host: '127.0.0.1',
     mcpPath: '/mcp',
@@ -170,7 +171,7 @@ describe('buildMcpServer omits experimental tools by default', () => {
             name: 'experimental-off-test',
             version: '0.0.1',
             tools: [stableTool, experimentalTool],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),
@@ -221,7 +222,7 @@ describe('buildMcpServer loads experimental tools when TRANSCEND_MCP_EXPERIMENTA
             name: 'experimental-on-test',
             version: '0.0.1',
             tools: [stableTool, experimentalTool],
-            transport: 'http',
+            transport: McpTransport.Http,
           }),
       },
       testConfig(0),

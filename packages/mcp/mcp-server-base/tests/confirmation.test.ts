@@ -20,6 +20,7 @@ import {
 import { mcpSessionContext, type McpSession } from '../src/mcp-session-context.js';
 import { MCP_SKIP_CONFIRMATION_ENV } from '../src/oauth/env.js';
 import { buildMcpServer } from '../src/server/build-server.js';
+import { McpTransport } from '../src/server/transport.js';
 import { ApprovalTokenStore } from '../src/tools/approval-tokens.js';
 import {
   APPROVAL_TOKEN_ARG,
@@ -910,7 +911,7 @@ describe('the gate against a real SDK server', () => {
    */
   async function callOverTransport(
     respond: () => Promise<ElicitResult>,
-    transport: 'stdio' | 'http' = 'stdio',
+    transport: McpTransport = McpTransport.Stdio,
     declaresElicitation = true,
   ): Promise<{
     /** Parsed tool result payload */
@@ -965,7 +966,7 @@ describe('the gate against a real SDK server', () => {
   it('asks over http when the client can render a form', async () => {
     const { payload, listed, mutate, asked } = await callOverTransport(
       async () => ({ action: 'accept', content: {} }),
-      'http',
+      McpTransport.Http,
     );
 
     expect(listed).toContain('test_cancel');
@@ -979,7 +980,7 @@ describe('the gate against a real SDK server', () => {
     // is how a triage run ends in the model explaining a dead end instead of working.
     const { listed } = await callOverTransport(
       async () => ({ action: 'accept', content: {} }),
-      'http',
+      McpTransport.Http,
       false,
     );
 
@@ -991,7 +992,7 @@ describe('the gate against a real SDK server', () => {
     // list or a guess still reaches `tools/call`.
     const { payload, isError, mutate } = await callOverTransport(
       async () => ({ action: 'accept', content: {} }),
-      'http',
+      McpTransport.Http,
       false,
     );
 
@@ -1005,7 +1006,7 @@ describe('the gate against a real SDK server', () => {
     // The token route needs nothing from the host, so there is nothing to withhold.
     const { listed, payload } = await callOverTransport(
       async () => ({ action: 'accept', content: {} }),
-      'stdio',
+      McpTransport.Stdio,
       false,
     );
 
@@ -1018,7 +1019,7 @@ describe('the gate against a real SDK server', () => {
     // relayed by the very model the gate exists to interpose on.
     const { payload, mutate } = await callOverTransport(async () => {
       throw new Error('host refused to render the form');
-    }, 'http');
+    }, McpTransport.Http);
 
     expect(mutate).not.toHaveBeenCalled();
     expect(payload.code).toBe(ConfirmationCode.Unavailable);
@@ -1070,7 +1071,7 @@ describe('the gate against a real SDK server', () => {
     // Same host, no token store behind it, so the answer stands as given.
     const { payload, mutate } = await callOverTransport(
       async () => ({ action: 'decline' }),
-      'http',
+      McpTransport.Http,
     );
 
     expect(mutate).not.toHaveBeenCalled();
@@ -1123,7 +1124,7 @@ describe('the gate against a real SDK server', () => {
       name: 'confirmation-probe',
       version: '0.0.1',
       tools: [{ ...gatedTool(mutate), requireAuth: false }],
-      transport: 'http',
+      transport: McpTransport.Http,
     });
     const client = new Client(
       { name: 'cursor', version: '1.0.0' },

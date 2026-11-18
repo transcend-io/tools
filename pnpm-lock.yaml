@@ -663,6 +663,9 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
+      graphql-request:
+        specifier: ^5.0.0
+        version: 5.2.0(graphql@16.14.2)
       open:
         specifier: ^11.0.0
         version: 11.0.0

@@ -44,13 +44,19 @@ import {
 } from '../tools/define-tool-with-capabilities.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import { toolInputSchema } from '../tools/input-schema.js';
-import { isVisibleToModel, shouldRegisterTool, type ToolDefinition } from '../tools/types.js';
+import {
+  isAvailableOnTransport,
+  isVisibleToModel,
+  shouldRegisterTool,
+  type ToolDefinition,
+} from '../tools/types.js';
 import {
   buildUiResourceMeta,
   MCP_APP_MIME_TYPE,
   readUiResourceHtml,
   type UiResourceDefinition,
 } from '../tools/ui-resource.js';
+import { McpTransport } from './transport.js';
 
 export interface BuildMcpServerOptions {
   /** Server display name */
@@ -64,7 +70,7 @@ export interface BuildMcpServerOptions {
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
   /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
-  transport: 'stdio' | 'http';
+  transport: McpTransport;
 }
 
 /**
@@ -75,7 +81,7 @@ export interface BuildMcpServerOptions {
  * is interposing on, leaving elicitation as the only one.
  */
 function resolveConfirmationGate(options: BuildMcpServerOptions): ConfirmationGate {
-  if (options.transport === 'stdio') {
+  if (options.transport === McpTransport.Stdio) {
     return { policy: ConfirmationPolicy.ElicitOrToken, tokens: new ApprovalTokenStore() };
   }
   return { policy: ConfirmationPolicy.ElicitOnly };
@@ -219,7 +225,12 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   const seenNames = new Set<string>();
 
   const skippedExperimental: string[] = [];
+  const skippedLocalFilesystem: string[] = [];
   for (const tool of options.tools) {
+    if (!isAvailableOnTransport(tool, options.transport)) {
+      skippedLocalFilesystem.push(tool.name);
+      continue;
+    }
     if (!shouldRegisterTool(tool)) {
       skippedExperimental.push(tool.name);
       continue;
@@ -266,6 +277,14 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       `Skipped ${skippedExperimental.length} experimental tools (set ` +
         `${TRANSCEND_MCP_EXPERIMENTAL_ENV}=1 to load)`,
       { tools: skippedExperimental },
+    );
+  }
+
+  if (skippedLocalFilesystem.length > 0) {
+    logger.info(
+      `Skipped ${skippedLocalFilesystem.length} tools that need a local filesystem ` +
+        `(not available over ${options.transport})`,
+      { tools: skippedLocalFilesystem },
     );
   }
 
