@@ -88,6 +88,11 @@ export function normalizeRoute(input: string): string {
     value = parsed.pathname;
   } else {
     value = value.split('#')[0]!.split('?')[0]!;
+    // A URL pasted without its scheme, such as `app.transcend.io/privacy-center`.
+    const [firstSegment = '', ...rest] = value.replace(/^\/+/, '').split('/');
+    if (APP_HOST_PATTERN.test(firstSegment)) {
+      value = rest.join('/');
+    }
   }
   const segments = value.split('/').filter(Boolean);
   return `/${segments.join('/')}`;
@@ -241,7 +246,8 @@ export function resolveRouteProduct(
 
 /**
  * Normalizes a docs URL for comparison: path only, lowercase, no `.md`, no
- * trailing slash. The route index uses extensionless URLs, llms.txt uses `.md`.
+ * trailing slash. The route index uses extensionless URLs, and an older llms.txt
+ * format used `.md`.
  */
 export function normalizeDocUrl(url: string): string {
   let pathname: string;

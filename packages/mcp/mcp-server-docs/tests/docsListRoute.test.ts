@@ -1,3 +1,4 @@
+import { toolInputSchema } from '@transcend-io/mcp-server-base';
 import { DocsProduct } from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -9,7 +10,7 @@ import {
   resetDocsCachesForTests,
   RouteIndexUnavailableError,
 } from '../src/docsIndex.js';
-import { createDocsListTool } from '../src/tools/docs_list.js';
+import { createDocsListTool, DocsListSchema } from '../src/tools/docs_list.js';
 
 const LLMS_TXT = [
   '## General',
@@ -165,6 +166,7 @@ describe('getRouteIndex', () => {
   it('throws RouteIndexUnavailableError on 404', async () => {
     mockFetch(() => new Response('nope', { status: 404 }));
     await expect(getRouteIndex()).rejects.toBeInstanceOf(RouteIndexUnavailableError);
+    await expect(getRouteIndex()).rejects.toThrow(/HTTP 404/);
   });
 
   it('throws RouteIndexUnavailableError on invalid JSON', async () => {
@@ -408,6 +410,40 @@ describe('docs_list tiers', () => {
     expect(result.count).toBe(2);
   });
 
+  it('keeps rows for search when a busy route has more pages than the cap', async () => {
+    const busy = Array.from({ length: 17 }, (_, i) => page(`Busy ${i}`, `other/busy-${i}`));
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            routes: { '/busy': { primary: [], mentions: busy } },
+          }),
+          { status: 200 },
+        ),
+    );
+    const result = (await createDocsListTool().handler({
+      route: '/busy',
+      query: 'domains',
+    })) as ListResult;
+
+    expect(result.data.filter((row) => row.match === 'mention')).toHaveLength(12);
+    expect(result.data.filter((row) => row.match === 'search').length).toBeGreaterThan(0);
+    expect(result.count).toBeLessThanOrEqual(20);
+    expect(result.paginationNote).toContain('Showing 12 of 17');
+  });
+
+  it('does not claim search results when the query matched nothing', async () => {
+    withProducts();
+    const result = (await createDocsListTool().handler({
+      route: '/privacy-center/general-settings',
+      query: 'zzzznomatch',
+    })) as ListResult;
+
+    expect(result.data.some((row) => row.match === 'search')).toBe(false);
+    expect(result.paginationNote).not.toContain("Pages with match 'search'");
+    expect(result.paginationNote).toContain('No full-text results');
+  });
+
   it('caps route plus query at 20 rows total', async () => {
     const many = Array.from({ length: 15 }, (_, i) =>
       page(`Domains ${i}`, `privacy-center/p-${i}`),
@@ -444,8 +480,9 @@ describe('docs_list tiers', () => {
     })) as ListResult;
     expect(result.count).toBe(20);
     expect(result.data.slice(0, 5).every((row) => row.match === 'primary')).toBe(true);
-    expect(result.data.slice(5, 15).every((row) => row.match === 'product')).toBe(true);
-    expect(result.data.slice(15).every((row) => row.match === 'search')).toBe(true);
+    // Product rows are capped at 5 when a query is present, leaving 10 for search.
+    expect(result.data.slice(5, 10).every((row) => row.match === 'product')).toBe(true);
+    expect(result.data.slice(10).every((row) => row.match === 'search')).toBe(true);
   });
 
   it('rejects an unknown product and lists the valid titles', async () => {
@@ -468,6 +505,38 @@ describe('docs_list tiers', () => {
     await expect(tool.handler({ product: 'Privacy Center' })).rejects.toThrow(
       /no product data.*Use query/,
     );
+  });
+
+  it('rejects a blank route', async () => {
+    withProducts();
+    await expect(createDocsListTool().handler({ route: '  ' })).rejects.toThrow(/route was empty/);
+  });
+
+  it('reports an invalid index with the failing path, not a JSON dump', async () => {
+    mockFetch(() => new Response('{"routes":{"/a":{"primary":[{"title":1}]}}}', { status: 200 }));
+    const error = await createDocsListTool()
+      .handler({ route: '/a' })
+      .catch((caught: unknown) => caught as Error);
+    expect((error as Error).message).toMatch(/invalid shape at routes\.\/a\.primary\.0\.title/);
+    expect((error as Error).message).not.toContain('"code"');
+  });
+
+  it('parses product through the schema, case-insensitively', () => {
+    expect(DocsListSchema.parse({ product: 'privacy CENTER' }).product).toBe(
+      DocsProduct.PrivacyCenter,
+    );
+    const bad = DocsListSchema.safeParse({ product: 'Billing' });
+    expect(bad.success).toBe(false);
+    expect(bad.error?.issues[0]?.message).toContain(
+      `Valid products: ${Object.values(DocsProduct).join(', ')}`,
+    );
+  });
+
+  it('lists every product as an enum in the tool input schema', () => {
+    const schema = toolInputSchema(DocsListSchema) as {
+      properties: { product: { enum?: string[] } };
+    };
+    expect(schema.properties.product.enum).toEqual(Object.values(DocsProduct));
   });
 
   it('reports an unavailable index for product lookups', async () => {

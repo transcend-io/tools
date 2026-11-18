@@ -49,6 +49,14 @@ describe('normalizeRoute', () => {
     expect(normalizeRoute('  ')).toBe('/');
   });
 
+  it('drops an app host pasted without a scheme', () => {
+    expect(normalizeRoute('app.transcend.io/privacy-center/general-settings')).toBe(
+      '/privacy-center/general-settings',
+    );
+    expect(normalizeRoute('app.eu.transcend.io/requests?a=1')).toBe('/requests');
+    expect(normalizeRoute('app.transcend.io')).toBe('/');
+  });
+
   it('rejects URLs that are not app dashboard hosts', () => {
     expect(() => normalizeRoute('https://evil.example.com/requests')).toThrow(/app\.transcend\.io/);
     expect(() => normalizeRoute('https://app.transcend.io.evil.com/requests')).toThrow(
