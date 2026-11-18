@@ -236,7 +236,9 @@ export async function syncConfigurationToTranscend(
 
   if (teams) {
     const teamsSuccess = await syncTeams(client, teams, { logger });
-    encounteredError = encounteredError || !teamsSuccess;
+    if (!teamsSuccess) {
+      recordError('teams', 'Failed to sync teams');
+    }
   }
 
   // Sync email templates
@@ -250,7 +252,7 @@ export async function syncConfigurationToTranscend(
           await syncTemplate(client, template, { logger });
           logger.info(`Successfully synced template "${template.title}"!`);
         } catch (err) {
-          encounteredError = true;
+          recordError('templates', (err as Error).message, template.title);
           logger.error(`Failed to sync template "${template.title}"! - ${(err as Error).message}`);
         }
       },
@@ -264,19 +266,25 @@ export async function syncConfigurationToTranscend(
   // Sync business entities
   if (businessEntities) {
     const businessEntitySuccess = await syncBusinessEntities(client, businessEntities, { logger });
-    encounteredError = encounteredError || !businessEntitySuccess;
+    if (!businessEntitySuccess) {
+      recordError('business-entities', 'Failed to sync business-entities');
+    }
   }
 
   // Sync vendors
   if (vendors) {
     const vendorsSuccess = await syncVendors(client, vendors, { logger });
-    encounteredError = encounteredError || !vendorsSuccess;
+    if (!vendorsSuccess) {
+      recordError('vendors', 'Failed to sync vendors');
+    }
   }
 
   // Sync data categories
   if (dataCategories) {
     const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, { logger });
-    encounteredError = encounteredError || !dataCategoriesSuccess;
+    if (!dataCategoriesSuccess) {
+      recordError('data-categories', 'Failed to sync data-categories');
+    }
   }
 
   // Sync processing purposes
@@ -284,19 +292,25 @@ export async function syncConfigurationToTranscend(
     const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes, {
       logger,
     });
-    encounteredError = encounteredError || !processingPurposesSuccess;
+    if (!processingPurposesSuccess) {
+      recordError('processing-purposes', 'Failed to sync processing-purposes');
+    }
   }
 
   // Sync partitions
   if (partitions) {
     const partitionsSuccess = await syncPartitions(client, partitions, { logger });
-    encounteredError = encounteredError || !partitionsSuccess;
+    if (!partitionsSuccess) {
+      recordError('partitions', 'Failed to sync partitions');
+    }
   }
 
   // Sync cookies
   if (cookies) {
     const cookiesSuccess = await syncCookies(client, cookies, { logger });
-    encounteredError = encounteredError || !cookiesSuccess;
+    if (!cookiesSuccess) {
+      recordError('cookies', 'Failed to sync cookies');
+    }
   }
 
   // Sync action item collections
@@ -306,7 +320,9 @@ export async function syncConfigurationToTranscend(
       actionItemCollections,
       { logger },
     );
-    encounteredError = encounteredError || !actionItemCollectionsSuccess;
+    if (!actionItemCollectionsSuccess) {
+      recordError('action-item-collections', 'Failed to sync action-item-collections');
+    }
   }
 
   // Sync attributes
@@ -328,7 +344,7 @@ export async function syncConfigurationToTranscend(
           });
           logger.info(`Successfully synced attribute "${attribute.name}"!`);
         } catch (err) {
-          encounteredError = true;
+          recordError('attributes', (err as Error).message, attribute.name);
           logger.error(`Failed to sync attribute "${attribute.name}"! - ${(err as Error).message}`);
         }
       },
@@ -342,7 +358,9 @@ export async function syncConfigurationToTranscend(
   // Sync action items
   if (actionItems) {
     const actionItemsSuccess = await syncActionItems(client, actionItems, { logger });
-    encounteredError = encounteredError || !actionItemsSuccess;
+    if (!actionItemsSuccess) {
+      recordError('action-items', 'Failed to sync action-items');
+    }
   }
 
   // Sync preflight checks
@@ -361,7 +379,7 @@ export async function syncConfigurationToTranscend(
           });
           logger.info(`Successfully synced preflight check "${preflight.title}"!`);
         } catch (err) {
-          encounteredError = true;
+          recordError('preflights', (err as Error).message, preflight.title);
           logger.error(
             `Failed to sync preflight check "${preflight.title}"! - ${(err as Error).message}`,
           );
@@ -383,9 +401,12 @@ export async function syncConfigurationToTranscend(
       async (identifier) => {
         const existing = identifierByName[identifier.name];
         if (!existing) {
-          throw new Error(
+          recordError(
+            'identifiers',
             `Failed to find identifier with name: ${identifier.type}. Should have been auto-created by cli.`,
+            identifier.name,
           );
+          return;
         }
 
         logger.info(`Syncing identifier "${identifier.type}"...`);
@@ -399,8 +420,8 @@ export async function syncConfigurationToTranscend(
           });
           logger.info(`Successfully synced identifier "${identifier.type}"!`);
         } catch (err) {
-          encounteredError = true;
-          logger.info(
+          recordError('identifiers', (err as Error).message, identifier.name);
+          logger.error(
             `Failed to sync identifier "${identifier.type}"! - ${(err as Error).message}`,
           );
         }
@@ -422,9 +443,12 @@ export async function syncConfigurationToTranscend(
       async (action) => {
         const existing = existingActions.find((act) => act.type === action.type);
         if (!existing) {
-          throw new Error(
+          recordError(
+            'actions',
             `Failed to find action with type: ${action.type}. Should have already existing in the organization.`,
+            action.type,
           );
+          return;
         }
 
         logger.info(`Syncing action "${action.type}"...`);
@@ -440,7 +464,7 @@ export async function syncConfigurationToTranscend(
           );
           logger.info(`Successfully synced action "${action.type}"!`);
         } catch (err) {
-          encounteredError = true;
+          recordError('actions', (err as Error).message, action.type);
           logger.error(`Failed to sync action "${action.type}"! - ${(err as Error).message}`);
         }
       },
@@ -461,9 +485,12 @@ export async function syncConfigurationToTranscend(
       async (dataSubject) => {
         const existing = existingDataSubjects.find((subj) => subj.type === dataSubject.type);
         if (!existing) {
-          throw new Error(
+          recordError(
+            'data-subjects',
             `Failed to find data subject with type: ${dataSubject.type}. Should have already existing in the organization.`,
+            dataSubject.type,
           );
+          return;
         }
 
         logger.info(`Syncing data subject "${dataSubject.type}"...`);
@@ -476,7 +503,6 @@ export async function syncConfigurationToTranscend(
           });
           logger.info(`Successfully synced data subject "${dataSubject.type}"!`);
         } catch (err) {
-          encounteredError = true;
           // supportsAuthorizedAgent is gated on the Authorized Agents feature being
           // enabled for the organization; surface a clearer hint than the raw API error
           const hint =
@@ -484,7 +510,8 @@ export async function syncConfigurationToTranscend(
             /authorized.agent/i.test((err as Error).message)
               ? ' (enable the Authorized Agents feature for this organization before setting "supportsAuthorizedAgent")'
               : '';
-          logger.info(
+          recordError('data-subjects', `${(err as Error).message}${hint}`, dataSubject.type);
+          logger.error(
             `Failed to sync data subject "${dataSubject.type}"! - ${(err as Error).message}${hint}`,
           );
         }
@@ -499,7 +526,9 @@ export async function syncConfigurationToTranscend(
   // Sync data flows
   if (dataFlows) {
     const syncedDataFlows = await syncDataFlows(client, dataFlows, { classifyService, logger });
-    encounteredError = encounteredError || !syncedDataFlows;
+    if (!syncedDataFlows) {
+      recordError('data-flows', 'Failed to sync data-flows');
+    }
   }
 
   // Sync privacy center
@@ -520,13 +549,17 @@ export async function syncConfigurationToTranscend(
   // Sync messages
   if (messages) {
     const messagesSuccess = await syncIntlMessages(client, messages, { logger });
-    encounteredError = encounteredError || !messagesSuccess;
+    if (!messagesSuccess) {
+      recordError('messages', 'Failed to sync messages');
+    }
   }
 
   // Sync policies
   if (policies) {
     const policiesSuccess = await syncPolicies(client, policies, { logger });
-    encounteredError = encounteredError || !policiesSuccess;
+    if (!policiesSuccess) {
+      recordError('policies', 'Failed to sync policies');
+    }
   }
 
   // Store dependency updates
@@ -555,7 +588,9 @@ export async function syncConfigurationToTranscend(
         }
       }
     });
-    encounteredError = encounteredError || !success;
+    if (!success) {
+      recordError('data-silos', 'Failed to sync data-silos');
+    }
   }
 
   // Dependencies updated at the end after all data silos are created
@@ -564,7 +599,9 @@ export async function syncConfigurationToTranscend(
       input: dependencyUpdates,
       logger,
     });
-    encounteredError = encounteredError || !dependenciesSuccess;
+    if (!dependenciesSuccess) {
+      recordError('data-silo-dependencies', 'Failed to sync data-silo-dependencies');
+    }
   }
 
   // Update processing activities
@@ -572,7 +609,9 @@ export async function syncConfigurationToTranscend(
     const processingActivitySuccess = await syncProcessingActivities(client, processingActivities, {
       logger,
     });
-    encounteredError = encounteredError || !processingActivitySuccess;
+    if (!processingActivitySuccess) {
+      recordError('processing-activities', 'Failed to sync processing-activities');
+    }
   }
 
   if (publishToPrivacyCenter) {

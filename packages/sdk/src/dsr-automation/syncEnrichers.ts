@@ -57,6 +57,8 @@ export interface Enricher {
   id: string;
   /** Title of enricher */
   title: string;
+  /** Internal description of why the enricher is needed */
+  description?: string;
   /** URL of enricher */
   url: string;
   /** Server silo */
@@ -201,7 +203,8 @@ export async function syncEnricher(
           phoneNumbers: enricher.phoneNumbers,
           regionList: enricher.regionList,
           dataSubjectIds,
-          description: enricher.description || '',
+          // Leave the stored description alone when the input does not set one
+          description: enricher.description,
           inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier]!.id : undefined,
           identifiers: enricher['output-identifiers']!.map((id) => identifierByName[id]!.id),
           ...(existingEnricher.type === EnricherType.Sombra ? {} : { actions: actionUpdates }),
