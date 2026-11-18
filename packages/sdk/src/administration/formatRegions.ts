@@ -1,6 +1,6 @@
 import { IsoCountrySubdivisionCode, IsoCountryCode } from '@transcend-io/privacy-types';
 
-interface RegionInput {
+export interface RegionInput {
   /** The country */
   country?: IsoCountryCode;
   /** The country subdivision */

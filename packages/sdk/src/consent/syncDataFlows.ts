@@ -21,7 +21,7 @@ export interface DataFlowAttributeInput {
  *
  * @see https://app.transcend.io/consent-manager/data-flows/approved
  */
-interface DataFlowInput {
+export interface DataFlowInput {
   /** Value of data flow */
   value: string;
   /** Type of data flow */

@@ -6,5 +6,9 @@ export * from './gqls/assessment.js';
 export * from './gqls/assessmentTemplate.js';
 export * from './parseAssessmentDisplayLogic.js';
 export * from './parseAssessmentRiskLogic.js';
-export * from './syncActionItemCollections.js';
-export * from './syncActionItems.js';
+export {
+  createActionItemCollection,
+  syncActionItemCollections,
+  updateActionItemCollection,
+} from './syncActionItemCollections.js';
+export { createActionItems, syncActionItems, updateActionItem } from './syncActionItems.js';

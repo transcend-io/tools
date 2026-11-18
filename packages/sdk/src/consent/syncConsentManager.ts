@@ -43,7 +43,7 @@ import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
 
-interface ConsentManageExperienceInput {
+export interface ConsentManageExperienceInput {
   /** Name of experience */
   name: string;
   /** Display name of experience */
@@ -83,7 +83,7 @@ interface ConsentManageExperienceInput {
   consentUiVariantSlug?: string;
 }
 
-interface ConsentManagerInput {
+export interface ConsentManagerInput {
   /** Airgap version */
   version?: string;
   /** Bundle URLs per bundle type */

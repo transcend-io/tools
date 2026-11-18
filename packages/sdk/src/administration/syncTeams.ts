@@ -8,7 +8,7 @@ import { fetchAllTeams, type Team } from './fetchAllTeams.js';
 import { resolveParentTeamIdsByName } from './fetchParentOrganizationTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
 
-interface TeamInput {
+export interface TeamInput {
   /** The display name of the team */
   name: string;
   /** Team description */

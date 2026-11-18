@@ -13,7 +13,7 @@ import {
   CREATE_SOFTWARE_DEVELOPMENT_KIT,
 } from './gqls/softwareDevelopmentKit.js';
 
-interface SoftwareDevelopmentKitInput {
+export interface SoftwareDevelopmentKitInput {
   /** Title of software development kit */
   name: string;
   /** Code package type */
