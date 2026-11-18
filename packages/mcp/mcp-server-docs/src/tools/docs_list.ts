@@ -52,8 +52,8 @@ export const DocsListSchema = z.object({
         'with section or product.',
     ),
   product: DashboardDocsProductSchema.optional().describe(
-    'List docs for one Transcend dashboard product, overview pages first (case-insensitive ' +
-      'title). Combine with query to search only within that product. Cannot be combined with ' +
+    `List docs for one Transcend dashboard product, overview pages first. One of: ${dashboardDocsProductTitles.join(', ')} ` +
+      '(case-insensitive). Platform covers admin, infrastructure, prompts, and action items. Combine with query to search only within that product. Cannot be combined with ' +
       'section or route.',
   ),
   section: z
@@ -122,7 +122,7 @@ async function listDocsByProduct({
   if (!data.products) {
     throw new ToolError(
       ErrorCode.API_ERROR,
-      'The docs index has no product lists yet, so product is not available. Use query to ' +
+      'The docs index has no product data, so product is not available. Use query to ' +
         'search the docs instead.',
     );
   }
@@ -154,10 +154,12 @@ async function listDocsByProduct({
   return createListResult(toProductRows(page, title), {
     totalCount: pages.length,
     paginationNote:
-      pages.length > page.length
-        ? `Showing ${page.length} of ${pages.length} ${title} pages, overview pages first. ` +
-          'There is no paging: add query with product to search within them.'
-        : `${title} pages, overview pages first.`,
+      pages.length === 0
+        ? `No ${title} pages are published yet. Use query to search the docs instead.`
+        : pages.length > page.length
+          ? `Showing ${page.length} of ${pages.length} ${title} pages, overview pages first. ` +
+            'There is no paging: add query with product to search within them.'
+          : `${title} pages, overview pages first.`,
   });
 }
 

@@ -52,6 +52,21 @@ const ROUTES_WITH_PRODUCTS_JSON = JSON.stringify({
   ],
 });
 
+const ADMIN_USERS = page('Managing users', 'admin/users');
+const ADMIN_OVERVIEW = page('Platform overview', 'admin/overview', 'Overviews & Concepts');
+
+const platformJson = (platformPages: Array<ReturnType<typeof page>>) =>
+  JSON.stringify({
+    routes: {
+      '/admin/users': { product: 'Platform', primary: [ADMIN_USERS], mentions: [] },
+    },
+    products: { 'Privacy Center': PRODUCT_PAGES, Platform: platformPages },
+    productPrefixes: [
+      { prefix: '/admin', product: 'Platform' },
+      { prefix: '/privacy-center', product: 'Privacy Center' },
+    ],
+  });
+
 const ROUTES_JSON = JSON.stringify({
   routes: {
     '/privacy-center/general-settings': {
@@ -435,7 +450,7 @@ describe('docs_list tiers', () => {
   it('rejects an unknown product and lists the valid titles', async () => {
     withProducts();
     await expect(createDocsListTool().handler({ product: 'Billing' })).rejects.toThrow(
-      /Unknown product 'Billing'\. Valid products: Data Inventory, System Discovery, .*Assessments/,
+      /Unknown product 'Billing'\. Valid products: Data Inventory, System Discovery, .*Assessments, Platform\./,
     );
   });
 
@@ -448,7 +463,7 @@ describe('docs_list tiers', () => {
     expect(result.data.map((row) => row.match)).toEqual(['primary', 'mention']);
 
     await expect(tool.handler({ product: 'Privacy Center' })).rejects.toThrow(
-      /no product lists yet.*Use query/,
+      /no product data.*Use query/,
     );
   });
 
@@ -457,5 +472,47 @@ describe('docs_list tiers', () => {
     await expect(createDocsListTool().handler({ product: 'Privacy Center' })).rejects.toThrow(
       /route index is not available/,
     );
+  });
+
+  it('resolves /admin/users to Platform and returns tier 1 plus a small product tier', async () => {
+    mockFetch(() => new Response(platformJson([ADMIN_OVERVIEW, ADMIN_USERS]), { status: 200 }));
+    const result = (await createDocsListTool().handler({ route: '/admin/users' })) as ListResult;
+
+    expect(matches(result)).toEqual([
+      ['primary', ADMIN_USERS.title],
+      ['product', ADMIN_OVERVIEW.title],
+    ]);
+    expect(result.data[1]?.product).toBe('Platform');
+  });
+
+  it('returns only tier 1 for a Platform route when the Platform product list is empty', async () => {
+    mockFetch(() => new Response(platformJson([]), { status: 200 }));
+    const result = (await createDocsListTool().handler({ route: '/admin/users' })) as ListResult;
+
+    expect(matches(result)).toEqual([['primary', ADMIN_USERS.title]]);
+  });
+
+  it('accepts product Platform in any case and returns its pages', async () => {
+    mockFetch(() => new Response(platformJson([ADMIN_OVERVIEW, ADMIN_USERS]), { status: 200 }));
+    const result = (await createDocsListTool().handler({ product: 'platform' })) as ListResult;
+
+    expect(matches(result)).toEqual([
+      ['product', ADMIN_OVERVIEW.title],
+      ['product', ADMIN_USERS.title],
+    ]);
+  });
+
+  it('accepts product Platform with no pages and says so', async () => {
+    mockFetch(() => new Response(platformJson([]), { status: 200 }));
+    const result = (await createDocsListTool().handler({ product: 'Platform' })) as ListResult;
+
+    expect(result.count).toBe(0);
+    expect(result.paginationNote).toContain('No Platform pages are published yet');
+    expect(result.paginationNote).toContain('query');
+  });
+
+  it('lists Platform in the product argument description', () => {
+    const shape = createDocsListTool().zodSchema.shape.product;
+    expect(shape.description).toContain('Platform');
   });
 });

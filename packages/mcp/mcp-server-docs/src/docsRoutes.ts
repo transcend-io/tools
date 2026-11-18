@@ -53,6 +53,7 @@ export enum DashboardDocsProduct {
   PrivacyCenter = 'Privacy Center',
   WebAuditor = 'Web Auditor',
   Assessments = 'Assessments',
+  Platform = 'Platform',
 }
 
 /** One docs page returned for a route lookup. */
