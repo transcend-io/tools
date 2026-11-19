@@ -127,14 +127,14 @@ const pullOptions = {
 describe('consent-manager prefixModules pull', () => {
   it('fills prefixModules with name, catalog, version, and config', async () => {
     const { client } = buildClient([
-      buildNode('geo-gate', { version: '2.1.0', config: '{"regions":["EU"]}' }),
+      buildNode('geo-gate', { version: '2.1.0', config: '{"region":"EU"}' }),
       buildNode('custom-prefix', { version: '0.3.0', organizationId: 'org-1' }),
     ]);
 
     const result = await pullTranscendConfiguration(client, pullOptions);
 
     expect(result['consent-manager']?.prefixModules).toEqual([
-      { name: 'geo-gate', catalog: 'transcend', version: '2.1.0', config: '{"regions":["EU"]}' },
+      { name: 'geo-gate', catalog: 'transcend', version: '2.1.0', config: { region: 'EU' } },
       { name: 'custom-prefix', catalog: 'organization', version: '0.3.0', config: undefined },
     ]);
   });
@@ -146,6 +146,20 @@ describe('consent-manager prefixModules pull', () => {
     const result = await pullTranscendConfiguration(client, pullOptions);
 
     expect(result['consent-manager']?.prefixModules).toHaveLength(51);
+  });
+
+  it('rejects config JSON that is not a string map', async () => {
+    const { client } = buildClient([buildNode('geo-gate', { config: '{"region":["EU"]}' })]);
+
+    await expect(pullTranscendConfiguration(client, pullOptions)).rejects.toThrow(/invalid config/);
+  });
+
+  it('rejects malformed config JSON', async () => {
+    const { client } = buildClient([buildNode('geo-gate', { config: '{not-json' })]);
+
+    await expect(pullTranscendConfiguration(client, pullOptions)).rejects.toThrow(
+      /invalid config JSON/,
+    );
   });
 
   it('omits prefixModules when the bundle has none', async () => {
@@ -176,7 +190,7 @@ describe('consent-manager prefixModules push', () => {
       {
         'consent-manager': {
           prefixModules: [
-            { name: 'geo-gate', catalog: 'transcend', version: '2.1.0', config: '{"a":1}' },
+            { name: 'geo-gate', catalog: 'transcend', version: '2.1.0', config: { a: '1' } },
           ],
         },
       },

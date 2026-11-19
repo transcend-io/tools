@@ -2333,7 +2333,10 @@
                 "type": "object",
                 "properties": {
                   "config": {
-                    "type": "string"
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 }
               }

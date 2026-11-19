@@ -35,6 +35,8 @@ import {
   UnknownRequestPolicy,
   TelemetryPartitionStrategy,
   SignedIabAgreementOption,
+  PrefixModuleCatalogCodec,
+  PrefixModuleConfig,
   RegionDetectionMethod,
   PreflightRequestStatus,
   AttributeSupportedResourceType,
@@ -1152,13 +1154,13 @@ export const ConsentManagerPrefixModuleInput = t.intersection([
     /** Name of the module */
     name: t.string,
     /** Catalog the module comes from */
-    catalog: t.keyof({ transcend: null, organization: null }),
+    catalog: PrefixModuleCatalogCodec,
     /** Version of the module */
     version: t.string,
   }),
   t.partial({
-    /** JSON config of the module on this bundle */
-    config: t.string,
+    /** String config values for the module on this bundle */
+    config: PrefixModuleConfig,
   }),
 ]);
 

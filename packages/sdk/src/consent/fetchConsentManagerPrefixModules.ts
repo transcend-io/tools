@@ -1,3 +1,8 @@
+import {
+  parsePrefixModuleConfigFromJson,
+  PrefixModuleCatalog,
+  type PrefixModuleConfig,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -14,11 +19,11 @@ export interface ConsentManagerPrefixModule {
   /** Name of the module */
   name: string;
   /** Catalog the module comes from: provided by Transcend or owned by the organization */
-  catalog: 'transcend' | 'organization';
+  catalog: PrefixModuleCatalog;
   /** Version of the module that is attached */
   version: string;
-  /** JSON config of the module on this bundle */
-  config?: string;
+  /** Config of the module on this bundle */
+  config?: PrefixModuleConfig;
 }
 
 /**
@@ -53,15 +58,24 @@ export async function fetchConsentManagerPrefixModules(
       },
     );
     prefixModules.push(
-      ...nodes.map(({ config, airgapPrefixModuleRelease: { version, airgapPrefixModule } }) => ({
-        name: airgapPrefixModule.name,
-        catalog: airgapPrefixModule.organizationId
-          ? ('organization' as const)
-          : ('transcend' as const),
-        version,
-        // Backend returns null when unset; omit from yaml rather than writing null
-        config: config || undefined,
-      })),
+      ...nodes.map(({ config, airgapPrefixModuleRelease: { version, airgapPrefixModule } }) => {
+        const name = airgapPrefixModule.name;
+        let parsedConfig: PrefixModuleConfig | undefined;
+        if (config) {
+          parsedConfig = parsePrefixModuleConfigFromJson(config, { moduleName: name });
+          if (Object.keys(parsedConfig).length === 0) {
+            parsedConfig = undefined;
+          }
+        }
+        return {
+          name,
+          catalog: airgapPrefixModule.organizationId
+            ? PrefixModuleCatalog.Organization
+            : PrefixModuleCatalog.Transcend,
+          version,
+          config: parsedConfig,
+        };
+      }),
     );
     offset += PAGE_SIZE;
     shouldContinue = nodes.length === PAGE_SIZE;
