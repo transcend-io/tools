@@ -25,6 +25,20 @@ const examples = buildExamples<PushCommandFlags>(
       },
     },
     {
+      description: 'Apply the push without the confirmation prompt, for example in CI',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        yes: true,
+      },
+    },
+    {
+      description: 'Push without comparing with your organization first',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        skipPreview: true,
+      },
+    },
+    {
       description: 'Looks for file at custom location ./custom/location.yml',
       flags: {
         auth: '$TRANSCEND_API_KEY',
@@ -142,9 +156,14 @@ ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
 })}
 \`\`\`
 
-**Preview a push before applying it**
+**Preview before every push**
 
-\`--dryRun\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add \`--json\` for machine-readable output.
+Before it writes anything, \`transcend inventory push\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It then asks you to confirm. The preview also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted.
+
+- \`--dryRun\` shows the preview and stops. Nothing is changed. Add \`--json\` for machine-readable output.
+- \`--yes\` shows the preview and applies it without asking. Use this in CI, where there is no terminal to answer the prompt.
+- \`--skipPreview\` pushes straight away with no comparison, which is how push worked before previews.
+- If the file already matches your organization, nothing is pushed.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
 
@@ -234,7 +253,7 @@ jobs:
       #   run: ./scripts/generate_transcend_yml.py
 
       - name: Push Transcend config
-        run: transcend inventory push --auth=\${{ secrets.TRANSCEND_API_KEY }}
+        run: transcend inventory push --auth=\${{ secrets.TRANSCEND_API_KEY }} --yes
 \`\`\`
 
 #### Dynamic variables

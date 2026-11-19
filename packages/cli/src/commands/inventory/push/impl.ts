@@ -5,6 +5,7 @@ import {
   buildTranscendGraphQLClient,
   mergeTranscendInputs,
   parseTranscendYaml,
+  planHasChanges,
   planPush,
   pullTranscendConfiguration,
   renderPushPlan,
@@ -21,6 +22,10 @@ import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import {
+  isInteractivePromptInvocation,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /**
  * Sync configuration to Transcend
@@ -117,6 +122,20 @@ async function previewConfiguration({
   return planPush(contents, remote, { deleteExtraAttributeValues });
 }
 
+/** One organization a push applies to */
+interface PushTarget {
+  /** Log prefix. Empty when pushing to a single organization. */
+  prefix: string;
+  /** Organization name. Undefined when pushing with a single API key. */
+  organization?: string;
+  /** API key */
+  auth: string;
+  /** Configuration to push */
+  contents: TranscendInput;
+  /** What the push would do. Set once the preview has run. */
+  plan?: PushPlan;
+}
+
 export interface PushCommandFlags {
   auth: string;
   file: string;
@@ -128,6 +147,8 @@ export interface PushCommandFlags {
   deleteExtraAttributeValues: boolean;
   dryRun: boolean;
   json: boolean;
+  yes: boolean;
+  skipPreview: boolean;
 }
 
 export async function push(
@@ -143,9 +164,18 @@ export async function push(
     deleteExtraAttributeValues,
     dryRun,
     json,
+    yes,
+    skipPreview,
   }: PushCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
+
+  if (json && !dryRun) {
+    throw new Error('--json can only be used together with --dryRun.');
+  }
+  if (dryRun && skipPreview) {
+    throw new Error('--dryRun and --skipPreview cannot be used together.');
+  }
 
   // Parse authentication as API key or path to list of API keys
   const apiKeyOrList = await validateTranscendAuth(auth, this);
@@ -205,56 +235,17 @@ export async function push(
     }
   });
 
-  // process a single API key
+  // Work out which organizations to push to, and what to push to each
+  const encounteredErrors: string[] = [];
+  const targets: PushTarget[] = [];
   if (typeof apiKeyOrList === 'string') {
     // if passed multiple inputs, merge them together
     const [base, ...rest] = transcendInputs.map(({ content }) => content);
-    const contents = mergeTranscendInputs(base, ...rest);
-
-    // preview only: show what would change and stop
-    if (dryRun) {
-      try {
-        const plan = await previewConfiguration({
-          transcendUrl,
-          auth: apiKeyOrList,
-          contents,
-          pageSize,
-          deleteExtraAttributeValues,
-        });
-        if (json) {
-          this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: [{ plan }] })}\n`);
-        } else {
-          this.logger.info(renderPushPlan(plan, { title: 'Push preview (nothing was changed)' }));
-        }
-      } catch (err) {
-        this.logger.error(colors.red(`Failed to preview the push: ${err.message}`));
-        this.process.exit(1);
-      }
-      return;
-    }
-
-    // sync the configuration
-    const success = await syncConfiguration({
-      transcendUrl,
+    targets.push({
+      prefix: '',
       auth: apiKeyOrList,
-      contents,
-      publishToPrivacyCenter,
-      deleteExtraAttributeValues,
-      pageSize,
-      classifyService: !!classifyService,
-      logger: this.logger,
+      contents: mergeTranscendInputs(base, ...rest),
     });
-
-    // exist with error code
-    if (!success) {
-      this.logger.info(
-        colors.red(
-          `Sync encountered errors. View output above for more information, or check out ${ADMIN_DASH_INTEGRATIONS}`,
-        ),
-      );
-
-      this.process.exit(1);
-    }
   } else {
     // if passed multiple inputs, expect them to be one per instance
     if (transcendInputs.length !== 1 && transcendInputs.length !== apiKeyOrList.length) {
@@ -265,21 +256,8 @@ export async function push(
           } and ${apiKeyOrList.length} API key${apiKeyOrList.length === 1 ? '' : 's'}`,
       );
     }
-
-    const encounteredErrors: string[] = [];
-    const previews: {
-      /** Organization the plan is for */
-      organization: string;
-      /** What push would do */
-      plan: PushPlan;
-    }[] = [];
-    await mapSeries(apiKeyOrList, async (apiKey, ind) => {
+    apiKeyOrList.forEach((apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      if (!dryRun) {
-        this.logger.info(
-          colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`),
-        );
-      }
 
       // use the merged contents if 1 yml passed, else use the contents that map to that organization
       const useContents =
@@ -287,7 +265,7 @@ export async function push(
           ? transcendInputs[0].content
           : transcendInputs.find((input) => input.name === apiKey.organizationName)?.content;
 
-      // Throw error if cannot find a yml file matching that organization name
+      // Report an error if cannot find a yml file matching that organization name
       if (!useContents) {
         this.logger.error(
           colors.red(
@@ -297,69 +275,133 @@ export async function push(
         encounteredErrors.push(apiKey.organizationName);
         return;
       }
-
-      if (dryRun) {
-        try {
-          const plan = await previewConfiguration({
-            transcendUrl,
-            auth: apiKey.apiKey,
-            contents: useContents,
-            pageSize,
-            deleteExtraAttributeValues,
-          });
-          previews.push({ organization: apiKey.organizationName, plan });
-          if (!json) {
-            this.logger.info(
-              renderPushPlan(plan, {
-                title: `${prefix}Push preview (nothing was changed)`,
-              }),
-            );
-          }
-        } catch (err) {
-          this.logger.error(colors.red(`${prefix}Failed to preview the push: ${err.message}`));
-          encounteredErrors.push(apiKey.organizationName);
-        }
-        return;
-      }
-
-      const success = await syncConfiguration({
-        transcendUrl,
+      targets.push({
+        prefix,
+        organization: apiKey.organizationName,
         auth: apiKey.apiKey,
         contents: useContents,
-        pageSize,
-        publishToPrivacyCenter,
-        deleteExtraAttributeValues,
-        classifyService,
-        logger: this.logger,
       });
+    });
+  }
 
-      if (success) {
-        this.logger.info(colors.green(`${prefix}Successfully pushed configuration!`));
-      } else {
-        this.logger.error(colors.red(`${prefix}Failed to sync configuration.`));
-        encounteredErrors.push(apiKey.organizationName);
+  // Preview: compare every target with its organization before anything is written
+  if (!skipPreview) {
+    await mapSeries(targets, async (target) => {
+      try {
+        // eslint-disable-next-line no-param-reassign
+        target.plan = await previewConfiguration({
+          transcendUrl,
+          auth: target.auth,
+          contents: target.contents,
+          pageSize,
+          deleteExtraAttributeValues,
+        });
+        if (!json) {
+          this.logger.info(
+            renderPushPlan(target.plan, {
+              title: `${target.prefix}Push preview${dryRun ? ' (nothing was changed)' : ''}`,
+            }),
+          );
+        }
+      } catch (err) {
+        this.logger.error(
+          colors.red(
+            `${target.prefix}Failed to preview the push: ${err.message}. Use --skipPreview to push without a preview.`,
+          ),
+        );
+        encounteredErrors.push(target.organization ?? 'organization');
       }
     });
 
-    if (json && dryRun) {
-      this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: previews })}\n`);
-    }
-
+    // Never apply a partial push when part of the preview failed
     if (encounteredErrors.length > 0) {
-      this.logger.info(
-        colors.red(
-          `Sync encountered errors for "${encounteredErrors.join(
-            ',',
-          )}". View output above for more information, or check out ${ADMIN_DASH_INTEGRATIONS}`,
-        ),
-      );
-
       this.process.exit(1);
     }
 
     if (dryRun) {
+      if (json) {
+        this.process.stdout.write(
+          `${JSON.stringify({
+            dryRun: true,
+            targets: targets.map(({ organization, plan }) => ({ organization, plan })),
+          })}\n`,
+        );
+      }
       return;
     }
+
+    // Nothing to apply
+    if (!targets.some(({ plan }) => plan && planHasChanges(plan))) {
+      this.logger.info(
+        colors.green(
+          'No changes detected, so nothing was pushed. Use --skipPreview to push anyway.',
+        ),
+      );
+      return;
+    }
+
+    // Ask for approval
+    if (!yes) {
+      if (
+        !isInteractivePromptInvocation(
+          { json, noInteractive: false },
+          this.process.stdin.isTTY,
+          this.process.stderr.isTTY,
+        )
+      ) {
+        throw new Error(
+          'The push requires approval in a non-interactive invocation. Review with --dryRun, then pass --yes.',
+        );
+      }
+      const approved = await new ScaffoldPrompts(this).confirm('Apply these changes?', false);
+      if (!approved) {
+        this.logger.info(colors.yellow('Push cancelled. Nothing was changed.'));
+        return;
+      }
+    }
+  }
+
+  // Apply
+  const targetsToApply = skipPreview
+    ? targets
+    : targets.filter(({ plan }) => plan && planHasChanges(plan));
+  await mapSeries(targetsToApply, async (target) => {
+    if (target.prefix) {
+      this.logger.info(
+        colors.magenta(`~~~\n\n${target.prefix}Attempting to push configuration...\n\n~~~`),
+      );
+    }
+    const success = await syncConfiguration({
+      transcendUrl,
+      auth: target.auth,
+      contents: target.contents,
+      pageSize,
+      publishToPrivacyCenter,
+      deleteExtraAttributeValues,
+      classifyService,
+      logger: this.logger,
+    });
+    if (success) {
+      if (target.prefix) {
+        this.logger.info(colors.green(`${target.prefix}Successfully pushed configuration!`));
+      }
+    } else {
+      if (target.prefix) {
+        this.logger.error(colors.red(`${target.prefix}Failed to sync configuration.`));
+      }
+      encounteredErrors.push(target.organization ?? 'organization');
+    }
+  });
+
+  if (encounteredErrors.length > 0) {
+    this.logger.info(
+      colors.red(
+        `Sync encountered errors${
+          typeof apiKeyOrList === 'string' ? '' : ` for "${encounteredErrors.join(',')}"`
+        }. View output above for more information, or check out ${ADMIN_DASH_INTEGRATIONS}`,
+      ),
+    );
+    this.process.exit(1);
   }
 
   // Indicate success
