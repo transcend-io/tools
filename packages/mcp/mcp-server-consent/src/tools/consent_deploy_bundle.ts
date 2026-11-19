@@ -6,7 +6,7 @@ import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const DeployBundleSchema = z.object({
   environment: z
-    .enum([ConsentBundleType.Test, ConsentBundleType.Production])
+    .enum(Object.values(ConsentBundleType) as [ConsentBundleType, ...ConsentBundleType[]])
     .describe('Bundle to deploy: TEST (/cm-test) or PRODUCTION (live /cm). Required.'),
 });
 export type DeployBundleInput = z.infer<typeof DeployBundleSchema>;
