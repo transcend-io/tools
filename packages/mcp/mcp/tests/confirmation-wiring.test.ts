@@ -44,6 +44,9 @@ function umbrellaTools(): ToolDefinition[] {
 
 /** Minimal valid args so widened schemas can be parsed with an approval token. */
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  consent_deploy_bundle: {
+    environment: 'TEST',
+  },
   custom_functions_promote_version: {
     customFunctionId: 'cf-1',
     versionId: 'ver-1',

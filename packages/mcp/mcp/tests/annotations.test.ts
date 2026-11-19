@@ -89,6 +89,7 @@ describe('MCP Tool Annotations', () => {
       'consent_bulk_triage',
       'consent_delete_cookies',
       'consent_delete_data_flows',
+      'consent_deploy_bundle',
       'consent_update_cookies',
       'consent_update_data_flows',
       'custom_functions_promote_version',
@@ -127,6 +128,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'consent_deploy_bundle',
       'custom_functions_promote_version',
       'custom_functions_test_run',
       'custom_functions_upsert',

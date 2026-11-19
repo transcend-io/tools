@@ -1309,6 +1309,51 @@
         ]
       }
     },
+    "consent-sites": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["host"],
+            "properties": {
+              "host": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "site": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "owners": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "teams": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attributes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/interface-1qdwyzz"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
     "consent-manager": {
       "type": "object",
       "properties": {

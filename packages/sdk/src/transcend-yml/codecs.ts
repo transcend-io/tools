@@ -1084,6 +1084,44 @@ export const CookieInput = t.intersection([
 /** Type override */
 export type CookieInput = t.TypeOf<typeof CookieInput>;
 
+/**
+ * Input to define a consent site (a host that Airgap discovers or that you add manually)
+ *
+ * @see https://app.transcend.io/consent-manager/domains
+ */
+export const ConsentSiteInput = t.intersection([
+  t.type({
+    /** The host of the site (e.g. app.example.com) */
+    host: t.string,
+  }),
+  t.partial({
+    /** The eTLD+1 of the host (e.g. example.com). Inferred from the host when not provided. */
+    site: t.string,
+    /** Description of the site */
+    description: t.string,
+    /**
+     * The email addresses of the employees within your company that are the go-to individuals
+     * for managing this site
+     */
+    owners: t.array(t.string),
+    /**
+     * The names of teams within your Transcend instance that should be responsible
+     * for managing this site.
+     *
+     * @see https://docs.transcend.io/docs/security/access-control#teams
+     * for more information about how to create and manage teams
+     */
+    teams: t.array(t.string),
+    /**
+     * Attribute value and its corresponding attribute key
+     */
+    attributes: t.array(AttributePreview),
+  }),
+]);
+
+/** Type override */
+export type ConsentSiteInput = t.TypeOf<typeof ConsentSiteInput>;
+
 export const ConsentManageExperienceInput = t.intersection([
   t.type({
     /** Name of experience */
@@ -2132,6 +2170,10 @@ export const TranscendInput = t.partial({
    * Cookie definitions
    */
   cookies: t.array(CookieInput),
+  /**
+   * Consent site definitions (hosts that Airgap discovers, with owners and teams)
+   */
+  'consent-sites': t.array(ConsentSiteInput),
   /**
    * Consent manager definition
    */
