@@ -10,6 +10,7 @@ export * from './fetchConsentManager.js';
 export * from './fetchConsentManagerAnalyticsData.js';
 export * from './fetchConsentManagerExperiences.js';
 export * from './fetchConsentManagerId.js';
+export * from './fetchConsentManagerPrefixModules.js';
 export * from './fetchConsentManagerTheme.js';
 export * from './fetchConsentThemes.js';
 export * from './fetchConsentVariants.js';
