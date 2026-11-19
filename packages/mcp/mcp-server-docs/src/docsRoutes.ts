@@ -1,4 +1,4 @@
-import { DocsProduct } from '@transcend-io/privacy-types';
+import { DocsGuideType, DocsListRouteMatch, DocsProduct } from '@transcend-io/privacy-types';
 
 /** A docs page linked to an Admin Dashboard route. */
 export interface RoutePage {
@@ -7,7 +7,7 @@ export interface RoutePage {
   /** Absolute URL to the article. */
   url: string;
   /** Guide type label, or null when the page has none. */
-  guideType: string | null;
+  guideType: DocsGuideType | null;
 }
 
 /** Pages linked to one Admin Dashboard route pattern. */
@@ -47,7 +47,7 @@ export interface DashboardRouteData {
 /** One docs page returned for a route lookup. */
 export interface RouteMatchPage extends RoutePage {
   /** Whether the page is about the route or only links to it. */
-  match: 'primary' | 'mention';
+  match: typeof DocsListRouteMatch.Primary | typeof DocsListRouteMatch.Mention;
   /** The route pattern that produced this page. */
   route: string;
 }
@@ -157,8 +157,16 @@ function compareSpecificity(a: string, b: string): number {
 
 function toPages(pattern: string, entry: RouteEntry): RouteMatchPage[] {
   return [
-    ...entry.primary.map((page) => ({ ...page, match: 'primary' as const, route: pattern })),
-    ...entry.mentions.map((page) => ({ ...page, match: 'mention' as const, route: pattern })),
+    ...entry.primary.map((page) => ({
+      ...page,
+      match: DocsListRouteMatch.Primary,
+      route: pattern,
+    })),
+    ...entry.mentions.map((page) => ({
+      ...page,
+      match: DocsListRouteMatch.Mention,
+      route: pattern,
+    })),
   ];
 }
 

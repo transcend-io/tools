@@ -29,6 +29,7 @@ export * from './isoRegion.js';
 export * from './largeLanguageModels.js';
 export * from './locale.js';
 export * from './macroregion.js';
+export * from './mcp.js';
 export * from './objects.js';
 export * from './oneTrust/index.js';
 export * from './permissionsPolicyInput.js';
