@@ -14,6 +14,7 @@ export enum TranscendPullResource {
   DataSubjects = 'dataSubjects',
   Identifiers = 'identifiers',
   Cookies = 'cookies',
+  ConsentSites = 'consentSites',
   ConsentManager = 'consentManager',
   Partitions = 'partitions',
   Vendors = 'vendors',
