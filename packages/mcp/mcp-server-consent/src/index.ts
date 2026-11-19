@@ -13,6 +13,13 @@ export { ListCookiesSchema, type ListCookiesInput } from './tools/consent_list_c
 export { ListDataFlowsSchema, type ListDataFlowsInput } from './tools/consent_list_data_flows.js';
 export { ListPurposesSchema, type ListPurposesInput } from './tools/consent_list_purposes.js';
 export { ListRegimesSchema, type ListRegimesInput } from './tools/consent_list_regimes.js';
+export { ListSitesSchema, type ListSitesInput } from './tools/consent_list_sites.js';
+export {
+  WriteSiteItemSchema,
+  type WriteSiteItemInput,
+  WriteSitesSchema,
+  type WriteSitesInput,
+} from './tools/consent_write_sites.js';
 export {
   GetInventoryStatsSchema,
   type GetInventoryStatsInput,
