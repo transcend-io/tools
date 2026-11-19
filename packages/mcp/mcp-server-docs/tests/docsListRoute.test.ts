@@ -446,25 +446,25 @@ describe('docs_list tiers', () => {
   });
 
   it('keeps rows for search when a busy route has more pages than the cap', async () => {
-    const busy = Array.from({ length: 17 }, (_, i) => page(`Busy ${i}`, `other/busy-${i}`));
+    const busy = Array.from({ length: 76 }, (_, i) => page(`Busy ${i}`, `other/busy-${i}`));
     mockFetch(
       () =>
         new Response(
           JSON.stringify({
-            routes: { '/busy': { primary: [], mentions: busy } },
+            routes: { '/infrastructure/integrations': { primary: [], mentions: busy } },
           }),
           { status: 200 },
         ),
     );
     const result = (await createDocsListTool().handler({
-      route: '/busy',
+      route: '/infrastructure/integrations',
       query: 'domains',
     })) as ListResult;
 
     expect(result.data.filter((row) => row.match === 'mention')).toHaveLength(12);
     expect(result.data.filter((row) => row.match === 'search').length).toBeGreaterThan(0);
     expect(result.count).toBeLessThanOrEqual(20);
-    expect(result.paginationNote).toContain('Showing 12 of 17');
+    expect(result.paginationNote).toContain('Showing 12 of 76');
   });
 
   it('does not claim search results when the query matched nothing', async () => {
