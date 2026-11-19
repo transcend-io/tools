@@ -121,6 +121,32 @@ function toProductRows(pages: RoutePage[], product: string) {
   }));
 }
 
+/**
+ * Adds the one-line llms.txt summary to each row, matched by URL. Route and product
+ * rows come from dashboard-routes.json, which has no summaries. A missing or failed
+ * llms.txt index leaves the rows as they were, since the summary is a convenience.
+ */
+async function withDescriptions<T extends { url: string }>(
+  rows: T[],
+): Promise<Array<T & { description?: string }>> {
+  let entries;
+  try {
+    entries = await getIndex();
+  } catch {
+    return rows;
+  }
+  const byUrl = new Map<string, string>();
+  for (const entry of entries) {
+    if (entry.description) {
+      byUrl.set(normalizeDocUrl(entry.url), entry.description);
+    }
+  }
+  return rows.map((row) => {
+    const description = byUrl.get(normalizeDocUrl(row.url));
+    return description ? { ...row, description } : row;
+  });
+}
+
 async function listDocsByProduct({
   product,
   query,
@@ -162,7 +188,7 @@ async function listDocsByProduct({
       urlFilter: (url) => inProduct.has(normalizeDocUrl(url)),
     });
     return createListResult(
-      hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit })),
+      await withDescriptions(hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))),
       {
         totalCount,
         paginationNote:
@@ -176,7 +202,7 @@ async function listDocsByProduct({
   }
 
   const page = pages.slice(0, PRODUCT_LISTING_LIMIT);
-  return createListResult(toProductRows(page, title), {
+  return createListResult(await withDescriptions(toProductRows(page, title)), {
     totalCount: pages.length,
     paginationNote:
       pages.length === 0
@@ -254,7 +280,10 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           'instead.',
       });
     }
-    return createListResult(rows, { totalCount: rows.length, paginationNote: notes.join(' ') });
+    return createListResult(await withDescriptions(rows), {
+      totalCount: rows.length,
+      paginationNote: notes.join(' '),
+    });
   }
 
   // Tier 3: full-text search, skipping pages already listed, within the total cap.
@@ -270,7 +299,10 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
       : { hits: [] };
   const rows = [...lead, ...hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))];
   notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
-  return createListResult(rows, { totalCount: rows.length, paginationNote: notes.join(' ') });
+  return createListResult(await withDescriptions(rows), {
+    totalCount: rows.length,
+    paginationNote: notes.join(' '),
+  });
 }
 
 export function createDocsListTool(_clients?: ToolClients) {
@@ -281,7 +313,9 @@ export function createDocsListTool(_clients?: ToolClients) {
       'can: use route when you know the Admin Dashboard page the user is on ("this page"); ' +
       "it returns that page's docs, then more docs for its product. Otherwise use product " +
       'when you know the product area. Otherwise use query, which ranks articles by title ' +
-      'and body and returns snippets. route and product can each be combined with query. ' +
+      'and body and returns snippets. Rows carry a one-line description when the docs index ' +
+      'has one, so pick from it before fetching. route and product can each be combined with ' +
+      'query. ' +
       'section alone lists one llms.txt section; with no arguments the tool returns the ' +
       'section names. Pick the best matching url, then call docs_fetch.',
     category: 'Documentation',
@@ -338,7 +372,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       const terms = query?.trim();
       if (terms) {
         const { hits, totalCount } = await searchDocs(terms, { section });
-        return createListResult(hits, {
+        return createListResult(await withDescriptions(hits), {
           totalCount,
           ...(totalCount > hits.length && {
             paginationNote:
@@ -365,10 +399,11 @@ export function createDocsListTool(_clients?: ToolClients) {
       const filtered = entries.filter((entry) => entry.section === section);
       const page = filtered.slice(0, SECTION_LISTING_LIMIT);
       return createListResult(
-        page.map(({ title, section: entrySection, url }) => ({
+        page.map(({ title, section: entrySection, url, description }) => ({
           title,
           section: entrySection,
           url,
+          ...(description && { description }),
         })),
         {
           totalCount: filtered.length,

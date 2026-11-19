@@ -32,13 +32,15 @@ export interface DocEntry {
   title: string;
   /** Absolute URL to the article markdown (.md). */
   url: string;
+  /** One-line summary from llms.txt. Absent in the older `## Section` layout. */
+  description?: string;
 }
 
 /** Section for a top-level link that sits outside every group (the docs home, the changelog). */
 const DEFAULT_SECTION = 'General';
 
 const SECTION_HEADER = /^## (.+)$/;
-const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s.*)?\s*$/;
+const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s(.*))?\s*$/;
 const LIST_LABEL = /^(\s*)- ([^[\s].*)$/;
 
 /**
@@ -70,7 +72,7 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
 
     const link = LIST_LINK.exec(line);
     if (link) {
-      const [, indent = '', rawTitle = '', rawUrl = ''] = link;
+      const [, indent = '', rawTitle = '', rawUrl = '', rawDescription = ''] = link;
       const title = rawTitle.trim();
       if (!title) {
         continue;
@@ -86,7 +88,8 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
         continue;
       }
       seenUrls.add(url);
-      entries.push({ section, title, url });
+      const description = rawDescription.trim();
+      entries.push({ section, title, url, ...(description && { description }) });
       continue;
     }
 
