@@ -100,8 +100,14 @@ export type DocsListInput = z.infer<typeof DocsListSchema>;
 const ROUTE_PRODUCT_LIMIT = 10;
 /** Cap on pages returned when listing one product. */
 const PRODUCT_LISTING_LIMIT = 50;
+/** Cap on rows when a route lookup has no query. */
+const ROUTE_LISTING_LIMIT = 30;
 /** Cap on total rows when a route lookup is combined with a query. */
 const COMBINED_LIMIT = 20;
+/** Rows kept for full-text results when a route lookup is combined with a query. */
+const SEARCH_RESERVE = 8;
+/** Cap on product pages when a route lookup is combined with a query. */
+const ROUTE_PRODUCT_LIMIT_WITH_QUERY = 5;
 
 function throwRouteIndexError(error: unknown): never {
   if (error instanceof RouteIndexUnavailableError) {
@@ -280,14 +286,33 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           'instead.',
       });
     }
-    return createListResult(await withDescriptions(rows), {
+    // The busiest route has 76 linked pages today, so cap the listing. Primary pages
+    // come first, so a cut drops mentions and product pages before pages about the route.
+    const page = rows.slice(0, ROUTE_LISTING_LIMIT);
+    if (rows.length > page.length) {
+      notes.push(
+        `Showing the first ${page.length} of ${rows.length} pages, primary pages first. ` +
+          'There is no paging: add query to search within them.',
+      );
+    }
+    return createListResult(await withDescriptions(page), {
       totalCount: rows.length,
       paginationNote: notes.join(' '),
     });
   }
 
   // Tier 3: full-text search, skipping pages already listed, within the total cap.
-  const lead = [...tier1, ...tier2].slice(0, COMBINED_LIMIT);
+  // Route pages are not otherwise capped, and a busy route has 76 linked pages today.
+  // Reserve rows for search so the caller's query is never answered with route pages alone.
+  const tier2WithQuery = tier2.slice(0, ROUTE_PRODUCT_LIMIT_WITH_QUERY);
+  const leadLimit = COMBINED_LIMIT - SEARCH_RESERVE;
+  const lead = [...tier1, ...tier2WithQuery].slice(0, leadLimit);
+  const leadTotal = tier1.length + tier2WithQuery.length;
+  if (leadTotal > lead.length) {
+    notes.push(
+      `Showing ${lead.length} of ${leadTotal} route and product pages to leave room for search results.`,
+    );
+  }
   const listed = new Set(lead.map((page) => normalizeDocUrl(page.url)));
   const remaining = COMBINED_LIMIT - lead.length;
   const { hits } =
@@ -298,7 +323,11 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
         })
       : { hits: [] };
   const rows = [...lead, ...hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))];
-  notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
+  if (hits.length > 0) {
+    notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
+  } else {
+    notes.push(`No full-text results for '${terms}' beyond the pages above.`);
+  }
   return createListResult(await withDescriptions(rows), {
     totalCount: rows.length,
     paginationNote: notes.join(' '),
@@ -337,6 +366,15 @@ export function createDocsListTool(_clients?: ToolClients) {
           ErrorCode.VALIDATION_ERROR,
           'route cannot be combined with product. A route already resolves to its product: ' +
             'pass route, or pass product to list that product directly.',
+        );
+      }
+
+      // A blank route would look up `/`, which has no docs, and report an empty success.
+      if (route !== undefined && route.trim() === '') {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'route was empty. Pass an Admin Dashboard route pattern, path, or app URL, or omit ' +
+            'route.',
         );
       }
 
