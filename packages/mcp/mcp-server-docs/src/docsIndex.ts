@@ -1,4 +1,5 @@
 import { z } from '@transcend-io/mcp-server-base';
+import { parseDocsGuideType } from '@transcend-io/privacy-types';
 import { LRUCache } from 'lru-cache';
 
 import type { DashboardRouteData } from './docsRoutes.js';
@@ -12,6 +13,9 @@ export const DASHBOARD_ROUTES_URL = 'https://docs.transcend.io/dashboard-routes.
 
 /** Allowed hostname for fetched documentation articles. */
 export const DOCS_HOST = 'docs.transcend.io';
+
+/** Origin that relative article URLs in llms.txt resolve against. */
+const DOCS_ORIGIN = `https://${DOCS_HOST}`;
 
 const INDEX_CACHE_KEY = 'index';
 const ROUTES_CACHE_KEY = 'routes';
@@ -30,36 +34,83 @@ export interface DocEntry {
   url: string;
 }
 
+/** Section for a top-level link that sits outside every group (the docs home, the changelog). */
+const DEFAULT_SECTION = 'General';
+
+const SECTION_HEADER = /^## (.+)$/;
+const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s.*)?\s*$/;
+const LIST_LABEL = /^(\s*)- ([^[\s].*)$/;
+
 /**
  * Parses llms.txt markdown into structured entries.
- * Expects `## Section` headers and `- [Title](url)` list items.
+ *
+ * Two layouts are supported:
+ * - The current one: top-level `- Group` bullets with `- [Title](/path): description`
+ *   links nested under them at any depth. The top-level label is the section.
+ * - The older one: `## Section` headers followed by `- [Title](url)` items.
+ *
+ * Relative URLs resolve against {@link DOCS_ORIGIN}. A top-level link outside any
+ * group goes in the `General` section, or in the active `##` section when there is one.
+ * Throws when the input has content but yields no articles, since an empty index would
+ * otherwise look like "no such docs" instead of a format change.
  */
 export function parseLlmsTxt(raw: string): DocEntry[] {
   const entries: DocEntry[] = [];
-  let currentSection = '';
+  const seenUrls = new Set<string>();
+  let headerSection = '';
+  let groupLabel = '';
 
   for (const line of raw.split('\n')) {
-    const sectionMatch = /^## (.+)$/.exec(line);
-    if (sectionMatch?.[1]) {
-      currentSection = sectionMatch[1].trim();
+    const header = SECTION_HEADER.exec(line);
+    if (header?.[1]) {
+      headerSection = header[1].trim();
+      groupLabel = '';
       continue;
     }
 
-    const linkMatch = /^- \[(.+)\]\((.+)\)\s*$/.exec(line);
-    if (linkMatch?.[1] && linkMatch[2] && currentSection) {
-      const title = linkMatch[1].trim();
+    const link = LIST_LINK.exec(line);
+    if (link) {
+      const [, indent = '', rawTitle = '', rawUrl = ''] = link;
+      const title = rawTitle.trim();
       if (!title) {
         continue;
       }
-      entries.push({
-        section: currentSection,
-        title,
-        url: linkMatch[2].trim(),
-      });
+      const section =
+        indent.length === 0
+          ? headerSection || DEFAULT_SECTION
+          : groupLabel || headerSection || DEFAULT_SECTION;
+      const url = resolveDocsUrl(rawUrl);
+      // The search index keys documents by URL, and a page listed under two groups
+      // would make it throw. Keep the first listing.
+      if (seenUrls.has(url)) {
+        continue;
+      }
+      seenUrls.add(url);
+      entries.push({ section, title, url });
+      continue;
+    }
+
+    const label = LIST_LABEL.exec(line);
+    if (label?.[1] === '' && label[2]) {
+      // A bare bullet at the top level starts a group, such as `- Privacy Center`.
+      groupLabel = label[2].replace(/\*\*/g, '').trim();
     }
   }
 
+  if (entries.length === 0 && raw.trim() !== '') {
+    throw new Error(
+      'llms.txt has content but no article links were recognized, so the format may have changed',
+    );
+  }
   return entries;
+}
+
+function resolveDocsUrl(url: string): string {
+  try {
+    return new URL(url.trim(), DOCS_ORIGIN).toString();
+  } catch {
+    return url.trim();
+  }
 }
 
 const RoutePageSchema = z.object({
@@ -68,7 +119,7 @@ const RoutePageSchema = z.object({
   guideType: z
     .string()
     .nullish()
-    .transform((value) => value ?? null),
+    .transform((value) => parseDocsGuideType(value)),
 });
 
 const RouteEntrySchema = z.object({

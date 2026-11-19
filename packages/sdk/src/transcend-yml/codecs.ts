@@ -35,6 +35,8 @@ import {
   UnknownRequestPolicy,
   TelemetryPartitionStrategy,
   SignedIabAgreementOption,
+  PrefixModuleCatalogCodec,
+  PrefixModuleConfig,
   RegionDetectionMethod,
   PreflightRequestStatus,
   AttributeSupportedResourceType,
@@ -1184,6 +1186,25 @@ export const PartitionInput = t.intersection([
 /** Type override */
 export type PartitionInput = t.TypeOf<typeof PartitionInput>;
 
+/** Prefix module attached to the consent manager. Pull only: push ignores it */
+export const ConsentManagerPrefixModuleInput = t.intersection([
+  t.type({
+    /** Name of the module */
+    name: t.string,
+    /** Catalog the module comes from */
+    catalog: PrefixModuleCatalogCodec,
+    /** Version of the module */
+    version: t.string,
+  }),
+  t.partial({
+    /** String config values for the module on this bundle */
+    config: PrefixModuleConfig,
+  }),
+]);
+
+/** Type override */
+export type ConsentManagerPrefixModuleInput = t.TypeOf<typeof ConsentManagerPrefixModuleInput>;
+
 export const ConsentManagerInput = t.partial({
   /** Airgap version */
   version: t.string,
@@ -1223,6 +1244,8 @@ export const ConsentManagerInput = t.partial({
   syncGroups: t.string,
   consentVariants: t.array(ConsentVariantInput),
   consentThemes: t.array(ConsentThemeInput),
+  /** Prefix modules on the bundle. Pull only, push ignores it (no public API to write them) */
+  prefixModules: t.array(ConsentManagerPrefixModuleInput),
 });
 
 /** Type override */
