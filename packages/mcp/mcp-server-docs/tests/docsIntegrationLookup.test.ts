@@ -7,7 +7,7 @@ function buildMockClients() {
   return {
     graphql: {
       getCatalogIntegrationDetail: vi.fn(),
-      listCatalogs: vi.fn(),
+      searchCatalogIntegrations: vi.fn(),
     },
     rest: {} as never,
     dashboardUrl: 'https://app.transcend.io',
@@ -67,28 +67,59 @@ describe('docs_integration_lookup', () => {
     expect(clients.graphql.getCatalogIntegrationDetail).toHaveBeenCalledWith('salesforce');
   });
 
-  it('searches the catalog when query is set', async () => {
+  it('rejects a call without an integration', () => {
+    const tool = createDocsIntegrationLookupTool(buildMockClients() as never);
+    expect(tool.zodSchema.safeParse({}).success).toBe(false);
+    expect(tool.zodSchema.safeParse({ integration: '  ' }).success).toBe(false);
+    expect(tool.zodSchema.safeParse({ query: 'hub' }).success).toBe(false);
+  });
+
+  it('resolves a title to its integrationName when the exact name is not found', async () => {
     const clients = buildMockClients();
-    clients.graphql.listCatalogs.mockResolvedValue({
-      nodes: [{ integrationName: 'hubSpot', title: 'HubSpot', description: 'Marketing' }],
-      totalCount: 1,
-      pageInfo: { hasNextPage: false, hasPreviousPage: false },
-    });
+    clients.graphql.getCatalogIntegrationDetail
+      .mockRejectedValueOnce(new Error('not found'))
+      .mockResolvedValueOnce({
+        integrationName: 'hubSpot',
+        title: 'HubSpot',
+        description: 'Marketing',
+        minimumSombraVersion: '1.0.0',
+        allowedActions: [],
+        dataPoints: [],
+        plaintextInformation: [],
+      });
+    clients.graphql.searchCatalogIntegrations.mockResolvedValue([
+      { integrationName: 'hubSpot', title: 'HubSpot' },
+    ]);
 
     const tool = createDocsIntegrationLookupTool(clients as never);
-    const result = (await tool.handler({ query: 'hub' })) as {
-      success: boolean;
-      data: Array<{ integrationName: string; publicGuideUrl?: string }>;
-      count: number;
+    const result = (await tool.handler({ integration: 'hubspot' })) as {
+      data: { integrationName: string };
     };
 
-    expect(result.success).toBe(true);
-    expect(result.count).toBe(1);
-    expect(result.data[0]?.integrationName).toBe('hubSpot');
-    expect(clients.graphql.listCatalogs).toHaveBeenCalledWith({
-      first: 25,
-      offset: 0,
-      text: 'hub',
-    });
+    expect(result.data.integrationName).toBe('hubSpot');
+    expect(clients.graphql.getCatalogIntegrationDetail).toHaveBeenLastCalledWith('hubSpot');
+  });
+
+  it('names close integrations when nothing matches exactly', async () => {
+    const clients = buildMockClients();
+    clients.graphql.getCatalogIntegrationDetail.mockRejectedValue(new Error('not found'));
+    clients.graphql.searchCatalogIntegrations.mockResolvedValue([
+      { integrationName: 'amazonS3', title: 'Amazon S3' },
+      { integrationName: 'amazonDynamodb', title: 'Amazon DynamoDB' },
+    ]);
+
+    const tool = createDocsIntegrationLookupTool(clients as never);
+    await expect(tool.handler({ integration: 'amazon' })).rejects.toThrow(
+      /Close names: amazonS3, amazonDynamodb/,
+    );
+  });
+
+  it('keeps the original error when the catalog search finds nothing', async () => {
+    const clients = buildMockClients();
+    clients.graphql.getCatalogIntegrationDetail.mockRejectedValue(new Error('Forbidden'));
+    clients.graphql.searchCatalogIntegrations.mockResolvedValue([]);
+
+    const tool = createDocsIntegrationLookupTool(clients as never);
+    await expect(tool.handler({ integration: 'salesforce' })).rejects.toThrow('Forbidden');
   });
 });

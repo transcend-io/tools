@@ -50,6 +50,27 @@ const CatalogDetailQuery = `
   }
 `;
 
+const CatalogSearchQuery = `
+  query DocsIntegrationCatalogSearch($first: Int, $filterBy: CatalogFiltersInput!) {
+    catalogs(first: $first, filterBy: $filterBy) {
+      nodes {
+        integrationName
+        title
+      }
+    }
+  }
+`;
+
+/** A catalog row returned by {@link DocsCatalogMixin.searchCatalogIntegrations}. */
+export type CatalogIntegrationName = {
+  integrationName: string;
+  title: string;
+};
+
+type RawCatalogSearchResponse = {
+  catalogs: { nodes: CatalogIntegrationName[] };
+};
+
 type RawCatalogResponse = {
   catalog: {
     catalog: {
@@ -67,6 +88,15 @@ type RawCatalogResponse = {
 };
 
 export class DocsCatalogMixin extends TranscendGraphQLBase {
+  /** Searches catalog title and integrationName, returning names only. */
+  async searchCatalogIntegrations(text: string, first: number): Promise<CatalogIntegrationName[]> {
+    const data = await this.makeRequest<RawCatalogSearchResponse>(CatalogSearchQuery, {
+      first,
+      filterBy: { text },
+    });
+    return data.catalogs.nodes;
+  }
+
   async getCatalogIntegrationDetail(integrationName: string): Promise<CatalogIntegrationDetail> {
     const data = await this.makeRequest<RawCatalogResponse>(CatalogDetailQuery, {
       input: { integrationName },
@@ -88,13 +118,5 @@ export class DocsCatalogMixin extends TranscendGraphQLBase {
 
 export type DocsCatalogGraphqlClient = TranscendGraphQLBase & {
   getCatalogIntegrationDetail: DocsCatalogMixin['getCatalogIntegrationDetail'];
-  listCatalogs?: (
-    options?: import('@transcend-io/mcp-server-base').ListOptions & { text?: string },
-  ) => Promise<
-    import('@transcend-io/mcp-server-base').PaginatedResponse<{
-      integrationName: string;
-      title: string;
-      description?: string;
-    }>
-  >;
+  searchCatalogIntegrations: DocsCatalogMixin['searchCatalogIntegrations'];
 };

@@ -49,6 +49,9 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare getCatalogIntegrationDetail: InstanceType<
     typeof DocsCatalogMixin
   >['getCatalogIntegrationDetail'];
+  declare searchCatalogIntegrations: InstanceType<
+    typeof DocsCatalogMixin
+  >['searchCatalogIntegrations'];
   declare createDataSilo: InstanceType<typeof InventoryMixin>['createDataSilo'];
   declare updateDataSilo: InstanceType<typeof InventoryMixin>['updateDataSilo'];
   declare writeDataSilo: InstanceType<typeof InventoryMixin>['writeDataSilo'];
