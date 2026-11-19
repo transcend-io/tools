@@ -20,6 +20,8 @@ const DOCS_ORIGIN = `https://${DOCS_HOST}`;
 const INDEX_CACHE_KEY = 'index';
 const ROUTES_CACHE_KEY = 'routes';
 const DEFAULT_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
+/** The route index is small and changes on each docs deploy, so it refreshes hourly. */
+const ROUTE_INDEX_TTL_MS = 60 * 60 * 1000;
 const DEFAULT_BODY_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8_000;
 const MAX_BODY_CACHE_ENTRIES = 600;
@@ -32,13 +34,15 @@ export interface DocEntry {
   title: string;
   /** Absolute URL to the article markdown (.md). */
   url: string;
+  /** One-line summary from llms.txt. Absent in the older `## Section` layout. */
+  description?: string;
 }
 
 /** Section for a top-level link that sits outside every group (the docs home, the changelog). */
 const DEFAULT_SECTION = 'General';
 
 const SECTION_HEADER = /^## (.+)$/;
-const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s.*)?\s*$/;
+const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s(.*))?\s*$/;
 const LIST_LABEL = /^(\s*)- ([^[\s].*)$/;
 
 /**
@@ -70,7 +74,7 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
 
     const link = LIST_LINK.exec(line);
     if (link) {
-      const [, indent = '', rawTitle = '', rawUrl = ''] = link;
+      const [, indent = '', rawTitle = '', rawUrl = '', rawDescription = ''] = link;
       const title = rawTitle.trim();
       if (!title) {
         continue;
@@ -86,7 +90,8 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
         continue;
       }
       seenUrls.add(url);
-      entries.push({ section, title, url });
+      const description = rawDescription.trim();
+      entries.push({ section, title, url, ...(description && { description }) });
       continue;
     }
 
@@ -123,7 +128,7 @@ const RoutePageSchema = z.object({
 });
 
 const RouteEntrySchema = z.object({
-  product: z.string().nullish().optional(),
+  product: z.string().nullish(),
   primary: z.array(RoutePageSchema).default([]),
   mentions: z.array(RoutePageSchema).default([]),
 });
@@ -143,15 +148,19 @@ export function parseDashboardRoutes(raw: string): DashboardRouteData {
   return DashboardRoutesSchema.parse(JSON.parse(raw));
 }
 
+/** Short reason for an index failure. A zod error message is a JSON dump, so use its first issue. */
+function describeCause(cause: unknown): string {
+  if (cause instanceof z.ZodError) {
+    const issue = cause.issues[0];
+    return `invalid shape at ${issue?.path.join('.') || 'root'}: ${issue?.message ?? 'unknown'}`;
+  }
+  return cause instanceof Error ? cause.message : String(cause);
+}
+
 /** Thrown when dashboard-routes.json cannot be fetched or is invalid. */
 export class RouteIndexUnavailableError extends Error {
   constructor(cause: unknown) {
-    super(
-      `The Admin Dashboard route index is not available: ${
-        cause instanceof Error ? cause.message : String(cause)
-      }`,
-      { cause },
-    );
+    super(`The Admin Dashboard route index is not available: ${describeCause(cause)}`, { cause });
     this.name = 'RouteIndexUnavailableError';
   }
 }
@@ -182,14 +191,26 @@ const indexCache = new LRUCache<string, DocEntry[]>({
   },
 });
 
+/** Cause of the most recent failed route index fetch, cleared on success. */
+let lastRouteIndexError: unknown;
+
 const routeIndexCache = new LRUCache<string, DashboardRouteData>({
   max: 1,
-  ttl: DEFAULT_INDEX_TTL_MS,
+  ttl: ROUTE_INDEX_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
   fetchMethod: async (_key, _stale, { signal }) => {
-    const raw = await fetchText(DASHBOARD_ROUTES_URL, signal, 'application/json');
-    return parseDashboardRoutes(raw);
+    try {
+      const raw = await fetchText(DASHBOARD_ROUTES_URL, signal, 'application/json');
+      const parsed = parseDashboardRoutes(raw);
+      lastRouteIndexError = undefined;
+      return parsed;
+    } catch (error) {
+      // `allowStaleOnFetchRejection` swallows the rejection when nothing is cached, so
+      // keep the cause for getRouteIndex to report.
+      lastRouteIndexError = error;
+      throw error;
+    }
   },
 });
 
@@ -222,7 +243,7 @@ export async function getRouteIndex(): Promise<DashboardRouteData> {
     throw new RouteIndexUnavailableError(error);
   }
   if (!result) {
-    throw new RouteIndexUnavailableError('empty response');
+    throw new RouteIndexUnavailableError(lastRouteIndexError ?? 'empty response');
   }
   return result;
 }
@@ -254,6 +275,7 @@ export function assertDocsHost(url: string): void {
 export function resetDocsCachesForTests(): void {
   indexCache.clear();
   routeIndexCache.clear();
+  lastRouteIndexError = undefined;
   bodyCache.clear();
   clearSearchIndexCache();
 }

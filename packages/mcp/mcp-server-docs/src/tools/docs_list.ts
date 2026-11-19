@@ -110,8 +110,14 @@ export type DocsListInput = z.infer<typeof DocsListSchema>;
 const ROUTE_PRODUCT_LIMIT = 10;
 /** Cap on pages returned when listing one product. */
 const PRODUCT_LISTING_LIMIT = 50;
+/** Cap on rows when a route lookup has no query. */
+const ROUTE_LISTING_LIMIT = 30;
 /** Cap on total rows when a route lookup is combined with a query. */
 const COMBINED_LIMIT = 20;
+/** Rows kept for full-text results when a route lookup is combined with a query. */
+const SEARCH_RESERVE = 8;
+/** Cap on product pages when a route lookup is combined with a query. */
+const ROUTE_PRODUCT_LIMIT_WITH_QUERY = 5;
 
 function throwRouteIndexError(error: unknown): never {
   if (error instanceof RouteIndexUnavailableError) {
@@ -129,6 +135,32 @@ function toProductRows(pages: RoutePage[], product: string) {
     match: DocsListRouteMatch.Product,
     product,
   }));
+}
+
+/**
+ * Adds the one-line llms.txt summary to each row, matched by URL. Route and product
+ * rows come from dashboard-routes.json, which has no summaries. A missing or failed
+ * llms.txt index leaves the rows as they were, since the summary is a convenience.
+ */
+async function withDescriptions<T extends { url: string }>(
+  rows: T[],
+): Promise<Array<T & { description?: string }>> {
+  let entries;
+  try {
+    entries = await getIndex();
+  } catch {
+    return rows;
+  }
+  const byUrl = new Map<string, string>();
+  for (const entry of entries) {
+    if (entry.description) {
+      byUrl.set(normalizeDocUrl(entry.url), entry.description);
+    }
+  }
+  return rows.map((row) => {
+    const description = byUrl.get(normalizeDocUrl(row.url));
+    return description ? { ...row, description } : row;
+  });
 }
 
 async function listDocsByProduct({
@@ -172,7 +204,7 @@ async function listDocsByProduct({
       urlFilter: (url) => inProduct.has(normalizeDocUrl(url)),
     });
     return createListResult(
-      hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit })),
+      await withDescriptions(hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))),
       {
         totalCount,
         paginationNote:
@@ -186,7 +218,7 @@ async function listDocsByProduct({
   }
 
   const page = pages.slice(0, PRODUCT_LISTING_LIMIT);
-  return createListResult(toProductRows(page, title), {
+  return createListResult(await withDescriptions(toProductRows(page, title)), {
     totalCount: pages.length,
     paginationNote:
       pages.length === 0
@@ -264,11 +296,33 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           'instead.',
       });
     }
-    return createListResult(rows, { totalCount: rows.length, paginationNote: notes.join(' ') });
+    // The busiest route has 76 linked pages today, so cap the listing. Primary pages
+    // come first, so a cut drops mentions and product pages before pages about the route.
+    const page = rows.slice(0, ROUTE_LISTING_LIMIT);
+    if (rows.length > page.length) {
+      notes.push(
+        `Showing the first ${page.length} of ${rows.length} pages, primary pages first. ` +
+          'There is no paging: add query to search within them.',
+      );
+    }
+    return createListResult(await withDescriptions(page), {
+      totalCount: rows.length,
+      paginationNote: notes.join(' '),
+    });
   }
 
   // Tier 3: full-text search, skipping pages already listed, within the total cap.
-  const lead = [...tier1, ...tier2].slice(0, COMBINED_LIMIT);
+  // Route pages are not otherwise capped, and a busy route has 76 linked pages today.
+  // Reserve rows for search so the caller's query is never answered with route pages alone.
+  const tier2WithQuery = tier2.slice(0, ROUTE_PRODUCT_LIMIT_WITH_QUERY);
+  const leadLimit = COMBINED_LIMIT - SEARCH_RESERVE;
+  const lead = [...tier1, ...tier2WithQuery].slice(0, leadLimit);
+  const leadTotal = tier1.length + tier2WithQuery.length;
+  if (leadTotal > lead.length) {
+    notes.push(
+      `Showing ${lead.length} of ${leadTotal} route and product pages to leave room for search results.`,
+    );
+  }
   const listed = new Set(lead.map((page) => normalizeDocUrl(page.url)));
   const remaining = COMBINED_LIMIT - lead.length;
   const { hits } =
@@ -279,8 +333,15 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
         })
       : { hits: [] };
   const rows = [...lead, ...hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))];
-  notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
-  return createListResult(rows, { totalCount: rows.length, paginationNote: notes.join(' ') });
+  if (hits.length > 0) {
+    notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
+  } else {
+    notes.push(`No full-text results for '${terms}' beyond the pages above.`);
+  }
+  return createListResult(await withDescriptions(rows), {
+    totalCount: rows.length,
+    paginationNote: notes.join(' '),
+  });
 }
 
 export function createDocsListTool(_clients?: ToolClients) {
@@ -291,7 +352,9 @@ export function createDocsListTool(_clients?: ToolClients) {
       'can: use route when you know the Admin Dashboard page the user is on ("this page"); ' +
       "it returns that page's docs, then more docs for its product. Otherwise use product " +
       'when you know the product area. Otherwise use query, which ranks articles by title ' +
-      'and body and returns snippets. route and product can each be combined with query. ' +
+      'and body and returns snippets. Rows carry a one-line description when the docs index ' +
+      'has one, so pick from it before fetching. route and product can each be combined with ' +
+      'query. ' +
       'section alone lists one llms.txt section; with no arguments the tool returns the ' +
       'section names. Pick the best matching url, then call docs_fetch.',
     category: 'Documentation',
@@ -323,6 +386,15 @@ export function createDocsListTool(_clients?: ToolClients) {
           ErrorCode.VALIDATION_ERROR,
           'integration cannot be combined with route, product, or section. Pass integration ' +
             'alone or with query to list public integration guides.',
+        );
+      }
+
+      // A blank route would look up `/`, which has no docs, and report an empty success.
+      if (route !== undefined && route.trim() === '') {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'route was empty. Pass an Admin Dashboard route pattern, path, or app URL, or omit ' +
+            'route.',
         );
       }
 
@@ -381,8 +453,9 @@ export function createDocsListTool(_clients?: ToolClients) {
         const filteredHits = integrationFilter
           ? hits.filter((hit) => integrationFilter(hit))
           : hits;
-        return createListResult(filteredHits, {
-          totalCount: integrationFilter ? filteredHits.length : totalCount,
+        const reportedTotal = integrationFilter ? filteredHits.length : totalCount;
+        return createListResult(await withDescriptions(filteredHits), {
+          totalCount: reportedTotal,
           ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
           ...(!signedInCatalogNote &&
             totalCount > filteredHits.length && {
@@ -429,10 +502,11 @@ export function createDocsListTool(_clients?: ToolClients) {
       const filtered = scopedEntries.filter((entry) => entry.section === section);
       const page = filtered.slice(0, SECTION_LISTING_LIMIT);
       return createListResult(
-        page.map(({ title, section: entrySection, url }) => ({
+        page.map(({ title, section: entrySection, url, description }) => ({
           title,
           section: entrySection,
           url,
+          ...(description && { description }),
         })),
         {
           totalCount: filtered.length,

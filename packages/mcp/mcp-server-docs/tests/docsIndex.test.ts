@@ -60,6 +60,7 @@ describe('parseLlmsTxt nested format', () => {
       section: 'Overview',
       title: 'Glossary',
       url: 'https://docs.transcend.io/docs/overview/glossary',
+      description: 'Glossary of terminology used throughout the Transcend platform',
     });
     expect(entries.every((entry) => entry.url.startsWith('https://docs.transcend.io/'))).toBe(true);
   });
@@ -75,7 +76,7 @@ describe('parseLlmsTxt nested format', () => {
     expect(find('Changelog')?.section).toBe('General');
   });
 
-  it('drops descriptions and bold markers, and counts every article link', () => {
+  it('keeps descriptions, drops bold markers from sections, and counts every article link', () => {
     expect(find('Glossary')?.title).toBe('Glossary');
     expect(entries.map((entry) => entry.section)).not.toContain('**Reference**');
     expect(entries).toHaveLength(nestedFixtureLlmsTxt.match(/^\s*- \[/gm)?.length ?? -1);
