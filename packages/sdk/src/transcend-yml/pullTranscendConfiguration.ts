@@ -22,6 +22,7 @@ import {
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
+  fetchAllConsentSites,
   fetchAllCookies,
   fetchAllDataCategories,
   fetchAllDataFlows,
@@ -73,6 +74,7 @@ import {
   DataFlowInput,
   DataSubjectInput,
   CookieInput,
+  ConsentSiteInput,
   DatapointInput,
   FieldInput,
   ProcessingPurposeInput,
@@ -197,6 +199,7 @@ export async function pullTranscendConfiguration(
     workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
+    consentSites,
   ] = await Promise.all([
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
@@ -357,6 +360,10 @@ export async function pullTranscendConfiguration(
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
       ? fetchAllSiloDiscoveryResults(client, { logger })
+      : [],
+    // Fetch consent sites
+    resources.includes(TranscendPullResource.ConsentSites)
+      ? fetchAllConsentSites(client, { logger })
       : [],
   ]);
 
@@ -1276,6 +1283,23 @@ export async function pullTranscendConfiguration(
         trackingPurposes,
         status,
         service: service?.integrationName,
+        owners: owners.map(({ email }) => email),
+        teams: teams.map(({ name }) => name),
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save consent sites
+  if (consentSites.length > 0 && resources.includes(TranscendPullResource.ConsentSites)) {
+    result['consent-sites'] = consentSites.map(
+      ({ host, site, description, owners, teams, attributeValues }): ConsentSiteInput => ({
+        host,
+        site,
+        description: description || undefined,
         owners: owners.map(({ email }) => email),
         teams: teams.map(({ name }) => name),
         attributes:

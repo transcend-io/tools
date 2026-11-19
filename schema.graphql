@@ -5547,8 +5547,6 @@ type Query {
   vendors(first: Int, offset: Int = 0, last: Int, filterBy: VendorsFiltersInput, orderBy: [VendorOrder!], useMaster: Boolean, isExportCsv: Boolean): VendorsPayload!
   workflowCommunicationsSettings(input: WorkflowConfigIdInput!): WorkflowCommunicationsSettingsPayload!
   workflowConfig(input: WorkflowConfigInput!): WorkflowConfigPayload!
-  workflowConfigFileUploads(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsPayload!
-  workflowConfigFileUploadsAndConfirmations(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsAndConfirmationsPayload!
   workflowConfigFormItems(input: WorkflowConfigFormItemsInput!): WorkflowConfigFormItemsPayload!
   workflowEnrichers(first: Int, offset: Int = 0, last: Int, input: WorkflowEnrichersInput!): WorkflowEnrichersPayload!
   workflowIdentifiers(first: Int, offset: Int = 0, last: Int, input: WorkflowConfigIdInput!): WorkflowIdentifiersPayload!
@@ -8721,6 +8719,8 @@ type Catalog implements CatalogPreviewInterface {
   plaintextInformation: [PlaintextRequirement!]!
   introMessage: String
   businessUserOverview: String
+  introMessageMarkdown: String
+  businessUserOverviewMarkdown: String
   controllerManualInstructions: String
   tcfVendor: TcfVendorPreview
   saaSVendor: SaaSVendorPreview
@@ -23556,13 +23556,6 @@ type WorkflowConfigAttributeKey {
   attributeKey: AttributeKey!
 }
 
-type WorkflowConfigConfirmation {
-  id: ID!
-  index: Int!
-  isRequired: Boolean!
-  label: LocalizedMessage!
-}
-
 input WorkflowConfigConfirmationInput {
   id: ID
   message: String!
@@ -23580,31 +23573,6 @@ type WorkflowConfigDataSiloAttributeValue {
   WorkflowConfigDataSiloId: ID!
   attributeValueId: ID!
   attributeValue: AttributeValue!
-}
-
-type WorkflowConfigFileUpload {
-  id: ID!
-  internalName: String!
-  label: LocalizedMessage!
-  info: LocalizedMessage
-  acceptedMimeTypes: [String!]!
-  maxFileSize: String
-  maxFiles: Int!
-  isRequired: Boolean!
-  index: Int!
-  createdAt: Date!
-  updatedAt: Date!
-}
-
-type WorkflowConfigFileUploadsPayload {
-  clientMutationId: String
-  nodes: [WorkflowConfigFileUpload!]!
-}
-
-type WorkflowConfigFileUploadsAndConfirmationsPayload {
-  clientMutationId: String
-  fileUploads: [WorkflowConfigFileUpload!]!
-  confirmations: [WorkflowConfigConfirmation!]!
 }
 
 type WorkflowConfigFormItem {

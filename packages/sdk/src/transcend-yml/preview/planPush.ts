@@ -1,6 +1,12 @@
 import { normalizeTranscendInput, type TranscendInput } from '../codecs.js';
 import { compareObjects, isPlainObject, normalizeEmpty } from './compare.js';
 import {
+  PreviewImplicitEffectKind,
+  PreviewItemAction,
+  PreviewListResourceMode,
+  PreviewResourceKind,
+} from './enums.js';
+import {
   datapointIdentity,
   RESOURCE_DEFINITIONS,
   type ListResourceDefinition,
@@ -16,12 +22,30 @@ import type {
   ResourcePlan,
 } from './types.js';
 
+/**
+ * Coerce a YAML value to a list of plain objects.
+ *
+ * @param value - Top-level or nested list value
+ * @returns Plain objects from the list
+ */
 const asItems = (value: unknown): PlainObject[] =>
   Array.isArray(value) ? value.filter(isPlainObject) : [];
 
+/**
+ * Coerce a YAML value to a list of strings.
+ *
+ * @param value - List field value
+ * @returns String entries from the list
+ */
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 
+/**
+ * Narrow a string key to a known push resource key.
+ *
+ * @param key - Top-level YAML key
+ * @returns Typed resource key
+ */
 const asKey = (key: string): PushResourceKey => key as PushResourceKey;
 
 /**
@@ -70,25 +94,25 @@ function planList(
         : remoteByIdentity.get(identity);
 
     if (!remote) {
-      if (definition.mode === 'updateOnly') {
+      if (definition.mode === PreviewListResourceMode.UpdateOnly) {
         warnings.push(
           `${resource}: "${label}" does not exist in the organization and push will fail.`,
         );
         return {
           label,
-          action: 'skipped',
+          action: PreviewItemAction.Skipped,
           fields: [],
           writeOnly: [],
           note: 'does not exist; push only updates existing items',
         };
       }
-      return { label, action: 'create', fields: [], writeOnly: [] };
+      return { label, action: PreviewItemAction.Create, fields: [], writeOnly: [] };
     }
 
-    if (definition.mode === 'createOnly') {
+    if (definition.mode === PreviewListResourceMode.CreateOnly) {
       return {
         label,
-        action: 'unchanged',
+        action: PreviewItemAction.Unchanged,
         fields: [],
         writeOnly: [],
         note: 'already exists; push does not update existing items',
@@ -96,7 +120,12 @@ function planList(
     }
 
     const { fields, writeOnly } = compareObjects(local, remote, definition);
-    return { label, action: fields.length > 0 ? 'update' : 'unchanged', fields, writeOnly };
+    return {
+      label,
+      action: fields.length > 0 ? PreviewItemAction.Update : PreviewItemAction.Unchanged,
+      fields,
+      writeOnly,
+    };
   });
   return { resource, items };
 }
@@ -119,14 +148,19 @@ function planSingleton(
   if (!remote) {
     return {
       resource,
-      items: [{ label: resource, action: 'create', fields: [], writeOnly: [] }],
+      items: [{ label: resource, action: PreviewItemAction.Create, fields: [], writeOnly: [] }],
     };
   }
   const { fields, writeOnly } = compareObjects(local, remote, definition);
   return {
     resource,
     items: [
-      { label: resource, action: fields.length > 0 ? 'update' : 'unchanged', fields, writeOnly },
+      {
+        label: resource,
+        action: fields.length > 0 ? PreviewItemAction.Update : PreviewItemAction.Unchanged,
+        fields,
+        writeOnly,
+      },
     ],
   };
 }
@@ -155,7 +189,7 @@ function planReferencedCreates(local: TranscendInput, remote: TranscendInput): I
     if (!declaredIdentifiers.has(name) && !existingIdentifiers.has(name)) {
       effects.push({
         resource: 'identifiers',
-        kind: 'create',
+        kind: PreviewImplicitEffectKind.Create,
         description: `Identifier "${name}" is referenced but does not exist, so push creates it.`,
       });
     }
@@ -174,7 +208,7 @@ function planReferencedCreates(local: TranscendInput, remote: TranscendInput): I
     if (!declaredSubjects.has(type) && !existingSubjects.has(type)) {
       effects.push({
         resource: 'data-subjects',
-        kind: 'create',
+        kind: PreviewImplicitEffectKind.Create,
         description: `Data subject "${type}" is referenced but does not exist, so push creates it.`,
       });
     }
@@ -203,7 +237,7 @@ function planSiloClears(local: TranscendInput, remote: TranscendInput): Implicit
     ) {
       effects.push({
         resource: 'data-silos',
-        kind: 'clear',
+        kind: PreviewImplicitEffectKind.Clear,
         description: `Data silo "${String(silo.title)}": existing deletion-dependencies are cleared because the file does not set them.`,
       });
     }
@@ -219,7 +253,7 @@ function planSiloClears(local: TranscendInput, remote: TranscendInput): Implicit
       ) {
         effects.push({
           resource: 'data-silos',
-          kind: 'clear',
+          kind: PreviewImplicitEffectKind.Clear,
           description: `Datapoint "${String(datapoint.key)}" in "${String(silo.title)}": enabled privacy-actions are cleared because the file does not set them.`,
         });
       }
@@ -250,7 +284,7 @@ function planDeletes(
       if (!kept.has(link.title)) {
         effects.push({
           resource: 'privacy-center',
-          kind: 'delete',
+          kind: PreviewImplicitEffectKind.Delete,
           description: `Footer link "${String(link.title)}" is deleted because it is not in the file.`,
         });
       }
@@ -265,7 +299,7 @@ function planDeletes(
         if (!kept.has(value.name)) {
           effects.push({
             resource: 'attributes',
-            kind: 'delete',
+            kind: PreviewImplicitEffectKind.Delete,
             description: `Attribute "${String(attribute.name)}": value "${String(value.name)}" is deleted because it is not in the file.`,
           });
         }
@@ -300,12 +334,12 @@ export function planPush(
     if (!definition || value === undefined) {
       return;
     }
-    if (definition.kind === 'pullOnly') {
+    if (definition.kind === PreviewResourceKind.PullOnly) {
       ignoredResources.push(key);
       return;
     }
     const remoteValue = (remote as Record<string, unknown>)[key];
-    if (definition.kind === 'singleton') {
+    if (definition.kind === PreviewResourceKind.Singleton) {
       if (isPlainObject(value)) {
         resources.push(
           planSingleton(
@@ -337,10 +371,10 @@ export function planPush(
     warnings,
     ignoredResources,
     summary: {
-      create: count('create'),
-      update: count('update'),
-      unchanged: count('unchanged'),
-      skipped: count('skipped'),
+      create: count(PreviewItemAction.Create),
+      update: count(PreviewItemAction.Update),
+      unchanged: count(PreviewItemAction.Unchanged),
+      skipped: count(PreviewItemAction.Skipped),
       effects: effects.length,
     },
   };
