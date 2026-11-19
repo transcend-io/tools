@@ -7,7 +7,13 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import type { TranscendInput } from '../codecs.js';
-import { planHasChanges, planPush, renderPushPlan, type PushPlan } from '../preview/index.js';
+import {
+  formatValue,
+  planHasChanges,
+  planPush,
+  renderPushPlan,
+  type PushPlan,
+} from '../preview/index.js';
 
 const itemsOf = (plan: PushPlan, resource = 0) => plan.resources[resource]?.items ?? [];
 
@@ -416,6 +422,11 @@ describe('planPush', () => {
 });
 
 describe('renderPushPlan', () => {
+  it('formats undefined and long values for display', () => {
+    expect(formatValue(undefined)).toBe('(not set)');
+    expect(formatValue('x'.repeat(100))).toContain('...');
+  });
+
   it('renders creates, updates, list changes, and a summary', () => {
     const plan = planPush(
       {

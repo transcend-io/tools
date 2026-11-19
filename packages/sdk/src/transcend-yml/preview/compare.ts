@@ -1,3 +1,4 @@
+import { PreviewFieldChangeKind } from './enums.js';
 import type { FieldChange, PlainObject } from './types.js';
 
 /** Describes how to compare an object and its nested lists */
@@ -80,10 +81,23 @@ export function canonicalString(value: unknown, ordered = false): string {
   return JSON.stringify(value) ?? 'undefined';
 }
 
+/**
+ * Coerce an unknown value to a list of plain objects.
+ *
+ * @param value - Raw list value
+ * @returns Plain objects from the list, or an empty list
+ */
 function asList(value: unknown): PlainObject[] {
   return Array.isArray(value) ? value.filter(isPlainObject) : [];
 }
 
+/**
+ * Index list items by nested identity for matching.
+ *
+ * @param list - Items to index
+ * @param nested - Nested list definition with identity
+ * @returns Map from identity string to item
+ */
 function indexByIdentity(list: PlainObject[], nested: NestedList): Map<string, PlainObject> {
   const index = new Map<string, PlainObject>();
   list.forEach((item) => {
@@ -95,6 +109,15 @@ function indexByIdentity(list: PlainObject[], nested: NestedList): Map<string, P
   return index;
 }
 
+/**
+ * Compare a nested list field item by item.
+ *
+ * @param path - Field path prefix
+ * @param local - Local list value
+ * @param remote - Remote list value
+ * @param nested - How items are matched and compared
+ * @returns Differing fields and write-only fields
+ */
 function compareList(
   path: string,
   local: unknown[],
@@ -109,7 +132,12 @@ function compareList(
     const itemPath = `${path}[${id ?? '?'}]`;
     const match = id === undefined ? undefined : remoteIndex.get(id);
     if (!match) {
-      result.fields.push({ path: itemPath, before: undefined, after: localItem, kind: 'added' });
+      result.fields.push({
+        path: itemPath,
+        before: undefined,
+        after: localItem,
+        kind: PreviewFieldChangeKind.Added,
+      });
       return;
     }
     const inner = compareObjects(localItem, match, nested, itemPath);
@@ -126,6 +154,15 @@ interface CompareValueOptions {
   ordered: boolean;
 }
 
+/**
+ * Compare one field value, delegating to nested list or object comparison when needed.
+ *
+ * @param path - Field path
+ * @param local - Local value
+ * @param remote - Remote value
+ * @param options - Nested list and ordering options
+ * @returns Differing fields and write-only fields
+ */
 function compareValue(
   path: string,
   local: unknown,
@@ -143,7 +180,10 @@ function compareValue(
   if (canonicalString(local, options.ordered) === canonicalString(before, options.ordered)) {
     return empty;
   }
-  return { fields: [{ path, before, after: local, kind: 'changed' }], writeOnly: [] };
+  return {
+    fields: [{ path, before, after: local, kind: PreviewFieldChangeKind.Changed }],
+    writeOnly: [],
+  };
 }
 
 /**

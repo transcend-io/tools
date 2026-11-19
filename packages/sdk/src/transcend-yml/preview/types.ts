@@ -1,3 +1,9 @@
+import type {
+  PreviewFieldChangeKind,
+  PreviewImplicitEffectKind,
+  PreviewItemAction,
+} from './enums.js';
+
 /** A plain JSON-like object */
 export type PlainObject = Record<string, unknown>;
 
@@ -10,11 +16,11 @@ export interface FieldChange {
   /** Value the push will write */
   after: unknown;
   /** `changed` replaces a value, `added` is a list item that does not exist remotely */
-  kind: 'changed' | 'added';
+  kind: PreviewFieldChangeKind;
 }
 
 /** What a push would do to one item */
-export type ItemAction = 'create' | 'update' | 'unchanged' | 'skipped';
+export type ItemAction = PreviewItemAction;
 
 /** The plan for one item in a resource list */
 export interface ItemPlan {
@@ -43,7 +49,7 @@ export interface ImplicitEffect {
   /** Resource the effect belongs to */
   resource: string;
   /** What happens */
-  kind: 'create' | 'clear' | 'delete';
+  kind: PreviewImplicitEffectKind;
   /** Human-readable description */
   description: string;
 }

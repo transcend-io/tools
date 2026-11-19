@@ -3,6 +3,7 @@ import { RequestAction } from '@transcend-io/privacy-types';
 import type { TranscendInput } from '../codecs.js';
 import { normalizeDeletionDependencies } from '../normalizeDeletionDependencies.js';
 import { isPlainObject, type NestedList, type Shape } from './compare.js';
+import { PreviewListResourceMode, PreviewResourceKind } from './enums.js';
 import type { PlainObject } from './types.js';
 
 /** Top-level YAML keys that the preview knows about. `enrichers` is folded into `preflights`. */
@@ -11,13 +12,13 @@ export type PushResourceKey = Exclude<keyof TranscendInput, 'enrichers'>;
 /** A resource that is a list of items matched by identity */
 export interface ListResourceDefinition extends Shape {
   /** Resource kind */
-  kind: 'list';
+  kind: PreviewResourceKind.List;
   /**
    * `upsert` creates missing items and updates existing ones.
    * `createOnly` never touches an existing item.
    * `updateOnly` fails for items that do not exist.
    */
-  mode: 'upsert' | 'createOnly' | 'updateOnly';
+  mode: PreviewListResourceMode;
   /** Identity of an item. Must match the key the sync function matches on. */
   identity: (item: PlainObject) => string | undefined;
   /** Label shown to the user */
@@ -29,13 +30,13 @@ export interface ListResourceDefinition extends Shape {
 /** A resource that is a single object per organization */
 export interface SingletonResourceDefinition extends Shape {
   /** Resource kind */
-  kind: 'singleton';
+  kind: PreviewResourceKind.Singleton;
 }
 
 /** A resource push does not apply */
 export interface PullOnlyResourceDefinition {
   /** Resource kind */
-  kind: 'pullOnly';
+  kind: PreviewResourceKind.PullOnly;
 }
 
 /** How the preview treats one top-level YAML key */
@@ -74,8 +75,8 @@ const listOf = (
     label?: ListResourceDefinition['label'];
   } = {},
 ): ListResourceDefinition => ({
-  kind: 'list',
-  mode: 'upsert',
+  kind: PreviewResourceKind.List,
+  mode: PreviewListResourceMode.Upsert,
   identity: by(field),
   label: (item) => str(item[field]) ?? '(unnamed)',
   ...rest,
@@ -228,12 +229,12 @@ export function matchActionItem(
  * Typed as a full record so a new key cannot ship without a preview definition.
  */
 export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> = {
-  'api-keys': { kind: 'pullOnly' },
-  assessments: { kind: 'pullOnly' },
-  'assessment-templates': { kind: 'pullOnly' },
-  'system-discovery': { kind: 'pullOnly' },
+  'api-keys': { kind: PreviewResourceKind.PullOnly },
+  assessments: { kind: PreviewResourceKind.PullOnly },
+  'assessment-templates': { kind: PreviewResourceKind.PullOnly },
+  'system-discovery': { kind: PreviewResourceKind.PullOnly },
 
-  templates: listOf('title', { mode: 'createOnly' }),
+  templates: listOf('title', { mode: PreviewListResourceMode.CreateOnly }),
   teams: listOf('name'),
   preflights: listOf('title', {
     // Pull cannot read webhook headers
@@ -255,7 +256,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
   }),
   'data-subjects': listOf('type'),
   actions: listOf('type', {
-    mode: 'updateOnly',
+    mode: PreviewListResourceMode.UpdateOnly,
     // Push converts a block list into an allow list that pull returns
     writeOnlyFields: ['regionBlockList'],
   }),
@@ -282,7 +283,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
     nested: { attributes: ATTRIBUTES_LIST },
   }),
   'consent-manager': {
-    kind: 'singleton',
+    kind: PreviewResourceKind.Singleton,
     // Pull returns these but push does not apply them. `version` is not pulled.
     ignoreFields: ['bundleUrls', 'syncEndpoint', 'syncGroups'],
     writeOnlyFields: ['version'],
@@ -301,7 +302,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
     },
   },
   'privacy-center': {
-    kind: 'singleton',
+    kind: PreviewResourceKind.Singleton,
     nested: { footerLinks: { identity: by('title') } },
   },
   policies: listOf('title', {
@@ -313,7 +314,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
     ignoreFields: ['description'],
   }),
   partitions: listOf('name', {
-    mode: 'createOnly',
+    mode: PreviewListResourceMode.CreateOnly,
     // The partition secret is pull-only
     ignoreFields: ['partition'],
   }),

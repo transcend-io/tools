@@ -1,7 +1,14 @@
+import { PreviewFieldChangeKind, PreviewItemAction } from './enums.js';
 import type { FieldChange, ItemPlan, PushPlan } from './types.js';
 
 const MAX_VALUE_LENGTH = 70;
 
+/**
+ * Truncate long preview values for terminal output.
+ *
+ * @param text - Raw display text
+ * @returns Text capped at {@link MAX_VALUE_LENGTH} characters
+ */
 function truncate(text: string): string {
   return text.length > MAX_VALUE_LENGTH ? `${text.slice(0, MAX_VALUE_LENGTH - 3)}...` : text;
 }
@@ -25,8 +32,14 @@ export function formatValue(value: unknown): string {
 const isScalarList = (value: unknown): value is (string | number | boolean)[] =>
   Array.isArray(value) && value.every((entry) => typeof entry !== 'object' || entry === null);
 
+/**
+ * One-line description of a field change for the preview.
+ *
+ * @param change - Field-level diff
+ * @returns Display line without leading indent
+ */
 function describeChange(change: FieldChange): string {
-  if (change.kind === 'added') {
+  if (change.kind === PreviewFieldChangeKind.Added) {
     return `+ ${change.path}`;
   }
   const { before, after } = change;
@@ -46,12 +59,18 @@ function describeChange(change: FieldChange): string {
   return `${change.path}: ${formatValue(before)} -> ${formatValue(after)}`;
 }
 
+/**
+ * Render one item plan as indented lines.
+ *
+ * @param item - Item plan
+ * @returns Lines for this item, including field diffs
+ */
 function renderItem(item: ItemPlan): string[] {
   const marker = {
-    create: '+ create',
-    update: '~ update',
-    skipped: '! skipped',
-    unchanged: '= same',
+    [PreviewItemAction.Create]: '+ create',
+    [PreviewItemAction.Update]: '~ update',
+    [PreviewItemAction.Skipped]: '! skipped',
+    [PreviewItemAction.Unchanged]: '= same',
   }[item.action];
   const lines = [
     `  ${marker}  ${JSON.stringify(item.label)}${item.note ? `  (${item.note})` : ''}`,
@@ -84,7 +103,8 @@ export function renderPushPlan(
 
   plan.resources.forEach(({ resource, items }) => {
     const shown = items.filter(
-      (item) => item.action !== 'unchanged' || item.writeOnly.length > 0 || item.note,
+      (item) =>
+        item.action !== PreviewItemAction.Unchanged || item.writeOnly.length > 0 || item.note,
     );
     const hidden = items.filter((item) => !shown.includes(item)).length;
     if (shown.length === 0 && hidden === 0) {
