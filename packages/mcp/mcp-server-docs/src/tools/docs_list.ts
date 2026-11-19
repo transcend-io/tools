@@ -76,6 +76,8 @@ export type DocsListInput = z.infer<typeof DocsListSchema>;
 const ROUTE_PRODUCT_LIMIT = 10;
 /** Cap on pages returned when listing one product. */
 const PRODUCT_LISTING_LIMIT = 50;
+/** Cap on rows when a route lookup has no query. */
+const ROUTE_LISTING_LIMIT = 30;
 /** Cap on total rows when a route lookup is combined with a query. */
 const COMBINED_LIMIT = 20;
 /** Rows kept for full-text results when a route lookup is combined with a query. */
@@ -230,12 +232,21 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           'instead.',
       });
     }
-    return createListResult(rows, { totalCount: rows.length, paginationNote: notes.join(' ') });
+    // The busiest route has 76 linked pages today, so cap the listing. Primary pages
+    // come first, so a cut drops mentions and product pages before pages about the route.
+    const page = rows.slice(0, ROUTE_LISTING_LIMIT);
+    if (rows.length > page.length) {
+      notes.push(
+        `Showing the first ${page.length} of ${rows.length} pages, primary pages first. ` +
+          'There is no paging: add query to search within them.',
+      );
+    }
+    return createListResult(page, { totalCount: rows.length, paginationNote: notes.join(' ') });
   }
 
   // Tier 3: full-text search, skipping pages already listed, within the total cap.
-  // Route pages are not capped, and a busy route can have 17. Reserve rows for
-  // search so the caller's query is never answered with route pages alone.
+  // Route pages are not otherwise capped, and a busy route has 76 linked pages today.
+  // Reserve rows for search so the caller's query is never answered with route pages alone.
   const tier2WithQuery = tier2.slice(0, ROUTE_PRODUCT_LIMIT_WITH_QUERY);
   const leadLimit = COMBINED_LIMIT - SEARCH_RESERVE;
   const lead = [...tier1, ...tier2WithQuery].slice(0, leadLimit);

@@ -279,6 +279,41 @@ describe('docs_list tiers', () => {
     expect(result.data[2]?.product).toBe('Privacy Center');
   });
 
+  it('caps a 76-page route at 30 rows, primary pages first, and says what was withheld', async () => {
+    const primary = Array.from({ length: 8 }, (_, i) => page(`About ${i}`, `busy/about-${i}`));
+    const mentions = Array.from({ length: 68 }, (_, i) =>
+      page(`Mention ${i}`, `busy/mention-${i}`),
+    );
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            routes: { '/infrastructure/integrations': { primary, mentions } },
+          }),
+          { status: 200 },
+        ),
+    );
+    const result = (await createDocsListTool().handler({
+      route: '/infrastructure/integrations',
+    })) as ListResult & { totalCount: number };
+
+    expect(result.count).toBe(30);
+    expect(result.totalCount).toBe(76);
+    expect(result.data.slice(0, 8).every((row) => row.match === 'primary')).toBe(true);
+    expect(result.data.slice(8).every((row) => row.match === 'mention')).toBe(true);
+    expect(result.paginationNote).toContain('first 30 of 76');
+    expect(result.paginationNote).toContain('add query');
+  });
+
+  it('does not add a withheld note when a route fits in 30 rows', async () => {
+    withProducts();
+    const result = (await createDocsListTool().handler({
+      route: '/privacy-center/general-settings',
+    })) as ListResult;
+
+    expect(result.paginationNote).not.toContain('There is no paging');
+  });
+
   it('caps product pages at 10 after the route pages', async () => {
     const many = Array.from({ length: 15 }, (_, i) => page(`Page ${i}`, `privacy-center/p-${i}`));
     mockFetch(
