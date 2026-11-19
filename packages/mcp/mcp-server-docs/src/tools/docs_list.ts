@@ -7,7 +7,13 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { DocsProduct } from '@transcend-io/privacy-types';
+import {
+  DocsGuideType,
+  DocsListRouteMatch,
+  DocsLookupSource,
+  DocsPersona,
+  DocsProduct,
+} from '@transcend-io/privacy-types';
 
 import { getIndex, getRouteIndex, RouteIndexUnavailableError } from '../docsIndex.js';
 import {
@@ -31,6 +37,24 @@ const SECTION_LISTING_LIMIT = 50;
 
 const docsProductTitles = Object.values(DocsProduct);
 const docsProductEnumValues = docsProductTitles as [DocsProduct, ...DocsProduct[]];
+const docsGuideTypeTitles = Object.values(DocsGuideType) as [DocsGuideType, ...DocsGuideType[]];
+const docsPersonaTitles = Object.values(DocsPersona) as [DocsPersona, ...DocsPersona[]];
+const docsLookupSourceValues = Object.values(DocsLookupSource) as [
+  DocsLookupSource,
+  ...DocsLookupSource[],
+];
+
+export const DocsGuideTypeSchema = z.enum(docsGuideTypeTitles, {
+  message: `Unknown guideType. Valid guide types: ${docsGuideTypeTitles.join(', ')}.`,
+});
+
+export const DocsPersonaSchema = z.enum(docsPersonaTitles, {
+  message: `Unknown persona. Valid personas: ${docsPersonaTitles.join(', ')}.`,
+});
+
+export const DocsLookupSourceSchema = z.enum(docsLookupSourceValues, {
+  message: `Unknown source. Valid sources: ${docsLookupSourceValues.join(', ')}.`,
+});
 
 export const DocsProductSchema = z.preprocess(
   (value) => (typeof value === 'string' ? findProductTitle(value) : value),
@@ -90,7 +114,11 @@ function throwRouteIndexError(error: unknown): never {
 }
 
 function toProductRows(pages: RoutePage[], product: string) {
-  return pages.map((page) => ({ ...page, match: 'product' as const, product }));
+  return pages.map((page) => ({
+    ...page,
+    match: DocsListRouteMatch.Product,
+    product,
+  }));
 }
 
 /**
@@ -160,7 +188,7 @@ async function listDocsByProduct({
       urlFilter: (url) => inProduct.has(normalizeDocUrl(url)),
     });
     return createListResult(
-      await withDescriptions(hits.map((hit) => ({ match: 'search' as const, ...hit }))),
+      await withDescriptions(hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))),
       {
         totalCount,
         paginationNote:
@@ -269,7 +297,7 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           urlFilter: (url) => !listed.has(normalizeDocUrl(url)),
         })
       : { hits: [] };
-  const rows = [...lead, ...hits.map((hit) => ({ match: 'search' as const, ...hit }))];
+  const rows = [...lead, ...hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))];
   notes.push(`Pages with match 'search' are full-text results for '${terms}'.`);
   return createListResult(await withDescriptions(rows), {
     totalCount: rows.length,

@@ -33,6 +33,7 @@ import {
   fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
+  fetchConsentManagerPrefixModules,
   fetchConsentVariants,
   fetchConsentThemes,
   fetchConsentManagerTheme,
@@ -126,6 +127,10 @@ export interface TranscendPullConfigurationInput {
   skipSubDatapoints?: boolean;
   /** When true, metadata around guessed data categories should be included */
   includeGuessedCategories?: boolean;
+  /** Only fetch data silos with these titles. Used to keep a push preview cheap. */
+  dataSiloTitles?: string[];
+  /** Action item types to fetch. Defaults to onboarding items only. */
+  actionItemTypes?: ActionItemCode[];
   /** Logger for progress and request messages. Defaults to discarding them. */
   logger?: Logger;
 }
@@ -142,6 +147,8 @@ export async function pullTranscendConfiguration(
   {
     dataSiloIds,
     integrationNames,
+    dataSiloTitles,
+    actionItemTypes = [ActionItemCode.Onboarding],
     debug,
     resources = DEFAULT_TRANSCEND_PULL_RESOURCES,
     pageSize,
@@ -208,6 +215,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.DataSilos)
       ? fetchEnrichedDataSilos(client, {
           ids: dataSiloIds,
+          titles: dataSiloTitles,
           integrationNames,
           pageSize,
           debug,
@@ -307,7 +315,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.ActionItems)
       ? fetchAllActionItems(client, {
           logger,
-          filterBy: { type: [ActionItemCode.Onboarding] },
+          filterBy: { type: actionItemTypes },
         })
       : [],
     // Fetch actionItemCollections
@@ -367,6 +375,14 @@ export async function pullTranscendConfiguration(
           filterBy: { airgapBundleId: consentManager.id },
         })
       : undefined;
+
+  const consentManagerPrefixModules =
+    resources.includes(TranscendPullResource.ConsentManager) && consentManager
+      ? await fetchConsentManagerPrefixModules(client, {
+          logger,
+          airgapBundleId: consentManager.id,
+        })
+      : [];
 
   const result: TranscendInput = {};
 
@@ -460,6 +476,8 @@ export async function pullTranscendConfiguration(
           configuration: JSON.stringify(theme.configuration),
         }),
       ),
+      prefixModules:
+        consentManagerPrefixModules.length > 0 ? consentManagerPrefixModules : undefined,
     };
   }
 

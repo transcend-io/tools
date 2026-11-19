@@ -76,7 +76,7 @@ describe('parseLlmsTxt nested format', () => {
     expect(find('Changelog')?.section).toBe('General');
   });
 
-  it('drops bold markers from sections and counts every article link', () => {
+  it('keeps descriptions, drops bold markers from sections, and counts every article link', () => {
     expect(find('Glossary')?.title).toBe('Glossary');
     expect(entries.map((entry) => entry.section)).not.toContain('**Reference**');
     expect(entries).toHaveLength(nestedFixtureLlmsTxt.match(/^\s*- \[/gm)?.length ?? -1);
