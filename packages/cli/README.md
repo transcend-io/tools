@@ -3117,10 +3117,10 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json] [--expectBundleId value] [--resources apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json] [--yes] [--skipPreview] [--expectBundleId value] [--resources apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs]
   transcend inventory push --help
 
-Given a transcend.yml file, sync the contents up to your Transcend instance. Use `--dryRun` to preview changes without writing anything. Use `--resources` to push only some sections of the file, and `--expectBundleId` to stop when the API key belongs to the wrong organization.
+Given a transcend.yml file, sync the contents up to your Transcend instance. Before anything is written, the command compares your file with your organization, shows what will be created, updated, or deleted, and asks you to confirm. Pass --yes to confirm automatically (for example in CI), --dryRun to only look, or --skipPreview to push without a preview. Use --resources to push only some sections of the file, and --expectBundleId to stop when the API key belongs to the wrong organization.
 
 FLAGS
       --auth                         The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
@@ -3133,6 +3133,8 @@ FLAGS
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
      [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
      [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
+     [--yes]                         Apply the push after showing the preview without asking for confirmation                                                                                                                                                                                    [default = false]
+     [--skipPreview]                 Push straight away without comparing with your organization first. This is how push worked before previews.                                                                                                                                                 [default = false]
      [--expectBundleId]              Stop before anything is previewed or pushed unless the consent manager bundle id of the organization matches this id. Protects CI from using the API key of the wrong organization. Cannot be used with a list of API keys.
      [--resources]                   Push only these top-level sections of the YAML file, using the same names as `inventory pull --resources`. Every other section is ignored by the preview and the push.                                                                                      [apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
   -h  --help                         Print help information and exit
@@ -3190,10 +3192,16 @@ transcend inventory push --auth="$TRANSCEND_API_KEY"
 transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
-**Looks for file at custom location ./custom/location.yml**
+**Apply the push without the confirmation prompt, for example in CI**
 
 ```sh
-transcend inventory push --auth="$TRANSCEND_API_KEY" --file=./custom/location.yml
+transcend inventory push --auth="$TRANSCEND_API_KEY" --yes
+```
+
+**Push without comparing with your organization first**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --skipPreview
 ```
 
 **Push only the vendors and data flows sections of the file. Every other section is ignored**
@@ -3205,7 +3213,13 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --resources=vendors,dataFlo
 **Stop unless the organization has this consent manager bundle id, so CI never pushes with the wrong API key**
 
 ```sh
-transcend inventory push --auth="$TRANSCEND_API_KEY" --expectBundleId="$EXPECTED_BUNDLE_ID"
+transcend inventory push --auth="$TRANSCEND_API_KEY" --expectBundleId="$EXPECTED_BUNDLE_ID" --yes
+```
+
+**Looks for file at custom location ./custom/location.yml**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --file=./custom/location.yml
 ```
 
 **Apply service classifier to all data flows**
@@ -3271,15 +3285,18 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=customFields
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
-**Preview a push before applying it**
+**Preview before every push**
 
-`--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
+Before it writes anything, `transcend inventory push` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It then asks you to confirm. The preview also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted.
+
+- `--dryRun` shows the preview and stops. Nothing is changed. Add `--json` for machine-readable output.
+- `--yes` shows the preview and applies it without asking. Use this in CI, where there is no terminal to answer the prompt.
+- `--skipPreview` pushes straight away with no comparison, which is how push worked before previews.
+- If the file already matches your organization, nothing is pushed.
+- `--resources` limits the push to the named top-level sections, using the same names as `inventory pull --resources`. Other sections are removed before the preview and the push, so both agree. It fails for a name that is not in the file.
+- `--expectBundleId` reads the consent manager bundle id of the organization first. It stops before the preview if the id differs or the organization has no consent manager. It cannot be used with a list of API keys.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
-
-`--resources` limits the push to the named top-level sections, using the same names as `inventory pull --resources`. Other sections are removed before a dry run or a push, so both agree. It fails for a name that is not in the file.
-
-`--expectBundleId` reads the consent manager bundle id of the organization first. It stops before a dry run or push if the id differs or the organization has no consent manager. It cannot be used with a list of API keys.
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
@@ -3364,7 +3381,7 @@ jobs:
       #   run: ./scripts/generate_transcend_yml.py
 
       - name: Push Transcend config
-        run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
+        run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }} --yes
 ```
 
 #### Dynamic variables

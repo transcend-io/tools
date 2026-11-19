@@ -1,14 +1,15 @@
 import type fs from 'node:fs';
 
-import { TranscendPullResource } from '@transcend-io/sdk';
+import type { TranscendPullResource } from '@transcend-io/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { push, type PushCommandFlags } from '../impl.js';
 
-const fetchConsentManagerIdMock = vi.hoisted(() => vi.fn());
 const pullTranscendConfigurationMock = vi.hoisted(() => vi.fn());
+const confirmMock = vi.hoisted(() => vi.fn());
 const previewPushMock = vi.hoisted(() => vi.fn());
+const fetchConsentManagerIdMock = vi.hoisted(() => vi.fn());
 const syncConfigurationToTranscendMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => {
@@ -20,6 +21,16 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => {
     previewPush: previewPushMock,
     pullTranscendConfiguration: pullTranscendConfigurationMock,
     syncConfigurationToTranscend: syncConfigurationToTranscendMock,
+  };
+});
+
+vi.mock('../../../../lib/scaffolding/prompts.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../lib/scaffolding/prompts.js')>();
+  return {
+    ...actual,
+    ScaffoldPrompts: class {
+      confirm = confirmMock;
+    },
   };
 });
 
@@ -41,6 +52,8 @@ const flags = (overrides: Partial<PushCommandFlags> = {}): PushCommandFlags => (
   deleteExtraAttributeValues: false,
   dryRun: false,
   json: false,
+  yes: false,
+  skipPreview: false,
   ...overrides,
 });
 
@@ -52,11 +65,11 @@ const testFs = {
 describe('inventory push', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    fetchConsentManagerIdMock.mockResolvedValue('bundle-a');
     pullTranscendConfigurationMock.mockResolvedValue({
       vendors: [{ title: 'Segment', description: 'CDP' }],
     });
     syncConfigurationToTranscendMock.mockResolvedValue({ success: true, errors: [] });
+    fetchConsentManagerIdMock.mockResolvedValue('bundle-a');
     const { buildSnapshotRequest, planPush } = await import('@transcend-io/sdk');
     previewPushMock.mockImplementation(async (client, contents, options = {}) => {
       const remote = await pullTranscendConfigurationMock(client, {
@@ -112,18 +125,82 @@ describe('inventory push', () => {
     expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
   });
 
-  it('still syncs without --dryRun and does not pull a snapshot', async () => {
+  it('--skipPreview syncs straight away without pulling a snapshot', async () => {
     const context = buildContextForTest({ fs: testFs });
-    await push.call(context, flags());
+    await push.call(context, flags({ skipPreview: true }));
 
     expect(syncConfigurationToTranscendMock).toHaveBeenCalledTimes(1);
     expect(pullTranscendConfigurationMock).not.toHaveBeenCalled();
   });
 
+  describe('confirmation', () => {
+    it('--yes shows the preview and applies without asking', async () => {
+      const context = buildContextForTest({ fs: testFs });
+      await push.call(context, flags({ yes: true }));
+
+      expect(context.stdout).toContain('1 to create, 1 to update');
+      expect(confirmMock).not.toHaveBeenCalled();
+      expect(syncConfigurationToTranscendMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks in a terminal and applies when approved', async () => {
+      confirmMock.mockResolvedValue(true);
+      const context = buildContextForTest({ fs: testFs, stderrIsTTY: true });
+      await push.call(context, flags());
+
+      expect(confirmMock).toHaveBeenCalledWith('Apply these changes?', false);
+      expect(syncConfigurationToTranscendMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not sync when the user declines', async () => {
+      confirmMock.mockResolvedValue(false);
+      const context = buildContextForTest({ fs: testFs, stderrIsTTY: true });
+      await push.call(context, flags());
+
+      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
+      expect(context.stdout).toContain('Push cancelled');
+    });
+
+    it('fails without a terminal and without --yes', async () => {
+      const context = buildContextForTest({ fs: testFs, stdinIsTTY: false });
+
+      await expect(push.call(context, flags())).rejects.toThrow('pass --yes');
+      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the file matches the organization', async () => {
+      pullTranscendConfigurationMock.mockResolvedValue({
+        vendors: [{ title: 'Stripe' }, { title: 'Segment', description: 'Customer data platform' }],
+      });
+      const context = buildContextForTest({ fs: testFs });
+      await push.call(context, flags({ yes: true }));
+
+      expect(context.stdout).toContain('No changes detected');
+      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
+    });
+
+    it('does not push when the preview fails', async () => {
+      pullTranscendConfigurationMock.mockRejectedValue(new Error('missing scope'));
+      const context = buildContextForTest({ fs: testFs });
+
+      await expect(push.call(context, flags({ yes: true }))).rejects.toThrow();
+      expect(context.stderr).toContain('Use --skipPreview');
+      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects --json without --dryRun and --dryRun with --skipPreview', async () => {
+      const context = buildContextForTest({ fs: testFs });
+      await expect(push.call(context, flags({ json: true }))).rejects.toThrow('--dryRun');
+      await expect(push.call(context, flags({ dryRun: true, skipPreview: true }))).rejects.toThrow(
+        'cannot be used together',
+      );
+    });
+  });
+
   describe('--expectBundleId', () => {
     it('pushes when the bundle id matches', async () => {
       const context = buildContextForTest({ fs: testFs });
-      await push.call(context, flags({ expectBundleId: 'bundle-a' }));
+      await push.call(context, flags({ yes: true, expectBundleId: 'bundle-a' }));
 
       expect(fetchConsentManagerIdMock).toHaveBeenCalledTimes(1);
       expect(syncConfigurationToTranscendMock).toHaveBeenCalledTimes(1);
@@ -132,20 +209,11 @@ describe('inventory push', () => {
     it('aborts before the preview when the bundle id differs', async () => {
       const context = buildContextForTest({ fs: testFs });
 
-      await expect(push.call(context, flags({ expectBundleId: 'bundle-b' }))).rejects.toThrow(
-        'bundle id of this organization is bundle-a',
-      );
-      expect(previewPushMock).not.toHaveBeenCalled();
-      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
-    });
-
-    it('aborts before --dryRun when the bundle id differs', async () => {
-      const context = buildContextForTest({ fs: testFs });
-
       await expect(
-        push.call(context, flags({ dryRun: true, expectBundleId: 'bundle-b' })),
-      ).rejects.toThrow('--expectBundleId');
+        push.call(context, flags({ yes: true, expectBundleId: 'bundle-b' })),
+      ).rejects.toThrow('bundle id of this organization is bundle-a');
       expect(previewPushMock).not.toHaveBeenCalled();
+      expect(context.stdout).not.toContain('Push preview');
       expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
     });
 
@@ -153,10 +221,21 @@ describe('inventory push', () => {
       fetchConsentManagerIdMock.mockRejectedValue(new TypeError('consentManager is null'));
       const context = buildContextForTest({ fs: testFs });
 
-      await expect(push.call(context, flags({ expectBundleId: 'bundle-a' }))).rejects.toThrow(
-        'may have no consent manager',
-      );
+      await expect(
+        push.call(context, flags({ yes: true, expectBundleId: 'bundle-a' })),
+      ).rejects.toThrow('may have no consent manager');
       expect(previewPushMock).not.toHaveBeenCalled();
+      expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
+    });
+
+    it('also guards --skipPreview and --dryRun', async () => {
+      const context = buildContextForTest({ fs: testFs });
+      await expect(
+        push.call(context, flags({ skipPreview: true, expectBundleId: 'bundle-b' })),
+      ).rejects.toThrow('--expectBundleId');
+      await expect(
+        push.call(context, flags({ dryRun: true, expectBundleId: 'bundle-b' })),
+      ).rejects.toThrow('--expectBundleId');
       expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
     });
 
@@ -174,7 +253,7 @@ describe('inventory push', () => {
       const context = buildContextForTest({ fs: keysFs });
 
       await expect(
-        push.call(context, flags({ auth: './keys.json', expectBundleId: 'bundle-a' })),
+        push.call(context, flags({ auth: './keys.json', yes: true, expectBundleId: 'bundle-a' })),
       ).rejects.toThrow('cannot be used with a list of API keys');
       expect(fetchConsentManagerIdMock).not.toHaveBeenCalled();
       expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
@@ -190,22 +269,27 @@ describe('inventory push', () => {
       readFileSync: () => TWO_SECTIONS,
     } as unknown as typeof fs;
 
-    it('strips other sections before planning and syncing', async () => {
+    it('strips other sections before planning, previewing, and syncing', async () => {
       const context = buildContextForTest({ fs: twoSectionFs });
-      await push.call(context, flags({ resources: [TranscendPullResource.DataSubjects] }));
+      await push.call(
+        context,
+        flags({ yes: true, resources: ['dataSubjects' as TranscendPullResource] }),
+      );
 
+      const [, previewed] = previewPushMock.mock.calls[0];
+      expect(Object.keys(previewed)).toEqual(['data-subjects']);
       const [synced] = syncConfigurationToTranscendMock.mock.calls[0];
       expect(Object.keys(synced)).toEqual(['data-subjects']);
       expect(context.stdout).not.toContain('Stripe');
     });
 
-    it('keeps every named section in --dryRun', async () => {
+    it('keeps every named section', async () => {
       const context = buildContextForTest({ fs: twoSectionFs });
       await push.call(
         context,
         flags({
           dryRun: true,
-          resources: [TranscendPullResource.DataSubjects, TranscendPullResource.Vendors],
+          resources: ['dataSubjects', 'vendors'] as TranscendPullResource[],
         }),
       );
 
@@ -217,7 +301,7 @@ describe('inventory push', () => {
       const context = buildContextForTest({ fs: testFs });
 
       await expect(
-        push.call(context, flags({ resources: [TranscendPullResource.Teams] })),
+        push.call(context, flags({ yes: true, resources: ['teams'] as TranscendPullResource[] })),
       ).rejects.toThrow('--resources named teams');
       expect(previewPushMock).not.toHaveBeenCalled();
       expect(syncConfigurationToTranscendMock).not.toHaveBeenCalled();
@@ -231,9 +315,9 @@ describe('inventory push', () => {
         push.call(
           context,
           flags({
-            dryRun: true,
+            yes: true,
             expectBundleId: 'bundle-a',
-            resources: [TranscendPullResource.Vendors],
+            resources: ['vendors'] as TranscendPullResource[],
           }),
         ),
       ).rejects.toThrow('bundle id');
