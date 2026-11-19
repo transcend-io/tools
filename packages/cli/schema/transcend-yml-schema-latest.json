@@ -2308,6 +2308,37 @@
               }
             }
           }
+        },
+        "prefixModules": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": ["name", "catalog", "version"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "catalog": {
+                    "type": "string",
+                    "enum": ["transcend", "organization"]
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
         }
       }
     },

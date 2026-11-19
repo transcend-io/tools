@@ -32,6 +32,7 @@ import {
   fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
+  fetchConsentManagerPrefixModules,
   fetchConsentVariants,
   fetchConsentThemes,
   fetchConsentManagerTheme,
@@ -361,6 +362,14 @@ export async function pullTranscendConfiguration(
         })
       : undefined;
 
+  const consentManagerPrefixModules =
+    resources.includes(TranscendPullResource.ConsentManager) && consentManager
+      ? await fetchConsentManagerPrefixModules(client, {
+          logger,
+          airgapBundleId: consentManager.id,
+        })
+      : [];
+
   const result: TranscendInput = {};
 
   // Save API keys
@@ -453,6 +462,8 @@ export async function pullTranscendConfiguration(
           configuration: JSON.stringify(theme.configuration),
         }),
       ),
+      prefixModules:
+        consentManagerPrefixModules.length > 0 ? consentManagerPrefixModules : undefined,
     };
   }
 
