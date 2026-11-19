@@ -2889,7 +2889,7 @@ Use `--json` in automation to emit safe structured metadata for every Custom Fun
 
 ```txt
 USAGE
-  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug] [--dryRun]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2914,6 +2914,7 @@ FLAGS
      [--skipSubDatapoints]         When true, skip pulling in subDatapoints alongside data silo resource                                                                                                                                                                                       [default = false]
      [--includeGuessedCategories]  When true, included guessed data categories that came from the content classifier                                                                                                                                                                           [default = false]
      [--debug]                     Set to true to include debug logs while pulling the configuration                                                                                                                                                                                           [default = false]
+     [--dryRun]                    Show how the file would change without writing it                                                                                                                                                                                                           [default = false]
   -h  --help                       Print help information and exit
 ```
 
@@ -2961,6 +2962,12 @@ The API key permissions for this command vary based on the `resources` argument:
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY"
+```
+
+**Show how ./transcend.yml would change without writing it**
+
+```sh
+transcend inventory pull --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Write out file to custom location**
@@ -3110,7 +3117,7 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json]
   transcend inventory push --help
 
 Given a transcend.yml file, sync the contents up to your Transcend instance.
@@ -3124,6 +3131,8 @@ FLAGS
      [--publishToPrivacyCenter]      When true, publish the configuration to the Privacy Center                                                                                                                                                                                                  [default = false]
      [--classifyService]             When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                                                                           [default = false]
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
+     [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
+     [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
   -h  --help                         Print help information and exit
 ```
 
@@ -3171,6 +3180,12 @@ The API key permissions for this command vary based on the resources declared as
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview what the push would create, update, or delete. Nothing is changed in Transcend**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Looks for file at custom location ./custom/location.yml**
@@ -3240,6 +3255,16 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --classifyService
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=customFields
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
+```
+
+**Preview a push before applying it**
+
+`--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
+
+The preview needs view access to every resource in your file, because it reads the current values first.
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 Some things to note about this sync process:

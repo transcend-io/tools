@@ -1,5 +1,5 @@
 import { toolInputSchema } from '@transcend-io/mcp-server-base';
-import { DocsProduct } from '@transcend-io/privacy-types';
+import { DocsGuideType, DocsListRouteMatch, DocsProduct } from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -22,17 +22,21 @@ const LLMS_TXT = [
   '',
 ].join('\n');
 
-const page = (title: string, path: string, guideType: string | null = null) => ({
+const page = (title: string, path: string, guideType: DocsGuideType | null = null) => ({
   title,
   url: `https://docs.transcend.io/docs/${path}`,
   guideType,
 });
 
-const OVERVIEW = page('Privacy Center overview', 'privacy-center/overview', 'Overviews & Concepts');
+const OVERVIEW = page(
+  'Privacy Center overview',
+  'privacy-center/overview',
+  DocsGuideType.OverviewsAndConcepts,
+);
 const SAVING = page(
   'Saving and publishing to the Privacy Center',
   'privacy-center/saving',
-  'Overviews & Concepts',
+  DocsGuideType.OverviewsAndConcepts,
 );
 const DOMAINS = page('Custom domains for the Privacy Center', 'privacy-center/domains');
 
@@ -55,7 +59,11 @@ const ROUTES_WITH_PRODUCTS_JSON = JSON.stringify({
 });
 
 const ADMIN_USERS = page('Managing users', 'admin/users');
-const ADMIN_OVERVIEW = page('Platform overview', 'admin/overview', 'Overviews & Concepts');
+const ADMIN_OVERVIEW = page(
+  'Platform overview',
+  'admin/overview',
+  DocsGuideType.OverviewsAndConcepts,
+);
 
 const platformJson = (platformPages: Array<ReturnType<typeof page>>) =>
   JSON.stringify({
@@ -76,7 +84,7 @@ const ROUTES_JSON = JSON.stringify({
         {
           title: 'Saving and publishing to the Privacy Center',
           url: 'https://docs.transcend.io/docs/privacy-center/saving',
-          guideType: 'Overviews & Concepts',
+          guideType: DocsGuideType.OverviewsAndConcepts,
         },
       ],
       mentions: [
@@ -94,7 +102,7 @@ type ListResult = {
   data: Array<{
     title: string;
     url: string;
-    guideType: string | null;
+    guideType: DocsGuideType | null;
     match: string;
     route: string;
   }>;
@@ -153,6 +161,25 @@ describe('parseDashboardRoutes', () => {
     expect(() => parseDashboardRoutes('{"routes":{"/a":{"primary":[{"title":1}]}}}')).toThrow();
     expect(() => parseDashboardRoutes('{}')).toThrow();
   });
+
+  it('parses unknown guide types as null', () => {
+    const data = parseDashboardRoutes(
+      JSON.stringify({
+        routes: {
+          '/a': {
+            primary: [
+              {
+                title: 'New format',
+                url: 'https://docs.transcend.io/a',
+                guideType: 'Future Guide Type',
+              },
+            ],
+          },
+        },
+      }),
+    );
+    expect(data.routes['/a']?.primary[0]?.guideType).toBeNull();
+  });
 });
 
 describe('getRouteIndex', () => {
@@ -187,15 +214,15 @@ describe('docs_list route', () => {
       {
         title: 'Saving and publishing to the Privacy Center',
         url: 'https://docs.transcend.io/docs/privacy-center/saving',
-        guideType: 'Overviews & Concepts',
-        match: 'primary',
+        guideType: DocsGuideType.OverviewsAndConcepts,
+        match: DocsListRouteMatch.Primary,
         route: '/privacy-center/general-settings',
       },
       {
         title: 'Consent setup',
         url: 'https://docs.transcend.io/docs/consent/setup',
         guideType: null,
-        match: 'mention',
+        match: DocsListRouteMatch.Mention,
         route: '/privacy-center/general-settings',
       },
     ]);
@@ -271,10 +298,10 @@ describe('docs_list tiers', () => {
     })) as ListResult;
 
     expect(matches(result)).toEqual([
-      ['primary', SAVING.title],
-      ['mention', 'Consent setup'],
-      ['product', OVERVIEW.title],
-      ['product', DOMAINS.title],
+      [DocsListRouteMatch.Primary, SAVING.title],
+      [DocsListRouteMatch.Mention, 'Consent setup'],
+      [DocsListRouteMatch.Product, OVERVIEW.title],
+      [DocsListRouteMatch.Product, DOMAINS.title],
     ]);
     expect(result.data[2]?.product).toBe('Privacy Center');
   });
@@ -332,7 +359,7 @@ describe('docs_list tiers', () => {
     })) as ListResult;
 
     expect(result.count).toBe(10);
-    expect(result.data.every((row) => row.match === 'product')).toBe(true);
+    expect(result.data.every((row) => row.match === DocsListRouteMatch.Product)).toBe(true);
   });
 
   it('returns product pages and says so when the route has no pages', async () => {
@@ -341,7 +368,11 @@ describe('docs_list tiers', () => {
       route: 'https://app.transcend.io/privacy-center/unknown-tab?x=1',
     })) as ListResult;
 
-    expect(result.data.map((row) => row.match)).toEqual(['product', 'product', 'product']);
+    expect(result.data.map((row) => row.match)).toEqual([
+      DocsListRouteMatch.Product,
+      DocsListRouteMatch.Product,
+      DocsListRouteMatch.Product,
+    ]);
     expect(result.paginationNote).toContain('product docs instead');
   });
 
@@ -351,16 +382,16 @@ describe('docs_list tiers', () => {
       route: '/privacy-center/general-settings/deployment',
     })) as ListResult;
 
-    expect(result.data[0]?.match).toBe('primary');
+    expect(result.data[0]?.match).toBe(DocsListRouteMatch.Primary);
     expect(result.paginationNote).toContain('parent route');
-    expect(result.data.some((row) => row.match === 'product')).toBe(true);
+    expect(result.data.some((row) => row.match === DocsListRouteMatch.Product)).toBe(true);
   });
 
   it('adds no product pages for a platform route', async () => {
     withProducts();
     const result = (await createDocsListTool().handler({ route: '/settings/sso' })) as ListResult;
 
-    expect(matches(result)).toEqual([['primary', 'SSO']]);
+    expect(matches(result)).toEqual([[DocsListRouteMatch.Primary, 'SSO']]);
     const none = (await createDocsListTool().handler({ route: '/settings/other' })) as ListResult;
     expect(none.count).toBe(0);
   });
@@ -372,9 +403,9 @@ describe('docs_list tiers', () => {
     })) as ListResult;
 
     expect(matches(result)).toEqual([
-      ['product', OVERVIEW.title],
-      ['product', SAVING.title],
-      ['product', DOMAINS.title],
+      [DocsListRouteMatch.Product, OVERVIEW.title],
+      [DocsListRouteMatch.Product, SAVING.title],
+      [DocsListRouteMatch.Product, DOMAINS.title],
     ]);
   });
 
@@ -413,7 +444,7 @@ describe('docs_list tiers', () => {
     })) as ListResult;
 
     expect(result.data.map((row) => row.title)).toEqual([DOMAINS.title]);
-    expect(result.data[0]?.match).toBe('search');
+    expect(result.data[0]?.match).toBe(DocsListRouteMatch.Search);
   });
 
   it('route plus query lists tiers first, then deduped search results', async () => {
@@ -424,11 +455,11 @@ describe('docs_list tiers', () => {
     })) as ListResult;
 
     expect(matches(result)).toEqual([
-      ['primary', SAVING.title],
-      ['mention', 'Consent setup'],
-      ['product', OVERVIEW.title],
-      ['product', DOMAINS.title],
-      ['search', 'Consent banner domains'],
+      [DocsListRouteMatch.Primary, SAVING.title],
+      [DocsListRouteMatch.Mention, 'Consent setup'],
+      [DocsListRouteMatch.Product, OVERVIEW.title],
+      [DocsListRouteMatch.Product, DOMAINS.title],
+      [DocsListRouteMatch.Search, 'Consent banner domains'],
     ]);
     const urls = result.data.map((row) => row.url.replace(/\.md$/, ''));
     expect(new Set(urls).size).toBe(urls.length);
@@ -441,7 +472,7 @@ describe('docs_list tiers', () => {
       query: 'domains',
     })) as ListResult;
 
-    expect(result.data.every((row) => row.match === 'search')).toBe(true);
+    expect(result.data.every((row) => row.match === DocsListRouteMatch.Search)).toBe(true);
     expect(result.count).toBe(2);
   });
 
@@ -514,10 +545,16 @@ describe('docs_list tiers', () => {
       query: 'domains',
     })) as ListResult;
     expect(result.count).toBe(20);
-    expect(result.data.slice(0, 5).every((row) => row.match === 'primary')).toBe(true);
-    // Product rows are capped at 5 when a query is present, leaving 10 for search.
-    expect(result.data.slice(5, 10).every((row) => row.match === 'product')).toBe(true);
-    expect(result.data.slice(10).every((row) => row.match === 'search')).toBe(true);
+    expect(result.data.slice(0, 5).every((row) => row.match === DocsListRouteMatch.Primary)).toBe(
+      true,
+    );
+    // Product rows are capped at 5 when a query is present, leaving room for search.
+    expect(result.data.slice(5, 10).every((row) => row.match === DocsListRouteMatch.Product)).toBe(
+      true,
+    );
+    expect(result.data.slice(10).every((row) => row.match === DocsListRouteMatch.Search)).toBe(
+      true,
+    );
   });
 
   it('rejects an unknown product and lists the valid titles', async () => {
@@ -535,7 +572,10 @@ describe('docs_list tiers', () => {
     const result = (await tool.handler({
       route: '/privacy-center/general-settings',
     })) as ListResult;
-    expect(result.data.map((row) => row.match)).toEqual(['primary', 'mention']);
+    expect(result.data.map((row) => row.match)).toEqual([
+      DocsListRouteMatch.Primary,
+      DocsListRouteMatch.Mention,
+    ]);
 
     await expect(tool.handler({ product: 'Privacy Center' })).rejects.toThrow(
       /no product data.*Use query/,
@@ -586,8 +626,8 @@ describe('docs_list tiers', () => {
     const result = (await createDocsListTool().handler({ route: '/admin/users' })) as ListResult;
 
     expect(matches(result)).toEqual([
-      ['primary', ADMIN_USERS.title],
-      ['product', ADMIN_OVERVIEW.title],
+      [DocsListRouteMatch.Primary, ADMIN_USERS.title],
+      [DocsListRouteMatch.Product, ADMIN_OVERVIEW.title],
     ]);
     expect(result.data[1]?.product).toBe('Platform');
   });
@@ -596,7 +636,7 @@ describe('docs_list tiers', () => {
     mockFetch(() => new Response(platformJson([]), { status: 200 }));
     const result = (await createDocsListTool().handler({ route: '/admin/users' })) as ListResult;
 
-    expect(matches(result)).toEqual([['primary', ADMIN_USERS.title]]);
+    expect(matches(result)).toEqual([[DocsListRouteMatch.Primary, ADMIN_USERS.title]]);
   });
 
   it('accepts product Platform in any case and returns its pages', async () => {
@@ -604,8 +644,8 @@ describe('docs_list tiers', () => {
     const result = (await createDocsListTool().handler({ product: 'platform' })) as ListResult;
 
     expect(matches(result)).toEqual([
-      ['product', ADMIN_OVERVIEW.title],
-      ['product', ADMIN_USERS.title],
+      [DocsListRouteMatch.Product, ADMIN_OVERVIEW.title],
+      [DocsListRouteMatch.Product, ADMIN_USERS.title],
     ]);
   });
 
