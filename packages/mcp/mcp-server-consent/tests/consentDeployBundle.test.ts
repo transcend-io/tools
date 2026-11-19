@@ -1,15 +1,8 @@
-import { deployConsentManager } from '@transcend-io/sdk';
+import { DEPLOY_CONSENT_MANAGER } from '@transcend-io/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetAirgapBundleIdCacheForTests } from '../src/resolveAirgapBundleId.js';
 import { getConsentTools } from '../src/tools/index.js';
-
-vi.mock('@transcend-io/sdk', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
-  deployConsentManager: vi.fn(),
-}));
-
-const deployMock = vi.mocked(deployConsentManager);
 
 describe('consent_deploy_bundle', () => {
   let mockGraphql: {
@@ -18,13 +11,12 @@ describe('consent_deploy_bundle', () => {
 
   beforeEach(() => {
     resetAirgapBundleIdCacheForTests();
-    deployMock.mockReset();
-    deployMock.mockResolvedValue(undefined);
     mockGraphql = {
-      makeRequest: vi
-        .fn()
-        .mockResolvedValue({ consentManager: { consentManager: { id: 'bundle-1' } } }),
+      makeRequest: vi.fn(),
     };
+    mockGraphql.makeRequest
+      .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+      .mockResolvedValueOnce({});
   });
 
   const getTool = () =>
@@ -75,9 +67,9 @@ describe('consent_deploy_bundle', () => {
       const tool = getTool();
       const result = await tool.handler(tool.zodSchema.parse({ environment }));
 
-      expect(deployMock).toHaveBeenCalledTimes(1);
-      expect(deployMock).toHaveBeenCalledWith(expect.anything(), {
-        id: 'bundle-1',
+      expect(mockGraphql.makeRequest).toHaveBeenCalledTimes(2);
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(DEPLOY_CONSENT_MANAGER, {
+        airgapBundleId: 'bundle-1',
         bundleType: environment,
       });
       expect(result).toMatchObject({
@@ -87,24 +79,11 @@ describe('consent_deploy_bundle', () => {
     },
   );
 
-  it('routes the SDK request through the MCP GraphQL client without stacking retries', async () => {
-    deployMock.mockImplementation(async (client) => {
-      await client.request('mutation Deploy { ok }', { airgapBundleId: 'bundle-1' });
-    });
-    mockGraphql.makeRequest.mockClear();
-
-    const tool = getTool();
-    await tool.handler(tool.zodSchema.parse({ environment: 'TEST' }));
-
-    expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(
-      'mutation Deploy { ok }',
-      { airgapBundleId: 'bundle-1' },
-      { retries: 0 },
-    );
-  });
-
   it('does not report success when the deploy fails', async () => {
-    deployMock.mockRejectedValue(new Error('boom'));
+    mockGraphql.makeRequest.mockReset();
+    mockGraphql.makeRequest
+      .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+      .mockRejectedValueOnce(new Error('boom'));
 
     const tool = getTool();
     await expect(tool.handler(tool.zodSchema.parse({ environment: 'PRODUCTION' }))).rejects.toThrow(
