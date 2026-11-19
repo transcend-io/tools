@@ -1,5 +1,6 @@
 export * from './createTranscendConsentGotInstance.js';
 export * from './deployConsentManager.js';
+export * from './fetchAllConsentSites.js';
 export * from './fetchAllCookies.js';
 export * from './fetchAllDataFlows.js';
 export * from './fetchAllPolicies.js';
@@ -19,6 +20,7 @@ export * from './resolveDisplayedChildOrganizationIds.js';
 export { syncConsentManager, syncConsentManagerExperiences } from './syncConsentManager.js';
 export { syncConsentUiThemes, syncConsentUiVariants } from './syncConsentUi.js';
 export type { SyncedConsentUiTheme, SyncedConsentUiVariant } from './syncConsentUi.js';
+export { syncConsentSites } from './syncConsentSites.js';
 export { syncCookies, updateOrCreateCookies } from './syncCookies.js';
 export { createDataFlows, syncDataFlows, updateDataFlows } from './syncDataFlows.js';
 export type { DataFlowAttributeInput } from './syncDataFlows.js';
