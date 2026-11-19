@@ -1,3 +1,4 @@
+import { DocsListRouteMatch } from '@transcend-io/privacy-types';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -91,12 +92,12 @@ describe('lookupRoute', () => {
     expect(result?.pages.map(({ title, match, route }) => ({ title, match, route }))).toEqual([
       {
         title: 'General Settings',
-        match: 'primary',
+        match: DocsListRouteMatch.Primary,
         route: '/privacy-center/general-settings',
       },
       {
         title: 'Publishing Overview',
-        match: 'mention',
+        match: DocsListRouteMatch.Mention,
         route: '/privacy-center/general-settings',
       },
     ]);
