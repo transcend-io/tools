@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-docs
 
+## 0.5.1
+
+### Patch Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
 ## 0.5.0
 
 ### Minor Changes
