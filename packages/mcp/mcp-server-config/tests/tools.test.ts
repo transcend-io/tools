@@ -176,13 +176,30 @@ describe('config_push', () => {
 });
 
 describe('config_get_schema', () => {
-  it('returns the whole schema without a filter', async () => {
-    const { schema, keyBySection } = (await tool('config_get_schema').handler({})) as {
+  it('returns a section catalog without resources', async () => {
+    const result = (await tool('config_get_schema').handler({})) as {
+      schema?: { properties: Record<string, unknown> };
+      keyBySection: Record<string, string>;
+      validSections: string[];
+      hint: string;
+    };
+    expect(result.schema).toBeUndefined();
+    expect(result.keyBySection.dataSilos).toBe('data-silos');
+    expect(result.validSections).toContain('dataSilos');
+    expect(result.hint).toContain('resources');
+  });
+
+  it('returns the full schema when includeFullSchema is true', async () => {
+    const { schema, keyBySection, warning } = (await tool('config_get_schema').handler({
+      includeFullSchema: true,
+    })) as {
       schema: { properties: Record<string, unknown> };
       keyBySection: Record<string, string>;
+      warning: string;
     };
     expect(Object.keys(schema.properties)).toContain('data-silos');
     expect(keyBySection.dataSilos).toBe('data-silos');
+    expect(warning).toContain('160k tokens');
   });
 
   it('narrows to chosen sections', async () => {
