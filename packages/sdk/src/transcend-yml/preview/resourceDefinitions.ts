@@ -282,6 +282,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
     ignoreFields: ['owners', 'teams'],
     nested: { attributes: ATTRIBUTES_LIST },
   }),
+  'consent-sites': listOf('host', { nested: { attributes: ATTRIBUTES_LIST } }),
   'consent-manager': {
     kind: PreviewResourceKind.Singleton,
     // Pull returns these but push does not apply them. `version` is not pulled.
