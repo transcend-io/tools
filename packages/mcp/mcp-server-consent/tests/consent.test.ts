@@ -46,6 +46,7 @@ const EXPECTED_TOOL_NAMES = [
   'consent_delete_data_flows',
   'consent_bulk_triage',
   'consent_list_roc_records',
+  'consent_deploy_bundle',
 ] as const;
 
 describe('Consent Tools', () => {
