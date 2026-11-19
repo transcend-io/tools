@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-consent
 
+## 1.4.0
+
+### Minor Changes
+
+- 4ed10ec: Add `consent_deploy_bundle`, a tool that deploys your consent manager (Airgap) bundle from MCP. Choose `TEST` or `PRODUCTION` each time. It asks for your approval before it runs.
+- 397f2f7: Add `consent_list_sites` and `consent_write_sites` MCP tools. You can now read and update the hosts that Airgap discovers, including their description, owners, teams, and attributes, without the Admin Dashboard. Listing needs the View Consent Manager scope and writing needs Manage Consent Manager.
+
+### Patch Changes
+
+- Updated dependencies [18ddf25]
+  - @transcend-io/sdk@3.1.0
+
 ## 1.3.6
 
 ### Patch Changes
