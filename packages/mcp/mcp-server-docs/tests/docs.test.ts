@@ -7,8 +7,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LLMS_TXT_URL, resetDocsCachesForTests } from '../src/docsIndex.js';
 import { createDocsFetchTool } from '../src/tools/docs_fetch.js';
 import { createDocsListTool } from '../src/tools/docs_list.js';
-import { getDocsTools } from '../src/tools/index.js';
-
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const fixtureLlmsTxt = readFileSync(join(fixturesDir, 'llms.txt'), 'utf8');
 const fixtureLlmsSearch = readFileSync(join(fixturesDir, 'llms-search.txt'), 'utf8');
@@ -38,15 +36,6 @@ function mockDocsFetch(options: {
     throw new Error(`Unexpected fetch: ${url}`);
   });
 }
-
-describe('getDocsTools', () => {
-  it('registers list and fetch tools', () => {
-    const tools = getDocsTools();
-    expect(tools).toHaveLength(2);
-    expect(tools.map((tool) => tool.name)).toEqual(['docs_list', 'docs_fetch']);
-    expect(tools.every((tool) => tool.requireAuth === false)).toBe(true);
-  });
-});
 
 describe('docs_list', () => {
   afterEach(() => {

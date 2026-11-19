@@ -2,6 +2,7 @@ import {
   createListResult,
   defineTool,
   ErrorCode,
+  getRequestAuth,
   groupBy,
   ToolError,
   z,
@@ -20,6 +21,7 @@ import {
   type RoutePage,
 } from '../docsRoutes.js';
 import { searchDocs } from '../docsSearch.js';
+import { docEntryMatchesIntegration } from '../integrationPublicGuides.js';
 
 /**
  * Cap on articles returned when listing a section. A listing entry is a title
@@ -68,6 +70,14 @@ export const DocsListSchema = z.object({
         'topic over a whole sentence, since common words match most articles and blur the ' +
         'ranking. At most 20 results come back and there is no paging, so narrow the terms ' +
         'rather than expecting to page.',
+    ),
+  integration: z
+    .string()
+    .optional()
+    .describe(
+      'Limit results to public docs.transcend.io integration guides for this catalog ' +
+        'integrationName (for example `salesforce`). Connection steps and datapoints require ' +
+        'docs_integration_lookup when signed in.',
     ),
 });
 export type DocsListInput = z.infer<typeof DocsListSchema>;
@@ -261,7 +271,7 @@ export function createDocsListTool(_clients?: ToolClients) {
     requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: DocsListSchema,
-    handler: async ({ section, query, route, product }) => {
+    handler: async ({ section, query, route, product, integration }) => {
       if (section !== undefined && (route !== undefined || product !== undefined)) {
         const other = route !== undefined ? 'route' : 'product';
         throw new ToolError(
@@ -275,6 +285,16 @@ export function createDocsListTool(_clients?: ToolClients) {
           ErrorCode.VALIDATION_ERROR,
           'route cannot be combined with product. A route already resolves to its product: ' +
             'pass route, or pass product to list that product directly.',
+        );
+      }
+      if (
+        integration !== undefined &&
+        (route !== undefined || product !== undefined || section !== undefined)
+      ) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'integration cannot be combined with route, product, or section. Pass integration ' +
+            'alone or with query to list public integration guides.',
         );
       }
 
@@ -296,7 +316,27 @@ export function createDocsListTool(_clients?: ToolClients) {
       }
 
       const entries = await getIndex();
-      const sectionCounts = groupBy(entries, 'section');
+      const integrationName = integration?.trim();
+      if (integrationName !== undefined && integrationName.length === 0) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          'integration was empty. Pass a catalog integrationName, or omit integration.',
+        );
+      }
+
+      const integrationFilter =
+        integrationName !== undefined
+          ? (entry: { url: string }) => docEntryMatchesIntegration(entry.url, integrationName)
+          : undefined;
+      const scopedEntries = integrationFilter ? entries.filter(integrationFilter) : entries;
+
+      const signedInCatalogNote =
+        integrationName !== undefined && !getRequestAuth()
+          ? 'Sign in to Transcend MCP and call docs_integration_lookup with the same integration ' +
+            'for connection steps, datapoints, and supported actions from the integration catalog.'
+          : undefined;
+
+      const sectionCounts = groupBy(scopedEntries, 'section');
 
       // Section is an exact match, so a near-miss would otherwise come back as
       // an empty list that looks like "no such articles" rather than a typo.
@@ -310,14 +350,38 @@ export function createDocsListTool(_clients?: ToolClients) {
       const terms = query?.trim();
       if (terms) {
         const { hits, totalCount } = await searchDocs(terms, { section });
-        return createListResult(hits, {
-          totalCount,
-          ...(totalCount > hits.length && {
-            paginationNote:
-              `Showing the ${hits.length} highest-ranked of ${totalCount} matches. There is ` +
-              'no paging: use more distinctive terms to narrow the search.',
-          }),
+        const filteredHits = integrationFilter
+          ? hits.filter((hit) => integrationFilter(hit))
+          : hits;
+        return createListResult(filteredHits, {
+          totalCount: integrationFilter ? filteredHits.length : totalCount,
+          ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
+          ...(!signedInCatalogNote &&
+            totalCount > filteredHits.length && {
+              paginationNote:
+                `Showing the ${filteredHits.length} highest-ranked of ${totalCount} matches. There is ` +
+                'no paging: use more distinctive terms to narrow the search.',
+            }),
         });
+      }
+
+      if (integrationName !== undefined) {
+        return createListResult(
+          scopedEntries.map(({ title, section: entrySection, url }) => ({
+            title,
+            section: entrySection,
+            url,
+          })),
+          {
+            totalCount: scopedEntries.length,
+            ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
+            ...(!scopedEntries.length && {
+              paginationNote:
+                (signedInCatalogNote ? `${signedInCatalogNote} ` : '') +
+                `No public guide on docs.transcend.io is mapped for integrationName '${integrationName}'.`,
+            }),
+          },
+        );
       }
 
       if (section === undefined) {
@@ -329,12 +393,12 @@ export function createDocsListTool(_clients?: ToolClients) {
           {
             paginationNote:
               'Sections only. Call docs_list again with section to list its articles, or ' +
-              `with query to search all ${entries.length} articles.`,
+              `with query to search all ${scopedEntries.length} articles.`,
           },
         );
       }
 
-      const filtered = entries.filter((entry) => entry.section === section);
+      const filtered = scopedEntries.filter((entry) => entry.section === section);
       const page = filtered.slice(0, SECTION_LISTING_LIMIT);
       return createListResult(
         page.map(({ title, section: entrySection, url }) => ({
