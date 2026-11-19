@@ -1,0 +1,27 @@
+# Transcend Documentation
+
+- [The Comprehensive Privacy Platform](/docs): An introduction to Transcend Docs
+- Overview
+  - [Overview](/docs/overview): General information that is useful across all Transcend product offerings.
+  - [Platform Concepts](/docs/overview/concepts): Concepts used throughout Transcend's products and documentation.
+  - [Glossary](/docs/overview/glossary): Glossary of terminology used throughout the Transcend platform
+  - [Usage Entitlements](/docs/overview/usage-entitlements): Terminology around Transcend's offerings
+  - [Supported Browsers](/docs/overview/supported-browsers): The browsers that we support for various Transcend products and the platform itself
+
+  - Transcend Platform
+    - [Transcend Platform](/docs/overview/platform): Documentation home for the Transcend Platform
+    - [Action Items](/docs/overview/platform/action-items): Track, triage, and delegate privacy tasks in Transcend.
+    - Slack Notifications
+
+- Privacy Center
+  - [Privacy Center](/docs/privacy-center): Privacy Center is a secure portal that gives your users a self-serve way to exercise their data rights.
+  - [Privacy Center Concepts](/docs/privacy-center/concepts): Concepts you should know for your Privacy Center.
+  - [Privacy Center Preference Tabs](/docs/privacy-center/preference-tabs): Learn what the Privacy Settings, Sale of Info, and Communications Preferences tabs show in your hosted Privacy Center, with and without sign-in.
+
+- **Reference**
+- API reference
+  - [API reference](/docs/api-reference): REST endpoints and webhooks for the Transcend API and Sombra.
+  - LLM classifier
+    - [Classify inputs using the LLM classifier](/docs/api-reference/llm-classifier/classify-text-array): Classify a given text array input using the LLM classifier
+    - [Classify unstructured text using Named Entity Recognition](/docs/api-reference/llm-classifier/named-entity-recognition): Classify a given text array input using the LLM classifier
+- [Changelog](/docs/changelog)
