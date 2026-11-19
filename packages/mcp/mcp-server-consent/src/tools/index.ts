@@ -3,6 +3,7 @@ import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base'
 import { createConsentBulkTriageTool } from './consent_bulk_triage.js';
 import { createConsentDeleteCookiesTool } from './consent_delete_cookies.js';
 import { createConsentDeleteDataFlowsTool } from './consent_delete_data_flows.js';
+import { createConsentDeployBundleTool } from './consent_deploy_bundle.js';
 import { createConsentGetAggregateAnalyticsTool } from './consent_get_aggregate_analytics.js';
 import { createConsentGetAnalyticsDataTool } from './consent_get_analytics_data.js';
 import { createConsentGetInventoryStatsTool } from './consent_get_inventory_stats.js';
@@ -37,5 +38,6 @@ export function getConsentTools(clients: ToolClients): ToolDefinition[] {
     createConsentDeleteDataFlowsTool(clients),
     createConsentBulkTriageTool(clients),
     createConsentListRocRecordsTool(clients),
+    createConsentDeployBundleTool(clients),
   ];
 }

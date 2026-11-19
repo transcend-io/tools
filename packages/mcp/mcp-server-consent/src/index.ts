@@ -40,6 +40,7 @@ export {
   DeleteDataFlowsSchema,
   type DeleteDataFlowsInput,
 } from './tools/consent_delete_data_flows.js';
+export { DeployBundleSchema, type DeployBundleInput } from './tools/consent_deploy_bundle.js';
 export {
   UpdateDataFlowItemSchema,
   type UpdateDataFlowItemInput,
