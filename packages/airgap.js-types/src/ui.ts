@@ -2,8 +2,9 @@ import type {
   ConsentManagerSupportedTranslationValue,
   LocaleValue,
 } from '@transcend-io/internationalization';
+import { LoadOptions } from '@transcend-io/privacy-types';
 // main
-import { applyEnum, type ObjByString, valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, noExcess, type ObjByString, valuesOf } from '@transcend-io/type-utils';
 // external
 import * as t from 'io-ts';
 
@@ -291,6 +292,123 @@ export const TCFConfigInput = t.partial(TCFConfig.props);
 
 /** Type override */
 export type TCFConfigInput = t.TypeOf<typeof TCFConfigInput>;
+
+/** UTF-8 byte length of a string, without Node Buffer or TextEncoder. */
+const utf8ByteLength = (value: string): number => {
+  let bytes = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff) {
+      // High surrogate: pair with the next code unit as one 4-byte character.
+      i += 1;
+      bytes += 4;
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+};
+
+/** Collect top-level props from an io-ts interface, partial, or intersection codec. */
+const collectCodecProps = (codec: t.Any): t.Props => {
+  // io-ts does not expose `_tag` on `t.Any`; runtime codecs always have it.
+  const tagged = codec as t.Any & { _tag?: string; types?: t.Any[]; props?: t.Props };
+  if (tagged._tag === 'IntersectionType' && tagged.types) {
+    return tagged.types.reduce<t.Props>(
+      (props, type) => Object.assign(props, collectCodecProps(type)),
+      {},
+    );
+  }
+  if (
+    (tagged._tag === 'InterfaceType' ||
+      tagged._tag === 'PartialType' ||
+      tagged._tag === 'StrictType') &&
+    tagged.props
+  ) {
+    return { ...tagged.props };
+  }
+  return {};
+};
+
+/** Max UTF-8 byte length of JSON.stringify(overrides) for a non-truncated Partial<LoadOptions>. */
+const BANNER_CONTEXT_OVERRIDES_MAX_BYTES = 2048;
+
+/**
+ * Marker used when Partial<LoadOptions> overrides exceed the 2 KB budget and were truncated
+ * by the client before send.
+ */
+export const BannerContextTruncatedOverrides = noExcess(
+  t.type({
+    truncated: t.literal(true),
+    bytes: t.number,
+  }),
+);
+
+/** Type override */
+export type BannerContextTruncatedOverrides = t.TypeOf<typeof BannerContextTruncatedOverrides>;
+
+/**
+ * Exact Partial<LoadOptions>: unknown top-level keys fail, and the UTF-8 byte length of
+ * JSON.stringify(value) must be at most 2 KB.
+ */
+export const BannerContextLoadOptionOverrides = t.refinement(
+  noExcess(t.partial(collectCodecProps(LoadOptions))),
+  (value) => utf8ByteLength(JSON.stringify(value)) <= BANNER_CONTEXT_OVERRIDES_MAX_BYTES,
+  'BannerContextLoadOptionOverrides',
+);
+
+/** Type override */
+export type BannerContextLoadOptionOverrides = t.TypeOf<typeof BannerContextLoadOptionOverrides>;
+
+/** Overrides on BannerContext: either a size-limited Partial<LoadOptions>, or a truncated marker. */
+export const BannerContextOverrides = t.union([
+  BannerContextLoadOptionOverrides,
+  BannerContextTruncatedOverrides,
+]);
+
+/** Type override */
+export type BannerContextOverrides = t.TypeOf<typeof BannerContextOverrides>;
+
+/**
+ * Context describing which consent banner was shown when consent was collected.
+ * Unknown top-level keys are stripped (not rejected) so newer clients still validate on older backends.
+ * Validated with BannerContext.decode when a record of consent is built; keep free of side effects.
+ */
+export const BannerContext = t.exact(
+  t.intersection([
+    t.type({
+      /** Schema version. Only `1` is supported. */
+      version: t.literal(1),
+      /** Client surface that collected consent. */
+      property: t.union([t.literal('web'), t.literal('mobile')]),
+      /** Consent UI deployment id. */
+      deploymentId: t.string,
+      /** Experience slug or name shown to the user. */
+      experience: t.string,
+      /** Variant slug or name shown to the user. */
+      variant: t.string,
+      /** Theme slug or name shown to the user. */
+      theme: t.string,
+      /** Locale used when the banner was shown. */
+      locale: t.string,
+    }),
+    t.partial({
+      /** UI layers the user saw before consenting. */
+      layersSeen: t.array(t.union([t.literal('banner'), t.literal('modal')])),
+      /** Privacy signals present when consent was collected. */
+      signals: t.array(t.union([t.literal('GPC'), t.literal('DNT')])),
+      /** Load-option overrides active for this banner, or a truncated marker. */
+      overrides: BannerContextOverrides,
+    }),
+  ]),
+);
+
+/** Type override */
+export type BannerContext = t.TypeOf<typeof BannerContext>;
 
 /**
  * Properties exposed on `self` by the Transcend Smart Quarantine

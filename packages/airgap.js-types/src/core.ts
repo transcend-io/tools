@@ -596,6 +596,14 @@ const ReservedMetadataCodec = t.partial({
   tcmp: t.partial({
     tcf: TCFReservedMetadata,
   }),
+  /**
+   * Banner context including params to resolve which consent UI was shown when consent was collected.
+   *
+   * Keep this field as `t.unknown` — never replace it with the strict
+   * `BannerContext` codec here, because a strict codec on metadata would reject the whole consent
+   * write for preference store when the value is missing, malformed, or from a newer client. It will be validated with the `BannerContext` codec when ingested by ROC.
+   */
+  bannerContext: t.unknown,
 });
 
 /** Tracking purpose */
