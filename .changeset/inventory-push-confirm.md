@@ -2,6 +2,36 @@
 '@transcend-io/cli': major
 ---
 
-`transcend inventory push` now shows what it will create, update, or delete and asks you to confirm before it changes anything. This also applies to the legacy `tr-push` command.
+**Breaking:** `transcend inventory push` and legacy `tr-push` now compare your file with your organization, print what would change, and ask you to confirm before writing anything. Non-interactive runs without `--yes` exit before any writes.
 
-**Migration:** in CI and other scripts with no terminal, add `--yes` to apply the push after the preview, or `--skipPreview` to keep the previous behavior of pushing straight away. Use `--dryRun` to look without changing anything. If your file already matches your organization, nothing is pushed.
+**Migrating `@transcend-io/cli`**
+
+1. **CI, GitHub Actions, and scripts without a terminal** — pass `--yes` to apply after the preview:
+
+   ```sh
+   transcend inventory push --auth="$TRANSCEND_API_KEY" --yes
+   ```
+
+   Update GitHub Actions from:
+
+   ```yaml
+   run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
+   ```
+
+   to:
+
+   ```yaml
+   run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }} --yes
+   ```
+
+2. **Skip the preview** and push immediately (behavior before this release):
+
+   ```sh
+   transcend inventory push --auth="$TRANSCEND_API_KEY" --skipPreview
+   ```
+
+3. **Preview only** — `--dryRun` still lists planned changes and writes nothing. Do not use `--dryRun` with `--skipPreview`.
+
+4. **No changes in the preview** — the command does not prompt and does not push. Pass `--skipPreview` to push without comparing.
+
+5. **Multiple organizations** (JSON auth file) — previews run for each organization, then you confirm once. Any preview error aborts the entire push.
