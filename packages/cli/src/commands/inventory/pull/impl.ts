@@ -9,6 +9,7 @@ import {
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
+import { createTwoFilesPatch } from 'diff';
 
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
@@ -29,6 +30,7 @@ export interface PullCommandFlags {
   skipSubDatapoints: boolean;
   includeGuessedCategories: boolean;
   debug: boolean;
+  dryRun: boolean;
 }
 
 export async function pull(
@@ -46,9 +48,27 @@ export async function pull(
     skipSubDatapoints,
     includeGuessedCategories,
     debug,
+    dryRun,
   }: PullCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
+
+  // Write the file, or with --dryRun show how it would change
+  const writeConfiguration = (filePath: string, contents: string): void => {
+    if (!dryRun) {
+      this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
+      this.fs.writeFileSync(filePath, contents);
+      return;
+    }
+    const existing = this.fs.existsSync(filePath) ? this.fs.readFileSync(filePath, 'utf8') : '';
+    if (existing === contents) {
+      this.logger.info(colors.green(`No changes to "${filePath}".`));
+      return;
+    }
+    this.logger.info(
+      createTwoFilesPatch(filePath, filePath, existing, contents, '', '', { context: 3 }),
+    );
+  };
 
   // Parse authentication as API key or path to list of API keys
   const apiKeyOrList = await validateTranscendAuth(auth, this);
@@ -76,8 +96,7 @@ export async function pull(
         logger: this.logger,
       });
 
-      this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
-      this.fs.writeFileSync(file, serializeTranscendYaml(configuration));
+      writeConfiguration(file, serializeTranscendYaml(configuration));
     } catch (err) {
       this.logger.error(
         colors.red(`An error occurred syncing the schema: ${debug ? err.stack : err.message}`),
@@ -88,7 +107,9 @@ export async function pull(
     // Indicate success
     this.logger.info(
       colors.green(
-        `Successfully synced yaml file to disk at ${file}! View at ${ADMIN_DASH_INTEGRATIONS}`,
+        dryRun
+          ? `Dry run complete. Nothing was written to ${file}.`
+          : `Successfully synced yaml file to disk at ${file}! View at ${ADMIN_DASH_INTEGRATIONS}`,
       ),
     );
   } else {
@@ -123,8 +144,7 @@ export async function pull(
         });
 
         const filePath = path.join(file, `${apiKey.organizationName}.yml`);
-        this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
-        this.fs.writeFileSync(filePath, serializeTranscendYaml(configuration));
+        writeConfiguration(filePath, serializeTranscendYaml(configuration));
 
         this.logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {
