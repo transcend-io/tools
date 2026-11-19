@@ -1,4 +1,5 @@
 import { z } from '@transcend-io/mcp-server-base';
+import { parseDocsGuideType } from '@transcend-io/privacy-types';
 import { LRUCache } from 'lru-cache';
 
 import type { DashboardRouteData } from './docsRoutes.js';
@@ -68,7 +69,7 @@ const RoutePageSchema = z.object({
   guideType: z
     .string()
     .nullish()
-    .transform((value) => value ?? null),
+    .transform((value) => parseDocsGuideType(value)),
 });
 
 const RouteEntrySchema = z.object({
