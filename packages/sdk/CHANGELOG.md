@@ -1,5 +1,39 @@
 # @transcend-io/sdk
 
+## 3.2.0
+
+### Minor Changes
+
+- f7b3d3a: `transcend inventory pull` now writes data silo business entities as `businessEntityTitles`, so pushing a pulled file keeps those links.
+
+  The SDK adds `planPush` and `renderPushPlan` to compare a `transcend.yml` with your organization and list what a push would create, update, or delete.
+
+- 530f513: Preview changes before you apply them. `transcend inventory push --dryRun` lists what a push would create, update, or delete, including changes you did not write in the file, and changes nothing. `transcend inventory pull --dryRun` shows how the file would change without writing it. Add `--json` to push for machine-readable output.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
+### Patch Changes
+
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
+## 3.1.0
+
+### Minor Changes
+
+- 18ddf25: Add a `consent-sites` section to `transcend.yml`. You can now manage the hosts that Airgap discovers, including their description, owners, teams, and attributes, with `transcend inventory pull --resources consentSites` and `transcend inventory push`. The existing `consent-manager.domains` list is unchanged. Pulling needs the View Consent Manager scope and pushing needs Manage Consent Manager.
+
+## 3.0.1
+
+### Patch Changes
+
+- Updated dependencies [fb660b4]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/airgap.js-types@14.2.51
+
 ## 3.0.0
 
 ### Major Changes

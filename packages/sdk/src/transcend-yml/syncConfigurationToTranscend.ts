@@ -15,6 +15,7 @@ import {
   syncBusinessEntities,
   syncDataCategories,
   syncConsentManager,
+  syncConsentSites,
   syncCookies,
   syncDataFlows,
   syncDataSubject,
@@ -105,6 +106,7 @@ export async function syncConfigurationToTranscend(
     'business-entities': businessEntities,
     preflights,
     cookies,
+    'consent-sites': consentSites,
     'consent-manager': consentManager,
     'data-silos': dataSilos,
     'data-flows': dataFlows,
@@ -310,6 +312,14 @@ export async function syncConfigurationToTranscend(
     const cookiesSuccess = await syncCookies(client, cookies, { logger });
     if (!cookiesSuccess) {
       recordError('cookies', 'Failed to sync cookies');
+    }
+  }
+
+  // Sync consent sites
+  if (consentSites) {
+    const consentSitesSuccess = await syncConsentSites(client, consentSites, { logger });
+    if (!consentSitesSuccess) {
+      recordError('consent-sites', 'Failed to sync consent sites');
     }
   }
 

@@ -1,5 +1,28 @@
 # @transcend-io/mcp-server-docs
 
+## 0.5.1
+
+### Patch Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
+## 0.5.0
+
+### Minor Changes
+
+- fb660b4: Add `route` and `product` arguments to `docs_list` to find docs by Admin Dashboard route or product, with page, then product, then search tiers.
+
+### Patch Changes
+
+- Updated dependencies [fb660b4]
+- Updated dependencies [581b1a9]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/mcp-server-base@3.1.0
+
 ## 0.4.18
 
 ### Patch Changes

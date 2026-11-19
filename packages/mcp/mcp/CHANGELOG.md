@@ -1,5 +1,38 @@
 # @transcend-io/mcp
 
+## 1.8.0
+
+### Minor Changes
+
+- 4ed10ec: Add `consent_deploy_bundle`, a tool that deploys your consent manager (Airgap) bundle from MCP. Choose `TEST` or `PRODUCTION` each time. It asks for your approval before it runs.
+- 397f2f7: Add `consent_list_sites` and `consent_write_sites` MCP tools. You can now read and update the hosts that Airgap discovers, including their description, owners, teams, and attributes, without the Admin Dashboard. Listing needs the View Consent Manager scope and writing needs Manage Consent Manager.
+
+### Patch Changes
+
+- Updated dependencies [4ed10ec]
+- Updated dependencies [397f2f7]
+  - @transcend-io/mcp-server-consent@1.4.0
+
+## 1.7.4
+
+### Patch Changes
+
+- 581b1a9: Add `requireLocalFilesystem` to tool definitions. The server omits these tools over HTTP. Add `createGraphqlRequestClient` and `TranscendGraphQLBase.requestHeaders()` so SDK functions can reuse the MCP client's auth. Add the `McpTransport` enum. `buildMcpServer` now takes `McpTransport.Stdio` or `McpTransport.Http` instead of a string.
+- Updated dependencies [fb660b4]
+- Updated dependencies [581b1a9]
+  - @transcend-io/mcp-server-docs@0.5.0
+  - @transcend-io/mcp-server-base@3.1.0
+  - @transcend-io/mcp-server-admin@1.1.7
+  - @transcend-io/mcp-server-assessment@2.1.17
+  - @transcend-io/mcp-server-consent@1.3.6
+  - @transcend-io/mcp-server-custom-functions@0.3.4
+  - @transcend-io/mcp-server-discovery@1.0.20
+  - @transcend-io/mcp-server-dsr@2.0.17
+  - @transcend-io/mcp-server-inventory@1.0.21
+  - @transcend-io/mcp-server-policy@0.2.9
+  - @transcend-io/mcp-server-preferences@0.7.25
+  - @transcend-io/mcp-server-workflows@1.0.20
+
 ## 1.7.3
 
 ### Patch Changes

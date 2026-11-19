@@ -6,6 +6,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { projectDryRunParameter } from '../../../lib/scaffolding/command-parameters.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
   TranscendPullResource.DataSilos,
@@ -88,6 +89,10 @@ export const pullCommand = buildCommand({
         kind: 'boolean',
         brief: 'Set to true to include debug logs while pulling the configuration',
         default: false,
+      },
+      dryRun: {
+        ...projectDryRunParameter,
+        brief: 'Show how the file would change without writing it',
       },
     },
   },
