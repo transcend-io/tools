@@ -1590,7 +1590,7 @@ export async function pullTranscendConfiguration(
           : {}),
         ...(businessEntities.length > 0
           ? {
-              businessEntities: businessEntities.map(({ title }) => title),
+              businessEntityTitles: businessEntities.map(({ title }) => title),
             }
           : {}),
         country: country || undefined,

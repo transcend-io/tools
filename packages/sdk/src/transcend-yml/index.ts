@@ -5,6 +5,7 @@ export * from './ensureAllDataSubjectsExist.js';
 export * from './enums.js';
 export * from './mergeTranscendInputs.js';
 export * from './normalizeDeletionDependencies.js';
+export * from './preview/index.js';
 export * from './pullTranscendConfiguration.js';
 export * from './syncConfigurationToTranscend.js';
 export * from './syncDataSilos.js';
