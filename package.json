@@ -21,6 +21,7 @@
     "format": "turbo run format format:root",
     "format:check": "turbo run format:check format:check:root",
     "check:changeset": "node ./scripts/check-changeset.ts",
+    "check:new-packages": "node ./scripts/check-new-packages.ts",
     "check:packages": "vitest run scripts/package-conventions.test.ts",
     "check:exports": "turbo run check:exports",
     "check:publint": "turbo run check:publint",
