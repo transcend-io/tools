@@ -1,5 +1,7 @@
 import {
+  CollectedLogLevel,
   configureOAuthScopes,
+  createCollectedLogger,
   ErrorCode,
   resetConfiguredOAuthScopes,
   ToolError,
@@ -14,7 +16,6 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { assertScopesAvailable } from '../src/helpers/assertScopesAvailable.js';
-import { CollectedLogLevel, createCollectedLogger } from '../src/helpers/collectingLogger.js';
 import { assertConfigFilePath } from '../src/helpers/configFilePath.js';
 import {
   countConfigSections,

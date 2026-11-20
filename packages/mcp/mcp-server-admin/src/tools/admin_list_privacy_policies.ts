@@ -1,4 +1,5 @@
 import {
+  createCollectedLogger,
   createListResult,
   createGraphqlRequestClient,
   defineTool,
@@ -6,7 +7,6 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { fetchAllPolicies } from '@transcend-io/sdk';
 
 export const ListPrivacyPoliciesSchema = OffsetPaginationSchema.extend({

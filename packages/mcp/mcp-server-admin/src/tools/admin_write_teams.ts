@@ -1,10 +1,10 @@
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { syncTeams, TeamInput } from '@transcend-io/sdk';
 
 import { decodeItems, runSync } from '../helpers/syncWrite.js';

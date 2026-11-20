@@ -64,7 +64,7 @@ pnpm exec turbo run build --filter="@transcend-io/mcp-server-docs..."
 pnpm -F @transcend-io/mcp-server-docs exec node ./dist/cli.mjs
 ```
 
-**Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp-server-docs/dist/cli.mjs` (OAuth vars in `secret.env` are ignored by this server).
+**Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp-server-docs/dist/cli.mjs`. Set `TRANSCEND_API_KEY` or OAuth vars in `secret.env` to sign in for `docs_integration_lookup`; public tools still work without them.
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout and `pnpm --filter` workflows.
 

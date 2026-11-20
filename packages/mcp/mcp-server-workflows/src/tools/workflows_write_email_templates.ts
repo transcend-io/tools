@@ -1,4 +1,5 @@
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   ErrorCode,
@@ -6,7 +7,6 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { syncTemplate, TemplateInput } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 

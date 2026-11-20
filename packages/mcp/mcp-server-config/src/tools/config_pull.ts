@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   ErrorCode,
@@ -18,7 +19,6 @@ import {
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { assertConfigFilePath } from '../helpers/configFilePath.js';
 import { parseResources } from '../helpers/resources.js';
 import { countConfigSections, scopesForResources } from '../helpers/sections.js';

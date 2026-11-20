@@ -583,9 +583,6 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
-      '@transcend-io/mcp-server-config':
-        specifier: workspace:^
-        version: link:../mcp-server-config
       '@transcend-io/privacy-types':
         specifier: workspace:^
         version: link:../../privacy-types
@@ -1104,6 +1101,9 @@ importers:
       '@transcend-io/sdk':
         specifier: workspace:^
         version: link:../../sdk
+      '@transcend-io/type-utils':
+        specifier: workspace:^
+        version: link:../../type-utils
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3

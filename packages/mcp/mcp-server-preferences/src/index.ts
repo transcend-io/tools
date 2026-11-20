@@ -37,3 +37,23 @@ export {
   DeleteIdentifiersSchema,
   type DeleteIdentifiersInput,
 } from './tools/preferences_delete_identifiers.js';
+export {
+  WritePartitionsSchema,
+  type WritePartitionsInput,
+} from './tools/preferences_write_partitions.js';
+export {
+  ListOptionValuesSchema,
+  type ListOptionValuesInput,
+} from './tools/preferences_list_option_values.js';
+export {
+  WriteOptionValuesSchema,
+  type WriteOptionValuesInput,
+} from './tools/preferences_write_option_values.js';
+export {
+  ListWorkflowConfigsSchema,
+  type ListWorkflowConfigsInput,
+} from './tools/preferences_list_workflow_configs.js';
+export {
+  WriteWorkflowConfigsSchema,
+  type WriteWorkflowConfigsInput,
+} from './tools/preferences_write_workflow_configs.js';

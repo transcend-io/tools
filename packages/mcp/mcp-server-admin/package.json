@@ -39,7 +39,6 @@
   "dependencies": {
     "@graphql-typed-document-node/core": "^3.2.0",
     "@transcend-io/mcp-server-base": "workspace:^",
-    "@transcend-io/mcp-server-config": "workspace:^",
     "@transcend-io/privacy-types": "workspace:^",
     "@transcend-io/sdk": "workspace:^",
     "@transcend-io/type-utils": "workspace:^",
