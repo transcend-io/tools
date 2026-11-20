@@ -1,5 +1,35 @@
 # @transcend-io/mcp
 
+## 2.0.0
+
+### Major Changes
+
+- 8e2bf2f: Add `admin_write_teams` and a new Privacy Center MCP server for privacy center config, intl messages, and privacy-center policies (same SDK paths as `transcend inventory` push/pull). Teams writes ask for confirmation. Privacy-center tools use the `privacy_center_*` prefix.
+
+  **Breaking:** `admin_get_privacy_center` is removed from `@transcend-io/mcp-server-admin` and from the unified server. Use `privacy_center_get` on `@transcend-io/mcp-server-privacy-center` (or the umbrella server) instead.
+
+### Minor Changes
+
+- 69b40d1: Add `dsr_list_enrichers`, `dsr_write_enrichers`, `dsr_list_actions` and `dsr_write_actions`. They read and write the `preflights` and `actions` sections of transcend.yml without a file on disk.
+
+  Export shared `createCollectedLogger` from the MCP base package so DSR, config, inventory, and workflows tools reuse one implementation.
+
+- 64d13d6: Add `consent_write_consent_manager` and `consent_write_purposes`. They push the consent-manager and purposes sections of `transcend.yml` without a file on disk. The consent server now also requests the developer settings and preference store scopes. Shared `decodeYmlItems` helper is exported from the base package for yml codec validation.
+
+### Patch Changes
+
+- Updated dependencies [69b40d1]
+- Updated dependencies [8e2bf2f]
+- Updated dependencies [64d13d6]
+  - @transcend-io/mcp-server-base@3.1.2
+  - @transcend-io/mcp-server-config@0.1.2
+  - @transcend-io/mcp-server-dsr@2.1.0
+  - @transcend-io/mcp-server-workflows@1.1.1
+  - @transcend-io/mcp-server-inventory@1.1.1
+  - @transcend-io/mcp-server-admin@2.0.0
+  - @transcend-io/mcp-server-privacy-center@0.1.0
+  - @transcend-io/mcp-server-consent@1.5.0
+
 ## 1.10.0
 
 ### Minor Changes
