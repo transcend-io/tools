@@ -22,6 +22,7 @@ import {
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
+  fetchAllConsentSites,
   fetchAllCookies,
   fetchAllDataCategories,
   fetchAllDataFlows,
@@ -32,6 +33,7 @@ import {
   fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
+  fetchConsentManagerPrefixModules,
   fetchConsentVariants,
   fetchConsentThemes,
   fetchConsentManagerTheme,
@@ -51,7 +53,8 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
-  convertConsentWorkflowTriggersToInputs,
+  parsePurposesFromTriggerCondition,
+  resolveWorkflowTitleFromId,
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
@@ -72,6 +75,7 @@ import {
   DataFlowInput,
   DataSubjectInput,
   CookieInput,
+  ConsentSiteInput,
   DatapointInput,
   FieldInput,
   ProcessingPurposeInput,
@@ -89,6 +93,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  PreferenceWorkflowConfigInput,
   WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
@@ -122,6 +127,10 @@ export interface TranscendPullConfigurationInput {
   skipSubDatapoints?: boolean;
   /** When true, metadata around guessed data categories should be included */
   includeGuessedCategories?: boolean;
+  /** Only fetch data silos with these titles. Used to keep a push preview cheap. */
+  dataSiloTitles?: string[];
+  /** Action item types to fetch. Defaults to onboarding items only. */
+  actionItemTypes?: ActionItemCode[];
   /** Logger for progress and request messages. Defaults to discarding them. */
   logger?: Logger;
 }
@@ -138,6 +147,8 @@ export async function pullTranscendConfiguration(
   {
     dataSiloIds,
     integrationNames,
+    dataSiloTitles,
+    actionItemTypes = [ActionItemCode.Onboarding],
     debug,
     resources = DEFAULT_TRANSCEND_PULL_RESOURCES,
     pageSize,
@@ -189,6 +200,7 @@ export async function pullTranscendConfiguration(
     workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
+    consentSites,
   ] = await Promise.all([
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
@@ -203,6 +215,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.DataSilos)
       ? fetchEnrichedDataSilos(client, {
           ids: dataSiloIds,
+          titles: dataSiloTitles,
           integrationNames,
           pageSize,
           debug,
@@ -302,7 +315,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.ActionItems)
       ? fetchAllActionItems(client, {
           logger,
-          filterBy: { type: [ActionItemCode.Onboarding] },
+          filterBy: { type: actionItemTypes },
         })
       : [],
     // Fetch actionItemCollections
@@ -349,6 +362,10 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.SystemDiscovery)
       ? fetchAllSiloDiscoveryResults(client, { logger })
       : [],
+    // Fetch consent sites
+    resources.includes(TranscendPullResource.ConsentSites)
+      ? fetchAllConsentSites(client, { logger })
+      : [],
   ]);
 
   const consentManagerTheme =
@@ -358,6 +375,14 @@ export async function pullTranscendConfiguration(
           filterBy: { airgapBundleId: consentManager.id },
         })
       : undefined;
+
+  const consentManagerPrefixModules =
+    resources.includes(TranscendPullResource.ConsentManager) && consentManager
+      ? await fetchConsentManagerPrefixModules(client, {
+          logger,
+          airgapBundleId: consentManager.id,
+        })
+      : [];
 
   const result: TranscendInput = {};
 
@@ -451,6 +476,8 @@ export async function pullTranscendConfiguration(
           configuration: JSON.stringify(theme.configuration),
         }),
       ),
+      prefixModules:
+        consentManagerPrefixModules.length > 0 ? consentManagerPrefixModules : undefined,
     };
   }
 
@@ -1277,6 +1304,23 @@ export async function pullTranscendConfiguration(
     );
   }
 
+  // Save consent sites
+  if (consentSites.length > 0 && resources.includes(TranscendPullResource.ConsentSites)) {
+    result['consent-sites'] = consentSites.map(
+      ({ host, site, description, owners, teams, attributeValues }): ConsentSiteInput => ({
+        host,
+        site,
+        description: description || undefined,
+        owners: owners.map(({ email }) => email),
+        teams: teams.map(({ name }) => name),
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
   // Save attributes
   if (attributes.length > 0 && resources.includes(TranscendPullResource.Attributes)) {
     result.attributes = attributes.map(
@@ -1406,10 +1450,46 @@ export async function pullTranscendConfiguration(
     preferenceWorkflowConfigs.length > 0 &&
     resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
   ) {
-    result['preference-workflow-configs'] = await convertConsentWorkflowTriggersToInputs(
-      client,
-      preferenceWorkflowConfigs,
-      { logger },
+    const needsWorkflowTitles = preferenceWorkflowConfigs.some(
+      (trigger) => trigger.workflowConfigId,
+    );
+    const dsrWorkflows = needsWorkflowTitles
+      ? await fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
+      : [];
+
+    result['preference-workflow-configs'] = preferenceWorkflowConfigs.map(
+      (trigger): PreferenceWorkflowConfigInput => {
+        const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
+        const shared = {
+          name: trigger.name,
+          'data-subject-type': trigger.subject.type,
+          'is-silent': trigger.isSilent,
+          'allow-unauthenticated': trigger.allowUnauthenticated,
+          'is-active': trigger.isActive,
+          purposes,
+        };
+
+        if (trigger.workflowConfigId) {
+          const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
+          if (workflowTitle) {
+            return {
+              ...shared,
+              'workflow-title': workflowTitle,
+            };
+          }
+          // Workflow deleted or unreadable — fall back to legacy fields so YAML stays usable
+        }
+
+        return {
+          ...shared,
+          'action-type': trigger.action.type,
+          'data-silo-titles':
+            trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+        };
+      },
     );
   }
 
@@ -1528,7 +1608,7 @@ export async function pullTranscendConfiguration(
           : {}),
         ...(businessEntities.length > 0
           ? {
-              businessEntities: businessEntities.map(({ title }) => title),
+              businessEntityTitles: businessEntities.map(({ title }) => title),
             }
           : {}),
         country: country || undefined,

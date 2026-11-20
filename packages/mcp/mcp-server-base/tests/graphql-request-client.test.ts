@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
@@ -43,5 +43,39 @@ describe('createGraphqlRequestClient', () => {
 
     expect(caught).toBeInstanceOf(ToolError);
     expect((caught as ToolError).code).toBe(ErrorCode.AUTH_ERROR);
+  });
+
+  describe('request timeout', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** Runs the client's configured fetch and returns the signal it passed on. */
+    async function signalSentTo(callerSignal?: AbortSignal): Promise<AbortSignal> {
+      const fetchStub = vi.fn(async () => new Response('{}'));
+      vi.stubGlobal('fetch', fetchStub);
+
+      const base = new TranscendGraphQLBase({ type: 'apiKey', apiKey: 'key-1' }, BASE_URL);
+      const { fetch: clientFetch } = createGraphqlRequestClient(base).requestConfig;
+      await clientFetch!(`${BASE_URL}/graphql`, { signal: callerSignal });
+
+      return (fetchStub.mock.calls[0] as unknown as [string, RequestInit])[1].signal!;
+    }
+
+    it('gives every request a signal that is not yet aborted', async () => {
+      const signal = await signalSentTo();
+
+      expect(signal).toBeInstanceOf(AbortSignal);
+      expect(signal.aborted).toBe(false);
+    });
+
+    it('still aborts when the caller aborts', async () => {
+      const caller = new AbortController();
+      const signal = await signalSentTo(caller.signal);
+
+      caller.abort();
+
+      expect(signal.aborted).toBe(true);
+    });
   });
 });

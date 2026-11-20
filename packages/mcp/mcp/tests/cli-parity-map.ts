@@ -1,4 +1,4 @@
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 /** MCP tools that read and write one `transcend.yml` section. */
 export interface SectionTools {
@@ -40,6 +40,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   [TranscendPullResource.Cookies]: {
     read: ['consent_list_cookies'],
     write: ['consent_update_cookies'],
+  },
+  [TranscendPullResource.ConsentSites]: {
+    read: ['consent_list_sites'],
+    write: ['consent_write_sites'],
   },
   [TranscendPullResource.ConsentManager]: { read: ['consent_list_airgap_bundles'], write: [] },
   [TranscendPullResource.Partitions]: {

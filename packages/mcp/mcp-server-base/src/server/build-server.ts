@@ -56,6 +56,7 @@ import {
   readUiResourceHtml,
   type UiResourceDefinition,
 } from '../tools/ui-resource.js';
+import { McpTransport } from './transport.js';
 
 export interface BuildMcpServerOptions {
   /** Server display name */
@@ -69,7 +70,7 @@ export interface BuildMcpServerOptions {
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
   /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
-  transport: 'stdio' | 'http';
+  transport: McpTransport;
 }
 
 /**
@@ -80,7 +81,7 @@ export interface BuildMcpServerOptions {
  * is interposing on, leaving elicitation as the only one.
  */
 function resolveConfirmationGate(options: BuildMcpServerOptions): ConfirmationGate {
-  if (options.transport === 'stdio') {
+  if (options.transport === McpTransport.Stdio) {
     return { policy: ConfirmationPolicy.ElicitOrToken, tokens: new ApprovalTokenStore() };
   }
   return { policy: ConfirmationPolicy.ElicitOnly };

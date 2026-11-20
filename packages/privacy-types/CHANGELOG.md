@@ -1,5 +1,30 @@
 # @transcend-io/privacy-types
 
+## 7.1.1
+
+### Patch Changes
+
+- 947bc9f: Add `DocsAccess` for gated docs frontmatter and `DocsLookupSource.Marketing` for transcend.io pages in docs MCP lookup.
+
+## 7.1.0
+
+### Minor Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
+## 7.0.0
+
+### Major Changes
+
+- 7f568ab: Remove `PROMPT_MANAGER` from `TranscendProduct` and reassign prompt-related API scopes to Data Inventory and Structured/Unstructured Discovery product lines. Regenerate `transcend.yml` JSON schemas.
+
+### Minor Changes
+
+- fb660b4: Add `DocsProduct` for docs.transcend.io and Admin Dashboard route index product titles.
+
 ## 6.8.0
 
 ### Minor Changes

@@ -1,5 +1,5 @@
 import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 const VALID_RESOURCES = new Set<string>(Object.values(TranscendPullResource));
 

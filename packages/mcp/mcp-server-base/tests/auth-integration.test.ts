@@ -19,6 +19,7 @@ import { resolveMcpPackageVersion } from '../src/mcp-package-version.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
+import { McpTransport } from '../src/server/transport.js';
 import type { ToolDefinition } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -31,7 +32,7 @@ const MCP_HEADERS = {
 
 function testConfig(port: number): TransportConfig {
   return {
-    transport: 'http',
+    transport: McpTransport.Http,
     port,
     host: '127.0.0.1',
     mcpPath: '/mcp',
@@ -196,7 +197,7 @@ function mcpServerFactory(mockBackendUrl: string): McpHttpServerOptions['createS
       name: 'auth-integration-test',
       version: '0.0.1',
       tools: [makeGraphqlPingTool(graphql)],
-      transport: 'http',
+      transport: McpTransport.Http,
     });
   };
 }

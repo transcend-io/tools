@@ -1,5 +1,5 @@
 import { TranscendRestClient, type AuthCredentials } from '@transcend-io/mcp-server-base';
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
