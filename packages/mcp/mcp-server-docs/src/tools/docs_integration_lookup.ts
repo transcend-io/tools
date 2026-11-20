@@ -22,9 +22,7 @@ export const DocsIntegrationLookupSchema = z.object({
     .trim()
     .min(1, 'integration was empty. Pass a catalog integrationName such as `salesforce`.')
     .describe(
-      'Catalog integrationName (for example `salesforce`) or the integration title. Returns ' +
-        'connection steps, datapoints, and supported actions from the signed-in organization ' +
-        'catalog. A near miss returns close names to retry with.',
+      'Catalog integrationName (e.g. `salesforce`) or title. Near miss returns close names.',
     ),
 });
 
@@ -58,9 +56,8 @@ export function createDocsIntegrationLookupTool(clients: ToolClients) {
   return defineTool({
     name: 'docs_integration_lookup',
     description:
-      'Read signed-in catalog docs for one integration: connection steps, datapoints, and ' +
-      'supported actions. Takes an integrationName or title; a near miss returns close names. ' +
-      'For public guides on docs.transcend.io, use docs_list with integration.',
+      'Signed-in catalog docs for one integration (connection, datapoints, actions). Pass ' +
+      'integrationName or title; near miss returns close names. Public guides: docs_list.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: true,

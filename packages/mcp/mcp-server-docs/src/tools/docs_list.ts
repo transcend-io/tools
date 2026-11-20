@@ -70,10 +70,8 @@ export const DocsListSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Find docs for an Admin Dashboard page. Accepts a route pattern, a concrete path ' +
-        "('/privacy-center/general-settings/deployment'), or a full app URL. Returns pages " +
-        "about that page, then pages that link to it, then the page's product docs. Can " +
-        'combine with query. Not with section or product.',
+      'Admin Dashboard route pattern, path, or app URL. Returns linked pages, then product ' +
+        'docs. Combine with query. Not with section or product.',
     ),
   product: DocsProductSchema.optional().describe(
     `List docs for one product, overview pages first. One of: ${docsProductTitles.join(', ')} ` +
@@ -90,17 +88,13 @@ export const DocsListSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Full-text search terms. Prefer the two or three most distinctive words for the ' +
-        'topic over a whole sentence, since common words match most articles and blur the ' +
-        'ranking. At most 20 results come back and there is no paging, so narrow the terms ' +
-        'rather than expecting to page.',
+      'Full-text search terms (prefer 2–3 distinctive words). At most 20 results; no paging.',
     ),
   integration: z
     .string()
     .optional()
     .describe(
-      'Limit results to public docs.transcend.io integration guides for this catalog ' +
-        'integrationName (for example `salesforce`). Connection steps and datapoints require ' +
+      'Public integration guides for this catalog integrationName. Catalog depth needs ' +
         'docs_integration_lookup when signed in.',
     ),
 });
@@ -348,15 +342,10 @@ export function createDocsListTool(_clients?: ToolClients) {
   return defineTool({
     name: 'docs_list',
     description:
-      'List or full-text search Transcend documentation. Pick the narrowest argument you ' +
-      'can: use route when you know the Admin Dashboard page the user is on ("this page"); ' +
-      "it returns that page's docs, then more docs for its product. Otherwise use product " +
-      'when you know the product area. Otherwise use query, which ranks articles by title ' +
-      'and body and returns snippets. Rows carry a one-line description when the docs index ' +
-      'has one, so pick from it before fetching. route and product can each be combined with ' +
-      'query. ' +
-      'section alone lists one llms.txt section; with no arguments the tool returns the ' +
-      'section names. Pick the best matching url, then call docs_fetch.',
+      'List or search Transcend documentation. Prefer route for a Dashboard page, product ' +
+      'for a product area, or query for full-text search. Rows may include a one-line index ' +
+      'description. section lists one llms.txt section; omit arguments for section names. ' +
+      'Then call docs_fetch with a url.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
