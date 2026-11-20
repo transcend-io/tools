@@ -1,5 +1,6 @@
 ---
 '@transcend-io/mcp-server-base': patch
+'@transcend-io/mcp-server-config': patch
 '@transcend-io/mcp-server-preferences': minor
 '@transcend-io/mcp': minor
 '@transcend-io/sdk': minor
