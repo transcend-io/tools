@@ -19,6 +19,13 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_write_processing_purpose',
   'inventory_list_business_entities',
   'inventory_list_data_subjects',
+  'inventory_write_business_entities',
+  'inventory_write_data_subjects',
+  'inventory_write_identifiers',
+  'inventory_list_processing_activities',
+  'inventory_write_processing_activities',
+  'inventory_list_custom_fields',
+  'inventory_write_custom_fields',
   'inventory_analyze',
 ] as const;
 
@@ -70,9 +77,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 17 tools with expected names', () => {
+  it('registers exactly 24 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(17);
+    expect(tools).toHaveLength(24);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

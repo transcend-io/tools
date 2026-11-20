@@ -18,7 +18,10 @@ export interface SectionTools {
  */
 export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   [TranscendPullResource.ApiKeys]: { read: ['admin_list_api_keys'], write: [] },
-  [TranscendPullResource.Attributes]: { read: [], write: [] },
+  [TranscendPullResource.Attributes]: {
+    read: ['inventory_list_custom_fields'],
+    write: ['inventory_write_custom_fields'],
+  },
   [TranscendPullResource.Templates]: {
     read: ['workflows_list_email_templates'],
     write: ['workflows_write_email_templates'],
@@ -37,12 +40,21 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   },
   [TranscendPullResource.BusinessEntities]: {
     read: ['inventory_list_business_entities'],
-    write: [],
+    write: ['inventory_write_business_entities'],
   },
-  [TranscendPullResource.ProcessingActivities]: { read: [], write: [] },
+  [TranscendPullResource.ProcessingActivities]: {
+    read: ['inventory_list_processing_activities'],
+    write: ['inventory_write_processing_activities'],
+  },
   [TranscendPullResource.Actions]: { read: ['dsr_list_actions'], write: ['dsr_write_actions'] },
-  [TranscendPullResource.DataSubjects]: { read: ['inventory_list_data_subjects'], write: [] },
-  [TranscendPullResource.Identifiers]: { read: ['inventory_list_identifiers'], write: [] },
+  [TranscendPullResource.DataSubjects]: {
+    read: ['inventory_list_data_subjects'],
+    write: ['inventory_write_data_subjects'],
+  },
+  [TranscendPullResource.Identifiers]: {
+    read: ['inventory_list_identifiers'],
+    write: ['inventory_write_identifiers'],
+  },
   [TranscendPullResource.Cookies]: {
     read: ['consent_list_cookies'],
     write: ['consent_update_cookies'],
@@ -105,11 +117,6 @@ export interface SectionGap {
  * only shrinks.
  */
 export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
-  [TranscendPullResource.Attributes]: { read: true, write: true },
-  [TranscendPullResource.BusinessEntities]: { write: true },
-  [TranscendPullResource.ProcessingActivities]: { read: true, write: true },
-  [TranscendPullResource.DataSubjects]: { write: true },
-  [TranscendPullResource.Identifiers]: { write: true },
   [TranscendPullResource.ConsentManager]: { write: true },
   [TranscendPullResource.Partitions]: { write: true },
   [TranscendPullResource.ActionItems]: { read: true, write: true },
