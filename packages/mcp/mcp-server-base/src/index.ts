@@ -278,6 +278,10 @@ export { McpTransport } from './server/transport.js';
 
 export { runMcpHttp } from './server/run-http.js';
 export type { McpHttpServerOptions, McpHttpServer } from './server/run-http.js';
+export {
+  createWebMcpHandler,
+  type CreateWebMcpHandlerOptions,
+} from './server/create-web-mcp-handler.js';
 
 export { InMemoryEventStore } from './server/event-store.js';
 export type { EventStore, StreamId, EventId } from './server/event-store.js';
