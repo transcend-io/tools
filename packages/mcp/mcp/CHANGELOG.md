@@ -1,5 +1,11 @@
 # @transcend-io/mcp
 
+## 1.9.2
+
+### Patch Changes
+
+- 8e26b2e: Add a test that tracks which `transcend.yml` sections have direct MCP read and write tools, so new CLI sections cannot land without an explicit parity map.
+
 ## 1.9.1
 
 ### Patch Changes
