@@ -83,8 +83,14 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['inventory_list_processing_purposes'],
     write: ['inventory_write_processing_purpose'],
   },
-  [TranscendPullResource.ActionItems]: { read: [], write: [] },
-  [TranscendPullResource.ActionItemCollections]: { read: [], write: [] },
+  [TranscendPullResource.ActionItems]: {
+    read: ['workflows_list_action_items'],
+    write: ['workflows_write_action_items'],
+  },
+  [TranscendPullResource.ActionItemCollections]: {
+    read: ['workflows_list_action_item_collections'],
+    write: ['workflows_write_action_item_collections'],
+  },
   [TranscendPullResource.Teams]: { read: ['admin_list_teams'], write: ['admin_write_teams'] },
   [TranscendPullResource.PrivacyCenters]: {
     read: ['privacy_center_get'],
@@ -114,7 +120,7 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['preferences_list_option_values'],
     write: ['preferences_write_option_values'],
   },
-  [TranscendPullResource.SystemDiscovery]: { read: [], write: [] },
+  [TranscendPullResource.SystemDiscovery]: { read: ['discovery_list_results'], write: [] },
   [TranscendPullResource.PreferenceWorkflowConfigs]: {
     read: ['preferences_list_workflow_configs'],
     write: ['preferences_write_workflow_configs'],
@@ -141,9 +147,7 @@ export interface SectionGap {
  * only shrinks.
  */
 export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
-  [TranscendPullResource.ActionItems]: { read: true, write: true },
-  [TranscendPullResource.ActionItemCollections]: { read: true, write: true },
-  [TranscendPullResource.SystemDiscovery]: { read: true, write: true },
+  [TranscendPullResource.SystemDiscovery]: { write: true },
 };
 
 /**
