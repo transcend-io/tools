@@ -333,13 +333,51 @@
     "templates": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["title"],
-        "properties": {
-          "title": {
-            "type": "string"
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["title"],
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "const": "EMAIL"
+                  },
+                  {
+                    "const": "TEXT"
+                  }
+                ]
+              },
+              "product": {
+                "anyOf": [
+                  {
+                    "const": "DSR"
+                  },
+                  {
+                    "const": "ASSESSMENT"
+                  },
+                  {
+                    "const": "ROPA"
+                  }
+                ]
+              }
+            }
           }
-        }
+        ]
       }
     },
     "preflights": {
