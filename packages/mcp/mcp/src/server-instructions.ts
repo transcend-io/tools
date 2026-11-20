@@ -4,4 +4,5 @@ export const UMBRELLA_DOCS_SERVER_INSTRUCTIONS =
   '(e.g. airgap, consent, DSR): (1) call docs_list with the most distinctive terms for the ' +
   'topic (full-text over titles and article bodies), (2) call docs_fetch on the best matching URL, ' +
   '(3) answer from that content. API tools return data from the signed-in organization; ' +
-  'they do not replace product documentation.';
+  'they do not replace product documentation. For transcend.yml push previews, call config_diff and ' +
+  'paste its diff before config_push.';

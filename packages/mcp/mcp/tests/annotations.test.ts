@@ -136,6 +136,7 @@ describe('MCP Tool Annotations', () => {
     const expectedGated = [
       'admin_write_teams',
       'config_push',
+      'privacy_center_write',
       'consent_deploy_bundle',
       'custom_functions_promote_version',
       'custom_functions_test_run',

@@ -37,14 +37,22 @@ function tempDir(): string {
 }
 
 describe('tool definitions', () => {
-  it('exposes the three tools', () => {
-    expect(tools.map((t) => t.name)).toEqual(['config_pull', 'config_push', 'config_get_schema']);
+  it('exposes the four tools', () => {
+    expect(tools.map((t) => t.name)).toEqual([
+      'config_pull',
+      'config_diff',
+      'config_push',
+      'config_get_schema',
+    ]);
   });
 
   it('marks disk tools as local-filesystem only and gates push', () => {
     expect(tool('config_pull').requireLocalFilesystem).toBe(true);
+    expect(tool('config_diff').requireLocalFilesystem).toBe(true);
     expect(tool('config_push').requireLocalFilesystem).toBe(true);
     expect(tool('config_get_schema').requireLocalFilesystem).toBeUndefined();
+    expect(tool('config_diff').readOnly).toBe(true);
+    expect(tool('config_diff').confirmation).toBeUndefined();
     expect(tool('config_push').confirmation?.hint).toBeTruthy();
     expect(tool('config_pull').confirmation).toBeUndefined();
   });
@@ -180,6 +188,40 @@ describe('config_push', () => {
     await expect(
       tool('config_push').handler({ filePath: path.join(tempDir(), 'missing.yml') }),
     ).rejects.toThrow(/Could not read/);
+  });
+});
+
+describe('config_diff', () => {
+  beforeEach(() => {
+    sdk.pull.mockReset();
+    sdk.pull.mockResolvedValue({
+      vendors: [{ title: 'Segment', description: 'CDP' }],
+    });
+  });
+
+  it('returns a fenced diff from the push plan', async () => {
+    const filePath = path.join(tempDir(), 'transcend.yml');
+    writeFileSync(
+      filePath,
+      'vendors:\n  - title: Segment\n    description: Customer data platform\n',
+    );
+
+    const envelope = (await tool('config_diff').handler({ filePath })) as {
+      success: boolean;
+      data: { diff: string; hasChanges: boolean; nextStep: string };
+    };
+
+    expect(envelope.success).toBe(true);
+    expect(envelope.data.hasChanges).toBe(true);
+    expect(envelope.data.diff.startsWith('```diff')).toBe(true);
+    expect(envelope.data.diff).toContain('Customer data platform');
+    expect(envelope.data.diff).toContain('CDP');
+    expect(envelope.data.nextStep).toContain('config_push');
+    expect(sdk.pull.mock.calls[0]![1]).toMatchObject({
+      resources: ['vendors'],
+      dataSiloIds: [],
+      integrationNames: [],
+    });
   });
 });
 

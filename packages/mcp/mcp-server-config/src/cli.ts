@@ -12,6 +12,7 @@ import {
   parseConfigResourceAllowlistFromEnv,
 } from './helpers/configResourceAllowlist.js';
 import { getConfigTools } from './index.js';
+import { CONFIG_SERVER_INSTRUCTIONS } from './server-instructions.js';
 
 function resolveConfigOauthScopes(): readonly string[] {
   try {
@@ -30,6 +31,7 @@ createMCPServer({
   name: 'transcend-mcp-config',
   version: packageJson.version,
   oauthScopes: resolveConfigOauthScopes(),
+  instructions: CONFIG_SERVER_INSTRUCTIONS,
   getTools: getConfigTools,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
     const graphql = new TranscendGraphQLBase(auth, graphqlUrl);

@@ -106,7 +106,13 @@ function planList(
           note: 'does not exist; push only updates existing items',
         };
       }
-      return { label, action: PreviewItemAction.Create, fields: [], writeOnly: [] };
+      return {
+        label,
+        action: PreviewItemAction.Create,
+        fields: [],
+        writeOnly: [],
+        created: definition.canonicalize ? definition.canonicalize(local) : local,
+      };
     }
 
     if (definition.mode === PreviewListResourceMode.CreateOnly) {
@@ -148,7 +154,15 @@ function planSingleton(
   if (!remote) {
     return {
       resource,
-      items: [{ label: resource, action: PreviewItemAction.Create, fields: [], writeOnly: [] }],
+      items: [
+        {
+          label: resource,
+          action: PreviewItemAction.Create,
+          fields: [],
+          writeOnly: [],
+          created: definition.canonicalize ? definition.canonicalize(local) : local,
+        },
+      ],
     };
   }
   const { fields, writeOnly } = compareObjects(local, remote, definition);
@@ -289,6 +303,26 @@ function planDeletes(
         });
       }
     });
+  }
+
+  const localConsent = local['consent-manager'];
+  const remoteConsent = remote['consent-manager'];
+  if (isPlainObject(localConsent) && localConsent.domains !== undefined) {
+    const kept = new Set(strings(localConsent.domains));
+    const removed = strings(remoteConsent?.domains).filter((domain) => !kept.has(domain));
+    if (removed.length > 0) {
+      const sample = removed
+        .slice(0, 3)
+        .map((d) => JSON.stringify(d))
+        .join(', ');
+      effects.push({
+        resource: 'consent-manager',
+        kind: PreviewImplicitEffectKind.Delete,
+        description:
+          `Push replaces the whole domain list, so ${removed.length} live domain${removed.length === 1 ? '' : 's'} ` +
+          `are removed (${sample}${removed.length > 3 ? ', ...' : ''}).`,
+      });
+    }
   }
 
   if (options.deleteExtraAttributeValues) {

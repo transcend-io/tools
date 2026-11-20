@@ -1,13 +1,11 @@
 import {
-  createGraphqlRequestClient,
-  createListResult,
   defineTool,
-  derivePageInfo,
   OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { fetchAllConsentSites, formatAttributeValues } from '@transcend-io/sdk';
+import { listYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 export const ListSitesSchema = OffsetPaginationSchema;
 export type ListSitesInput = z.infer<typeof ListSitesSchema>;
@@ -23,24 +21,7 @@ export function createConsentListSitesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListSitesSchema,
-    handler: async ({ limit, offset }) => {
-      const hosts = await fetchAllConsentSites(createGraphqlRequestClient(clients.graphql));
-      const page = hosts.slice(offset, offset + limit).map((host) => ({
-        host: host.host,
-        site: host.site,
-        description: host.description || undefined,
-        owners: host.owners.map(({ email }) => email),
-        teams: host.teams.map(({ name }) => name),
-        attributes: formatAttributeValues(host.attributeValues ?? []),
-      }));
-      return createListResult(page, {
-        totalCount: hosts.length,
-        hasNextPage: derivePageInfo({
-          offset,
-          nodeCount: page.length,
-          totalCount: hosts.length,
-        }).hasNextPage,
-      });
-    },
+    handler: async ({ limit, offset }) =>
+      listYmlSection(clients, TranscendPullResource.ConsentSites, { limit, offset }),
   });
 }
