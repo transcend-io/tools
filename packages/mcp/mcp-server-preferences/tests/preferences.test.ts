@@ -11,6 +11,11 @@ const EXPECTED_TOOL_NAMES = [
   'preferences_append_identifiers',
   'preferences_update_identifiers',
   'preferences_delete_identifiers',
+  'preferences_write_partitions',
+  'preferences_list_option_values',
+  'preferences_write_option_values',
+  'preferences_list_workflow_configs',
+  'preferences_write_workflow_configs',
 ] as const;
 
 describe('Preferences Tools', () => {
@@ -47,9 +52,9 @@ describe('Preferences Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 7 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(7);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

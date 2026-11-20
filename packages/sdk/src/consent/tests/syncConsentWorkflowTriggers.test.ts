@@ -1,4 +1,5 @@
 import { RequestAction } from '@transcend-io/privacy-types';
+import type { GraphQLClient } from 'graphql-request';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,8 +7,10 @@ import {
   resolveWorkflowConfigByTitle,
   type WorkflowConfigSummary,
 } from '../../dsr-automation/fetchAllWorkflowConfigs.js';
+import type { ConsentWorkflowTrigger } from '../fetchAllConsentWorkflowTriggers.js';
 import {
   buildTriggerConditionFromPurposes,
+  convertConsentWorkflowTriggersToInputs,
   isConsentWorkflowTriggerV2Mode,
   parsePurposesFromTriggerCondition,
   resolveWorkflowTitleFromId,
@@ -207,5 +210,38 @@ describe('workflow title resolution', () => {
     expect(resolveWorkflowTitleFromId(workflows, 'wf-2')).toBe('Access Request');
     expect(resolveWorkflowTitleFromId(workflows, 'missing')).toBeUndefined();
     expect(resolveWorkflowTitleFromId(workflows, null)).toBeUndefined();
+  });
+});
+
+describe('convertConsentWorkflowTriggersToInputs', () => {
+  const trigger: ConsentWorkflowTrigger = {
+    id: 't1',
+    name: 'Opt out',
+    triggerCondition: JSON.stringify({ And: [{ Sale: false }] }),
+    isSilent: false,
+    allowUnauthenticated: true,
+    isActive: true,
+    workflowConfigId: null,
+    action: { type: RequestAction.Erasure },
+    subject: { type: 'customer' },
+    dataSilos: [{ title: 'Salesforce' }],
+  };
+
+  it('maps a legacy trigger without fetching workflows', async () => {
+    const result = await convertConsentWorkflowTriggersToInputs({} as unknown as GraphQLClient, [
+      trigger,
+    ]);
+    expect(result).toEqual([
+      {
+        name: 'Opt out',
+        'data-subject-type': 'customer',
+        'is-silent': false,
+        'allow-unauthenticated': true,
+        'is-active': true,
+        purposes: [{ 'tracking-type': 'Sale', 'matching-state': false }],
+        'action-type': RequestAction.Erasure,
+        'data-silo-titles': ['Salesforce'],
+      },
+    ]);
   });
 });

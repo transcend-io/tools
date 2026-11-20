@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   ErrorCode,
@@ -15,7 +16,6 @@ import {
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { assertConfigFilePath } from '../helpers/configFilePath.js';
 import {
   countConfigSections,

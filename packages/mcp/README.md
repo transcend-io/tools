@@ -250,7 +250,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     2 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    12 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    24 | Data inventory, silos, vendors, data points      |
-| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     6 | Privacy preference store (query, upsert, delete) |
+| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |    12 | Privacy preference store (query, upsert, delete) |
 | [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration          |
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.

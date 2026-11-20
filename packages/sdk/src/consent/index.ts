@@ -32,6 +32,7 @@ export { syncPrivacyCenterFooterLinks } from './syncPrivacyCenterFooterLinks.js'
 export * from './fetchAllConsentWorkflowTriggers.js';
 export {
   buildTriggerConditionFromPurposes,
+  convertConsentWorkflowTriggersToInputs,
   isConsentWorkflowTriggerV2Mode,
   parsePurposesFromTriggerCondition,
   resolveWorkflowTitleFromId,
