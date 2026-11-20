@@ -2447,6 +2447,110 @@
         "transformAccessReportJsonToCsv": {
           "type": "boolean"
         },
+        "emailPrefix": {
+          "type": "string"
+        },
+        "showCookieMaxAge": {
+          "type": "boolean"
+        },
+        "allowTrackingTechnologiesSiteFilter": {
+          "type": "boolean"
+        },
+        "allowPartitionChange": {
+          "type": "boolean"
+        },
+        "showPartition": {
+          "type": "boolean"
+        },
+        "assets": {
+          "type": "object",
+          "properties": {
+            "logo": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            },
+            "favicon": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            },
+            "logoOnSolid": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            },
+            "logoOnFooter": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            },
+            "hero": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            },
+            "widgetBg": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "alt": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
         "home": {
           "type": "string"
         },
