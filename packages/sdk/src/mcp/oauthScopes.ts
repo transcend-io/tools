@@ -5,7 +5,10 @@ import {
   TR_PUSH_RESOURCE_SCOPE_MAP,
 } from '../transcend-yml/constants.js';
 
-/** Published MCP server packages (excludes docs, which uses no API scopes). */
+/**
+ * Canonical domain MCP server identifiers (excludes docs, which uses no API scopes).
+ * Single source of truth for {@link MCP_SERVER_OAUTH_SCOPES} and {@link TRANSCEND_MCP_SERVER_NPM_PACKAGES}.
+ */
 export enum TranscendMcpServer {
   Admin = 'admin',
   Assessment = 'assessment',
