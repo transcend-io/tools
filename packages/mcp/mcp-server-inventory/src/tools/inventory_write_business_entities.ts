@@ -1,10 +1,13 @@
 import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { BusinessEntityInput } from '@transcend-io/sdk';
-
-import { decodeYmlItems, pushYmlSection, ymlItemsSchema } from '../helpers/ymlSection.js';
+import {
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { BusinessEntityInput, type BusinessEntityInput as BusinessEntity } from '@transcend-io/sdk';
 
 export const WriteBusinessEntitiesSchema = z.object({
-  items: ymlItemsSchema(
+  businessEntities: ymlItemsSchema(
     'Business entities to create or update, matched by `title`. Other fields: description, ' +
       'address, headquarterCountry, dataProtectionOfficerName, owners, teams.',
   ),
@@ -22,8 +25,12 @@ export function createInventoryWriteBusinessEntitiesTool(clients: ToolClients) {
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteBusinessEntitiesSchema,
-    handler: async ({ items }) => {
-      const decoded = decodeYmlItems(BusinessEntityInput, items);
+    handler: async ({ businessEntities }) => {
+      const decoded = decodeYmlItems<BusinessEntity>(
+        BusinessEntityInput,
+        businessEntities,
+        'business-entities',
+      );
       return pushYmlSection(clients, { 'business-entities': decoded }, decoded.length);
     },
   });

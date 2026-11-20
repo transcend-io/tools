@@ -1,32 +1,20 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import {
-  createGraphqlRequestClient,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
 import {
   ConsentPreferenceTopicOptionValue,
-  syncPreferenceOptionValues,
   type ConsentPreferenceTopicOptionValue as OptionValueInput,
 } from '@transcend-io/sdk';
 
-import { decodeItems, runSync } from '../helpers/syncRun.js';
-
 export const WriteOptionValuesSchema = z.object({
-  optionValues: z
-    .array(
-      z.object({
-        slug: z.string().describe('API slug. Upsert key: an existing slug is updated.'),
-        title: z.string().describe('Display title'),
-      }),
-    )
-    .min(1)
-    .max(200)
-    .describe(
-      'Option values to create or update. Same shape as the transcend.yml preference-options section.',
-    ),
+  optionValues: ymlItemsSchema(
+    'Option values to create or update. Same shape as the transcend.yml preference-options section.',
+    200,
+  ),
 });
-
 export type WriteOptionValuesInput = z.infer<typeof WriteOptionValuesSchema>;
 
 export function createPreferencesWriteOptionValuesTool(clients: ToolClients) {
@@ -41,15 +29,13 @@ export function createPreferencesWriteOptionValuesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteOptionValuesSchema,
     handler: async ({ optionValues }) => {
-      const items = decodeItems<OptionValueInput>(
+      const items = decodeYmlItems<OptionValueInput>(
         ConsentPreferenceTopicOptionValue,
         optionValues,
         'preference-options',
+        { uniqueBy: (item) => item.slug },
       );
-      const client = createGraphqlRequestClient(clients.graphql);
-      return runSync(items.length, (logger) =>
-        syncPreferenceOptionValues(client, items, { logger }),
-      );
+      return pushYmlSection(clients, { 'preference-options': items }, items.length);
     },
   });
 }

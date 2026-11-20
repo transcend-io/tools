@@ -1,10 +1,13 @@
 import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { AttributeInput } from '@transcend-io/sdk';
-
-import { decodeYmlItems, pushYmlSection, ymlItemsSchema } from '../helpers/ymlSection.js';
+import {
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { AttributeInput, type AttributeInput as Attribute } from '@transcend-io/sdk';
 
 export const WriteCustomFieldsSchema = z.object({
-  items: ymlItemsSchema(
+  attributes: ymlItemsSchema(
     'Custom fields (attribute keys) to create or update, matched by `name`. Required: name, ' +
       'type. Other fields: description, resources, values.',
   ),
@@ -22,8 +25,10 @@ export function createInventoryWriteCustomFieldsTool(clients: ToolClients) {
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteCustomFieldsSchema,
-    handler: async ({ items }) => {
-      const decoded = decodeYmlItems(AttributeInput, items);
+    handler: async ({ attributes }) => {
+      const decoded = decodeYmlItems<Attribute>(AttributeInput, attributes, 'attributes', {
+        uniqueBy: (item) => item.name,
+      });
       return pushYmlSection(clients, { attributes: decoded }, decoded.length);
     },
   });

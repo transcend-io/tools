@@ -1,10 +1,6 @@
-import {
-  createGraphqlRequestClient,
-  defineTool,
-  EmptySchema,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { fetchAllPreferenceOptionValues } from '@transcend-io/sdk';
+import { defineTool, EmptySchema, type ToolClients } from '@transcend-io/mcp-server-base';
+import { listAllYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 export const ListOptionValuesSchema = EmptySchema;
 export type ListOptionValuesInput = Record<string, never>;
@@ -20,18 +16,6 @@ export function createPreferencesListOptionValuesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListOptionValuesSchema,
-    handler: async () => {
-      const values = await fetchAllPreferenceOptionValues(
-        createGraphqlRequestClient(clients.graphql),
-      );
-      return {
-        count: values.length,
-        optionValues: values.map(({ id, slug, title }) => ({
-          id,
-          slug,
-          title: title.defaultMessage,
-        })),
-      };
-    },
+    handler: async () => listAllYmlSection(clients, TranscendPullResource.PreferenceOptions),
   });
 }

@@ -1,18 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sdk = vi.hoisted(() => ({
-  syncTeams: vi.fn(),
+  sync: vi.fn(),
 }));
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
-  ...sdk,
+  syncConfigurationToTranscend: sdk.sync,
 }));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),
   createGraphqlRequestClient: () => ({ marker: 'client' }),
 }));
+
+vi.mock('@transcend-io/mcp-server-base/transcend-yml', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@transcend-io/mcp-server-base/transcend-yml')>();
+  return {
+    ...actual,
+    pushYmlSection: vi.fn(async (_clients, section, count, options = {}) => {
+      const result = await sdk.sync(
+        section,
+        { marker: 'client' },
+        { publishToPrivacyCenter: options.publishToPrivacyCenter ?? false },
+      );
+      return { success: result.success, count, errors: result.errors ?? [] };
+    }),
+  };
+});
 
 const { getAdminTools } = await import('../src/index.js');
 
@@ -24,7 +40,8 @@ const tools = getAdminTools({
 const tool = (name: string) => tools.find((t) => t.name === name)!;
 
 beforeEach(() => {
-  for (const fn of Object.values(sdk)) fn.mockReset();
+  sdk.sync.mockReset();
+  sdk.sync.mockResolvedValue({ success: true, errors: [] });
 });
 
 describe('annotations', () => {
@@ -40,26 +57,26 @@ describe('annotations', () => {
 
 describe('admin_write_teams', () => {
   it('syncs decoded teams and reports success', async () => {
-    sdk.syncTeams.mockResolvedValue(true);
     const teams = [{ name: 'Legal', description: 'Legal team', users: ['a@b.com'] }];
     const result = await tool('admin_write_teams').handler({ teams });
     expect(result).toEqual({ success: true, count: 1, errors: [] });
-    expect(sdk.syncTeams.mock.calls[0]![0]).toEqual({ marker: 'client' });
-    expect(sdk.syncTeams.mock.calls[0]![1]).toEqual(teams);
+    expect(sdk.sync).toHaveBeenCalledWith({ teams }, { marker: 'client' }, expect.any(Object));
   });
 
   it('rejects items that do not match the yml codec', async () => {
     await expect(
       tool('admin_write_teams').handler({ teams: [{ name: 'No description' }] }),
     ).rejects.toThrow(/teams\[0\] does not match/);
-    expect(sdk.syncTeams).not.toHaveBeenCalled();
+    expect(sdk.sync).not.toHaveBeenCalled();
   });
 
   it('returns collected errors when the sync fails', async () => {
-    sdk.syncTeams.mockImplementation(async (_c, _i, { logger }) => {
-      logger.error('Failed to sync team "Legal"! - boom');
-      logger.warn('careful');
-      return false;
+    sdk.sync.mockResolvedValue({
+      success: false,
+      errors: [
+        { resource: 'teams', item: 'Legal', message: 'Failed to sync team "Legal"! - boom' },
+      ],
+      warnings: ['careful'],
     });
     const result = await tool('admin_write_teams').handler({
       teams: [{ name: 'Legal', description: 'd' }],
@@ -67,8 +84,9 @@ describe('admin_write_teams', () => {
     expect(result).toEqual({
       success: false,
       count: 1,
-      errors: ['Failed to sync team "Legal"! - boom'],
-      warnings: ['careful'],
+      errors: [
+        { resource: 'teams', item: 'Legal', message: 'Failed to sync team "Legal"! - boom' },
+      ],
     });
   });
 });
