@@ -31,11 +31,22 @@ export const DocsUseCase = {
 } as const;
 export type DocsUseCase = (typeof DocsUseCase)[keyof typeof DocsUseCase];
 
+/**
+ * Who may read a docs page without signing in.
+ * Omit `access` in frontmatter for signed-in only. Set `public` to opt in.
+ */
+export const DocsAccess = {
+  Public: 'public',
+  SignedIn: 'signedIn',
+} as const;
+export type DocsAccess = (typeof DocsAccess)[keyof typeof DocsAccess];
+
 /** Lookup API content source filter. */
 export const DocsLookupSource = {
   Guides: 'guides',
   ApiReference: 'api-reference',
   Graphql: 'graphql',
+  Marketing: 'marketing',
 } as const;
 export type DocsLookupSource = (typeof DocsLookupSource)[keyof typeof DocsLookupSource];
 
