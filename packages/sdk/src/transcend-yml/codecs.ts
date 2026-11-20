@@ -1289,6 +1289,25 @@ export const PrivacyCenterInput = t.partial({
   useCustomEmailDomain: t.boolean,
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
+  /** Prefix for outbound privacy center emails */
+  emailPrefix: t.string,
+  /** Whether to show cookie max age on the tracking technologies page */
+  showCookieMaxAge: t.boolean,
+  /** Whether to allow filtering trackers by site on the tracking technologies page */
+  allowTrackingTechnologiesSiteFilter: t.boolean,
+  /** Whether end users may change consent partition on the privacy center */
+  allowPartitionChange: t.boolean,
+  /** Whether to show consent partition controls on the privacy center */
+  showPartition: t.boolean,
+  /** Branding assets for the privacy center (use `src` when copying across orgs) */
+  assets: t.partial({
+    logo: t.partial({ id: t.string, src: t.string, alt: t.string }),
+    favicon: t.partial({ id: t.string, src: t.string, alt: t.string }),
+    logoOnSolid: t.partial({ id: t.string, src: t.string, alt: t.string }),
+    logoOnFooter: t.partial({ id: t.string, src: t.string, alt: t.string }),
+    hero: t.partial({ id: t.string, src: t.string, alt: t.string }),
+    widgetBg: t.partial({ id: t.string, src: t.string, alt: t.string }),
+  }),
   /**
    * Privacy Center "home" / back-to-site link URL shown in the privacy center
    * header

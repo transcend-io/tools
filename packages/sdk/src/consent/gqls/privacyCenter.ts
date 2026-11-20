@@ -38,12 +38,61 @@ export const PRIVACY_CENTER = gql`
       useNoReplyEmailAddress
       useCustomEmailDomain
       transformAccessReportJsonToCsv
+      emailPrefix
+      showCookieMaxAge
+      allowTrackingTechnologiesSiteFilter
+      allowPartitionChange
+      showPartition
       home {
         defaultMessage
       }
       expandSideMenuByDefault
       workflowsCustomFieldsRequired
       footerLayout
+      assets {
+        logo {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        favicon {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        logoOnSolid {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        logoOnFooter {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        hero {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        widgetBg {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+      }
       themeStr
       childOrganizations {
         id
