@@ -8,7 +8,10 @@ import { ensureOAuthStartupReady } from '../oauth/startup.js';
 const TRANSCEND_API_URL_ENV = 'TRANSCEND_API_URL';
 
 export interface ResolveMcpGraphqlUrlOptions {
-  /** When false, skip OAuth client verification even if OAuth env vars are set. Default true. */
+  /**
+   * When false, OAuth verification failures are logged and the resolver falls back to
+   * {@link TRANSCEND_API_URL} so servers with public tools can still start. Default true.
+   */
   requireStartupAuth?: boolean;
 }
 
@@ -23,9 +26,20 @@ export async function resolveMcpGraphqlUrl(
   options?: ResolveMcpGraphqlUrlOptions,
 ): Promise<string> {
   const requireStartupAuth = options?.requireStartupAuth !== false;
-  if (requireStartupAuth && isOAuthModeEnabled()) {
-    await ensureOAuthStartupReady(logger);
-    return getResolvedTranscendApiUrl();
+  if (isOAuthModeEnabled()) {
+    try {
+      await ensureOAuthStartupReady(logger);
+      return getResolvedTranscendApiUrl();
+    } catch (error) {
+      if (requireStartupAuth) {
+        throw error;
+      }
+      logger.warn(
+        'OAuth startup verification failed; public tools will still run but signed-in tools ' +
+          'may fail until OAuth env vars are fixed.',
+        { error: error instanceof Error ? error.message : String(error) },
+      );
+    }
   }
 
   if (allowTestOverrides()) {

@@ -108,10 +108,11 @@ describe('resolveMcpGraphqlUrl', () => {
     );
   });
 
-  it('skips OAuth startup when requireStartupAuth is false even with OAuth env vars set', async () => {
+  it('verifies OAuth startup when requireStartupAuth is false but OAuth env vars are set', async () => {
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+    process.env.TRANSCEND_OAUTH_ISSUER = DEFAULT_US_TRANSCEND_API_URL;
 
     vi.stubGlobal(
       'fetch',
@@ -123,8 +124,32 @@ describe('resolveMcpGraphqlUrl', () => {
 
     await expect(
       resolveMcpGraphqlUrl(new SimpleLogger(), { requireStartupAuth: false }),
-    ).resolves.toBe(DEFAULT_TRANSCEND_API_URL);
-    expect(fetch).not.toHaveBeenCalled();
+    ).resolves.toBe(DEFAULT_US_TRANSCEND_API_URL);
+    expect(fetch).toHaveBeenCalled();
+  });
+
+  it('falls back to default API URL when OAuth verification fails and requireStartupAuth is false', async () => {
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => 'invalid credentials',
+      }),
+    );
+
+    const warn = vi.fn();
+    const logger = new SimpleLogger();
+    vi.spyOn(logger, 'warn').mockImplementation(warn);
+
+    await expect(resolveMcpGraphqlUrl(logger, { requireStartupAuth: false })).resolves.toBe(
+      DEFAULT_TRANSCEND_API_URL,
+    );
+    expect(warn).toHaveBeenCalled();
   });
 
   it('deduplicates regional client verification across concurrent resolvers', async () => {
