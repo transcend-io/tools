@@ -6,8 +6,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncTemplate } from '@transcend-io/sdk';
-import { TemplateInput } from '@transcend-io/sdk/transcend-yml';
+import { syncTemplate, TemplateInput } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';

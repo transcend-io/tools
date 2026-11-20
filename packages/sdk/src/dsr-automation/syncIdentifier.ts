@@ -6,7 +6,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import type { DataSubject } from './fetchDataSubjects.js';
 import { UPDATE_IDENTIFIER } from './gqls/dsrIdentifier.js';
 
-interface IdentifierInput {
+export interface IdentifierInput {
   /** The name of the identifier */
   name: string;
   /** The type of the identifier */
