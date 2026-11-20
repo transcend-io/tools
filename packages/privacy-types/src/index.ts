@@ -13,6 +13,7 @@ export * from './consentUiConfiguration.js';
 export * from './customFunction.js';
 export * from './database.js';
 export * from './datapoint.js';
+export * from './dashboardLinks.js';
 export * from './docs.js';
 export * from './drop.js';
 export * from './dsrBulkErrorCode.js';

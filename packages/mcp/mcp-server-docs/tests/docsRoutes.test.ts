@@ -2,12 +2,16 @@ import { DocsListRouteMatch } from '@transcend-io/privacy-types';
 import { describe, expect, it } from 'vitest';
 
 import {
+  dashboardPagesForDocUrl,
   findProductTitle,
   lookupRoute,
   normalizeDocUrl,
   normalizeRoute,
+  pageRoutesByUrl,
   patternMatchesPath,
+  primaryAppUrlForDoc,
   resolveRouteProduct,
+  toDashboardLink,
   type DashboardRouteData,
   type RouteEntry,
   type RouteIndex,
@@ -193,5 +197,49 @@ describe('product helpers', () => {
   it('normalizes doc URLs across .md, trailing slash, and relative forms', () => {
     expect(normalizeDocUrl('https://docs.transcend.io/docs/a/B.md')).toBe('/docs/a/b');
     expect(normalizeDocUrl('/docs/a/b/')).toBe('/docs/a/b');
+  });
+});
+
+describe('dashboard deep links', () => {
+  const docUrl = 'https://docs.transcend.io/docs/general-settings';
+  const data: DashboardRouteData = {
+    routes: {
+      '/privacy-center/general-settings': entry(['General Settings']),
+      '/infrastructure/integrations/:dataSiloId': entry(['Integration Detail']),
+    },
+  };
+
+  it('builds app URLs for concrete routes', () => {
+    expect(toDashboardLink('/privacy-center/general-settings')).toEqual({
+      route: '/privacy-center/general-settings',
+      url: 'https://app.transcend.io/privacy-center/general-settings',
+    });
+  });
+
+  it('lists required params for parameterized routes', () => {
+    expect(toDashboardLink('/infrastructure/integrations/:dataSiloId')).toEqual({
+      route: '/infrastructure/integrations/:dataSiloId',
+      requiredParams: ['dataSiloId'],
+    });
+  });
+
+  it('inverts the route index by docs URL', () => {
+    const byUrl = pageRoutesByUrl(data);
+    expect(byUrl.get(normalizeDocUrl(docUrl))?.primary).toEqual([
+      '/privacy-center/general-settings',
+    ]);
+    expect(primaryAppUrlForDoc(data, docUrl)).toBe(
+      'https://app.transcend.io/privacy-center/general-settings',
+    );
+  });
+
+  it('returns dashboardPages with match for docs_fetch', () => {
+    expect(dashboardPagesForDocUrl(data, docUrl)).toEqual([
+      {
+        match: DocsListRouteMatch.Primary,
+        route: '/privacy-center/general-settings',
+        url: 'https://app.transcend.io/privacy-center/general-settings',
+      },
+    ]);
   });
 });

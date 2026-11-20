@@ -1,3 +1,4 @@
+import { DEFAULT_DASHBOARD_URL } from '@transcend-io/mcp-server-base';
 import { DocsGuideType, DocsListRouteMatch, DocsProduct } from '@transcend-io/privacy-types';
 
 /** A docs page linked to an Admin Dashboard route. */
@@ -300,4 +301,134 @@ export function primaryIntegrationGuideUrl(
   integrationName: string,
 ): string | undefined {
   return integrationGuidePages(data, integrationName)[0]?.url;
+}
+
+/** Routes linked to one docs article. */
+export interface PageRouteIndex {
+  /** Routes the page is about */
+  primary: string[];
+  /** Routes the page only links to */
+  mentions: string[];
+}
+
+/** Whether a route pattern needs path parameters before it can be opened. */
+export interface DashboardLinkShape {
+  /** Canonical route pattern */
+  route: string;
+  /** Clickable URL when the pattern has no parameters */
+  url?: string;
+  /** Path parameter names when the pattern contains `:name` segments */
+  requiredParams?: string[];
+}
+
+const ROUTE_PARAM = /:([A-Za-z0-9_]+)\??/g;
+
+/**
+ * Names every `:param` and `:param?` segment in a route pattern.
+ *
+ * @returns Param names in path order
+ */
+export function routeParamNames(pattern: string): string[] {
+  return [...pattern.matchAll(ROUTE_PARAM)].map((match) => match[1]!);
+}
+
+/**
+ * Builds a dashboard link for one route pattern.
+ *
+ * @returns A URL for concrete routes, or required params for parameterized routes
+ */
+export function toDashboardLink(
+  /** Admin Dashboard route pattern or concrete path */
+  pattern: string,
+  /** Dashboard origin; defaults to {@link DEFAULT_DASHBOARD_URL} */
+  origin: string = DEFAULT_DASHBOARD_URL,
+): DashboardLinkShape {
+  const route = pattern;
+  const requiredParams = routeParamNames(route);
+  if (requiredParams.length > 0) {
+    return { route, requiredParams };
+  }
+  const path = normalizeRoute(route);
+  return { route, url: `${origin.replace(/\/+$/, '')}${path}` };
+}
+
+/**
+ * Inverts {@link DashboardRouteData.routes} into docs URL to linked routes.
+ *
+ * @returns One entry per article with primary routes before mentions
+ */
+export function pageRoutesByUrl(data: DashboardRouteData): Map<string, PageRouteIndex> {
+  const byUrl = new Map<string, PageRouteIndex>();
+
+  const add = (
+    url: string,
+    route: string,
+    match: typeof DocsListRouteMatch.Primary | typeof DocsListRouteMatch.Mention,
+  ) => {
+    const key = normalizeDocUrl(url);
+    const entry = byUrl.get(key) ?? { primary: [], mentions: [] };
+    const list = match === DocsListRouteMatch.Primary ? entry.primary : entry.mentions;
+    if (!list.includes(route)) {
+      list.push(route);
+    }
+    byUrl.set(key, entry);
+  };
+
+  for (const [route, entry] of Object.entries(data.routes)) {
+    for (const page of entry.primary) {
+      add(page.url, route, DocsListRouteMatch.Primary);
+    }
+    for (const page of entry.mentions) {
+      add(page.url, route, DocsListRouteMatch.Mention);
+    }
+  }
+
+  return byUrl;
+}
+
+/**
+ * Dashboard links for one docs article from the route index.
+ *
+ * @returns Primary routes first, then mentions, each as a {@link DashboardLinkShape}
+ */
+export function dashboardPagesForDocUrl(
+  data: DashboardRouteData,
+  /** Absolute or path docs URL */
+  docUrl: string,
+  /** Dashboard origin; defaults to {@link DEFAULT_DASHBOARD_URL} */
+  origin?: string,
+): Array<
+  DashboardLinkShape & {
+    match: typeof DocsListRouteMatch.Primary | typeof DocsListRouteMatch.Mention;
+  }
+> {
+  const routes = pageRoutesByUrl(data).get(normalizeDocUrl(docUrl));
+  if (!routes) {
+    return [];
+  }
+  const primary = routes.primary.map((route) => ({
+    match: DocsListRouteMatch.Primary,
+    ...toDashboardLink(route, origin),
+  }));
+  const mentions = routes.mentions.map((route) => ({
+    match: DocsListRouteMatch.Mention,
+    ...toDashboardLink(route, origin),
+  }));
+  return [...primary, ...mentions];
+}
+
+/**
+ * First clickable app URL for a docs article, when its primary route is concrete.
+ *
+ * @returns Undefined when the article has no primary route or only parameterized routes
+ */
+export function primaryAppUrlForDoc(
+  data: DashboardRouteData,
+  /** Absolute or path docs URL */
+  docUrl: string,
+  /** Dashboard origin; defaults to {@link DEFAULT_DASHBOARD_URL} */
+  origin?: string,
+): string | undefined {
+  const pages = dashboardPagesForDocUrl(data, docUrl, origin);
+  return pages.find((page) => page.match === DocsListRouteMatch.Primary && page.url)?.url;
 }

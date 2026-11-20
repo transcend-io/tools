@@ -21,6 +21,7 @@ describe('getDocsTools', () => {
     expect(tools.map((tool) => tool.name)).toEqual([
       'docs_list',
       'docs_fetch',
+      'docs_dashboard_link',
       'docs_integration_lookup',
     ]);
     const lookup = tools.find((tool) => tool.name === 'docs_integration_lookup');
@@ -29,6 +30,7 @@ describe('getDocsTools', () => {
     expect(tools.filter((tool) => tool.requireAuth === false).map((tool) => tool.name)).toEqual([
       'docs_list',
       'docs_fetch',
+      'docs_dashboard_link',
     ]);
   });
 });
