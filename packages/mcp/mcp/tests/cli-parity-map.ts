@@ -41,6 +41,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['consent_list_cookies'],
     write: ['consent_update_cookies'],
   },
+  [TranscendPullResource.ConsentSites]: {
+    read: ['consent_list_sites'],
+    write: ['consent_write_sites'],
+  },
   [TranscendPullResource.ConsentManager]: { read: ['consent_list_airgap_bundles'], write: [] },
   [TranscendPullResource.Partitions]: { read: ['preferences_list_partitions'], write: [] },
   [TranscendPullResource.Vendors]: {
