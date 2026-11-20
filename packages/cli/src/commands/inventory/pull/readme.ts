@@ -16,6 +16,13 @@ const examples = buildExamples<PullCommandFlags>(
       },
     },
     {
+      description: 'Show how ./transcend.yml would change without writing it',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        dryRun: true,
+      },
+    },
+    {
       description: 'Write out file to custom location',
       flags: {
         auth: '$TRANSCEND_API_KEY',

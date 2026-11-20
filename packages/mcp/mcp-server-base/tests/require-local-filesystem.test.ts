@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMcpServer } from '../src/server/build-server.js';
+import { McpTransport } from '../src/server/transport.js';
 import { defineTool, isAvailableOnTransport } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -31,22 +32,22 @@ const diskTool = defineTool({
 
 describe('isAvailableOnTransport', () => {
   it('keeps filesystem tools on stdio', () => {
-    expect(isAvailableOnTransport(diskTool, 'stdio')).toBe(true);
+    expect(isAvailableOnTransport(diskTool, McpTransport.Stdio)).toBe(true);
   });
 
   it('drops filesystem tools over http', () => {
-    expect(isAvailableOnTransport(diskTool, 'http')).toBe(false);
+    expect(isAvailableOnTransport(diskTool, McpTransport.Http)).toBe(false);
   });
 
   it('keeps ordinary tools on both transports', () => {
-    expect(isAvailableOnTransport(plainTool, 'stdio')).toBe(true);
-    expect(isAvailableOnTransport(plainTool, 'http')).toBe(true);
+    expect(isAvailableOnTransport(plainTool, McpTransport.Stdio)).toBe(true);
+    expect(isAvailableOnTransport(plainTool, McpTransport.Http)).toBe(true);
   });
 });
 
 describe('buildMcpServer with requireLocalFilesystem', () => {
   /** Reads the registered tool names through the server's list handler. */
-  async function listedNames(transport: 'stdio' | 'http'): Promise<string[]> {
+  async function listedNames(transport: McpTransport): Promise<string[]> {
     const server = buildMcpServer({
       name: 'test',
       version: '0.0.0',
@@ -64,10 +65,10 @@ describe('buildMcpServer with requireLocalFilesystem', () => {
   }
 
   it('lists the tool over stdio', async () => {
-    expect(await listedNames('stdio')).toEqual(['plain_echo', 'disk_echo']);
+    expect(await listedNames(McpTransport.Stdio)).toEqual(['plain_echo', 'disk_echo']);
   });
 
   it('omits the tool over http', async () => {
-    expect(await listedNames('http')).toEqual(['plain_echo']);
+    expect(await listedNames(McpTransport.Http)).toEqual(['plain_echo']);
   });
 });

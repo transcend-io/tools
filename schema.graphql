@@ -3101,6 +3101,11 @@ enum DownloadSinkVariant {
   STREAM_SAVER_BLOB
 }
 
+enum FileNameSource {
+  DATAPOINT
+  UPLOADER
+}
+
 enum LegalHoldOrderField {
   value
   createdAt
@@ -3648,6 +3653,13 @@ enum ErasureRedactionMethod {
   REQUIRED_REVIEW
   AUTO_REDACT_IDENTIFIERS_ONLY
   AUTO_REDACT_ENTIRE_MESSAGE
+}
+
+enum FieldWriteRestrictionReason {
+  COMPOUND_FIELD
+  COMPUTED_FIELD
+  AUTO_GENERATED
+  READ_ONLY_FOR_INTEGRATION
 }
 
 enum FormType {
@@ -5535,8 +5547,6 @@ type Query {
   vendors(first: Int, offset: Int = 0, last: Int, filterBy: VendorsFiltersInput, orderBy: [VendorOrder!], useMaster: Boolean, isExportCsv: Boolean): VendorsPayload!
   workflowCommunicationsSettings(input: WorkflowConfigIdInput!): WorkflowCommunicationsSettingsPayload!
   workflowConfig(input: WorkflowConfigInput!): WorkflowConfigPayload!
-  workflowConfigFileUploads(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsPayload!
-  workflowConfigFileUploadsAndConfirmations(input: WorkflowConfigIdInput!): WorkflowConfigFileUploadsAndConfirmationsPayload!
   workflowConfigFormItems(input: WorkflowConfigFormItemsInput!): WorkflowConfigFormItemsPayload!
   workflowEnrichers(first: Int, offset: Int = 0, last: Int, input: WorkflowEnrichersInput!): WorkflowEnrichersPayload!
   workflowIdentifiers(first: Int, offset: Int = 0, last: Int, input: WorkflowConfigIdInput!): WorkflowIdentifiersPayload!
@@ -5836,6 +5846,7 @@ type Mutation {
   resumeRequest(id: ID!): ResumeRequestPayload!
   retryDataSiloErrors(id: ID!): RetryDataSiloErrorsPayload!
   retryDataSiloErrorsByMessage(input: RetryDataSiloErrorsByMessageInput!): RetryDataSiloErrorsByMessagePayload!
+  retryDataSiloRateLimitedJobs(id: ID!): RetryDataSiloRateLimitedJobsPayload!
   retryEnricherErrors(id: ID!): RetryEnricherErrorsPayload!
   retryProfileDataPoint(id: ID!, input: RetryProfileDataPointInput): RetryProfileDataPointPayload!
   retryProfileDataPointSecondary(id: ID!, input: RetryProfileDataPointInput): RetryProfileDataPointSecondaryPayload!
@@ -6011,7 +6022,6 @@ type Mutation {
   updateVendors(input: UpdateVendorsInput!): UpdateVendorsPayload!
   updateWorkflowCommunicationSettings(input: UpdateWorkflowCommunicationSettingsInput!): UpdateWorkflowCommunicationSettingsPayload!
   updateWorkflowConfig(input: UpdateWorkflowConfigInput!): UpdateWorkflowConfigPayload!
-  updateWorkflowConfigConfirmations(input: UpdateWorkflowConfigConfirmationsInput!): UpdateWorkflowConfigConfirmationsPayload!
   updateWorkflowConfigDataSilo(input: UpdateWorkflowConfigDataSiloInput!): UpdateWorkflowConfigDataSiloPayload!
   verifyPrivacyCenterLoginEmail(lookup: PrivacyCenterLookupInput, input: TokenInput!): VerifyPrivacyCenterLoginEmailPayload!
   verifyRequestToken(lookup: PrivacyCenterLookupInput, input: TokenInput!): VerifyRequestTokenPayload!
@@ -7863,6 +7873,7 @@ type AttributeSubDataPointResource implements AttributeResourceInterface {
   description: String
   accessRequestVisibilityEnabled: Boolean!
   erasureRequestRedactionEnabled: Boolean!
+  erasureRedactionSupport: ErasureRedactionSupport!
   categories: [DataSubCategory!]!
   pendingCategoryGuesses: [SubDataPointDataSubCategoryGuess!]!
   purposes: [PurposeSubCategory!]!
@@ -8708,6 +8719,8 @@ type Catalog implements CatalogPreviewInterface {
   plaintextInformation: [PlaintextRequirement!]!
   introMessage: String
   businessUserOverview: String
+  introMessageMarkdown: String
+  businessUserOverviewMarkdown: String
   controllerManualInstructions: String
   tcfVendor: TcfVendorPreview
   saaSVendor: SaaSVendorPreview
@@ -13501,6 +13514,7 @@ type DiscoClassScan {
   startedAt: Date!
   completedAt: Date
   error: String
+  failedObjectCount: Int
 }
 
 type DiscoClassScanConfig {
@@ -13531,6 +13545,7 @@ type DiscoClassScanPreview {
   startedAt: Date!
   completedAt: Date
   error: String
+  failedObjectCount: Int
   avgDuration: Float
 }
 
@@ -13635,6 +13650,7 @@ type DownloadFile implements RequestFileInterface {
   id: ID!
   downloadUrl: String!
   fileName: String!
+  fileNameSource: FileNameSource
   authTag: String!
   ignoreAuthTag: Boolean
   iv: String!
@@ -14312,6 +14328,12 @@ type EnvComparison {
   sombra: String!
   transcend: String!
   name: String!
+}
+
+type ErasureRedactionSupport {
+  supported: Boolean!
+  reason: FieldWriteRestrictionReason
+  componentFields: [String!]!
 }
 
 type ExistingDnsRecord {
@@ -17917,6 +17939,7 @@ type RequestFile implements RequestFileInterface {
   id: ID!
   downloadUrl: String!
   fileName: String!
+  fileNameSource: FileNameSource
   authTag: String!
   ignoreAuthTag: Boolean
   iv: String!
@@ -17977,6 +18000,7 @@ interface RequestFileInterface {
   id: ID!
   downloadUrl: String!
   fileName: String!
+  fileNameSource: FileNameSource
   authTag: String!
   ignoreAuthTag: Boolean
   iv: String!
@@ -18419,6 +18443,7 @@ input ResendAssessmentFormNotificationsInput {
 type ResetDataSiloRateLimitsToDefaultPayload {
   clientMutationId: String
   success: Boolean!
+  requeuedCount: Int!
 }
 
 input ResetPasswordInput {
@@ -18608,6 +18633,11 @@ input RetryDataSiloErrorsByMessageInput {
   id: ID!
   exactErrorMessages: [String!]
   fuzzyErrorMessages: [String!]
+}
+
+type RetryDataSiloRateLimitedJobsPayload {
+  clientMutationId: String
+  retriedCount: Int!
 }
 
 type RetryEnricherErrorsPayload {
@@ -20236,6 +20266,7 @@ type SubDataPoint {
   description: String
   accessRequestVisibilityEnabled: Boolean!
   erasureRequestRedactionEnabled: Boolean!
+  erasureRedactionSupport: ErasureRedactionSupport!
   categories: [DataSubCategory!]!
   pendingCategoryGuesses: [SubDataPointDataSubCategoryGuess!]!
   purposes: [PurposeSubCategory!]!
@@ -21847,6 +21878,7 @@ type UpdateDataSiloPluginPayload {
 type UpdateDataSiloRateLimitsPayload {
   clientMutationId: String
   success: Boolean!
+  requeuedCount: Int!
 }
 
 input UpdateDataSiloRateLimitsInput {
@@ -23144,17 +23176,6 @@ type UpdateWorkflowConfigPayload {
   privacyCenterDeployStatus: String!
 }
 
-type UpdateWorkflowConfigConfirmationsPayload {
-  clientMutationId: String
-  success: Boolean!
-  privacyCenterDeployStatus: String!
-}
-
-input UpdateWorkflowConfigConfirmationsInput {
-  workflowConfigId: ID!
-  confirmations: [WorkflowConfigConfirmationInput!]!
-}
-
 type UpdateWorkflowConfigDataSiloPayload {
   clientMutationId: String
   success: Boolean!
@@ -23186,6 +23207,7 @@ input UpdateWorkflowConfigInput {
   attributeKeyIds: [ID!]
   internalName: String
   allowLegacyApiSubmission: Boolean
+  confirmations: [WorkflowConfigConfirmationInput!]
 }
 
 type UploadedModuleMetadata {
@@ -23534,13 +23556,6 @@ type WorkflowConfigAttributeKey {
   attributeKey: AttributeKey!
 }
 
-type WorkflowConfigConfirmation {
-  id: ID!
-  index: Int!
-  isRequired: Boolean!
-  label: LocalizedMessage!
-}
-
 input WorkflowConfigConfirmationInput {
   id: ID
   message: String!
@@ -23558,31 +23573,6 @@ type WorkflowConfigDataSiloAttributeValue {
   WorkflowConfigDataSiloId: ID!
   attributeValueId: ID!
   attributeValue: AttributeValue!
-}
-
-type WorkflowConfigFileUpload {
-  id: ID!
-  internalName: String!
-  label: LocalizedMessage!
-  info: LocalizedMessage
-  acceptedMimeTypes: [String!]!
-  maxFileSize: String
-  maxFiles: Int!
-  isRequired: Boolean!
-  index: Int!
-  createdAt: Date!
-  updatedAt: Date!
-}
-
-type WorkflowConfigFileUploadsPayload {
-  clientMutationId: String
-  nodes: [WorkflowConfigFileUpload!]!
-}
-
-type WorkflowConfigFileUploadsAndConfirmationsPayload {
-  clientMutationId: String
-  fileUploads: [WorkflowConfigFileUpload!]!
-  confirmations: [WorkflowConfigConfirmation!]!
 }
 
 type WorkflowConfigFormItem {

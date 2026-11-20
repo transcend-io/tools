@@ -10,11 +10,11 @@ import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,
   type TranscendInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { assertScopesAvailable } from '../src/helpers/assertScopesAvailable.js';
-import { createCollectedLogger } from '../src/helpers/collectingLogger.js';
+import { CollectedLogLevel, createCollectedLogger } from '../src/helpers/collectingLogger.js';
 import { assertConfigFilePath } from '../src/helpers/configFilePath.js';
 import {
   countConfigSections,
@@ -86,9 +86,9 @@ describe('createCollectedLogger', () => {
     logger.warn('w');
     logger.error('e');
     expect(logs).toEqual([
-      { level: 'info', message: 'a {"b":1}' },
-      { level: 'warn', message: 'w' },
-      { level: 'error', message: 'e' },
+      { level: CollectedLogLevel.Info, message: 'a {"b":1}' },
+      { level: CollectedLogLevel.Warn, message: 'w' },
+      { level: CollectedLogLevel.Error, message: 'e' },
     ]);
   });
 

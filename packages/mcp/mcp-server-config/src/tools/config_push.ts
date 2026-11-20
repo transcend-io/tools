@@ -12,7 +12,7 @@ import {
   parseTranscendYaml,
   syncConfigurationToTranscend,
   TR_PUSH_RESOURCE_SCOPE_MAP,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
 import { createCollectedLogger } from '../helpers/collectingLogger.js';

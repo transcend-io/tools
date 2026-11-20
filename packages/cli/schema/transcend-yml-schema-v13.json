@@ -139,7 +139,6 @@
                   "ADMINISTRATION",
                   "ASSESSMENTS",
                   "PREFERENCE_MANAGEMENT",
-                  "PROMPT_MANAGER",
                   "WEB_AUDITOR",
                   "SOMBRA",
                   "SILO_DISCOVERY",
@@ -1310,6 +1309,51 @@
         ]
       }
     },
+    "consent-sites": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["host"],
+            "properties": {
+              "host": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "site": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "owners": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "teams": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attributes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/interface-1qdwyzz"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
     "consent-manager": {
       "type": "object",
       "properties": {
@@ -2308,6 +2352,40 @@
                 "type": "string"
               }
             }
+          }
+        },
+        "prefixModules": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": ["name", "catalog", "version"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "catalog": {
+                    "type": "string",
+                    "enum": ["transcend", "organization"]
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       }

@@ -2889,7 +2889,7 @@ Use `--json` in automation to emit safe structured metadata for every Custom Fun
 
 ```txt
 USAGE
-  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug] [--dryRun]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2903,7 +2903,7 @@ This command can be helpful if you are looking to:
 
 FLAGS
       --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
-     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
+     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
      [--file]                      Path to the YAML file to pull into                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--dataSiloIds]...            The UUIDs of the data silos that should be pulled into the YAML file                                                                                                                                                                                        [separator = ,]
@@ -2914,6 +2914,7 @@ FLAGS
      [--skipSubDatapoints]         When true, skip pulling in subDatapoints alongside data silo resource                                                                                                                                                                                       [default = false]
      [--includeGuessedCategories]  When true, included guessed data categories that came from the content classifier                                                                                                                                                                           [default = false]
      [--debug]                     Set to true to include debug logs while pulling the configuration                                                                                                                                                                                           [default = false]
+     [--dryRun]                    Show how the file would change without writing it                                                                                                                                                                                                           [default = false]
   -h  --help                       Print help information and exit
 ```
 
@@ -2935,6 +2936,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `dataSubjects`              | `data-subjects`               | The privacy request data subject settings.                                                                                                                                               | View Data Subject Request Settings                               | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
 | `identifiers`               | `identifiers`                 | The privacy request identifier configurations.                                                                                                                                           | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `cookies`                   | `cookies`                     | Consent Manager Cookie definitions.                                                                                                                                                      | View Data Flows                                                  | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
+| `consentSites`              | `consent-sites`               | Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.                                                                                                   | View Consent Manager                                             | [Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)                                                                                                                                                                      |
 | `consentManager`            | `consent-manager`             | Consent Manager general settings, including domain list.                                                                                                                                 | View Consent Manager                                             | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
 | `partitions`                | `partitions`                  | The partitions in the account (often representative of separate data controllers).                                                                                                       | View Consent Manager                                             | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
 | `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | View Data Inventory                                              | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
@@ -2960,6 +2962,12 @@ The API key permissions for this command vary based on the `resources` argument:
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY"
+```
+
+**Show how ./transcend.yml would change without writing it**
+
+```sh
+transcend inventory pull --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Write out file to custom location**
@@ -3109,7 +3117,7 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json]
   transcend inventory push --help
 
 Given a transcend.yml file, sync the contents up to your Transcend instance.
@@ -3123,6 +3131,8 @@ FLAGS
      [--publishToPrivacyCenter]      When true, publish the configuration to the Privacy Center                                                                                                                                                                                                  [default = false]
      [--classifyService]             When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                                                                           [default = false]
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
+     [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
+     [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
   -h  --help                         Print help information and exit
 ```
 
@@ -3144,6 +3154,7 @@ The API key permissions for this command vary based on the resources declared as
 | `dataSubjects`              | `data-subjects`               | The privacy request data subject settings.                                                                                                                                               | Manage Data Subject Request Settings                                                                                        | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
 | `identifiers`               | `identifiers`                 | The privacy request identifier configurations.                                                                                                                                           | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `cookies`                   | `cookies`                     | Consent Manager Cookie definitions.                                                                                                                                                      | Manage Data Flows                                                                                                           | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
+| `consentSites`              | `consent-sites`               | Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.                                                                                                   | Manage Consent Manager                                                                                                      | [Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)                                                                                                                                                                      |
 | `consentManager`            | `consent-manager`             | Consent Manager general settings, including domain list.                                                                                                                                 | Manage Consent Manager Developer Settings                                                                                   | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
 | `partitions`                | `partitions`                  | The partitions in the account (often representative of separate data controllers).                                                                                                       | Manage Consent Manager Developer Settings                                                                                   | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
 | `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | Manage Data Inventory                                                                                                       | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
@@ -3169,6 +3180,12 @@ The API key permissions for this command vary based on the resources declared as
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview what the push would create, update, or delete. Nothing is changed in Transcend**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Looks for file at custom location ./custom/location.yml**
@@ -3238,6 +3255,16 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --classifyService
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=customFields
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
+```
+
+**Preview a push before applying it**
+
+`--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
+
+The preview needs view access to every resource in your file, because it reads the current values first.
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 Some things to note about this sync process:

@@ -17,6 +17,14 @@ const examples = buildExamples<PushCommandFlags>(
       },
     },
     {
+      description:
+        'Preview what the push would create, update, or delete. Nothing is changed in Transcend',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        dryRun: true,
+      },
+    },
+    {
       description: 'Looks for file at custom location ./custom/location.yml',
       flags: {
         auth: '$TRANSCEND_API_KEY',
@@ -131,6 +139,19 @@ ${buildExampleCommand<PullCommandFlags>(['inventory', 'pull'], {
 ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
   auth: '$TRANSCEND_API_KEY',
   deleteExtraAttributeValues: true,
+})}
+\`\`\`
+
+**Preview a push before applying it**
+
+\`--dryRun\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add \`--json\` for machine-readable output.
+
+The preview needs view access to every resource in your file, because it reads the current values first.
+
+\`\`\`sh
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+  dryRun: true,
 })}
 \`\`\`
 
