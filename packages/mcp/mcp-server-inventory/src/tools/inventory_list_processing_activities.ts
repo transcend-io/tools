@@ -1,10 +1,9 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { defineTool, EmptySchema, type ToolClients } from '@transcend-io/mcp-server-base';
+import { listAllYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
 import { TranscendPullResource } from '@transcend-io/sdk';
 
-import { pullYmlSection } from '../helpers/ymlSection.js';
-
-export const ListProcessingActivitiesSchema = z.object({});
-export type ListProcessingActivitiesInput = z.infer<typeof ListProcessingActivitiesSchema>;
+export const ListProcessingActivitiesSchema = EmptySchema;
+export type ListProcessingActivitiesInput = Record<string, never>;
 
 export function createInventoryListProcessingActivitiesTool(clients: ToolClients) {
   return defineTool({
@@ -17,9 +16,6 @@ export function createInventoryListProcessingActivitiesTool(clients: ToolClients
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListProcessingActivitiesSchema,
-    handler: async () => {
-      const items = await pullYmlSection(clients, TranscendPullResource.ProcessingActivities);
-      return createListResult(items, { totalCount: items.length, hasNextPage: false });
-    },
+    handler: async () => listAllYmlSection(clients, TranscendPullResource.ProcessingActivities),
   });
 }

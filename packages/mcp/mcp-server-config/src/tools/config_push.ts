@@ -13,7 +13,7 @@ import {
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
-import { loadConfigInput } from '../helpers/loadConfigInput.js';
+import { loadConfigFile } from '../helpers/loadConfigFile.js';
 import { countConfigSections, resourcesInInput, scopesForResources } from '../helpers/sections.js';
 
 export const ConfigPushSchema = z.object({
@@ -52,18 +52,18 @@ export function createConfigPushTool(clients: ToolClients) {
     description:
       'Push a transcend.yml file from disk to Transcend, creating and updating resources to ' +
       'match it. Same behavior as `transcend inventory push`. Empty sections are skipped. ' +
-      'Returns success, per-resource errors, and warnings. Use config_preview_push for a dry-run diff. ' +
-      'Use config_get_schema for the file format and config_pull to start from the current state.',
+      'Run config_diff first (or config_preview_push for a structured summary). Returns success, ' +
+      'per-resource errors, and warnings. Use config_get_schema for the file format and config_pull ' +
+      'to start from the current state.',
     category: 'Config',
     readOnly: false,
     requireLocalFilesystem: true,
     confirmation: {
       hint:
         'Creates and updates resources in the Transcend organization to match the transcend.yml ' +
-        'file at filePath, across every section the file contains (data silos, purposes, ' +
-        'workflows, policies, and more). Resources missing from the file are not deleted, but ' +
-        'matching resources are overwritten. Check the file path, and whether ' +
-        'publishToPrivacyCenter is set, before agreeing.',
+        'file at filePath. Run config_diff first and confirm the diff with the user. Resources ' +
+        'missing from the file are not deleted in most sections, but consent-manager domains and ' +
+        'some lists are replaced wholesale. Check filePath and publishToPrivacyCenter before agreeing.',
       describe: async (args) => {
         const filePath = args.filePath;
         if (typeof filePath !== 'string') return undefined;
@@ -75,7 +75,7 @@ export function createConfigPushTool(clients: ToolClients) {
             : {};
         const pageSize = typeof args.pageSize === 'number' ? args.pageSize : 50;
 
-        const input = loadConfigInput(filePath, variables);
+        const { input } = loadConfigFile(filePath, variables);
         const client = createGraphqlRequestClient(clients.graphql);
         const plan = await previewPush(client, input, { pageSize });
         return summarizePushPlan(plan);
@@ -90,7 +90,7 @@ export function createConfigPushTool(clients: ToolClients) {
       classifyService = false,
       pageSize = 50,
     }) => {
-      const input = loadConfigInput(filePath, variables);
+      const { input } = loadConfigFile(filePath, variables);
 
       const requiredScopes = scopesForResources(
         resourcesInInput(input),

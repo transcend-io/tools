@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sdk = vi.hoisted(() => ({
-  syncPrivacyCenter: vi.fn(),
-  syncIntlMessages: vi.fn(),
-  syncPolicies: vi.fn(),
+  sync: vi.fn(),
   fetchAllMessages: vi.fn(),
   fetchAllPolicies: vi.fn(),
   fetchAllPrivacyCenters: vi.fn(),
@@ -11,13 +9,32 @@ const sdk = vi.hoisted(() => ({
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
-  ...sdk,
+  syncConfigurationToTranscend: sdk.sync,
+  fetchAllMessages: sdk.fetchAllMessages,
+  fetchAllPolicies: sdk.fetchAllPolicies,
+  fetchAllPrivacyCenters: sdk.fetchAllPrivacyCenters,
 }));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),
   createGraphqlRequestClient: () => ({ marker: 'client' }),
 }));
+
+vi.mock('@transcend-io/mcp-server-base/transcend-yml', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@transcend-io/mcp-server-base/transcend-yml')>();
+  return {
+    ...actual,
+    pushYmlSection: vi.fn(async (_clients, section, count, options = {}) => {
+      const result = await sdk.sync(
+        section,
+        { marker: 'client' },
+        { publishToPrivacyCenter: options.publishToPrivacyCenter ?? false },
+      );
+      return { success: result.success, count, errors: result.errors ?? [] };
+    }),
+  };
+});
 
 const { getPrivacyCenterTools } = await import('../src/index.js');
 
@@ -30,6 +47,7 @@ const tool = (name: string) => tools.find((t) => t.name === name)!;
 
 beforeEach(() => {
   for (const fn of Object.values(sdk)) fn.mockReset();
+  sdk.sync.mockResolvedValue({ success: true, errors: [] });
 });
 
 describe('annotations', () => {
@@ -54,22 +72,27 @@ describe('annotations', () => {
 
 describe('privacy_center_write', () => {
   it('skips publishing by default', async () => {
-    sdk.syncPrivacyCenter.mockResolvedValue(true);
     const result = await tool('privacy_center_write').handler({
       privacyCenter: { showPolicies: true },
     });
     expect(result).toMatchObject({ success: true, count: 1 });
-    expect(sdk.syncPrivacyCenter.mock.calls[0]![1]).toEqual({ showPolicies: true });
-    expect(sdk.syncPrivacyCenter.mock.calls[0]![2]).toMatchObject({ skipPublish: true });
+    expect(sdk.sync).toHaveBeenCalledWith(
+      { 'privacy-center': { showPolicies: true } },
+      { marker: 'client' },
+      expect.objectContaining({ publishToPrivacyCenter: false }),
+    );
   });
 
   it('publishes when asked', async () => {
-    sdk.syncPrivacyCenter.mockResolvedValue(true);
     await tool('privacy_center_write').handler({
       privacyCenter: { isDisabled: false },
-      publish: true,
+      publishToPrivacyCenter: true,
     });
-    expect(sdk.syncPrivacyCenter.mock.calls[0]![2]).toMatchObject({ skipPublish: false });
+    expect(sdk.sync).toHaveBeenCalledWith(
+      expect.anything(),
+      { marker: 'client' },
+      expect.objectContaining({ publishToPrivacyCenter: true }),
+    );
   });
 
   it('rejects a wrong field type', async () => {
@@ -81,33 +104,28 @@ describe('privacy_center_write', () => {
 
 describe('privacy_center_write_intl_messages', () => {
   it('syncs messages', async () => {
-    sdk.syncIntlMessages.mockResolvedValue(true);
     const messages = [{ id: 'm1', defaultMessage: 'Hi', translations: { 'es-ES': 'Hola' } }];
     const result = await tool('privacy_center_write_intl_messages').handler({ messages });
     expect(result).toEqual({ success: true, count: 1, errors: [] });
-    expect(sdk.syncIntlMessages.mock.calls[0]![1]).toEqual(messages);
+    expect(sdk.sync).toHaveBeenCalledWith({ messages }, { marker: 'client' }, expect.any(Object));
   });
 
-  it('reports a thrown duplicate error as a failed result', async () => {
-    sdk.syncIntlMessages.mockRejectedValue(new Error('non-unique entries found: m1'));
-    const result = await tool('privacy_center_write_intl_messages').handler({
-      messages: [{ id: 'm1' }, { id: 'm1' }],
-    });
-    expect(result).toEqual({
-      success: false,
-      count: 2,
-      errors: ['non-unique entries found: m1'],
-    });
+  it('rejects duplicate ids in one call', async () => {
+    await expect(
+      tool('privacy_center_write_intl_messages').handler({
+        messages: [{ id: 'm1' }, { id: 'm1' }],
+      }),
+    ).rejects.toThrow(/duplicate key "m1"/);
+    expect(sdk.sync).not.toHaveBeenCalled();
   });
 });
 
 describe('privacy_center_write_policies', () => {
   it('syncs policies', async () => {
-    sdk.syncPolicies.mockResolvedValue(true);
     const policies = [{ title: 'Privacy Policy', content: '<p>hi</p>' }];
     const result = await tool('privacy_center_write_policies').handler({ policies });
     expect(result).toEqual({ success: true, count: 1, errors: [] });
-    expect(sdk.syncPolicies.mock.calls[0]![1]).toEqual(policies);
+    expect(sdk.sync).toHaveBeenCalledWith({ policies }, { marker: 'client' }, expect.any(Object));
   });
 
   it('rejects an unknown policy type', async () => {

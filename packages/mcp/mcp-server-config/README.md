@@ -9,8 +9,9 @@ These tools read and write files on your machine, so they run over `stdio` only.
 | Tool                  | What it does                                                                                                            |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `config_pull`         | Writes the organization configuration to an absolute `.yml` path. Returns counts.                                       |
-| `config_preview_push` | Previews what `config_push` would change (dry-run diff).                                                                |
-| `config_push`         | Pushes a `.yml` file to Transcend. Needs confirmation with change summary. Returns errors and warnings.                 |
+| `config_diff`         | Dry-run preview: pull live state, diff the file, return a fenced diff for chat. Read-only.                              |
+| `config_push`         | Pushes a `.yml` file to Transcend. Run `config_diff` first. Needs confirmation with a change summary.                   |
+| `config_preview_push` | Structured dry-run summary and diff (like `transcend inventory push --dry-run`). Read-only.                             |
 | `config_get_schema`   | Section catalog by default; pass `resources` for partial schema, or `includeFullSchema` for the full file (very large). |
 
 ## Run

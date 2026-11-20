@@ -4,6 +4,7 @@ export * from './enums.js';
 export * from './planPush.js';
 export * from './previewPush.js';
 export * from './renderPushPlan.js';
+export * from './renderPushPlanDiff.js';
 export * from './summarizePushPlan.js';
 export * from './resourceDefinitions.js';
 export * from './types.js';

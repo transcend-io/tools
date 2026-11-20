@@ -13,7 +13,7 @@ import {
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
-import { loadConfigInput } from '../helpers/loadConfigInput.js';
+import { loadConfigFile } from '../helpers/loadConfigFile.js';
 import { resourcesInInput, scopesForResources } from '../helpers/sections.js';
 
 const MAX_DIFF_CHARS = 16_000;
@@ -49,7 +49,7 @@ export function createConfigPreviewPushTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ConfigPreviewPushSchema,
     handler: async ({ filePath, variables = {}, pageSize = 50 }) => {
-      const input = loadConfigInput(filePath, variables);
+      const { input } = loadConfigFile(filePath, variables);
       const requiredScopes = scopesForResources(
         resourcesInInput(input),
         TR_PUSH_RESOURCE_SCOPE_MAP,

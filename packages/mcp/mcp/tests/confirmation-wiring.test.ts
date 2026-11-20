@@ -81,6 +81,9 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
     action: 'deactivate',
     bundleId: '00000000-0000-4000-8000-000000000001',
   },
+  privacy_center_write: {
+    privacyCenter: { supportEmail: 'privacy@example.com' },
+  },
   preferences_append_identifiers: {
     partition: 'default',
     records: [

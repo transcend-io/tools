@@ -1,30 +1,17 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import {
-  ensureAllDataSubjectsExist,
-  EnricherInput,
-  fetchAllEnrichers,
-  fetchIdentifiersAndCreateMissing,
-  syncEnricher,
-} from '@transcend-io/sdk';
-import { decodeCodec } from '@transcend-io/type-utils';
-
-import { decodeItems, errorMessage, type ItemError } from '../helpers/syncItems.js';
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { EnricherInput, type EnricherInput as EnricherSettings } from '@transcend-io/sdk';
 
 export const writeEnrichersSchema = z.object({
-  enrichers: z
-    .array(z.record(z.string(), z.unknown()))
-    .min(1)
-    .max(50)
-    .describe(
-      'Enrichers in transcend.yml `preflights` shape. Each needs `title` and `output-identifiers`. ' +
-        'New ones also need `input-identifier`. Matched by title. See config_get_schema.',
-    ),
+  enrichers: ymlItemsSchema(
+    'Enrichers in transcend.yml `preflights` shape. Each needs `title` and `output-identifiers`. ' +
+      'New ones also need `input-identifier`. Matched by title. See config_get_schema.',
+    50,
+  ),
   publishToPrivacyCenter: z
     .boolean()
     .optional()
@@ -46,59 +33,12 @@ export function createDsrWriteEnrichersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: writeEnrichersSchema,
     handler: async ({ enrichers, publishToPrivacyCenter = false }) => {
-      const client = createGraphqlRequestClient(clients.graphql);
-      const { logger, logs } = createCollectedLogger();
-
-      const { valid, errors } = decodeItems(
-        (raw) => decodeCodec(EnricherInput, raw, false),
-        enrichers,
-        (raw, index) => (typeof raw['title'] === 'string' ? raw['title'] : `#${index}`),
-      );
-
-      let synced = 0;
-      if (valid.length > 0) {
-        const input = { preflights: valid };
-        const existingTitles = new Set(
-          (await fetchAllEnrichers(client, { logger })).map(({ title }) => title),
-        );
-        const [identifierByName, dataSubjectsByName] = await Promise.all([
-          fetchIdentifiersAndCreateMissing(client, {
-            input,
-            skipPublish: !publishToPrivacyCenter,
-            logger,
-          }),
-          ensureAllDataSubjectsExist(input, client, false, { logger }),
-        ]);
-
-        for (const enricher of valid) {
-          // The SDK silently skips a new enricher that has no input identifier
-          if (!existingTitles.has(enricher.title) && !enricher['input-identifier']) {
-            errors.push({
-              item: enricher.title,
-              message: 'input-identifier is required to create a new enricher',
-            } satisfies ItemError);
-            continue;
-          }
-          try {
-            await syncEnricher(client, {
-              input: enricher,
-              identifierByName,
-              dataSubjectsByName,
-              logger,
-            });
-            synced += 1;
-          } catch (error) {
-            errors.push({ item: enricher.title, message: errorMessage(error) });
-          }
-        }
-      }
-
-      return {
-        success: errors.length === 0,
-        synced,
-        errors,
-        ...(errors.length > 0 && { logs }),
-      };
+      const decoded = decodeYmlItems<EnricherSettings>(EnricherInput, enrichers, 'preflights', {
+        uniqueBy: (item) => item.title,
+      });
+      return pushYmlSection(clients, { preflights: decoded }, decoded.length, {
+        publishToPrivacyCenter,
+      });
     },
   });
 }

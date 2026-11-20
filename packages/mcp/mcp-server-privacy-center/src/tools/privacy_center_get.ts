@@ -1,12 +1,11 @@
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
   createToolResult,
   defineTool,
   EmptySchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { fetchAllPrivacyCenters } from '@transcend-io/sdk';
+import { pullYmlSectionRaw } from '@transcend-io/mcp-server-base/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 export function createPrivacyCenterGetTool(clients: ToolClients) {
   return defineTool({
@@ -18,18 +17,15 @@ export function createPrivacyCenterGetTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
-    handler: async (_args) => {
-      const { logger } = createCollectedLogger();
-      const centers = await fetchAllPrivacyCenters(createGraphqlRequestClient(clients.graphql), {
-        logger,
-      });
-      if (centers.length === 0) {
+    handler: async () => {
+      const rows = await pullYmlSectionRaw(clients, TranscendPullResource.PrivacyCenters);
+      if (rows.length === 0) {
         return createToolResult(true, {
           found: false,
           message: 'No privacy center configured for this organization',
         });
       }
-      return createToolResult(true, { found: true, privacyCenter: centers[0] });
+      return createToolResult(true, { found: true, privacyCenter: rows[0] });
     },
   });
 }

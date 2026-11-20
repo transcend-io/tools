@@ -1,15 +1,9 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { decodeYmlRecord, pushYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
-  defineTool,
-  ErrorCode,
-  runSync,
-  ToolError,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { PrivacyCenterInput, syncPrivacyCenter } from '@transcend-io/sdk';
-import { decodeCodec } from '@transcend-io/type-utils';
+  PrivacyCenterInput,
+  type PrivacyCenterInput as PrivacyCenterSettings,
+} from '@transcend-io/sdk';
 
 export const WritePrivacyCenterSchema = z.object({
   privacyCenter: z
@@ -19,7 +13,7 @@ export const WritePrivacyCenterSchema = z.object({
         'isDisabled, showPolicies, locales, defaultLocale, supportEmail, theme, footerLinks. ' +
         'Same shape as the privacy-center section of transcend.yml; see config_get_schema.',
     ),
-  publish: z
+  publishToPrivacyCenter: z
     .boolean()
     .optional()
     .describe('Publish the privacy center after the update. Defaults to false.'),
@@ -33,34 +27,23 @@ export function createPrivacyCenterWriteTool(clients: ToolClients) {
       'Update privacy center settings: visible pages, locales, emails, theme and footer links. ' +
       'Same as the privacy-center section of `transcend inventory push`. Only the fields given ' +
       'change. When footerLinks is given, links missing from it are deleted. Publishes only ' +
-      'when publish is true. Returns success and errors.',
+      'when publishToPrivacyCenter is true. Returns success and errors.',
     category: 'Privacy Center',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Updates the live privacy center settings. When footerLinks is included, any link not ' +
+        'listed is deleted from the privacy center. Review the fields before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: WritePrivacyCenterSchema,
-    handler: async ({ privacyCenter, publish = false }) => {
-      let input: PrivacyCenterInput;
-      try {
-        input = decodeCodec(PrivacyCenterInput, privacyCenter, false);
-      } catch (error) {
-        throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
-          `privacyCenter does not match the transcend.yml format: ${
-            error instanceof Error ? error.message : String(error)
-          }. Use config_get_schema for the full schema.`,
-          false,
-        );
-      }
-      const { logger, logs } = createCollectedLogger();
-      return runSync(
-        () =>
-          syncPrivacyCenter(createGraphqlRequestClient(clients.graphql), input, {
-            logger,
-            skipPublish: !publish,
-          }),
-        logs,
-        1,
+    handler: async ({ privacyCenter, publishToPrivacyCenter = false }) => {
+      const input = decodeYmlRecord<PrivacyCenterSettings>(
+        PrivacyCenterInput,
+        privacyCenter,
+        'privacy-center',
       );
+      return pushYmlSection(clients, { 'privacy-center': input }, 1, { publishToPrivacyCenter });
     },
   });
 }

@@ -7,16 +7,16 @@ import { assertConfigFilePath } from './configFilePath.js';
 import { stripEmptyConfigSections } from './sections.js';
 
 /**
- * Read and parse a transcend.yml from disk for config push and preview tools.
+ * Read and parse a transcend.yml path from disk for config tools.
  *
- * @param filePath - Absolute path to the YAML file
- * @param variables - Placeholder values for `<<parameters.*>>`
- * @returns Parsed, non-empty sections only
+ * @param filePath - Absolute path to the file
+ * @param variables - Values for <<parameters.*>> placeholders
+ * @returns Normalized source path and parsed input
  */
-export function loadConfigInput(
+export function loadConfigFile(
   filePath: string,
   variables: Record<string, string> = {},
-): TranscendInput {
+): { source: string; input: TranscendInput } {
   const source = assertConfigFilePath(filePath);
 
   let contents: string;
@@ -31,7 +31,8 @@ export function loadConfigInput(
   }
 
   try {
-    return stripEmptyConfigSections(parseTranscendYaml(contents, variables, source));
+    const input = stripEmptyConfigSections(parseTranscendYaml(contents, variables, source));
+    return { source, input };
   } catch (error) {
     throw new ToolError(
       ErrorCode.VALIDATION_ERROR,
