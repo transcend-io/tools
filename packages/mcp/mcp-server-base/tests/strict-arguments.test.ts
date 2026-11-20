@@ -14,6 +14,7 @@ import { ElicitRequestSchema, type ElicitResult } from '@modelcontextprotocol/sd
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildMcpServer } from '../src/server/build-server.js';
+import { McpTransport } from '../src/server/transport.js';
 import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation/index.js';
 import { defineTool, type ToolDefinition } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
@@ -93,7 +94,7 @@ async function connect(
   tools: ToolDefinition[],
   options: {
     /** Which gate the transport implies */
-    transport?: 'stdio' | 'http';
+    transport?: McpTransport;
     /** Elicitation answer, if the host renders forms at all */
     respond?: () => Promise<ElicitResult>;
   } = {},
@@ -102,7 +103,7 @@ async function connect(
     name: 'strict-arguments-probe',
     version: '0.0.1',
     tools,
-    transport: options.transport ?? 'http',
+    transport: options.transport ?? McpTransport.Http,
   });
 
   const client = new Client(
@@ -207,7 +208,7 @@ describe('the confirmation gate still works under strict arguments', () => {
   it('elicits, then mutates, when the host can show a form', async () => {
     const mutate = vi.fn(async () => ({ cancelled: true }));
     const session = await connect([cancelTool(mutate)], {
-      transport: 'http',
+      transport: McpTransport.Http,
       respond: async () => ({ action: 'accept', content: {} }),
     });
 
@@ -222,7 +223,7 @@ describe('the confirmation gate still works under strict arguments', () => {
   it('does not mutate when the user declines', async () => {
     const mutate = vi.fn(async () => ({ cancelled: true }));
     const session = await connect([cancelTool(mutate)], {
-      transport: 'http',
+      transport: McpTransport.Http,
       respond: async () => ({ action: 'decline' }),
     });
 
@@ -237,7 +238,7 @@ describe('the confirmation gate still works under strict arguments', () => {
     // The token is an argument the agent sends back, so strict validation is
     // directly in its path: reject it and the whole fallback route dies.
     const mutate = vi.fn(async () => ({ cancelled: true }));
-    const session = await connect([cancelTool(mutate)], { transport: 'stdio' });
+    const session = await connect([cancelTool(mutate)], { transport: McpTransport.Stdio });
 
     const first = await session.call('test_dsr_cancel', { requestId: 'req-1' });
     expect(mutate).not.toHaveBeenCalled();
@@ -262,7 +263,7 @@ describe('the confirmation gate still works under strict arguments', () => {
     // its own account of why the token is no good.
     const mutate = vi.fn(async () => ({ cancelled: true }));
     const session = await connect([cancelTool(mutate)], {
-      transport: 'http',
+      transport: McpTransport.Http,
       respond: async () => ({ action: 'accept', content: {} }),
     });
 
@@ -281,7 +282,7 @@ describe('the confirmation gate still works under strict arguments', () => {
     // Tolerating the key at validation must not turn into advertising it: the
     // input schema is still derived from the tool's own zodSchema.
     const session = await connect([cancelTool(vi.fn())], {
-      transport: 'http',
+      transport: McpTransport.Http,
       respond: async () => ({ action: 'accept', content: {} }),
     });
 
@@ -296,7 +297,7 @@ describe('the confirmation gate still works under strict arguments', () => {
   it('still refuses an ordinary unknown argument on a gated tool', async () => {
     const mutate = vi.fn(async () => ({ cancelled: true }));
     const session = await connect([cancelTool(mutate)], {
-      transport: 'stdio',
+      transport: McpTransport.Stdio,
       respond: async () => ({ action: 'accept', content: {} }),
     });
 

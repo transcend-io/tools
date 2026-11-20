@@ -13,6 +13,7 @@ const SEARCH_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
  * need different terms, not more pages, which is why there is no offset.
  */
 const SEARCH_LIMIT = 20;
+const MAX_FILTERED_CANDIDATES = 1000;
 const HYDRATE_CONCURRENCY = 15;
 const SNIPPET_CHARS = 200;
 const SNIPPET_PREFIX = 40;
@@ -153,6 +154,10 @@ export async function searchDocs(
   options: {
     /** Optional llms.txt section name (exact match). */
     section?: string;
+    /** Optional predicate on the hit URL, applied before the result cap. */
+    urlFilter?: (url: string) => boolean;
+    /** Maximum hits to return. Defaults to the standard search limit. */
+    limit?: number;
   } = {},
 ): Promise<{
   /** Ranked hits for this page. */
@@ -173,7 +178,9 @@ export async function searchDocs(
   const results = await Promise.resolve(
     search(db, {
       term,
-      limit: SEARCH_LIMIT,
+      // A URL filter runs after Orama, so fetch every match first or the cap would
+      // drop in-scope hits that rank below out-of-scope ones.
+      limit: options.urlFilter ? MAX_FILTERED_CANDIDATES : (options.limit ?? SEARCH_LIMIT),
       // Exact tokens only. Fuzzy matching mostly added noise: on a labeled
       // benchmark it cost accuracy on every query set, and a typo it "rescued"
       // returned unrelated articles rather than the intended one. Returning
@@ -200,7 +207,13 @@ export async function searchDocs(
     }),
   );
 
-  const hits: DocsSearchHit[] = results.hits.map((hit) => {
+  const { urlFilter } = options;
+  const matched = urlFilter
+    ? results.hits.filter((hit) => urlFilter(hit.document.url))
+    : results.hits;
+  const cap = options.limit ?? SEARCH_LIMIT;
+
+  const hits: DocsSearchHit[] = matched.slice(0, cap).map((hit) => {
     const document = hit.document;
     return {
       title: document.title,
@@ -211,5 +224,5 @@ export async function searchDocs(
     };
   });
 
-  return { hits, totalCount: results.count };
+  return { hits, totalCount: urlFilter ? matched.length : results.count };
 }

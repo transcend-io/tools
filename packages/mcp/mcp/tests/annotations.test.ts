@@ -92,6 +92,7 @@ describe('MCP Tool Annotations', () => {
       'consent_bulk_triage',
       'consent_delete_cookies',
       'consent_delete_data_flows',
+      'consent_deploy_bundle',
       'consent_update_cookies',
       'consent_update_data_flows',
       'custom_functions_promote_version',
@@ -131,6 +132,7 @@ describe('MCP Tool Annotations', () => {
   describe('confirmation-gated tools', () => {
     const expectedGated = [
       'config_push',
+      'consent_deploy_bundle',
       'custom_functions_promote_version',
       'custom_functions_test_run',
       'custom_functions_upsert',
@@ -192,11 +194,6 @@ describe('MCP Tool Annotations', () => {
       'preferences_update_identifiers',
       'inventory_write_vendor',
       'inventory_write_processing_purpose',
-      'inventory_write_business_entities',
-      'inventory_write_data_subjects',
-      'inventory_write_identifiers',
-      'inventory_write_processing_activities',
-      'inventory_write_custom_fields',
       'inventory_update_or_create_data_point',
       'assessments_update',
       'assessments_update_assignees',

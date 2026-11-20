@@ -18,21 +18,6 @@ import { describe, expect, test } from 'vitest';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SCAN_ROOTS = ['packages/sdk/src', 'packages/cli/src'];
 
-/** Shared reason for the dead SDK `ai` module operations. */
-const REMOVED_AI_OPERATION =
-  'The backend dropped the agents, large language models, and prompt threads tables, so the schema no longer exposes this operation. Delete the SDK ai module in a major release.';
-
-/**
- * Documents known to be invalid today. Each entry needs a reason.
- * Remove the entry when the document is fixed. The test fails if an entry
- * becomes valid, so this list cannot go stale.
- */
-const KNOWN_INVALID: Record<string, string> = {
-  'packages/sdk/src/ai/gqls/largeLanguageModel.ts#LARGE_LANGUAGE_MODELS': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/promptRun.ts#ADD_MESSAGES_TO_PROMPT_RUN': REMOVED_AI_OPERATION,
-  'packages/sdk/src/ai/gqls/promptThread.ts#PROMPT_THREADS': REMOVED_AI_OPERATION,
-};
-
 /** Recursively list non-test TypeScript files that use the `gql` tag. */
 function findGqlFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -81,15 +66,7 @@ describe('SDK and CLI GraphQL documents', async () => {
 
   for (const [id, source] of Object.entries(documents)) {
     test(id, () => {
-      const errors = errorsFor(source);
-      if (id in KNOWN_INVALID) {
-        expect(
-          errors,
-          `${id} is allowlisted but now valid. Remove it from KNOWN_INVALID.`,
-        ).not.toEqual([]);
-        return;
-      }
-      expect(errors).toEqual([]);
+      expect(errorsFor(source)).toEqual([]);
     });
   }
 });
