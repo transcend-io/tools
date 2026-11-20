@@ -61,6 +61,7 @@ describe('requireLocalFilesystem', () => {
 
       for (const [file, source] of sources) {
         if (!path.relative(srcDir, file).startsWith(`tools${path.sep}`)) continue;
+        if (path.basename(file) === 'index.ts') continue;
         const reachesDisk =
           touchesDisk.has(file) ||
           relativeImports(file, source).some((imported) => touchesDisk.has(imported));

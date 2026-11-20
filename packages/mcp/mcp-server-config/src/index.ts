@@ -14,6 +14,11 @@ export function getConfigTools(clients: ToolClients): ToolDefinition[] {
 }
 
 export { CONFIG_OAUTH_SCOPES };
+export {
+  CollectedLogLevel,
+  createCollectedLogger,
+  type CollectedLog,
+} from './helpers/collectingLogger.js';
 export { ConfigGetSchemaSchema, type ConfigGetSchemaInput } from './tools/config_get_schema.js';
 export { ConfigPullSchema, type ConfigPullInput } from './tools/config_pull.js';
 export { ConfigPushSchema, type ConfigPushInput } from './tools/config_push.js';
