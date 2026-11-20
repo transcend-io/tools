@@ -4,8 +4,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncPolicies } from '@transcend-io/sdk';
-import { PolicyInput } from '@transcend-io/sdk/transcend-yml';
+import { PolicyInput, syncPolicies } from '@transcend-io/sdk';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { decodeItems, runSync } from '../helpers/syncWrite.js';

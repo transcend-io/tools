@@ -4,8 +4,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncIntlMessages } from '@transcend-io/sdk';
-import { IntlMessageInput } from '@transcend-io/sdk/transcend-yml';
+import { IntlMessageInput, syncIntlMessages } from '@transcend-io/sdk';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { decodeItems, runSync } from '../helpers/syncWrite.js';

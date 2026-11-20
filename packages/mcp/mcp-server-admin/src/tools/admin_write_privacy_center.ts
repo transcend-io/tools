@@ -6,8 +6,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncPrivacyCenter } from '@transcend-io/sdk';
-import { PrivacyCenterInput } from '@transcend-io/sdk/transcend-yml';
+import { PrivacyCenterInput, syncPrivacyCenter } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';
