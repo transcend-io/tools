@@ -1,10 +1,13 @@
-import { ErrorCode, ToolError, type Logger } from '@transcend-io/mcp-server-base';
+import {
+  CollectedLogLevel,
+  createCollectedLogger,
+  ErrorCode,
+  ToolError,
+  type Logger,
+} from '@transcend-io/mcp-server-base';
 import { decodeCodec } from '@transcend-io/type-utils';
 /** An io-ts codec, as `decodeCodec` takes it. */
 type Codec = Parameters<typeof decodeCodec>[0];
-
-/** Maximum lines kept, so a large sync cannot flood a tool result. */
-const MAX_LOGS = 100;
 
 /** Result of a configuration write, shaped like the config push result. */
 export interface WriteResult {
@@ -16,40 +19,6 @@ export interface WriteResult {
   warnings?: string[];
   /** Number of items sent */
   count: number;
-}
-
-/**
- * Logger that keeps error and warning lines in memory instead of printing.
- *
- * A stdio MCP server reserves stdout for protocol frames, so SDK output must not
- * reach it.
- *
- * @returns The logger and the lines it captured
- */
-export function createCollectedLogger(): {
-  /** Logger to hand to SDK functions */
-  logger: Logger;
-  /** Captured error lines */
-  errors: string[];
-  /** Captured warning lines */
-  warnings: string[];
-} {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const keep =
-    (lines: string[]) =>
-    (...args: unknown[]): void => {
-      if (lines.length >= MAX_LOGS) return;
-      lines.push(
-        args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' '),
-      );
-    };
-  const ignore = (): void => {};
-  return {
-    logger: { debug: ignore, info: ignore, warn: keep(warnings), error: keep(errors) },
-    errors,
-    warnings,
-  };
 }
 
 /**
@@ -89,13 +58,21 @@ export async function runSync(
   count: number,
   run: (logger: Logger) => Promise<boolean>,
 ): Promise<WriteResult> {
-  const { logger, errors, warnings } = createCollectedLogger();
+  const { logger, logs } = createCollectedLogger();
   let success: boolean;
+  const thrown: string[] = [];
   try {
     success = await run(logger);
   } catch (error) {
     success = false;
-    errors.push(error instanceof Error ? error.message : String(error));
+    thrown.push(error instanceof Error ? error.message : String(error));
   }
+  const errors = [
+    ...logs.filter((line) => line.level === CollectedLogLevel.Error).map((line) => line.message),
+    ...thrown,
+  ];
+  const warnings = logs
+    .filter((line) => line.level === CollectedLogLevel.Warn)
+    .map((line) => line.message);
   return { success, errors, ...(warnings.length > 0 && { warnings }), count };
 }

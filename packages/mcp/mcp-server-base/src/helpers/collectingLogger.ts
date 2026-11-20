@@ -1,4 +1,4 @@
-import type { Logger } from '@transcend-io/mcp-server-base';
+import type { Logger } from '../clients/graphql/base.js';
 
 /** Severity of a captured log line. */
 export enum CollectedLogLevel {
