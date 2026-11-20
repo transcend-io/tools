@@ -53,7 +53,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`                                                                                                                                                                                                                                                                                                                                    |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `ViewAssessments`, `ViewAssignedAssessments`, `ManageAssessments`, `ManageAssignedAssessments`                                                                                                                                                                                                                                                                                     |
 | [`mcp-server-config`](./mcp-server-config/)                     | Union of every scope the `transcend.yml` pull and push paths need (see `src/scopes.ts`)                                                                                                                                                                                                                                                                                            |
-| [`mcp-server-consent`](./mcp-server-consent/)                   | `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`                                                                                                                                                                                                                                       |
+| [`mcp-server-consent`](./mcp-server-consent/)                   | `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`, `ManageConsentManagerDeveloperSettings`, `ViewPreferenceStoreSettings`, `ManagePreferenceStoreSettings`                                                                                                                              |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `ViewCustomFunction`, `ManageCustomFunction`, `ConnectDataSilos`                                                                                                                                                                                                                                                                                                                   |
 | [`mcp-server-discovery`](./mcp-server-discovery/)               | `ViewDataMap`, `ViewAssignedIntegrations`, `ViewCodeScanning`, `ManageCodeScanning`, `ViewPrompts`, `ViewPromptRuns`, `ExecutePrompt`                                                                                                                                                                                                                                              |
 | [`mcp-server-docs`](./mcp-server-docs/)                         | _(none requested — `docs_list`/`docs_fetch` are public; `docs_integration_lookup` needs sign-in)_                                                                                                                                                                                                                                                                                  |
@@ -81,7 +81,7 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp`** to get every tool (117 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (119 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 **Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
@@ -239,11 +239,11 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   117 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   119 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups           |
 | [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
-| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    20 | Consent management, analytics, cookie triage     |
+| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    22 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |
 | [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     4 | Data discovery, classification, NER              |

@@ -1,5 +1,27 @@
 # @transcend-io/mcp
 
+## 1.10.0
+
+### Minor Changes
+
+- 3cc760c: Add direct inventory MCP tools for business entities, data subjects, identifiers, processing activities, and custom fields in `transcend.yml`, and update the CLI/MCP parity map for those sections. The inventory server also requests request-identity, data subject request settings, and global attribute scopes.
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+- ae6da74: Add `workflows_write_email_templates` so the MCP can create email templates like `transcend inventory push`. Add the `ManageEmailTemplates` scope to the workflows server.
+
+### Patch Changes
+
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [3cc760c]
+- Updated dependencies [7217c74]
+- Updated dependencies [ae6da74]
+  - @transcend-io/mcp-server-base@3.1.1
+  - @transcend-io/mcp-server-docs@0.6.1
+  - @transcend-io/mcp-server-inventory@1.1.0
+  - @transcend-io/mcp-server-config@0.1.1
+  - @transcend-io/mcp-server-preferences@0.8.0
+  - @transcend-io/mcp-server-workflows@1.1.0
+
 ## 1.9.2
 
 ### Patch Changes

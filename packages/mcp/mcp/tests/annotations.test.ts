@@ -204,6 +204,8 @@ describe('MCP Tool Annotations', () => {
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
+      'consent_write_consent_manager',
+      'consent_write_purposes',
     ];
 
     it.each(expectedIdempotentMutative)(
