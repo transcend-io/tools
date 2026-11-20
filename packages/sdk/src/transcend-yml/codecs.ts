@@ -104,10 +104,22 @@ const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator
  *
  * @see https://docs.transcend.io/docs/privacy-requests/configuring-requests/email-templates
  */
-export const TemplateInput = t.type({
-  /** The title of the template */
-  title: t.string,
-});
+export const TemplateInput = t.intersection([
+  t.type({
+    /** The title of the template */
+    title: t.string,
+  }),
+  t.partial({
+    /** Email subject line */
+    subject: t.string,
+    /** Template body HTML */
+    body: t.string,
+    /** Template delivery type */
+    type: t.union([t.literal('EMAIL'), t.literal('TEXT')]),
+    /** Product line the template belongs to */
+    product: t.union([t.literal('DSR'), t.literal('ASSESSMENT'), t.literal('ROPA')]),
+  }),
+]);
 
 /** Type override */
 export type TemplateInput = t.TypeOf<typeof TemplateInput>;

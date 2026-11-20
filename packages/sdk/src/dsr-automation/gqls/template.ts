@@ -9,6 +9,7 @@ export const TEMPLATES = gql`
       nodes {
         id
         title
+        type
         subject {
           defaultMessage
         }
@@ -21,10 +22,16 @@ export const TEMPLATES = gql`
 `;
 
 export const CREATE_TEMPLATE = gql`
-  mutation TranscendCliCreateTemplate($title: String!) {
-    createTemplate(
-      input: { title: $title, template: "", subject: $title, type: EMAIL, product: DSR }
-    ) {
+  mutation TranscendCliCreateTemplate($input: TemplateInput!) {
+    createTemplate(input: $input) {
+      clientMutationId
+    }
+  }
+`;
+
+export const UPDATE_TEMPLATE = gql`
+  mutation TranscendCliUpdateTemplate($input: UpdateTemplateInput!) {
+    updateTemplate(input: $input) {
       clientMutationId
     }
   }
