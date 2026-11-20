@@ -2,7 +2,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger, TranscendGraphQLBase } from '../clients/graphql/base.js';
-import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
+import {
+  resolveStdioStartupAuth,
+  resolveStdioStartupAuthOptional,
+} from '../oauth/resolve-stdio-auth.js';
 import { configureOAuthScopes } from '../oauth/scopes.js';
 import type { PromptDefinition } from '../prompts/types.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
@@ -45,7 +48,8 @@ export interface MCPServerOptions {
   /** Server version */
   version: string;
   /**
-   * When false, starts without API key or OAuth and skips OAuth client verification at startup.
+   * When false, startup does not require credentials, but optional env auth is still resolved
+   * for signed-in tools. OAuth client verification still runs when OAuth env vars are set.
    * Per-call auth is controlled per tool via {@link ToolDefinition.requireAuth}. Default true.
    */
   requireStartupAuth?: boolean;
@@ -134,7 +138,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = requireStartupAuth ? resolveStdioStartupAuth() : null;
+  const auth = requireStartupAuth ? resolveStdioStartupAuth() : resolveStdioStartupAuthOptional();
   const clients = buildClients(
     { auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl },
     options.createClients,
