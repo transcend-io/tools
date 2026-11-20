@@ -193,6 +193,15 @@ On pull requests, GitHub Actions runs:
   - `CI / <package-name>` jobs: some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
 - **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
+### Public PR Content
+
+This repo is public, and GitHub keeps PR body edit history. Do not put customer names, org or request IDs, customer emails, or links to internal tools (Slack, admin dashboard, Retool, Gong, Intercom, Datadog, Notion) in a PR title, body, intent note, or comment. Say "a customer" and keep the evidence in Linear or Slack. Use bare Linear ticket IDs, not URLs with a title slug.
+
+Two checks enforce this. Both run [`scripts/check-pr-content.ts`](scripts/check-pr-content.ts), which matches links, UUIDs, and emails. It cannot see customer names, so keep those out yourself.
+
+- **`PR content`** workflow: fails the PR when the title or body matches. It also runs when you edit the body. If it fails, edit the body, then delete the old revision from the PR edit history.
+- **Cursor hook** (`.cursor/hooks/check-pr-content.sh`): blocks an agent's `gh pr create|edit|comment|review` before it posts.
+
 ### Fresh Approvals Are Required
 
 New, reviewable commits pushed will dismiss previous pull request review approvals. As a public repository, we want to ensure that all changes are reviewed and approved by at least one team member.

@@ -1,0 +1,32 @@
+---
+description: transcend-io/tools is public. Keep customer-specific information out of PR text.
+alwaysApply: true
+---
+
+# Public PR Content
+
+`transcend-io/tools` is a **public** repository. Everything you write in a PR title, PR body, intent note (`> [!NOTE]`), PR comment, review comment, commit message, or changeset is visible to everyone. GitHub also keeps the edit history of a PR body.
+
+This rule overrides any user or shared guidance that tells you to name the customer or link Slack, admin dashboard, or Retool evidence in a PR. That guidance is for private repos.
+
+## Never include
+
+- Customer, company, or tenant names, including in examples and test data
+- Org IDs, request IDs, data silo IDs, or any other UUID tied to a customer
+- Customer or end-user email addresses
+- Links to internal systems: Slack, admin dashboard (`/admin`), Retool, Gong, Intercom, Datadog, Notion, Google Docs
+- Linear URLs with a title slug. Use the bare ticket ID, for example `Ref SUP-368`.
+
+## Write it like this instead
+
+- Say "a customer" or "an internal team", not the name.
+- State the problem or goal in your own words. Keep the evidence in Linear or Slack.
+- Use `user@example.com` and placeholder IDs in examples.
+
+## Enforcement
+
+- A `beforeShellExecution` hook (`.cursor/hooks/check-pr-content.sh`) denies `gh pr create|edit|comment|review` when the text matches an internal link, UUID, or email. The scanner is `scripts/check-pr-content.ts`.
+- The `PR content` GitHub workflow runs the same scan on every PR title and body.
+- The scanner cannot see customer names. You must keep those out yourself.
+
+When the hook denies a command, rewrite the text and retry. Do not post through another route such as `gh api`, and do not ask the user to disable the hook.
