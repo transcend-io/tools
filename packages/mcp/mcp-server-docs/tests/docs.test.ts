@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { requestAuthContext } from '@transcend-io/mcp-server-base';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { LLMS_TXT_URL, resetDocsCachesForTests } from '../src/docsIndex.js';
+import { DOCS_TOKEN_ENV, LLMS_TXT_URL, resetDocsCachesForTests } from '../src/docsIndex.js';
 import { createDocsFetchTool } from '../src/tools/docs_fetch.js';
 import { createDocsListTool } from '../src/tools/docs_list.js';
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
@@ -255,5 +256,120 @@ describe('docs_fetch', () => {
     await expect(tool.handler({ url: 'https://evil.example.com/docs.md' })).rejects.toThrow(
       /docs\.transcend\.io/,
     );
+  });
+});
+
+describe('gated docs', () => {
+  const GATED_URL = 'https://docs.transcend.io/docs/articles/dsr-automation.md';
+  const PUBLIC_URL = 'https://docs.transcend.io/docs/articles/consent-management.md';
+  const gatedLlms = [
+    '- General',
+    `  - [DSR Automation](${GATED_URL}): Automate requests`,
+    `  - [Consent Management](${PUBLIC_URL}): Overview {access: public}`,
+  ].join('\n');
+
+  afterEach(() => {
+    resetDocsCachesForTests();
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  /** Mock docs site: the gated page is a preview unless the request has a Bearer token. */
+  function mockGatedSite(): void {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url === LLMS_TXT_URL) {
+        return new Response(gatedLlms, { status: 200 });
+      }
+      const signedIn = Boolean((init?.headers as Record<string, string>).Authorization);
+      if (url === GATED_URL) {
+        return signedIn
+          ? new Response('# DSR Automation\n\nSecret steps.', {
+              status: 200,
+              headers: { 'X-Docs-Access': 'signedIn' },
+            })
+          : new Response('Automate requests.', {
+              status: 200,
+              headers: { 'X-Docs-Access': 'signedIn', 'X-Docs-Preview': 'true' },
+            });
+      }
+      return new Response('# Consent\n\nPublic overview.', {
+        status: 200,
+        headers: { 'X-Docs-Access': 'public' },
+      });
+    });
+  }
+
+  it('adds access to docs_list section rows', async () => {
+    mockGatedSite();
+    const result = (await createDocsListTool().handler({ section: 'General' })) as {
+      data: Array<{ title: string; access: string }>;
+    };
+    expect(result.data.map(({ title, access }) => [title, access])).toEqual([
+      ['DSR Automation', 'signedIn'],
+      ['Consent Management', 'public'],
+    ]);
+  });
+
+  it('adds access to docs_list search hits', async () => {
+    mockGatedSite();
+    const result = (await createDocsListTool().handler({ query: 'overview' })) as {
+      data: Array<{ title: string; access: string }>;
+    };
+    expect(result.data.map(({ title, access }) => [title, access])).toContainEqual([
+      'Consent Management',
+      'public',
+    ]);
+  });
+
+  it('explains how to sign in when docs_fetch returns a preview', async () => {
+    vi.stubEnv(DOCS_TOKEN_ENV, '');
+    mockGatedSite();
+    const result = (await createDocsFetchTool().handler({ url: GATED_URL })) as {
+      data: { access: string; preview: boolean; markdown: string };
+    };
+    expect(result.data.preview).toBe(true);
+    expect(result.data.access).toBe('signedIn');
+    expect(result.data.markdown).toContain('Preview only');
+    expect(result.data.markdown).toContain(DOCS_TOKEN_ENV);
+    expect(result.data.markdown).toContain('Automate requests.');
+    expect(result.data.markdown).not.toContain('Secret steps');
+  });
+
+  it('returns the full article with no preview notice when signed in', async () => {
+    vi.stubEnv(DOCS_TOKEN_ENV, 'docs-token');
+    mockGatedSite();
+    const result = (await createDocsFetchTool().handler({ url: GATED_URL })) as {
+      data: { preview?: boolean; markdown: string };
+    };
+    expect(result.data.preview).toBeUndefined();
+    expect(result.data.markdown).toContain('Secret steps.');
+    expect(result.data.markdown).not.toContain('Preview only');
+  });
+
+  it('does not show a signed-in caller a public preview as full content, or the reverse', async () => {
+    vi.stubEnv(DOCS_TOKEN_ENV, '');
+    mockGatedSite();
+    const signedIn = await requestAuthContext.run({ type: 'apiKey', apiKey: 'k' }, () =>
+      createDocsFetchTool().handler({ url: GATED_URL }),
+    );
+    const signedOut = await createDocsFetchTool().handler({ url: GATED_URL });
+    expect(JSON.stringify(signedIn)).toContain('Secret steps.');
+    expect(JSON.stringify(signedOut)).not.toContain('Secret steps.');
+  });
+
+  it('keeps gated article text out of the public search index', async () => {
+    vi.stubEnv(DOCS_TOKEN_ENV, '');
+    mockGatedSite();
+    const search = (handler: () => Promise<unknown>) =>
+      handler() as Promise<{ data: Array<{ title: string }> }>;
+    const signedIn = await search(() =>
+      requestAuthContext.run({ type: 'apiKey', apiKey: 'k' }, () =>
+        createDocsListTool().handler({ query: 'secret' }),
+      ),
+    );
+    const signedOut = await search(() => createDocsListTool().handler({ query: 'secret' }));
+    expect(signedIn.data.map((row) => row.title)).toContain('DSR Automation');
+    expect(signedOut.data).toEqual([]);
   });
 });

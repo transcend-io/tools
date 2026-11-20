@@ -1,9 +1,10 @@
 import { create, insertMultiple, search } from '@orama/orama';
 import { LRUCache } from 'lru-cache';
 
-import { getBody, getIndex, type DocEntry } from './docsIndex.js';
+import { getBody, getIndex, resolveDocsTier, type DocEntry } from './docsIndex.js';
 
-const SEARCH_CACHE_KEY = 'search';
+/** Public index plus a few signed-in tokens. */
+const MAX_SEARCH_INDEXES = 20;
 const SEARCH_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
 /**
  * Results per search. On a labeled benchmark the targets that missed the top
@@ -135,8 +136,12 @@ async function buildSearchIndex(): Promise<DocsOrama> {
   return db;
 }
 
+/**
+ * One Orama index per tier. A signed-in index holds gated article bodies, so it is keyed
+ * by token hash and a public caller can never search it.
+ */
 const searchIndexCache = new LRUCache<string, DocsOrama>({
-  max: 1,
+  max: MAX_SEARCH_INDEXES,
   ttl: SEARCH_INDEX_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
@@ -170,7 +175,7 @@ export async function searchDocs(
     return { hits: [], totalCount: 0 };
   }
 
-  const db = await searchIndexCache.fetch(SEARCH_CACHE_KEY);
+  const db = await searchIndexCache.fetch(resolveDocsTier().key);
   if (!db) {
     throw new Error('Failed to build documentation search index');
   }

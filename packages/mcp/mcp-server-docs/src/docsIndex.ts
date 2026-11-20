@@ -1,5 +1,7 @@
-import { z } from '@transcend-io/mcp-server-base';
-import { parseDocsGuideType } from '@transcend-io/privacy-types';
+import { createHash } from 'node:crypto';
+
+import { getRequestAuth, z } from '@transcend-io/mcp-server-base';
+import { DocsAccess, parseDocsGuideType } from '@transcend-io/privacy-types';
 import { LRUCache } from 'lru-cache';
 
 import type { DashboardRouteData } from './docsRoutes.js';
@@ -25,6 +27,53 @@ const ROUTE_INDEX_TTL_MS = 60 * 60 * 1000;
 const DEFAULT_BODY_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8_000;
 const MAX_BODY_CACHE_ENTRIES = 600;
+/** Signed-in callers each get their own index entries, so keep room for a few tokens. */
+const MAX_TIER_INDEX_ENTRIES = 20;
+
+/** Env var holding a docs.transcend.io bearer token for stdio use. */
+export const DOCS_TOKEN_ENV = 'TRANSCEND_DOCS_TOKEN';
+
+/** Cache tier key shared by every caller without a docs token. */
+export const PUBLIC_TIER_KEY = 'public';
+
+/** Response header the docs site sets to the page's {@link DocsAccess}. */
+const ACCESS_HEADER = 'x-docs-access';
+/** Response header the docs site sets to `true` when the body is a public preview. */
+const PREVIEW_HEADER = 'x-docs-preview';
+
+/**
+ * Who a docs request is made as. Public requests share one cache. Each signed-in token
+ * gets its own, so gated content never reaches a caller with a different token.
+ */
+export interface DocsTier {
+  /** `public`, or `signedIn:` plus a hash of the token. Never the token itself. */
+  key: string;
+  /** Bearer token to send to docs.transcend.io. Absent for the public tier. */
+  token?: string;
+}
+
+/**
+ * Resolves the docs tier for the current call. The per-request auth from
+ * {@link getRequestAuth} wins, so an HTTP server never mixes in its own env token.
+ * Session cookies carry no bearer token, so they fall through to {@link DOCS_TOKEN_ENV}.
+ */
+export function resolveDocsTier(): DocsTier {
+  const auth = getRequestAuth();
+  let token: string | undefined;
+  if (auth?.type === 'apiKey') {
+    token = auth.apiKey;
+  } else if (auth?.type === 'oauthToken') {
+    token = auth.accessToken;
+  }
+  token = token?.trim() || process.env[DOCS_TOKEN_ENV]?.trim() || undefined;
+  if (!token) {
+    return { key: PUBLIC_TIER_KEY };
+  }
+  return {
+    key: `signedIn:${createHash('sha256').update(token).digest('hex').slice(0, 32)}`,
+    token,
+  };
+}
 
 /** A single article entry from llms.txt. */
 export interface DocEntry {
@@ -36,6 +85,8 @@ export interface DocEntry {
   url: string;
   /** One-line summary from llms.txt. Absent in the older `## Section` layout. */
   description?: string;
+  /** Who may read the full page. A page with no marker in llms.txt is signed-in only. */
+  access: DocsAccess;
 }
 
 /** Section for a top-level link that sits outside every group (the docs home, the changelog). */
@@ -44,6 +95,8 @@ const DEFAULT_SECTION = 'General';
 const SECTION_HEADER = /^## (.+)$/;
 const LIST_LINK = /^(\s*)- \[(.*?)\]\(([^)\s]+)\)(?::\s(.*))?\s*$/;
 const LIST_LABEL = /^(\s*)- ([^[\s].*)$/;
+/** Optional trailing `{access: public}` marker the docs site adds to a page's line. */
+const ACCESS_MARKER = /\s*\{access:\s*(public|signedIn)\}\s*$/;
 
 /**
  * Parses llms.txt markdown into structured entries.
@@ -52,6 +105,9 @@ const LIST_LABEL = /^(\s*)- ([^[\s].*)$/;
  * - The current one: top-level `- Group` bullets with `- [Title](/path): description`
  *   links nested under them at any depth. The top-level label is the section.
  * - The older one: `## Section` headers followed by `- [Title](url)` items.
+ *
+ * A line may end with `{access: public}` or `{access: signedIn}`. Without one the page is
+ * signed-in only, matching the docs frontmatter default.
  *
  * Relative URLs resolve against {@link DOCS_ORIGIN}. A top-level link outside any
  * group goes in the `General` section, or in the active `##` section when there is one.
@@ -64,7 +120,10 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
   let headerSection = '';
   let groupLabel = '';
 
-  for (const line of raw.split('\n')) {
+  for (const rawLine of raw.split('\n')) {
+    const marker = ACCESS_MARKER.exec(rawLine);
+    const access = marker?.[1] === DocsAccess.Public ? DocsAccess.Public : DocsAccess.SignedIn;
+    const line = marker ? rawLine.slice(0, marker.index) : rawLine;
     const header = SECTION_HEADER.exec(line);
     if (header?.[1]) {
       headerSection = header[1].trim();
@@ -91,7 +150,7 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
       }
       seenUrls.add(url);
       const description = rawDescription.trim();
-      entries.push({ section, title, url, ...(description && { description }) });
+      entries.push({ section, title, url, access, ...(description && { description }) });
       continue;
     }
 
@@ -166,28 +225,65 @@ export class RouteIndexUnavailableError extends Error {
   }
 }
 
-async function fetchText(
+interface DocsFetchOptions {
+  signal?: AbortSignal;
+  accept?: string;
+  token?: string;
+}
+
+/** Parsed docs response: the text plus what the docs site said about access. */
+interface DocsResponse {
+  text: string;
+  /** From the `X-Docs-Access` header, when present and valid. */
+  access?: DocsAccess;
+  /** True when the `X-Docs-Preview` header is `true`. */
+  preview: boolean;
+}
+
+function parseAccessHeader(value: string | null): DocsAccess | undefined {
+  return value === DocsAccess.Public || value === DocsAccess.SignedIn ? value : undefined;
+}
+
+async function fetchDocs(
   url: string,
-  signal?: AbortSignal,
-  accept = 'text/markdown, text/plain',
-): Promise<string> {
+  { signal, accept = 'text/markdown, text/plain', token }: DocsFetchOptions,
+): Promise<DocsResponse> {
   const response = await fetch(url, {
-    headers: { Accept: accept },
+    headers: {
+      Accept: accept,
+      // Only docs.transcend.io URLs reach here, so the token never goes to another host.
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
     signal: signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) {
+    if (token && (response.status === 401 || response.status === 403)) {
+      throw new Error(
+        `Failed to fetch ${url}: HTTP ${response.status}. docs.transcend.io rejected the docs ` +
+          `token. Check ${DOCS_TOKEN_ENV} or sign in again.`,
+      );
+    }
     throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
   }
-  return response.text();
+  const access = parseAccessHeader(response.headers.get(ACCESS_HEADER));
+  return {
+    text: await response.text(),
+    ...(access && { access }),
+    preview: response.headers.get(PREVIEW_HEADER) === 'true',
+  };
 }
 
-const indexCache = new LRUCache<string, DocEntry[]>({
-  max: 1,
+async function fetchText(url: string, options: DocsFetchOptions): Promise<string> {
+  return (await fetchDocs(url, options)).text;
+}
+
+const indexCache = new LRUCache<string, DocEntry[], DocsTier>({
+  max: MAX_TIER_INDEX_ENTRIES,
   ttl: DEFAULT_INDEX_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
-  fetchMethod: async (_key, _stale, { signal }) => {
-    const raw = await fetchText(LLMS_TXT_URL, signal);
+  fetchMethod: async (_key, _stale, { signal, context }) => {
+    const raw = await fetchText(LLMS_TXT_URL, { signal, token: context.token });
     return parseLlmsTxt(raw);
   },
 });
@@ -195,14 +291,18 @@ const indexCache = new LRUCache<string, DocEntry[]>({
 /** Cause of the most recent failed route index fetch, cleared on success. */
 let lastRouteIndexError: unknown;
 
-const routeIndexCache = new LRUCache<string, DashboardRouteData>({
-  max: 1,
+const routeIndexCache = new LRUCache<string, DashboardRouteData, DocsTier>({
+  max: MAX_TIER_INDEX_ENTRIES,
   ttl: ROUTE_INDEX_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
-  fetchMethod: async (_key, _stale, { signal }) => {
+  fetchMethod: async (_key, _stale, { signal, context }) => {
     try {
-      const raw = await fetchText(DASHBOARD_ROUTES_URL, signal, 'application/json');
+      const raw = await fetchText(DASHBOARD_ROUTES_URL, {
+        signal,
+        accept: 'application/json',
+        token: context.token,
+      });
       const parsed = parseDashboardRoutes(raw);
       lastRouteIndexError = undefined;
       return parsed;
@@ -215,17 +315,51 @@ const routeIndexCache = new LRUCache<string, DashboardRouteData>({
   },
 });
 
-const bodyCache = new LRUCache<string, string>({
+/** A fetched article body. */
+export interface DocBody {
+  /** Article markdown. */
+  markdown: string;
+  /** The page's access, when the docs site reported it. */
+  access?: DocsAccess;
+  /** True when the docs site returned a public preview instead of the full article. */
+  preview: boolean;
+}
+
+/** Per-call input for {@link bodyCache}, plus the cause of a failed fetch. */
+interface BodyFetchContext {
+  url: string;
+  tier: DocsTier;
+  /** Set when the fetch fails, because `allowStaleOnFetchRejection` hides the rejection. */
+  failure?: unknown;
+}
+
+/**
+ * Article bodies, keyed by tier then URL. The public tier is one shared set of entries.
+ * A signed-in token's entries are only ever read back by the same token.
+ */
+const bodyCache = new LRUCache<string, DocBody, BodyFetchContext>({
   max: MAX_BODY_CACHE_ENTRIES,
   ttl: DEFAULT_BODY_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
-  fetchMethod: async (url, _stale, { signal }) => fetchText(url, signal),
+  fetchMethod: async (_key, _stale, { signal, context }) => {
+    try {
+      const { text, access, preview } = await fetchDocs(context.url, {
+        signal,
+        token: context.tier.token,
+      });
+      return { markdown: text, ...(access && { access }), preview };
+    } catch (error) {
+      context.failure = error;
+      throw error;
+    }
+  },
 });
 
 /** Returns the parsed llms.txt index (cached with TTL). */
 export async function getIndex(): Promise<DocEntry[]> {
-  const result = await indexCache.fetch(INDEX_CACHE_KEY);
+  const tier = resolveDocsTier();
+  const result = await indexCache.fetch(`${tier.key}:${INDEX_CACHE_KEY}`, { context: tier });
   if (!result) {
     throw new Error('Failed to load documentation index');
   }
@@ -238,8 +372,9 @@ export async function getIndex(): Promise<DocEntry[]> {
  */
 export async function getRouteIndex(): Promise<DashboardRouteData> {
   let result: DashboardRouteData | undefined;
+  const tier = resolveDocsTier();
   try {
-    result = await routeIndexCache.fetch(ROUTES_CACHE_KEY);
+    result = await routeIndexCache.fetch(`${tier.key}:${ROUTES_CACHE_KEY}`, { context: tier });
   } catch (error) {
     throw new RouteIndexUnavailableError(error);
   }
@@ -249,14 +384,26 @@ export async function getRouteIndex(): Promise<DashboardRouteData> {
   return result;
 }
 
-/** Fetches and caches markdown body for a docs.transcend.io article URL. */
-export async function getBody(url: string): Promise<string> {
+/**
+ * Fetches and caches an article for the current tier, with the access the docs site
+ * reported and whether the body is a signed-out preview.
+ */
+export async function getDoc(url: string): Promise<DocBody> {
   assertDocsHost(url);
-  const result = await bodyCache.fetch(url);
+  const tier = resolveDocsTier();
+  const context: BodyFetchContext = { url, tier };
+  const result = await bodyCache.fetch(`${tier.key}|${url}`, { context });
   if (result === undefined) {
-    throw new Error(`Failed to fetch documentation: ${url}`);
+    throw context.failure instanceof Error
+      ? context.failure
+      : new Error(`Failed to fetch documentation: ${url}`);
   }
   return result;
+}
+
+/** Fetches and caches the markdown body for a docs.transcend.io article URL. */
+export async function getBody(url: string): Promise<string> {
+  return (await getDoc(url)).markdown;
 }
 
 /** Validates that a URL targets docs.transcend.io (SSRF guard for fetch). */

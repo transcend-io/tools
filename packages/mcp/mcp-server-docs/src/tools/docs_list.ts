@@ -9,6 +9,7 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import {
+  DocsAccess,
   DocsGuideType,
   DocsListRouteMatch,
   DocsLookupSource,
@@ -133,28 +134,29 @@ function toProductRows(pages: RoutePage[], product: string) {
 }
 
 /**
- * Adds the one-line llms.txt summary to each row, matched by URL. Route and product
- * rows come from dashboard-routes.json, which has no summaries. A missing or failed
- * llms.txt index leaves the rows as they were, since the summary is a convenience.
+ * Adds the one-line llms.txt summary and the page's access to each row, matched by URL.
+ * Route and product rows come from dashboard-routes.json, which has neither. A missing
+ * or failed llms.txt index leaves the rows as they were, since both are conveniences.
  */
 async function withDescriptions<T extends { url: string }>(
   rows: T[],
-): Promise<Array<T & { description?: string }>> {
+): Promise<Array<T & { description?: string; access?: DocsAccess }>> {
   let entries;
   try {
     entries = await getIndex();
   } catch {
     return rows;
   }
-  const byUrl = new Map<string, string>();
+  const byUrl = new Map<string, { description?: string; access: DocsAccess }>();
   for (const entry of entries) {
-    if (entry.description) {
-      byUrl.set(normalizeDocUrl(entry.url), entry.description);
-    }
+    byUrl.set(normalizeDocUrl(entry.url), {
+      access: entry.access,
+      ...(entry.description && { description: entry.description }),
+    });
   }
   return rows.map((row) => {
-    const description = byUrl.get(normalizeDocUrl(row.url));
-    return description ? { ...row, description } : row;
+    const found = byUrl.get(normalizeDocUrl(row.url));
+    return found ? { ...row, ...found } : row;
   });
 }
 
@@ -345,8 +347,9 @@ export function createDocsListTool(_clients?: ToolClients) {
     description:
       'List or search Transcend documentation. Prefer route for a Dashboard page, product ' +
       'for a product area, or query for full-text search. Rows may include a one-line index ' +
-      'description. section lists one llms.txt section; omit arguments for section names. ' +
-      'Then call docs_fetch with a url.',
+      'description and access (public or signedIn). Signed-out, a signedIn page returns only ' +
+      'a preview from docs_fetch. section lists one llms.txt section; omit arguments for ' +
+      'section names. Then call docs_fetch with a url.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
@@ -516,10 +519,11 @@ export function createDocsListTool(_clients?: ToolClients) {
       const filtered = scopedEntries.filter((entry) => entry.section === section);
       const page = filtered.slice(0, SECTION_LISTING_LIMIT);
       return createListResult(
-        page.map(({ title, section: entrySection, url, description }) => ({
+        page.map(({ title, section: entrySection, url, description, access }) => ({
           title,
           section: entrySection,
           url,
+          access,
           ...(description && { description }),
         })),
         {
