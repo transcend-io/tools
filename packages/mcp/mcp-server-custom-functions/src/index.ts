@@ -12,7 +12,6 @@ export type {
   SignedCustomFunctionVersion,
   SombraSummary,
 } from './graphql.js';
-export { CUSTOM_FUNCTIONS_OAUTH_SCOPES } from './scopes.js';
 export { getCustomFunctionsTools } from './tools/index.js';
 export {
   CustomFunctionsGetCodeSchema,

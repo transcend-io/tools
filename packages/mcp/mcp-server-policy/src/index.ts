@@ -1,5 +1,4 @@
 export { getPolicyTools } from './tools/index.js';
-export { POLICY_OAUTH_SCOPES } from './scopes.js';
 
 export {
   PolicyGetTemplatesSchema,

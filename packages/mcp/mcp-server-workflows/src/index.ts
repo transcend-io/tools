@@ -1,5 +1,4 @@
 export { getWorkflowTools } from './tools/index.js';
-export { WORKFLOW_OAUTH_SCOPES } from './scopes.js';
 export { WorkflowsMixin } from './graphql.js';
 
 export { ListWorkflowsSchema, type ListWorkflowsInput } from './tools/workflows_list.js';

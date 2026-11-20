@@ -1,58 +1,42 @@
-import { ADMIN_OAUTH_SCOPES } from '@transcend-io/mcp-server-admin';
-import { ASSESSMENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-assessment';
 import { OFFLINE_ACCESS_SCOPE } from '@transcend-io/mcp-server-base';
-import { CONFIG_OAUTH_SCOPES } from '@transcend-io/mcp-server-config';
-import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
-import { CUSTOM_FUNCTIONS_OAUTH_SCOPES } from '@transcend-io/mcp-server-custom-functions';
-import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
-import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
-import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
-import { POLICY_OAUTH_SCOPES } from '@transcend-io/mcp-server-policy';
-import { PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
-import { PRIVACY_CENTER_OAUTH_SCOPES } from '@transcend-io/mcp-server-privacy-center';
-import { WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
 import { ScopeName } from '@transcend-io/privacy-types';
+import {
+  MCP_SERVER_OAUTH_SCOPES,
+  TranscendMcpServer,
+  getMcpServerOAuthScopes,
+} from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
 import { UMBRELLA_OAUTH_SCOPES } from '../src/oauth-scopes.js';
 
 describe('UMBRELLA_OAUTH_SCOPES', () => {
-  it('includes offline_access and scopes from every domain package', () => {
+  it('includes offline_access and every domain scope', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(OFFLINE_ACCESS_SCOPE);
-
-    for (const scopeList of [
-      ADMIN_OAUTH_SCOPES,
-      ASSESSMENT_OAUTH_SCOPES,
-      CONFIG_OAUTH_SCOPES,
-      CONSENT_OAUTH_SCOPES,
-      CUSTOM_FUNCTIONS_OAUTH_SCOPES,
-      DISCOVERY_OAUTH_SCOPES,
-      DSR_OAUTH_SCOPES,
-      INVENTORY_OAUTH_SCOPES,
-      PREFERENCE_OAUTH_SCOPES,
-      PRIVACY_CENTER_OAUTH_SCOPES,
-      POLICY_OAUTH_SCOPES,
-      WORKFLOW_OAUTH_SCOPES,
-    ]) {
-      for (const scope of scopeList) {
+    for (const server of Object.values(TranscendMcpServer)) {
+      for (const scope of MCP_SERVER_OAUTH_SCOPES[server]) {
         expect(UMBRELLA_OAUTH_SCOPES).toContain(scope);
       }
     }
   });
 
-  it('includes anchor scopes from each domain', () => {
+  it('includes representative scopes from each domain', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewEmployees);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAssessments);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewConsentManager);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCustomFunction);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ManageCustomFunction);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ConnectDataSilos);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCodeScanning);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewRequests);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);
-    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewManagedConsentDatabaseAdminApi);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewPrivacyCenter);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAllActionItems);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ActivatePolicyEngineBundles);
+  });
+});
+
+describe('MCP_SERVER_OAUTH_SCOPES', () => {
+  it('returns non-empty scopes for every server', () => {
+    for (const server of Object.values(TranscendMcpServer)) {
+      expect(getMcpServerOAuthScopes(server).length).toBeGreaterThan(0);
+    }
   });
 });

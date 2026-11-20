@@ -39,6 +39,7 @@
   "dependencies": {
     "@transcend-io/mcp-server-base": "workspace:^",
     "@transcend-io/privacy-types": "workspace:^",
+    "@transcend-io/sdk": "workspace:^",
     "@transcend-io/utils": "workspace:^",
     "fast-glob": "^3.2.12",
     "got": "^15.0.0"

@@ -11,6 +11,8 @@ import { ScopeName } from '@transcend-io/privacy-types';
 import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,
+  getMcpServerOAuthScopes,
+  TranscendMcpServer,
   type TranscendInput,
 } from '@transcend-io/sdk';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -23,7 +25,8 @@ import {
   scopesForResources,
   stripEmptyConfigSections,
 } from '../src/helpers/sections.js';
-import { CONFIG_OAUTH_SCOPES } from '../src/scopes.js';
+
+const CONFIG_OAUTH_SCOPES = getMcpServerOAuthScopes(TranscendMcpServer.Config);
 
 describe('assertConfigFilePath', () => {
   it('accepts absolute yaml paths', () => {

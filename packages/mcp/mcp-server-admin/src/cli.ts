@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import { createMCPServer, createTranscendRestClient } from '@transcend-io/mcp-server-base';
+import { TranscendMcpServer, getMcpServerOAuthScopes } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { AdminMixin } from './graphql.js';
-import { ADMIN_OAUTH_SCOPES } from './scopes.js';
 import { getAdminTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-admin',
   version: packageJson.version,
-  oauthScopes: ADMIN_OAUTH_SCOPES,
+  oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.Admin),
   getTools: getAdminTools,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
     const graphql = new AdminMixin(auth, graphqlUrl);

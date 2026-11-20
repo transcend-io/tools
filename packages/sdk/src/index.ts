@@ -30,3 +30,4 @@ export * from './dsr-automation/index.js';
 export * from './assessments/index.js';
 export * from './code-intelligence/index.js';
 export * from './custom-functions/index.js';
+export * from './mcp/index.js';

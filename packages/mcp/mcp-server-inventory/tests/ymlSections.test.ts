@@ -17,10 +17,17 @@ vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
   createGraphqlRequestClient: () => ({ marker: 'client' }),
 }));
 
-const { getInventoryTools, INVENTORY_OAUTH_SCOPES } = await import('../src/index.js');
+const { getInventoryTools } = await import('../src/index.js');
 const { ScopeName } = await import('@transcend-io/privacy-types');
-const { TranscendPullResource, TR_PULL_RESOURCE_SCOPE_MAP, TR_PUSH_RESOURCE_SCOPE_MAP } =
-  await import('@transcend-io/sdk');
+const {
+  TranscendPullResource,
+  TR_PULL_RESOURCE_SCOPE_MAP,
+  TR_PUSH_RESOURCE_SCOPE_MAP,
+  getMcpServerOAuthScopes,
+  TranscendMcpServer,
+} = await import('@transcend-io/sdk');
+
+const INVENTORY_OAUTH_SCOPES = getMcpServerOAuthScopes(TranscendMcpServer.Inventory);
 
 const clients = {
   rest: {} as never,
