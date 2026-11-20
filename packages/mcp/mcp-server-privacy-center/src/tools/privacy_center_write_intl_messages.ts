@@ -1,13 +1,13 @@
 import {
   createCollectedLogger,
   createGraphqlRequestClient,
+  decodeItems,
   defineTool,
+  runSync,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { IntlMessageInput, syncIntlMessages } from '@transcend-io/sdk';
-
-import { decodeItems, runSync } from '../helpers/syncWrite.js';
 
 export const WriteIntlMessagesSchema = z.object({
   messages: z
@@ -22,14 +22,14 @@ export const WriteIntlMessagesSchema = z.object({
 });
 export type WriteIntlMessagesInput = z.infer<typeof WriteIntlMessagesSchema>;
 
-export function createAdminWriteIntlMessagesTool(clients: ToolClients) {
+export function createPrivacyCenterWriteIntlMessagesTool(clients: ToolClients) {
   return defineTool({
-    name: 'admin_write_intl_messages',
+    name: 'privacy_center_write_intl_messages',
     description:
       'Create or update internationalized messages by id: default text and translations. ' +
       'Same as the messages section of `transcend inventory push`. Ids must be unique in the ' +
       'call. Returns success, a count, and errors.',
-    category: 'Admin',
+    category: 'Privacy Center',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteIntlMessagesSchema,

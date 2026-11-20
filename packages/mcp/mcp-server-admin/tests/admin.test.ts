@@ -10,13 +10,7 @@ const EXPECTED_TOOL_NAMES = [
   'admin_list_teams',
   'admin_list_api_keys',
   'admin_list_scopes',
-  'admin_get_privacy_center',
-  'admin_list_intl_messages',
-  'admin_list_privacy_policies',
   'admin_write_teams',
-  'admin_write_privacy_center',
-  'admin_write_intl_messages',
-  'admin_write_privacy_policies',
   'admin_test_connection',
 ] as const;
 
@@ -27,7 +21,6 @@ describe('Admin Tools', () => {
     listUsers: ReturnType<typeof vi.fn>;
     listTeams: ReturnType<typeof vi.fn>;
     listApiKeys: ReturnType<typeof vi.fn>;
-    getPrivacyCenter: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
   };
@@ -44,7 +37,6 @@ describe('Admin Tools', () => {
       listUsers: vi.fn(),
       listTeams: vi.fn(),
       listApiKeys: vi.fn(),
-      getPrivacyCenter: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
@@ -61,9 +53,9 @@ describe('Admin Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 14 tools with expected names', () => {
+  it('registers exactly 8 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(14);
+    expect(tools).toHaveLength(8);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

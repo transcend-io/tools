@@ -79,20 +79,18 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   },
   [TranscendPullResource.ActionItems]: { read: [], write: [] },
   [TranscendPullResource.ActionItemCollections]: { read: [], write: [] },
-  // Transcend.yml teams, privacy center, messages, and privacy-center policies use the admin
-  // package (`admin_*` tools), same as existing admin_list_teams / admin_get_privacy_center.
   [TranscendPullResource.Teams]: { read: ['admin_list_teams'], write: ['admin_write_teams'] },
   [TranscendPullResource.PrivacyCenters]: {
-    read: ['admin_get_privacy_center'],
-    write: ['admin_write_privacy_center'],
+    read: ['privacy_center_get'],
+    write: ['privacy_center_write'],
   },
   [TranscendPullResource.Policies]: {
-    read: ['admin_list_privacy_policies'],
-    write: ['admin_write_privacy_policies'],
+    read: ['privacy_center_list_policies'],
+    write: ['privacy_center_write_policies'],
   },
   [TranscendPullResource.Messages]: {
-    read: ['admin_list_intl_messages'],
-    write: ['admin_write_intl_messages'],
+    read: ['privacy_center_list_intl_messages'],
+    write: ['privacy_center_write_intl_messages'],
   },
   [TranscendPullResource.Assessments]: {
     read: ['assessments_list', 'assessments_get'],

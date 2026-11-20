@@ -9,6 +9,7 @@ import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
 import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
 import { POLICY_OAUTH_SCOPES } from '@transcend-io/mcp-server-policy';
 import { PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
+import { PRIVACY_CENTER_OAUTH_SCOPES } from '@transcend-io/mcp-server-privacy-center';
 import { WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
 
 /** OAuth scopes for the unified MCP server (offline_access added by base). */
@@ -22,6 +23,7 @@ export const UMBRELLA_OAUTH_SCOPES = mergeOAuthScopes(
   DSR_OAUTH_SCOPES,
   INVENTORY_OAUTH_SCOPES,
   PREFERENCE_OAUTH_SCOPES,
+  PRIVACY_CENTER_OAUTH_SCOPES,
   POLICY_OAUTH_SCOPES,
   WORKFLOW_OAUTH_SCOPES,
 );

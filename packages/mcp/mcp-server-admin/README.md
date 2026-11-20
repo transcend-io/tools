@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Transcend MCP Server for organization administration. Provides tools for managing users, teams, API keys, and organization settings.
+Transcend MCP Server for organization administration. Provides tools for managing users, teams, and API keys.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`, `ManageAccessControl`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -102,22 +102,16 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-Privacy center configuration, privacy-center policies, and intl messages live in this package (not `mcp-server-preferences` or `policy_*` tools) because the CLI models them as org-admin `transcend.yml` sections alongside teams and API keys—the same SDK sync paths `transcend inventory push` uses.
-
 - `admin_test_connection` — Test API connectivity
 - `admin_get_current_user` — Get the authenticated user
 - `admin_get_organization` — Get organization details
-- `admin_get_privacy_center` — Get privacy center configuration
 - `admin_list_users` — List organization users
 - `admin_list_teams` — List teams
 - `admin_list_api_keys` — List API keys
 - `admin_list_scopes` — List valid API-key scope names (compact catalog)
 - `admin_write_teams` — Create or update teams (asks for confirmation)
-- `admin_write_privacy_center` — Update privacy center settings
-- `admin_list_intl_messages` — List internationalized messages
-- `admin_write_intl_messages` — Create or update internationalized messages
-- `admin_list_privacy_policies` — List privacy center policies
-- `admin_write_privacy_policies` — Create or update privacy center policies
+
+Privacy center configuration, intl messages, and privacy-center policies are on [`@transcend-io/mcp-server-privacy-center`](../mcp-server-privacy-center/README.md).
 
 ## Related packages
 

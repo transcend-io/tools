@@ -1,13 +1,13 @@
 import {
   createCollectedLogger,
   createGraphqlRequestClient,
+  decodeItems,
   defineTool,
+  runSync,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { syncTeams, TeamInput } from '@transcend-io/sdk';
-
-import { decodeItems, runSync } from '../helpers/syncWrite.js';
 
 export const WriteTeamsSchema = z.object({
   teams: z

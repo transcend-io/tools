@@ -1,7 +1,7 @@
 import {
   createCollectedLogger,
-  createListResult,
   createGraphqlRequestClient,
+  createListResult,
   defineTool,
   OffsetPaginationSchema,
   z,
@@ -21,14 +21,14 @@ export const ListIntlMessagesSchema = OffsetPaginationSchema.extend({
 });
 export type ListIntlMessagesInput = z.infer<typeof ListIntlMessagesSchema>;
 
-export function createAdminListIntlMessagesTool(clients: ToolClients) {
+export function createPrivacyCenterListIntlMessagesTool(clients: ToolClients) {
   return defineTool({
-    name: 'admin_list_intl_messages',
+    name: 'privacy_center_list_intl_messages',
     description:
       'List the internationalized messages used by the privacy center and consent manager. ' +
       'Same as the messages section of `transcend inventory pull`. Translations are left out ' +
       'unless includeTranslations is true.',
-    category: 'Admin',
+    category: 'Privacy Center',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListIntlMessagesSchema,

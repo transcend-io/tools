@@ -6,9 +6,4 @@ export const ADMIN_OAUTH_SCOPES = [
   ScopeName.ViewApiKeys,
   ScopeName.ManageApiKeys,
   ScopeName.ManageAccessControl,
-  ScopeName.ManagePrivacyCenter,
-  ScopeName.ViewIntlMessages,
-  ScopeName.ManageIntlMessages,
-  ScopeName.ViewPolicies,
-  ScopeName.ManagePolicies,
 ] as const;

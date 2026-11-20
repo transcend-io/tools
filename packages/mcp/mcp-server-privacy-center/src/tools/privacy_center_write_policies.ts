@@ -1,15 +1,15 @@
 import {
   createCollectedLogger,
   createGraphqlRequestClient,
+  decodeItems,
   defineTool,
+  runSync,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { PolicyInput, syncPolicies } from '@transcend-io/sdk';
 
-import { decodeItems, runSync } from '../helpers/syncWrite.js';
-
-export const WritePrivacyPoliciesSchema = z.object({
+export const WritePoliciesSchema = z.object({
   policies: z
     .array(z.record(z.string(), z.unknown()))
     .min(1)
@@ -20,19 +20,19 @@ export const WritePrivacyPoliciesSchema = z.object({
         'of transcend.yml; see config_get_schema.',
     ),
 });
-export type WritePrivacyPoliciesInput = z.infer<typeof WritePrivacyPoliciesSchema>;
+export type WritePoliciesInput = z.infer<typeof WritePoliciesSchema>;
 
-export function createAdminWritePrivacyPoliciesTool(clients: ToolClients) {
+export function createPrivacyCenterWritePoliciesTool(clients: ToolClients) {
   return defineTool({
-    name: 'admin_write_privacy_policies',
+    name: 'privacy_center_write_policies',
     description:
       'Create or update privacy center policies by title: text, type, effective date and ' +
       'disabled locales. Same as the policies section of `transcend inventory push`. Not the ' +
       'policy engine: use policy_publish for that. Titles must be unique in the call.',
-    category: 'Admin',
+    category: 'Privacy Center',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    zodSchema: WritePrivacyPoliciesSchema,
+    zodSchema: WritePoliciesSchema,
     handler: async ({ policies }) => {
       const inputs = decodeItems<PolicyInput>(PolicyInput, policies, 'policies');
       const { logger, logs } = createCollectedLogger();

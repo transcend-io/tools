@@ -1,5 +1,7 @@
-import { ErrorCode, ToolError, type CollectedLog } from '@transcend-io/mcp-server-base';
 import { decodeCodec } from '@transcend-io/type-utils';
+
+import { ErrorCode, ToolError } from '../errors.js';
+import type { CollectedLog } from './collectingLogger.js';
 
 /** Compact result of a write tool. */
 export interface WriteResult {

@@ -3,14 +3,13 @@ import {
   createGraphqlRequestClient,
   defineTool,
   ErrorCode,
+  runSync,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { PrivacyCenterInput, syncPrivacyCenter } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
-
-import { runSync } from '../helpers/syncWrite.js';
 
 export const WritePrivacyCenterSchema = z.object({
   privacyCenter: z
@@ -27,15 +26,15 @@ export const WritePrivacyCenterSchema = z.object({
 });
 export type WritePrivacyCenterInput = z.infer<typeof WritePrivacyCenterSchema>;
 
-export function createAdminWritePrivacyCenterTool(clients: ToolClients) {
+export function createPrivacyCenterWriteTool(clients: ToolClients) {
   return defineTool({
-    name: 'admin_write_privacy_center',
+    name: 'privacy_center_write',
     description:
       'Update privacy center settings: visible pages, locales, emails, theme and footer links. ' +
       'Same as the privacy-center section of `transcend inventory push`. Only the fields given ' +
       'change. When footerLinks is given, links missing from it are deleted. Publishes only ' +
       'when publish is true. Returns success and errors.',
-    category: 'Admin',
+    category: 'Privacy Center',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: WritePrivacyCenterSchema,
