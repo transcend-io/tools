@@ -7,7 +7,6 @@ import {
 } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 
-import { logger } from '../../../../../logger.js';
 // --- Import SUT & mocked symbols ---
 import { uploadChunkWithSplit, type BatchUploaderDeps } from '../batchUploader.js';
 
@@ -35,24 +34,12 @@ vi.mock('@transcend-io/utils', () => ({
   }),
 }));
 
-vi.mock('../../../../../logger.js', () => ({
-  logger: {
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
-
-// colors just returns the string; keeps logs simple
-vi.mock('colors', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const passthrough = (s: string): any => s;
-  return {
-    default: {
-      yellow: passthrough,
-      red: passthrough,
-    },
-  };
-});
+const logger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+};
 
 const baseRetryImpl = vi.fn(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,6 +76,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 3, delayMs: 10, shouldRetry: () => false },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn(() => false),
+      logger,
     };
 
     const onSuccess = vi.fn().mockResolvedValue(undefined);
@@ -135,6 +123,7 @@ describe('uploadChunkWithSplit', () => {
       },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn((s?: number) => s === 503),
+      logger,
     };
 
     const onSuccess = vi.fn().mockResolvedValue(undefined);
@@ -176,6 +165,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 2, delayMs: 1, shouldRetry: () => true },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn((s?: number) => s === 429),
+      logger,
     };
 
     const onFailureBatch = vi.fn().mockResolvedValue(undefined);
@@ -225,6 +215,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 1, delayMs: 1, shouldRetry: () => false },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn(() => false),
+      logger,
     };
 
     const onSuccess = vi.fn().mockResolvedValue(undefined);
@@ -265,6 +256,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 1, delayMs: 1, shouldRetry: () => false },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn(() => false),
+      logger,
     };
 
     const onFailureSingle = vi.fn().mockResolvedValue(undefined);
@@ -297,6 +289,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 2, delayMs: 1, shouldRetry: () => true },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn(() => false), // not retryable by status, but soft-rate-limit triggers retry anyway
+      logger,
     };
 
     const onSuccess = vi.fn().mockResolvedValue(undefined);
@@ -333,6 +326,7 @@ describe('uploadChunkWithSplit', () => {
       retryPolicy: { maxAttempts: 2, delayMs: 1, shouldRetry: () => true },
       options: { skipWorkflowTriggers: false },
       isRetryableStatus: vi.fn(() => false),
+      logger,
     };
 
     const onSuccess = vi.fn().mockResolvedValue(undefined);
