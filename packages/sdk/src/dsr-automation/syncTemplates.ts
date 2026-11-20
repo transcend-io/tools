@@ -2,13 +2,16 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { TEMPLATES, CREATE_TEMPLATE } from './gqls/template.js';
+import { TemplateDeliveryType, TemplateProduct } from '../transcend-yml/enums.js';
+import { CREATE_TEMPLATE, TEMPLATES, UPDATE_TEMPLATE } from './gqls/template.js';
 
 export interface Template {
   /** ID of Template */
   id: string;
   /** Title of Template */
   title: string;
+  /** Template delivery type */
+  type: TemplateDeliveryType;
   /** Template subject (e.g. email subject) */
   subject: {
     /** Default message for template subject */
@@ -24,6 +27,14 @@ export interface Template {
 export interface SyncTemplateInput {
   /** The title of the template */
   title: string;
+  /** Email subject line */
+  subject?: string;
+  /** Template body HTML */
+  body?: string;
+  /** Template type */
+  type?: TemplateDeliveryType;
+  /** Product line the template belongs to */
+  product?: TemplateProduct;
 }
 
 const PAGE_SIZE = 20;
@@ -95,10 +106,35 @@ export async function syncTemplate(
   });
   const existingTemplate = matches.find(({ title }) => title === template.title);
 
+  const product = template.product ?? TemplateProduct.Dsr;
+  const type = template.type ?? TemplateDeliveryType.Email;
+
   if (!existingTemplate) {
     await makeGraphQLRequest(client, CREATE_TEMPLATE, {
-      variables: { title: template.title },
+      variables: {
+        input: {
+          title: template.title,
+          subject: template.subject ?? template.title,
+          template: template.body ?? '',
+          type,
+          product,
+        },
+      },
       logger,
     });
+    return;
   }
+
+  await makeGraphQLRequest(client, UPDATE_TEMPLATE, {
+    variables: {
+      input: {
+        id: existingTemplate.id,
+        title: template.title,
+        ...(template.subject !== undefined ? { subject: template.subject } : {}),
+        ...(template.body !== undefined ? { template: template.body } : {}),
+        ...(template.type !== undefined ? { type: template.type } : {}),
+      },
+    },
+    logger,
+  });
 }

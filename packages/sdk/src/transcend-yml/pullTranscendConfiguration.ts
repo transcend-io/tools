@@ -83,6 +83,7 @@ import {
   DataCategoryInput,
   VendorInput,
   PolicyInput,
+  TemplateInput,
   IntlMessageInput,
   ActionItemInput,
   TeamInput,
@@ -1517,7 +1518,14 @@ export async function pullTranscendConfiguration(
     templates.length > 0 &&
     resources.includes(TranscendPullResource.Templates)
   ) {
-    result.templates = templates.map(({ title }) => ({ title }));
+    result.templates = templates.map(
+      ({ title, subject, template, type }): TemplateInput => ({
+        title,
+        subject: subject.defaultMessage,
+        body: template.defaultMessage,
+        type,
+      }),
+    );
   }
 
   // Save preflight checks (API still returns them as enrichers)

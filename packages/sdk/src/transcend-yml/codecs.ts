@@ -72,6 +72,8 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
 
+import { TemplateDeliveryType, TemplateProduct } from './enums.js';
+
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
 const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');
 const DataCategoryTypeCodec = valuesOf(DataCategoryType, 'DataCategoryType');
@@ -97,6 +99,8 @@ const DataFlowScopeCodec = valuesOf(DataFlowScope, 'DataFlowScope');
 const ConsentTrackerStatusCodec = valuesOf(ConsentTrackerStatus, 'ConsentTrackerStatus');
 const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequestPolicy');
 const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator');
+const TemplateDeliveryTypeCodec = valuesOf(TemplateDeliveryType, 'TemplateDeliveryType');
+const TemplateProductCodec = valuesOf(TemplateProduct, 'TemplateProduct');
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -104,10 +108,22 @@ const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator
  *
  * @see https://docs.transcend.io/docs/privacy-requests/configuring-requests/email-templates
  */
-export const TemplateInput = t.type({
-  /** The title of the template */
-  title: t.string,
-});
+export const TemplateInput = t.intersection([
+  t.type({
+    /** The title of the template */
+    title: t.string,
+  }),
+  t.partial({
+    /** Email subject line */
+    subject: t.string,
+    /** Template body HTML */
+    body: t.string,
+    /** Template delivery type */
+    type: TemplateDeliveryTypeCodec,
+    /** Product line the template belongs to */
+    product: TemplateProductCodec,
+  }),
+]);
 
 /** Type override */
 export type TemplateInput = t.TypeOf<typeof TemplateInput>;
