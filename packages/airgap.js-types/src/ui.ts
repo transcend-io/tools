@@ -4,7 +4,7 @@ import type {
 } from '@transcend-io/internationalization';
 import { LoadOptions } from '@transcend-io/privacy-types';
 // main
-import { applyEnum, noExcess, type ObjByString, valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, type ObjByString, valuesOf } from '@transcend-io/type-utils';
 // external
 import * as t from 'io-ts';
 
@@ -293,26 +293,6 @@ export const TCFConfigInput = t.partial(TCFConfig.props);
 /** Type override */
 export type TCFConfigInput = t.TypeOf<typeof TCFConfigInput>;
 
-/** UTF-8 byte length of a string, without Node Buffer or TextEncoder. */
-const utf8ByteLength = (value: string): number => {
-  let bytes = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i);
-    if (code <= 0x7f) {
-      bytes += 1;
-    } else if (code <= 0x7ff) {
-      bytes += 2;
-    } else if (code >= 0xd800 && code <= 0xdbff) {
-      // High surrogate: pair with the next code unit as one 4-byte character.
-      i += 1;
-      bytes += 4;
-    } else {
-      bytes += 3;
-    }
-  }
-  return bytes;
-};
-
 /** Collect top-level props from an io-ts interface, partial, or intersection codec. */
 const collectCodecProps = (codec: t.Any): t.Props => {
   // io-ts does not expose `_tag` on `t.Any`; runtime codecs always have it.
@@ -334,41 +314,47 @@ const collectCodecProps = (codec: t.Any): t.Props => {
   return {};
 };
 
-/** Max UTF-8 byte length of JSON.stringify(overrides) for a non-truncated Partial<LoadOptions>. */
-const BANNER_CONTEXT_OVERRIDES_MAX_BYTES = 2048;
-
 /**
- * Marker used when Partial<LoadOptions> overrides exceed the 2 KB budget and were truncated
- * by the client before send.
+ * Marker the main backend writes in place of `overrides` when a record of consent would exceed
+ * the 1,000 KiB Firehose record limit. Read by the ROC query and hydration API.
+ * `BannerContext` never accepts it from clients.
  */
-export const BannerContextTruncatedOverrides = noExcess(
-  t.type({
-    truncated: t.literal(true),
-    bytes: t.number,
+export const BannerContextOverridesDropped = t.type({
+  dropped: t.literal(true),
+  bytes: t.number,
+});
+
+/** Type override */
+export type BannerContextOverridesDropped = t.TypeOf<typeof BannerContextOverridesDropped>;
+
+const BannerContextOverridesExact = t.exact(
+  t.partial({
+    ...(collectCodecProps(LoadOptions) as {
+      [K in keyof LoadOptions]-?: t.Type<LoadOptions[K]>;
+    }),
+    /** Consent UI variables set by the host page. */
+    uiVariables: t.record(t.string, t.string),
   }),
 );
 
-/** Type override */
-export type BannerContextTruncatedOverrides = t.TypeOf<typeof BannerContextTruncatedOverrides>;
-
 /**
- * Exact Partial<LoadOptions>: unknown top-level keys fail, and the UTF-8 byte length of
- * JSON.stringify(value) must be at most 2 KB.
+ * Partial `LoadOptions` plus `uiVariables` active for this banner. Unknown keys are stripped.
+ * Backend markers (`{ dropped: true }`, `{ truncated: true }`) are rejected, because stripping
+ * would otherwise turn them into `{}`.
  */
-export const BannerContextLoadOptionOverrides = t.refinement(
-  noExcess(t.partial(collectCodecProps(LoadOptions))),
-  (value) => utf8ByteLength(JSON.stringify(value)) <= BANNER_CONTEXT_OVERRIDES_MAX_BYTES,
-  'BannerContextLoadOptionOverrides',
+export const BannerContextOverrides = new t.Type<
+  t.TypeOf<typeof BannerContextOverridesExact>,
+  t.OutputOf<typeof BannerContextOverridesExact>,
+  unknown
+>(
+  'BannerContextOverrides',
+  BannerContextOverridesExact.is,
+  (input, context) =>
+    typeof input === 'object' && input !== null && ('dropped' in input || 'truncated' in input)
+      ? t.failure(input, context, 'Overrides markers are not valid BannerContext overrides')
+      : BannerContextOverridesExact.validate(input, context),
+  BannerContextOverridesExact.encode,
 );
-
-/** Type override */
-export type BannerContextLoadOptionOverrides = t.TypeOf<typeof BannerContextLoadOptionOverrides>;
-
-/** Overrides on BannerContext: either a size-limited Partial<LoadOptions>, or a truncated marker. */
-export const BannerContextOverrides = t.union([
-  BannerContextLoadOptionOverrides,
-  BannerContextTruncatedOverrides,
-]);
 
 /** Type override */
 export type BannerContextOverrides = t.TypeOf<typeof BannerContextOverrides>;
@@ -381,8 +367,8 @@ export type BannerContextOverrides = t.TypeOf<typeof BannerContextOverrides>;
 export const BannerContext = t.exact(
   t.intersection([
     t.type({
-      /** Schema version. Only `1` is supported. */
-      version: t.literal(1),
+      /** Schema version. Any number decodes, so the shape can be incremented. */
+      version: t.number,
       /** Client surface that collected consent. */
       property: t.union([t.literal('web'), t.literal('mobile')]),
       /** Consent UI deployment id. */
@@ -401,7 +387,7 @@ export const BannerContext = t.exact(
       layersSeen: t.array(t.union([t.literal('banner'), t.literal('modal')])),
       /** Privacy signals present when consent was collected. */
       signals: t.array(t.union([t.literal('GPC'), t.literal('DNT')])),
-      /** Load-option overrides active for this banner, or a truncated marker. */
+      /** Load-option overrides active for this banner. */
       overrides: BannerContextOverrides,
     }),
   ]),
@@ -409,6 +395,36 @@ export const BannerContext = t.exact(
 
 /** Type override */
 export type BannerContext = t.TypeOf<typeof BannerContext>;
+
+/** Valid `BannerContext` sent by the web consent UI. */
+export const bannerContextWebFixture: BannerContext = {
+  version: 1,
+  property: 'web',
+  deploymentId: 'b90bbba4-cf11-40d4-9203-1f6424098694',
+  experience: 'eu-gdpr',
+  variant: 'default',
+  theme: 'light',
+  locale: 'en',
+  layersSeen: ['banner', 'modal'],
+  signals: ['GPC'],
+  overrides: {
+    forceTheme: 'light',
+    uiVariables: { brandName: 'Acme' },
+  },
+};
+
+/** Valid `BannerContext` sent by the mobile consent UI. */
+export const bannerContextMobileFixture: BannerContext = {
+  version: 1,
+  property: 'mobile',
+  deploymentId: '676e2789-6da2-4641-8224-48be5ff029de',
+  experience: 'us-cpra',
+  variant: 'compact',
+  theme: 'dark',
+  locale: 'en-US',
+  layersSeen: ['banner'],
+  signals: [],
+};
 
 /**
  * Properties exposed on `self` by the Transcend Smart Quarantine
