@@ -1,5 +1,20 @@
 # @transcend-io/mcp
 
+## 1.9.0
+
+### Minor Changes
+
+- 10e4fb7: Add `config_pull`, `config_push` and `config_get_schema`. They read and write `transcend.yml` files on disk, like `transcend inventory pull` and `push`. `config_push` needs confirmation. The tools run over stdio only. The unified server now requests every scope the pull and push paths can need.
+
+### Patch Changes
+
+- Updated dependencies [1023e16]
+- Updated dependencies [b4753ca]
+- Updated dependencies [2624435]
+- Updated dependencies [10e4fb7]
+  - @transcend-io/mcp-server-docs@0.5.2
+  - @transcend-io/mcp-server-config@0.1.0
+
 ## 1.8.0
 
 ### Minor Changes
