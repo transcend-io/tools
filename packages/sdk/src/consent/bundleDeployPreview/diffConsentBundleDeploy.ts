@@ -1,25 +1,18 @@
 import { diffCss, diffJson, diffLines } from 'diff';
 import { isEqual } from 'lodash-es';
 
-import type {
-  ConsentBundleDeployDiff,
-  ConsentBundleDeployDiffInputs,
-  ConsentModuleDiff,
-  PendingConsentBundleConfig,
+import {
+  ConsentDeployModuleKey,
+  type ConsentBundleDeployDiff,
+  type ConsentBundleDeployDiffInputs,
+  type ConsentDeployModuleKeyValue,
+  type ConsentModuleDiff,
+  type PendingConsentBundleConfig,
 } from './types.js';
 
 const MAX_PATCH_CHARS = 12_000;
 
-export const ConsentDeployModuleKey = {
-  Core: 'core',
-  Scripts: 'scripts',
-  Tcf: 'tcf',
-  NativeApp: 'nativeApp',
-  Messages: 'messages',
-  Stylesheet: 'stylesheet',
-  UiV2Messages: 'uiV2Messages',
-  UiV2Themes: 'uiV2Themes',
-} as const;
+export { ConsentDeployModuleKey } from './types.js';
 
 type CoreForDiff = Record<string, unknown> & {
   loadOptions?: {
@@ -127,7 +120,7 @@ function coreHighlights(before: CoreForDiff | undefined, after: CoreForDiff | un
 }
 
 function moduleDiff(
-  key: string,
+  key: ConsentDeployModuleKeyValue,
   before: unknown,
   after: unknown,
   patchBuilder: (a: unknown, b: unknown) => { patch: string; truncated: boolean },

@@ -188,24 +188,29 @@ export const DEPLOY_CONSENT_MANAGER = gql`
 export interface TranscendCliConsentManagerConfigurationJsonResponse {
   /** Configuration JSON wrapper */
   consentManagerConfigurationJson: {
-    /** Airgap bundle ID */
-    id: string;
-    /** Pending production configuration JSON */
-    configurationJson: string;
-    /** Pending test configuration JSON */
-    testConfigurationJson: string;
-    /** Whether TCF is enabled */
-    useIabFramework: boolean;
+    /** Nested configuration record */
+    consentManagerConfigurationJson: {
+      /** Airgap bundle ID */
+      id: string;
+      /** Pending production configuration JSON */
+      configurationJson: string;
+      /** Pending test configuration JSON */
+      testConfigurationJson: string;
+      /** Whether TCF is enabled */
+      useIabFramework: boolean;
+    };
   };
 }
 
 export const CONSENT_MANAGER_CONFIGURATION_JSON = gql`
   query TranscendCliConsentManagerConfigurationJson($id: ID!) {
     consentManagerConfigurationJson(id: $id) {
-      id
-      configurationJson
-      testConfigurationJson
-      useIabFramework
+      consentManagerConfigurationJson {
+        id
+        configurationJson
+        testConfigurationJson
+        useIabFramework
+      }
     }
   }
 `;

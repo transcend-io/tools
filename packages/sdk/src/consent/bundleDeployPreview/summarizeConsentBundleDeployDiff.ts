@@ -1,7 +1,6 @@
 import { ConsentBundleType } from '@transcend-io/privacy-types';
 
-import { ConsentDeployModuleKey } from './diffConsentBundleDeploy.js';
-import type { ConsentBundleDeployDiff } from './types.js';
+import { ConsentDeployModuleKey, type ConsentBundleDeployDiff } from './types.js';
 
 function envLabel(bundleType: ConsentBundleType): string {
   return bundleType === ConsentBundleType.Test ? 'TEST (/cm-test)' : 'PRODUCTION (/cm)';

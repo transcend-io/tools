@@ -1,3 +1,19 @@
+/** Module tab keys aligned with the consent deploy review modal */
+export const ConsentDeployModuleKey = {
+  Core: 'core',
+  Scripts: 'scripts',
+  Tcf: 'tcf',
+  NativeApp: 'nativeApp',
+  Messages: 'messages',
+  Stylesheet: 'stylesheet',
+  UiV2Messages: 'uiV2Messages',
+  UiV2Themes: 'uiV2Themes',
+} as const;
+
+/** Values of {@link ConsentDeployModuleKey} */
+export type ConsentDeployModuleKeyValue =
+  (typeof ConsentDeployModuleKey)[keyof typeof ConsentDeployModuleKey];
+
 /** Top-level keys in consent manager configuration JSON */
 export interface PendingConsentBundleConfig {
   /** Airgap core module */
@@ -16,8 +32,8 @@ export interface PendingConsentBundleConfig {
 
 /** Result of comparing one module */
 export interface ConsentModuleDiff {
-  /** Module tab key (core, tcf, messages, …) */
-  key: string;
+  /** Module tab key — see {@link ConsentDeployModuleKey} */
+  key: ConsentDeployModuleKeyValue;
   /** Whether a diff was detected */
   changesMade: boolean;
   /** Unified diff text for chat display */
