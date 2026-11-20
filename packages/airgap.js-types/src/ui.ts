@@ -294,9 +294,8 @@ export const TCFConfigInput = t.partial(TCFConfig.props);
 export type TCFConfigInput = t.TypeOf<typeof TCFConfigInput>;
 
 /**
- * Marker the main backend writes in place of `overrides` when a record of consent would exceed
- * the 1,000 KiB Firehose record limit. Read by the ROC query and hydration API.
- * `BannerContext` never accepts it from clients.
+ * There is a 1,000 KiB Firehose record limit. This marker is used to indicate that the overrides were dropped due to the limit.
+ * Accepted by `StoredBannerContext` for the ROC query and hydration API. `BannerContext` never accepts it from clients.
  */
 export const BannerContextOverridesDropped = t.type({
   dropped: t.literal(true),
@@ -338,42 +337,62 @@ export const BannerContextOverrides = new t.Type<
 /** Type override */
 export type BannerContextOverrides = t.TypeOf<typeof BannerContextOverrides>;
 
+const BannerContextRequired = t.type({
+  /** Schema version. Any number decodes, so the shape can be incremented. */
+  version: t.number,
+  /** Client surface that collected consent. */
+  property: t.union([t.literal('web'), t.literal('mobile')]),
+  /** Consent UI deployment id. */
+  deploymentId: t.string,
+  /** Experience slug or name shown to the user. */
+  experience: t.string,
+  /** Variant slug or name shown to the user. */
+  variant: t.string,
+  /** Theme slug or name shown to the user. */
+  theme: t.string,
+  /** Locale used when the banner was shown. */
+  locale: t.string,
+});
+
+const BannerContextOptional = t.partial({
+  /** UI layers the user saw before consenting. */
+  layersSeen: t.array(t.union([t.literal('banner'), t.literal('modal')])),
+  /** Privacy signals present when consent was collected. */
+  signals: t.array(t.union([t.literal('GPC'), t.literal('DNT')])),
+  /** Load-option overrides active for this banner. */
+  overrides: BannerContextOverrides,
+});
+
 /**
  * Context describing which consent banner was shown when consent was collected.
  * Unknown top-level keys are stripped (not rejected) so newer clients still validate on older backends.
  * Validated with BannerContext.decode when a record of consent is built; keep free of side effects.
  */
 export const BannerContext = t.exact(
+  t.intersection([BannerContextRequired, BannerContextOptional]),
+);
+
+/** Type override */
+export type BannerContext = t.TypeOf<typeof BannerContext>;
+
+/**
+ * Read-side `BannerContext` for stored records of consent. Same shape as `BannerContext`, but
+ * `overrides` may also be the `BannerContextOverridesDropped` marker. Clients send `BannerContext`;
+ * the ROC query and hydration API decode with `StoredBannerContext`.
+ */
+export const StoredBannerContext = t.exact(
   t.intersection([
-    t.type({
-      /** Schema version. Any number decodes, so the shape can be incremented. */
-      version: t.number,
-      /** Client surface that collected consent. */
-      property: t.union([t.literal('web'), t.literal('mobile')]),
-      /** Consent UI deployment id. */
-      deploymentId: t.string,
-      /** Experience slug or name shown to the user. */
-      experience: t.string,
-      /** Variant slug or name shown to the user. */
-      variant: t.string,
-      /** Theme slug or name shown to the user. */
-      theme: t.string,
-      /** Locale used when the banner was shown. */
-      locale: t.string,
-    }),
+    BannerContextRequired,
     t.partial({
-      /** UI layers the user saw before consenting. */
-      layersSeen: t.array(t.union([t.literal('banner'), t.literal('modal')])),
-      /** Privacy signals present when consent was collected. */
-      signals: t.array(t.union([t.literal('GPC'), t.literal('DNT')])),
-      /** Load-option overrides active for this banner. */
-      overrides: BannerContextOverrides,
+      ...BannerContextOptional.props,
+      /** Load-option overrides active for this banner, or the marker left when they were dropped. */
+      overrides: t.union([BannerContextOverrides, BannerContextOverridesDropped]),
     }),
   ]),
 );
 
 /** Type override */
-export type BannerContext = t.TypeOf<typeof BannerContext>;
+export type StoredBannerContext = t.TypeOf<typeof StoredBannerContext>;
 
 /** Valid `BannerContext` sent by the web consent UI. */
 export const bannerContextWebFixture: BannerContext = {

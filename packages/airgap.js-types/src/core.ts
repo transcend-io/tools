@@ -604,7 +604,7 @@ const ReservedMetadataCodec = t.partial({
    * - It is stripped before the consent record is stored in DynamoDB.
    *
    * Never replace `t.unknown` with the strict `BannerContext` codec here. A strict codec on
-   * metadata would reject the whole consent write when the value is malformed or from a newer client.
+   * metadata would reject the whole preference store record write when the value is malformed.
    */
   bannerContext: t.unknown,
 });

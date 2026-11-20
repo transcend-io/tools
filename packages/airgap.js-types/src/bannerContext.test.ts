@@ -7,6 +7,7 @@ import {
   bannerContextMobileFixture,
   bannerContextWebFixture,
   CoreTrackingConsentDetails,
+  StoredBannerContext,
 } from './index.js';
 
 const decodeRight = (input: unknown): BannerContext => {
@@ -81,6 +82,42 @@ describe('BannerContext', () => {
 describe('BannerContextOverridesDropped', () => {
   it('decodes the dropped marker', () => {
     expect(isRight(BannerContextOverridesDropped.decode({ dropped: true, bytes: 1_100_000 }))).toBe(
+      true,
+    );
+  });
+});
+
+describe('StoredBannerContext', () => {
+  it('decodes both fixtures', () => {
+    expect(StoredBannerContext.decode(bannerContextWebFixture)).toEqual({
+      _tag: 'Right',
+      right: bannerContextWebFixture,
+    });
+    expect(StoredBannerContext.decode(bannerContextMobileFixture)).toEqual({
+      _tag: 'Right',
+      right: bannerContextMobileFixture,
+    });
+  });
+
+  it('decodes the dropped marker as overrides', () => {
+    const overrides = { dropped: true, bytes: 1_100_000 };
+    expect(StoredBannerContext.decode({ ...bannerContextWebFixture, overrides })).toEqual({
+      _tag: 'Right',
+      right: { ...bannerContextWebFixture, overrides },
+    });
+  });
+
+  it('strips unknown overrides keys and keeps known keys', () => {
+    const decoded = StoredBannerContext.decode({
+      ...bannerContextWebFixture,
+      overrides: { forceTheme: 'dark', unknownKey: 1 },
+    });
+    expect(isRight(decoded) && decoded.right.overrides).toEqual({ forceTheme: 'dark' });
+  });
+
+  it('rejects the truncated marker as overrides', () => {
+    const overrides = { truncated: true, bytes: 2048 };
+    expect(isLeft(StoredBannerContext.decode({ ...bannerContextWebFixture, overrides }))).toBe(
       true,
     );
   });
