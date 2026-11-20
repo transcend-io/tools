@@ -929,6 +929,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
+      '@transcend-io/privacy-types':
+        specifier: workspace:^
+        version: link:../../privacy-types
       lru-cache:
         specifier: ^11.5.1
         version: 11.5.1

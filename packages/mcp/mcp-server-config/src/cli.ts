@@ -6,8 +6,8 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import packageJson from '../package.json' with { type: 'json' };
+import { getConfigTools } from './index.js';
 import { CONFIG_OAUTH_SCOPES } from './scopes.js';
-import { getConfigTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-config',

@@ -46,6 +46,9 @@ function umbrellaTools(): ToolDefinition[] {
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
   admin_write_teams: { teams: [{ name: 'Team', description: 'A team' }] },
   config_push: { filePath: '/tmp/transcend.yml' },
+  consent_deploy_bundle: {
+    environment: 'TEST',
+  },
   custom_functions_promote_version: {
     customFunctionId: 'cf-1',
     versionId: 'ver-1',
