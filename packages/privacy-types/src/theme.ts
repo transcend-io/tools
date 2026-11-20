@@ -16,6 +16,29 @@ export type PrivacyCenterFooterLayout =
   (typeof PrivacyCenterFooterLayout)[keyof typeof PrivacyCenterFooterLayout];
 
 /**
+ * Privacy center branding asset slots on `UpdatePrivacyCenterInput.assets`
+ * (`PrivacyCenterAssetName` in GraphQL).
+ */
+export const PrivacyCenterAssetName = {
+  /** Primary logo */
+  Logo: 'logo',
+  /** Favicon */
+  Favicon: 'favicon',
+  /** Logo on solid backgrounds */
+  LogoOnSolid: 'logoOnSolid',
+  /** Logo in the footer */
+  LogoOnFooter: 'logoOnFooter',
+  /** Hero image */
+  Hero: 'hero',
+  /** Widget background image */
+  WidgetBg: 'widgetBg',
+} as const;
+
+/** Type override */
+export type PrivacyCenterAssetName =
+  (typeof PrivacyCenterAssetName)[keyof typeof PrivacyCenterAssetName];
+
+/**
  * The names of the components that can be provided css overrides
  */
 export enum CustomizableComponent {

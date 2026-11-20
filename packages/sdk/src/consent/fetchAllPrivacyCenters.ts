@@ -8,7 +8,9 @@ import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
+import { formatPrivacyCenterAssetsFromGraphql } from './formatPrivacyCenterAssetsFromGraphql.js';
 import { PRIVACY_CENTER } from './gqls/privacyCenter.js';
+import type { PrivacyCenterAssetsYamlInput } from './resolvePrivacyCenterAssetsForPush.js';
 
 export interface PrivacyCenterChildOrganization {
   /** Organization ID */
@@ -93,6 +95,18 @@ export interface PrivacyCenter {
   useCustomEmailDomain: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: boolean;
+  /** Prefix for outbound privacy center emails */
+  emailPrefix: string;
+  /** Whether to show cookie max age on the tracking technologies page */
+  showCookieMaxAge: boolean;
+  /** Whether to allow filtering trackers by site on the tracking technologies page */
+  allowTrackingTechnologiesSiteFilter: boolean;
+  /** Whether end users may change consent partition on the privacy center */
+  allowPartitionChange: boolean;
+  /** Whether to show consent partition controls on the privacy center */
+  showPartition: boolean;
+  /** Branding assets for the privacy center */
+  assets: PrivacyCenterAssetsYamlInput;
   /**
    * Privacy Center "home" / back-to-site link URL shown in the privacy center
    * header
@@ -129,7 +143,7 @@ export async function fetchAllPrivacyCenters(
   const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const {
-    privacyCenter: { themeStr, footerLinks, home, ...rest },
+    privacyCenter: { themeStr, footerLinks, home, assets: assetsRaw, ...rest },
   } = await makeGraphQLRequest<{
     /** Privacy centers */
     privacyCenter: Omit<PrivacyCenter, 'theme' | 'footerLinks' | 'home'> & {
@@ -141,6 +155,9 @@ export async function fetchAllPrivacyCenters(
         defaultMessage: string;
       };
       /** Footer links as returned by GraphQL */
+      assets?: Partial<
+        Record<string, { id: string; src: string; alt?: { defaultMessage: string } | null } | null>
+      >;
       footerLinks: {
         /** Footer link ID */
         id: string;
@@ -170,6 +187,7 @@ export async function fetchAllPrivacyCenters(
   return [
     {
       ...rest,
+      assets: formatPrivacyCenterAssetsFromGraphql(assetsRaw),
       home: home.defaultMessage,
       footerLinks: footerLinks.map((link) => ({
         id: link.id,
