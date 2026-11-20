@@ -1,5 +1,20 @@
 # @transcend-io/privacy-types
 
+## 7.1.1
+
+### Patch Changes
+
+- 947bc9f: Add `DocsAccess` for gated docs frontmatter and `DocsLookupSource.Marketing` for transcend.io pages in docs MCP lookup.
+
+## 7.1.0
+
+### Minor Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
 ## 7.0.0
 
 ### Major Changes

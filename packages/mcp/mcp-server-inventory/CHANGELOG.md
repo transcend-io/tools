@@ -1,5 +1,32 @@
 # @transcend-io/mcp-server-inventory
 
+## 1.1.1
+
+### Patch Changes
+
+- 69b40d1: Add `dsr_list_enrichers`, `dsr_write_enrichers`, `dsr_list_actions` and `dsr_write_actions`. They read and write the `preflights` and `actions` sections of transcend.yml without a file on disk.
+
+  Export shared `createCollectedLogger` from the MCP base package so DSR, config, inventory, and workflows tools reuse one implementation.
+
+- Updated dependencies [69b40d1]
+- Updated dependencies [8e2bf2f]
+- Updated dependencies [64d13d6]
+  - @transcend-io/mcp-server-base@3.1.2
+
+## 1.1.0
+
+### Minor Changes
+
+- 3cc760c: Add direct inventory MCP tools for business entities, data subjects, identifiers, processing activities, and custom fields in `transcend.yml`, and update the CLI/MCP parity map for those sections. The inventory server also requests request-identity, data subject request settings, and global attribute scopes.
+
+### Patch Changes
+
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+  - @transcend-io/mcp-server-base@3.1.1
+  - @transcend-io/sdk@3.3.0
+
 ## 1.0.21
 
 ### Patch Changes

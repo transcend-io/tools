@@ -1,0 +1,41 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { decodeYmlRecord, pushYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
+import {
+  ConsentManagerInput,
+  type ConsentManagerInput as ConsentManagerSettings,
+} from '@transcend-io/sdk';
+
+export const WriteConsentManagerSchema = z.object({
+  consentManager: z
+    .record(z.string(), z.unknown())
+    .describe(
+      'Consent manager settings, same shape as the consent-manager section of transcend.yml. ' +
+        'Optional keys include domains, partition, version, consentPrecedence, ' +
+        'unknownRequestPolicy, experiences, consentVariants, consentThemes and theme. ' +
+        'Use config_get_schema for the full schema.',
+    ),
+});
+export type WriteConsentManagerInput = z.infer<typeof WriteConsentManagerSchema>;
+
+export function createConsentWriteConsentManagerTool(clients: ToolClients) {
+  return defineTool({
+    name: 'consent_write_consent_manager',
+    description:
+      'Create or update the consent manager settings, like the consent-manager section of ' +
+      'transcend.yml. Only keys you pass are changed. Also syncs experiences, UI variants and ' +
+      'UI themes when passed. Creates the consent manager if the organization has none. ' +
+      'Returns success and errors.',
+    category: 'Consent Management',
+    readOnly: false,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    zodSchema: WriteConsentManagerSchema,
+    handler: async ({ consentManager }) => {
+      const input = decodeYmlRecord<ConsentManagerSettings>(
+        ConsentManagerInput,
+        consentManager,
+        'consent-manager',
+      );
+      return pushYmlSection(clients, { 'consent-manager': input }, 1);
+    },
+  });
+}

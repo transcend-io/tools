@@ -1,5 +1,38 @@
 # @transcend-io/mcp-server-docs
 
+## 0.6.1
+
+### Patch Changes
+
+- 3b92b89: Resolve optional stdio startup credentials for MCP servers that mix public and signed-in tools (fixes `docs_integration_lookup` in the standalone docs server), and verify OAuth client setup at startup when OAuth env vars are set without blocking public tools on verification failure.
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+  - @transcend-io/mcp-server-base@3.1.1
+
+## 0.6.0
+
+### Minor Changes
+
+- df6b649: Add signed-in `docs_integration_lookup`, which reads one integration's catalog connection docs by name or title and lists close names on a miss. Extend `docs_list` with an `integration` filter for public guides. The standalone docs server now builds a catalog-capable GraphQL client, so the tool works there as well as in the umbrella server.
+
+## 0.5.2
+
+### Patch Changes
+
+- 1023e16: Keep room for full-text results when `docs_list` combines `route` with `query`, refresh the route index hourly, report the real cause when the route index fails to load, accept app URLs pasted without a scheme, and reject a blank `route`.
+- b4753ca: `docs_list` rows now carry the one-line description from `llms.txt` when the page has one, including route, product, search, and section rows, so an agent can pick a page before calling `docs_fetch`.
+- 2624435: Fix `docs_list` search and section listing returning no articles since docs.transcend.io moved `llms.txt` to a nested list with relative URLs. The parser reads both layouts and now fails loudly when a non-empty file yields no articles.
+
+## 0.5.1
+
+### Patch Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
 ## 0.5.0
 
 ### Minor Changes

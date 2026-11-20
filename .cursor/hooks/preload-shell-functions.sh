@@ -14,11 +14,18 @@ if [[ -z "${command}" ]]; then
   exit 0
 fi
 
-# Get the workspace root
-workspace_root=$(echo "${input}" | jq -r '.workspace_roots[0] // empty')
+# Resolve from this hook's own directory, not workspace_roots[0]: in a
+# multi-root workspace the first root can be another repo, and zsh aborts the
+# whole command when the glob matches nothing.
+functions_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/shell-functions"
+
+if [[ ! -d "${functions_dir}" ]]; then
+  echo '{"decision":"allow"}'
+  exit 0
+fi
 
 # Build the preload command - source all shell function files
-preload="for f in \"${workspace_root}\"/.cursor/hooks/shell-functions/*; do source \"\$f\" 2>/dev/null; done"
+preload="for f in \"${functions_dir}\"/*; do source \"\$f\" 2>/dev/null; done"
 
 # Wrap the original command with our preload
 wrapped_command="${preload}; ${command}"

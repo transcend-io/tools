@@ -83,6 +83,7 @@ import {
   DataCategoryInput,
   VendorInput,
   PolicyInput,
+  TemplateInput,
   IntlMessageInput,
   ActionItemInput,
   TeamInput,
@@ -929,6 +930,12 @@ export async function pullTranscendConfiguration(
       useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      emailPrefix: privacyCenter.emailPrefix || undefined,
+      showCookieMaxAge: privacyCenter.showCookieMaxAge,
+      allowTrackingTechnologiesSiteFilter: privacyCenter.allowTrackingTechnologiesSiteFilter,
+      allowPartitionChange: privacyCenter.allowPartitionChange,
+      showPartition: privacyCenter.showPartition,
+      ...(Object.keys(privacyCenter.assets).length > 0 ? { assets: privacyCenter.assets } : {}),
       home: privacyCenter.home || undefined,
       expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
       workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
@@ -1511,7 +1518,14 @@ export async function pullTranscendConfiguration(
     templates.length > 0 &&
     resources.includes(TranscendPullResource.Templates)
   ) {
-    result.templates = templates.map(({ title }) => ({ title }));
+    result.templates = templates.map(
+      ({ title, subject, template, type }): TemplateInput => ({
+        title,
+        subject: subject.defaultMessage,
+        body: template.defaultMessage,
+        type,
+      }),
+    );
   }
 
   // Save preflight checks (API still returns them as enrichers)

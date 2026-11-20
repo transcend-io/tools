@@ -1,5 +1,30 @@
 # @transcend-io/sdk
 
+## 3.3.0
+
+### Minor Changes
+
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+
+## 3.2.0
+
+### Minor Changes
+
+- f7b3d3a: `transcend inventory pull` now writes data silo business entities as `businessEntityTitles`, so pushing a pulled file keeps those links.
+
+  The SDK adds `planPush` and `renderPushPlan` to compare a `transcend.yml` with your organization and list what a push would create, update, or delete.
+
+- 530f513: Preview changes before you apply them. `transcend inventory push --dryRun` lists what a push would create, update, or delete, including changes you did not write in the file, and changes nothing. `transcend inventory pull --dryRun` shows how the file would change without writing it. Add `--json` to push for machine-readable output.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
+### Patch Changes
+
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
 ## 3.1.0
 
 ### Minor Changes

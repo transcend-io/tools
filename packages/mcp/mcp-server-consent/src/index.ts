@@ -1,6 +1,5 @@
 export { getConsentTools } from './tools/index.js';
 export { getConsentPrompts } from './prompts/index.js';
-export { CONSENT_OAUTH_SCOPES } from './scopes.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
 export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 
@@ -14,12 +13,7 @@ export { ListDataFlowsSchema, type ListDataFlowsInput } from './tools/consent_li
 export { ListPurposesSchema, type ListPurposesInput } from './tools/consent_list_purposes.js';
 export { ListRegimesSchema, type ListRegimesInput } from './tools/consent_list_regimes.js';
 export { ListSitesSchema, type ListSitesInput } from './tools/consent_list_sites.js';
-export {
-  WriteSiteItemSchema,
-  type WriteSiteItemInput,
-  WriteSitesSchema,
-  type WriteSitesInput,
-} from './tools/consent_write_sites.js';
+export { WriteSitesSchema, type WriteSitesInput } from './tools/consent_write_sites.js';
 export {
   GetInventoryStatsSchema,
   type GetInventoryStatsInput,
@@ -60,6 +54,11 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
+export {
+  WriteConsentManagerSchema,
+  type WriteConsentManagerInput,
+} from './tools/consent_write_consent_manager.js';
+export { WritePurposesSchema, type WritePurposesInput } from './tools/consent_write_purposes.js';
 export { ConsentTriageTypeSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
 export {
   COOKIE_TRIAGE_FETCH_MAX,

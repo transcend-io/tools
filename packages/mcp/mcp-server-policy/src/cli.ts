@@ -4,16 +4,16 @@ import {
   createTranscendRestClient,
   TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
+import { TranscendMcpServer, getMcpServerOAuthScopes } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
-import { POLICY_OAUTH_SCOPES } from './scopes.js';
 import { POLICY_SERVER_INSTRUCTIONS } from './server-instructions.js';
 import { getPolicyTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-policy',
   version: packageJson.version,
-  oauthScopes: POLICY_OAUTH_SCOPES,
+  oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.Policy),
   instructions: POLICY_SERVER_INSTRUCTIONS,
   getTools: getPolicyTools,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {

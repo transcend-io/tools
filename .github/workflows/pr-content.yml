@@ -1,0 +1,48 @@
+name: PR content
+
+# This repo is public. Fail when the PR title or body has customer-specific content.
+# Runs on edits too, which the main CI workflow does not.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  merge_group:
+
+concurrency:
+  group: pr-content-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr_content:
+    name: PR content
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      # The merge queue has no PR body. Report success so the required check does not stall.
+      - if: github.event_name == 'merge_group'
+        name: Skip in merge queue
+        run: echo "PR text was checked on the pull request."
+
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          sparse-checkout: |
+            .node-version
+            package.json
+            scripts/check-pr-content.ts
+            scripts/logger.ts
+            scripts/lib/pr-content.ts
+          sparse-checkout-cone-mode: false
+
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: '.node-version'
+
+      # Pass title and body through env. Never interpolate them into the script.
+      - if: github.event_name == 'pull_request'
+        name: Check PR title and body
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-pr-content.ts

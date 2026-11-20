@@ -9,6 +9,10 @@ import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/privacyCenter.js';
 import { resolveDisplayedChildOrganizationIds } from './resolveDisplayedChildOrganizationIds.js';
 import {
+  resolvePrivacyCenterAssetsForPush,
+  type PrivacyCenterAssetsYamlInput,
+} from './resolvePrivacyCenterAssetsForPush.js';
+import {
   syncPrivacyCenterFooterLinks,
   type PrivacyCenterFooterLinkInput,
 } from './syncPrivacyCenterFooterLinks.js';
@@ -48,6 +52,18 @@ export interface PrivacyCenterInput {
   useCustomEmailDomain?: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv?: boolean;
+  /** Prefix for outbound privacy center emails */
+  emailPrefix?: string;
+  /** Whether to show cookie max age on the tracking technologies page */
+  showCookieMaxAge?: boolean;
+  /** Whether to allow filtering trackers by site on the tracking technologies page */
+  allowTrackingTechnologiesSiteFilter?: boolean;
+  /** Whether end users may change consent partition on the privacy center */
+  allowPartitionChange?: boolean;
+  /** Whether to show consent partition controls on the privacy center */
+  showPartition?: boolean;
+  /** Branding assets (re-hosted from `src` when copying across organizations) */
+  assets?: PrivacyCenterAssetsYamlInput;
   /**
    * Privacy Center "home" / back-to-site link URL shown in the privacy center
    * header
@@ -114,6 +130,11 @@ export async function syncPrivacyCenter(
   }
 
   try {
+    const resolvedAssets =
+      privacyCenter.assets !== undefined
+        ? await resolvePrivacyCenterAssetsForPush(client, privacyCenter.assets)
+        : undefined;
+
     await makeGraphQLRequest(client, UPDATE_PRIVACY_CENTER, {
       variables: {
         input: {
@@ -123,6 +144,7 @@ export async function syncPrivacyCenter(
           useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
           replyToEmail: privacyCenter.replyToEmail,
           supportEmail: privacyCenter.supportEmail,
+          emailPrefix: privacyCenter.emailPrefix,
           preferBrowserDefaultLocale: privacyCenter.preferBrowserDefaultLocale,
           defaultLocale: privacyCenter.defaultLocale,
           locales: privacyCenter.locales,
@@ -132,6 +154,10 @@ export async function syncPrivacyCenter(
           showConsentManager: privacyCenter.showConsentManager,
           showDataFlows: privacyCenter.showDataFlows,
           showCookies: privacyCenter.showCookies,
+          showCookieMaxAge: privacyCenter.showCookieMaxAge,
+          allowTrackingTechnologiesSiteFilter: privacyCenter.allowTrackingTechnologiesSiteFilter,
+          allowPartitionChange: privacyCenter.allowPartitionChange,
+          showPartition: privacyCenter.showPartition,
           showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
@@ -139,6 +165,9 @@ export async function syncPrivacyCenter(
           expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
           workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
           footerLayout: privacyCenter.footerLayout,
+          ...(resolvedAssets && Object.keys(resolvedAssets).length > 0
+            ? { assets: resolvedAssets }
+            : {}),
           ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
           ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme

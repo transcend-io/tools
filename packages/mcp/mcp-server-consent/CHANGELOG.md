@@ -1,5 +1,18 @@
 # @transcend-io/mcp-server-consent
 
+## 1.5.0
+
+### Minor Changes
+
+- 64d13d6: Add `consent_write_consent_manager` and `consent_write_purposes`. They push the consent-manager and purposes sections of `transcend.yml` without a file on disk. The consent server now also requests the developer settings and preference store scopes. Shared `decodeYmlItems` helper is exported from the base package for yml codec validation.
+
+### Patch Changes
+
+- Updated dependencies [69b40d1]
+- Updated dependencies [8e2bf2f]
+- Updated dependencies [64d13d6]
+  - @transcend-io/mcp-server-base@3.1.2
+
 ## 1.4.0
 
 ### Minor Changes

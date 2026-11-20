@@ -6,6 +6,7 @@ import {
   type AuthCredentials,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
@@ -13,6 +14,7 @@ import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -40,7 +42,9 @@ const allTools = [
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
+  ...getConfigTools(mockClients),
 ];
 
 describe('ToolRegistry', () => {

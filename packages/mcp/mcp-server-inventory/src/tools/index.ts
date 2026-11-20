@@ -5,16 +5,23 @@ import { createInventoryGetDataSiloTool } from './inventory_get_data_silo.js';
 import { createInventoryListBusinessEntitiesTool } from './inventory_list_business_entities.js';
 import { createInventoryListCatalogIntegrationsTool } from './inventory_list_catalog_integrations.js';
 import { createInventoryListCategoriesTool } from './inventory_list_categories.js';
+import { createInventoryListCustomFieldsTool } from './inventory_list_custom_fields.js';
 import { createInventoryListDataPointsTool } from './inventory_list_data_points.js';
 import { createInventoryListDataSilosTool } from './inventory_list_data_silos.js';
 import { createInventoryListDataSubjectsTool } from './inventory_list_data_subjects.js';
 import { createInventoryListIdentifiersTool } from './inventory_list_identifiers.js';
+import { createInventoryListProcessingActivitiesTool } from './inventory_list_processing_activities.js';
 import { createInventoryListProcessingPurposesTool } from './inventory_list_processing_purposes.js';
 import { createInventoryListSubDataPointsTool } from './inventory_list_sub_data_points.js';
 import { createInventoryListVendorsTool } from './inventory_list_vendors.js';
 import { createInventoryUpdateOrCreateDataPointTool } from './inventory_update_or_create_data_point.js';
+import { createInventoryWriteBusinessEntitiesTool } from './inventory_write_business_entities.js';
 import { createInventoryWriteCategoryTool } from './inventory_write_category.js';
+import { createInventoryWriteCustomFieldsTool } from './inventory_write_custom_fields.js';
 import { createInventoryWriteDataSiloTool } from './inventory_write_data_silo.js';
+import { createInventoryWriteDataSubjectsTool } from './inventory_write_data_subjects.js';
+import { createInventoryWriteIdentifiersTool } from './inventory_write_identifiers.js';
+import { createInventoryWriteProcessingActivitiesTool } from './inventory_write_processing_activities.js';
 import { createInventoryWriteProcessingPurposeTool } from './inventory_write_processing_purpose.js';
 import { createInventoryWriteVendorTool } from './inventory_write_vendor.js';
 
@@ -36,6 +43,13 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
     createInventoryWriteProcessingPurposeTool(clients),
     createInventoryListBusinessEntitiesTool(clients),
     createInventoryListDataSubjectsTool(clients),
+    createInventoryWriteBusinessEntitiesTool(clients),
+    createInventoryWriteDataSubjectsTool(clients),
+    createInventoryWriteIdentifiersTool(clients),
+    createInventoryListProcessingActivitiesTool(clients),
+    createInventoryWriteProcessingActivitiesTool(clients),
+    createInventoryListCustomFieldsTool(clients),
+    createInventoryWriteCustomFieldsTool(clients),
     createInventoryAnalyzeTool(clients),
   ];
 }

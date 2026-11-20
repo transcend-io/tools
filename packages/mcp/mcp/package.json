@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp",
-  "version": "1.8.0",
+  "version": "2.0.0",
   "description": "Transcend MCP Server — unified server with all domain tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp",
   "license": "Apache-2.0",
@@ -44,6 +44,7 @@
     "@transcend-io/mcp-server-admin": "workspace:^",
     "@transcend-io/mcp-server-assessment": "workspace:^",
     "@transcend-io/mcp-server-base": "workspace:^",
+    "@transcend-io/mcp-server-config": "workspace:^",
     "@transcend-io/mcp-server-consent": "workspace:^",
     "@transcend-io/mcp-server-custom-functions": "workspace:^",
     "@transcend-io/mcp-server-discovery": "workspace:^",
@@ -52,6 +53,7 @@
     "@transcend-io/mcp-server-inventory": "workspace:^",
     "@transcend-io/mcp-server-policy": "workspace:^",
     "@transcend-io/mcp-server-preferences": "workspace:^",
+    "@transcend-io/mcp-server-privacy-center": "workspace:^",
     "@transcend-io/mcp-server-workflows": "workspace:^",
     "zod": "^4.6.6"
   },
@@ -59,6 +61,7 @@
     "@arethetypeswrong/cli": "0.18.3",
     "@sanity/client": "7.6.0",
     "@transcend-io/privacy-types": "workspace:*",
+    "@transcend-io/sdk": "workspace:*",
     "@types/node": "24.13.3",
     "publint": "0.3.21",
     "tsdown": "0.21.10",

@@ -7,6 +7,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { CustomFunctionsMixin } from '@transcend-io/mcp-server-custom-functions';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
+import { DocsCatalogMixin } from '@transcend-io/mcp-server-docs';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';
 import { WorkflowsMixin } from '@transcend-io/mcp-server-workflows';
@@ -34,7 +35,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listUsers: InstanceType<typeof AdminMixin>['listUsers'];
   declare listTeams: InstanceType<typeof AdminMixin>['listTeams'];
   declare listApiKeys: InstanceType<typeof AdminMixin>['listApiKeys'];
-  declare getPrivacyCenter: InstanceType<typeof AdminMixin>['getPrivacyCenter'];
 
   // DSR
   declare listRequests: InstanceType<typeof DSRMixin>['listRequests'];
@@ -45,6 +45,12 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listDataSilos: InstanceType<typeof InventoryMixin>['listDataSilos'];
   declare getDataSilo: InstanceType<typeof InventoryMixin>['getDataSilo'];
   declare listCatalogs: InstanceType<typeof InventoryMixin>['listCatalogs'];
+  declare getCatalogIntegrationDetail: InstanceType<
+    typeof DocsCatalogMixin
+  >['getCatalogIntegrationDetail'];
+  declare searchCatalogIntegrations: InstanceType<
+    typeof DocsCatalogMixin
+  >['searchCatalogIntegrations'];
   declare createDataSilo: InstanceType<typeof InventoryMixin>['createDataSilo'];
   declare updateDataSilo: InstanceType<typeof InventoryMixin>['updateDataSilo'];
   declare writeDataSilo: InstanceType<typeof InventoryMixin>['writeDataSilo'];
@@ -117,6 +123,7 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
 applyMixin(TranscendGraphQLClient, AdminMixin);
 applyMixin(TranscendGraphQLClient, DSRMixin);
 applyMixin(TranscendGraphQLClient, InventoryMixin);
+applyMixin(TranscendGraphQLClient, DocsCatalogMixin);
 applyMixin(TranscendGraphQLClient, DiscoveryMixin);
 applyMixin(TranscendGraphQLClient, AssessmentsMixin);
 applyMixin(TranscendGraphQLClient, WorkflowsMixin);

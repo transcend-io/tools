@@ -34,6 +34,8 @@ export interface ItemPlan {
   writeOnly: string[];
   /** Extra context, for example why an item is skipped */
   note?: string;
+  /** Full local object when the item would be created */
+  created?: PlainObject;
 }
 
 /** The plan for one top-level resource such as `vendors` */

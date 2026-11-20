@@ -44,6 +44,8 @@ function umbrellaTools(): ToolDefinition[] {
 
 /** Minimal valid args so widened schemas can be parsed with an approval token. */
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  admin_write_teams: { teams: [{ name: 'Team', description: 'A team' }] },
+  config_push: { filePath: '/tmp/transcend.yml' },
   consent_deploy_bundle: {
     environment: 'TEST',
   },
@@ -78,6 +80,9 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
   policy_set_live: {
     action: 'deactivate',
     bundleId: '00000000-0000-4000-8000-000000000001',
+  },
+  privacy_center_write: {
+    privacyCenter: { supportEmail: 'privacy@example.com' },
   },
   preferences_append_identifiers: {
     partition: 'default',

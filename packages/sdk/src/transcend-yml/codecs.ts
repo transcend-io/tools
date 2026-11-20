@@ -72,6 +72,8 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
 
+import { TemplateDeliveryType, TemplateProduct } from './enums.js';
+
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
 const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');
 const DataCategoryTypeCodec = valuesOf(DataCategoryType, 'DataCategoryType');
@@ -97,6 +99,8 @@ const DataFlowScopeCodec = valuesOf(DataFlowScope, 'DataFlowScope');
 const ConsentTrackerStatusCodec = valuesOf(ConsentTrackerStatus, 'ConsentTrackerStatus');
 const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequestPolicy');
 const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator');
+const TemplateDeliveryTypeCodec = valuesOf(TemplateDeliveryType, 'TemplateDeliveryType');
+const TemplateProductCodec = valuesOf(TemplateProduct, 'TemplateProduct');
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -104,10 +108,22 @@ const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator
  *
  * @see https://docs.transcend.io/docs/privacy-requests/configuring-requests/email-templates
  */
-export const TemplateInput = t.type({
-  /** The title of the template */
-  title: t.string,
-});
+export const TemplateInput = t.intersection([
+  t.type({
+    /** The title of the template */
+    title: t.string,
+  }),
+  t.partial({
+    /** Email subject line */
+    subject: t.string,
+    /** Template body HTML */
+    body: t.string,
+    /** Template delivery type */
+    type: TemplateDeliveryTypeCodec,
+    /** Product line the template belongs to */
+    product: TemplateProductCodec,
+  }),
+]);
 
 /** Type override */
 export type TemplateInput = t.TypeOf<typeof TemplateInput>;
@@ -1251,6 +1267,32 @@ export const ConsentManagerInput = t.partial({
 /** Type override */
 export type ConsentManagerInput = t.TypeOf<typeof ConsentManagerInput>;
 
+/** One privacy center branding asset in transcend.yml */
+export const PrivacyCenterBrandingAssetInput = t.partial({
+  /** Existing asset file id in the target org */
+  id: t.string,
+  /** Source URL to copy into the target org when `id` is absent */
+  src: t.string,
+  /** Alt text for the asset */
+  alt: t.string,
+});
+
+/** Type override */
+export type PrivacyCenterBrandingAssetInput = t.TypeOf<typeof PrivacyCenterBrandingAssetInput>;
+
+/** Branding assets for the privacy center (use `src` when copying across orgs) */
+export const PrivacyCenterBrandingAssetsInput = t.partial({
+  logo: PrivacyCenterBrandingAssetInput,
+  favicon: PrivacyCenterBrandingAssetInput,
+  logoOnSolid: PrivacyCenterBrandingAssetInput,
+  logoOnFooter: PrivacyCenterBrandingAssetInput,
+  hero: PrivacyCenterBrandingAssetInput,
+  widgetBg: PrivacyCenterBrandingAssetInput,
+});
+
+/** Type override */
+export type PrivacyCenterBrandingAssetsInput = t.TypeOf<typeof PrivacyCenterBrandingAssetsInput>;
+
 /**
  * Input to define a privacy center
  */
@@ -1289,6 +1331,18 @@ export const PrivacyCenterInput = t.partial({
   useCustomEmailDomain: t.boolean,
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
+  /** Prefix for outbound privacy center emails */
+  emailPrefix: t.string,
+  /** Whether to show cookie max age on the tracking technologies page */
+  showCookieMaxAge: t.boolean,
+  /** Whether to allow filtering trackers by site on the tracking technologies page */
+  allowTrackingTechnologiesSiteFilter: t.boolean,
+  /** Whether end users may change consent partition on the privacy center */
+  allowPartitionChange: t.boolean,
+  /** Whether to show consent partition controls on the privacy center */
+  showPartition: t.boolean,
+  /** Branding assets for the privacy center (use `src` when copying across orgs) */
+  assets: PrivacyCenterBrandingAssetsInput,
   /**
    * Privacy Center "home" / back-to-site link URL shown in the privacy center
    * header

@@ -1,6 +1,7 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
@@ -9,6 +10,7 @@ import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPolicyTools } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -35,7 +37,9 @@ const allTools = [
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients as never),
   ...getPolicyTools(mockClients as never),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
+  ...getConfigTools(mockClients),
 ];
 
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
@@ -85,7 +89,9 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
+      'privacy_center_write',
       'assessments_submit_response',
+      'config_push',
       'consent_bulk_triage',
       'consent_delete_cookies',
       'consent_delete_data_flows',
@@ -128,6 +134,9 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'admin_write_teams',
+      'config_push',
+      'privacy_center_write',
       'consent_deploy_bundle',
       'custom_functions_promote_version',
       'custom_functions_test_run',
@@ -145,6 +154,7 @@ describe('MCP Tool Annotations', () => {
     ];
 
     const expectedGatedNonDestructive = [
+      'admin_write_teams',
       'custom_functions_test_run',
       'custom_functions_upsert',
       'policy_publish',
@@ -185,15 +195,27 @@ describe('MCP Tool Annotations', () => {
 
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
+      'admin_write_teams',
+      'privacy_center_write',
+      'privacy_center_write_intl_messages',
+      'privacy_center_write_policies',
       'workflows_update_config',
+      'workflows_write_email_templates',
       'preferences_upsert',
       'preferences_update_identifiers',
+      'preferences_write_partitions',
+      'preferences_write_option_values',
+      'preferences_write_workflow_configs',
       'inventory_write_vendor',
+      'dsr_write_enrichers',
+      'dsr_write_actions',
       'inventory_write_processing_purpose',
       'inventory_update_or_create_data_point',
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
+      'consent_write_consent_manager',
+      'consent_write_purposes',
     ];
 
     it.each(expectedIdempotentMutative)(

@@ -55,6 +55,7 @@ Additional checks:
 - `pnpm check:exports`: validate published package shape with `attw`
 - `pnpm check:publint`: validate published package compatibility and packaging metadata
 - `pnpm check:deps`: enforce dependency version policy
+- `pnpm check:new-packages`: fail when a publishable package does not exist on npm yet (runs in `Publish` and on the Version Packages PR)
 
 `pnpm quality` intentionally excludes `pnpm check:changeset`, since that check compares the current branch to its base and is mainly useful in pull request workflows.
 
@@ -192,6 +193,15 @@ On pull requests, GitHub Actions runs:
   - `CI / <package-name>` jobs: some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
 - **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
+### Public PR Content
+
+This repo is public, and GitHub keeps PR body edit history. Do not put customer names, org or request IDs, customer emails, or links to internal tools (Slack, admin dashboard, Retool, Gong, Intercom, Datadog, Notion) in a PR title, body, intent note, or comment. Say "a customer" and keep the evidence in Linear or Slack. Use bare Linear ticket IDs, not URLs with a title slug.
+
+Two checks enforce this. Both run [`scripts/check-pr-content.ts`](scripts/check-pr-content.ts), which matches links, UUIDs, and emails. It cannot see customer names, so keep those out yourself.
+
+- **`PR content`** workflow: fails the PR when the title or body matches. It also runs when you edit the body. If it fails, edit the body, then delete the old revision from the PR edit history.
+- **Cursor hook** (`.cursor/hooks/check-pr-content.sh`): blocks an agent's `gh pr create|edit|comment|review` before it posts.
+
 ### Fresh Approvals Are Required
 
 New, reviewable commits pushed will dismiss previous pull request review approvals. As a public repository, we want to ensure that all changes are reviewed and approved by at least one team member.
@@ -205,7 +215,7 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 Transcend Team:
 
 - See our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
-- If this is a net-new npm package, it needs to first be created [here](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10), and it needs trusted publishing set up (see the HOWTO guide above for more on that). Once that is done, it should publish successfully the next time a release PR merges with a changeset for that package.
+- If this is a net-new npm package, trusted publishing cannot create it. Before merging the release PR that first versions it, check out the release PR head, run `pnpm build`, then run `pnpm publish --access public --no-git-checks` from the package directory (pnpm, not npm, so `workspace:` ranges get rewritten). Then grant the [developers team](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10) access and set up trusted publishing for `publish.yml` (see the HOWTO guide above). `pnpm check:new-packages` blocks the release PR and the `Publish` workflow until this is done.
 
 New packages should match the shape used in `packages/sdk` and `packages/utils`.
 
@@ -240,12 +250,14 @@ packages/mcp/
   mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
   mcp-server-admin/      # Domain: org, users, API keys
   mcp-server-assessment/
+  mcp-server-config/
   mcp-server-consent/
   mcp-server-custom-functions/
   mcp-server-discovery/
   mcp-server-dsr/
   mcp-server-inventory/
   mcp-server-preferences/
+  mcp-server-privacy-center/
   mcp-server-workflows/
   mcp/                   # Unified server that re-exports all domain tools
 ```

@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-base",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-base",
   "license": "Apache-2.0",
@@ -16,6 +16,16 @@
   "type": "module",
   "sideEffects": false,
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "ui": [
+        "./dist/ui/index.d.mts"
+      ],
+      "transcend-yml": [
+        "./dist/transcend-yml/index.d.mts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
@@ -30,6 +40,11 @@
     "./ui/theme.css": {
       "@transcend-io/source": "./src/ui/theme.css",
       "default": "./dist/ui/theme.css"
+    },
+    "./transcend-yml": {
+      "@transcend-io/source": "./src/transcend-yml/index.ts",
+      "types": "./dist/transcend-yml/index.d.mts",
+      "default": "./dist/transcend-yml/index.mjs"
     }
   },
   "publishConfig": {
@@ -45,6 +60,7 @@
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "^3.2.0",
+    "@transcend-io/sdk": "workspace:^",
     "@transcend-io/type-utils": "workspace:^",
     "cors": "^2.8.5",
     "express": "^5.2.1",

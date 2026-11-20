@@ -4,6 +4,7 @@ import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
+import type { SyncItemErrorHandler } from '../data-inventory/syncDataCategories.js';
 import {
   NOOP_LOGGER,
   makeGraphQLRequest,
@@ -19,6 +20,66 @@ import {
 import { DataSiloInput } from './codecs.js';
 
 const BATCH_SILOS_LIMIT = 20;
+
+function buildDataSiloUpdateRows(
+  inputs: DataSiloInput[],
+  existingDataSiloByTitle: { [title: string]: Pick<DataSilo, 'id' | 'title'> },
+  apiKeysByTitle: { [title: string]: ApiKey },
+  dataSubjectsByName: { [type in string]: DataSubject },
+) {
+  return inputs.map((input) => ({
+    id: existingDataSiloByTitle[input.title]!.id,
+    country: input.country,
+    countrySubDivision: input.countrySubDivision,
+    url: input.url,
+    headers: input.headers,
+    description: input.description,
+    identifiers: input['identity-keys'],
+    isLive: !input.disabled,
+    ownerEmails: input.owners,
+    teamNames: input.teams,
+    dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
+    apiKeyId: input['api-key-title'] ? apiKeysByTitle[input['api-key-title']]!.id : undefined,
+    dataSubjectBlockListIds: input['data-subjects']
+      ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
+      : undefined,
+    attributes: input.attributes,
+    businessEntityTitles: input.businessEntityTitles,
+    sombraId: input['sombra-id'],
+    notifyEmailAddress: input['email-settings']?.['notify-email-address'],
+    promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
+    promptAVendorEmailSendType: input['email-settings']?.['send-type'],
+    promptAVendorEmailIncludeIdentifiersAttachment:
+      input['email-settings']?.['include-identifiers-attachment'],
+    promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
+    manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
+  }));
+}
+
+async function updateDataSiloChunk(
+  client: GraphQLClient,
+  chunk: DataSiloInput[],
+  existingDataSiloByTitle: { [title: string]: Pick<DataSilo, 'id' | 'title'> },
+  apiKeysByTitle: { [title: string]: ApiKey },
+  dataSubjectsByName: { [type in string]: DataSubject },
+  logger: Logger,
+): Promise<void> {
+  await makeGraphQLRequest<{
+    updateDataSilos: { dataSilos: Pick<DataSilo, 'id' | 'title'>[] };
+  }>(client, UPDATE_DATA_SILOS, {
+    variables: {
+      input: {
+        dataSilos: buildDataSiloUpdateRows(
+          chunk,
+          existingDataSiloByTitle,
+          apiKeysByTitle,
+          dataSubjectsByName,
+        ),
+      },
+    },
+    logger,
+  });
+}
 
 /** Receives progress updates while datapoints sync. */
 export interface ProgressReporter {
@@ -47,6 +108,7 @@ export async function syncDataSilos(
     apiKeysByTitle,
     logger = NOOP_LOGGER,
     progressReporter,
+    onError,
   }: {
     /** Page size */
     pageSize: number;
@@ -58,6 +120,8 @@ export async function syncDataSilos(
     logger?: Logger;
     /** Receives datapoint sync progress. A `cli-progress` SingleBar satisfies this. */
     progressReporter?: ProgressReporter;
+    /** Called for each failed data silo update */
+    onError?: SyncItemErrorHandler;
   },
 ): Promise<{
   /** Whether successfully updated */
@@ -127,56 +191,44 @@ export async function syncDataSilos(
         dataSiloUpdateChunk.length
       }" data silos`,
     );
-    await makeGraphQLRequest<{
-      /** Mutation result */
-      updateDataSilos: {
-        /** New data silos */
-        dataSilos: Pick<DataSilo, 'id' | 'title'>[];
-      };
-    }>(client, UPDATE_DATA_SILOS, {
-      variables: {
-        input: {
-          dataSilos: dataSiloUpdateChunk.map((input) => ({
-            id: existingDataSiloByTitle[input.title]!.id,
-            country: input.country,
-            countrySubDivision: input.countrySubDivision,
-            url: input.url,
-            headers: input.headers,
-            description: input.description,
-            identifiers: input['identity-keys'],
-            isLive: !input.disabled,
-            ownerEmails: input.owners,
-            teamNames: input.teams,
-            // clear out the global config if not specified, otherwise the update needs to be
-            // applied after all data silos are created
-            dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
-            apiKeyId: input['api-key-title']
-              ? apiKeysByTitle[input['api-key-title']]!.id
-              : undefined,
-            dataSubjectBlockListIds: input['data-subjects']
-              ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
-              : undefined,
-            attributes: input.attributes,
-            businessEntityTitles: input.businessEntityTitles,
-            sombraId: input['sombra-id'],
-            // AVC settings
-            notifyEmailAddress: input['email-settings']?.['notify-email-address'],
-            promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
-            promptAVendorEmailSendType: input['email-settings']?.['send-type'],
-            promptAVendorEmailIncludeIdentifiersAttachment:
-              input['email-settings']?.['include-identifiers-attachment'],
-            promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
-            manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
-          })),
-        },
-      },
-      logger,
-    });
-    logger.info(
-      `[Batch ${ind + 1}/${chunkedUpdates.length}] Synced "${
-        dataSiloUpdateChunk.length
-      }" data silos!`,
-    );
+    try {
+      await updateDataSiloChunk(
+        client,
+        dataSiloUpdateChunk,
+        existingDataSiloByTitle,
+        apiKeysByTitle,
+        dataSubjectsByName,
+        logger,
+      );
+      logger.info(
+        `[Batch ${ind + 1}/${chunkedUpdates.length}] Synced "${
+          dataSiloUpdateChunk.length
+        }" data silos!`,
+      );
+    } catch (batchErr) {
+      encounteredError = true;
+      logger.error(
+        `[Batch ${ind + 1}/${chunkedUpdates.length}] Failed to sync data silo batch! - ${(batchErr as Error).message}. Retrying each silo individually...`,
+      );
+      await mapSeries(dataSiloUpdateChunk, async (input) => {
+        try {
+          await updateDataSiloChunk(
+            client,
+            [input],
+            existingDataSiloByTitle,
+            apiKeysByTitle,
+            dataSubjectsByName,
+            logger,
+          );
+          logger.info(`Successfully synced data silo "${input.title}"!`);
+        } catch (err) {
+          encounteredError = true;
+          const message = `Failed to sync data silo "${input.title}"! - ${(err as Error).message}`;
+          logger.error(message);
+          onError?.(message, input.title);
+        }
+      });
+    }
   });
 
   // Sync datapoints

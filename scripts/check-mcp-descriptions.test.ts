@@ -20,12 +20,14 @@ import {
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, expect, test } from 'vitest';
 
@@ -49,12 +51,14 @@ const mockClients = {
 const serverFactories = [
   { name: 'admin', getTools: getAdminTools },
   { name: 'assessment', getTools: getAssessmentTools },
+  { name: 'config', getTools: getConfigTools },
   { name: 'consent', getTools: getConsentTools },
   { name: 'custom-functions', getTools: getCustomFunctionsTools },
   { name: 'discovery', getTools: getDiscoveryTools },
   { name: 'dsr', getTools: getDSRTools },
   { name: 'inventory', getTools: getInventoryTools },
   { name: 'preferences', getTools: getPreferenceTools },
+  { name: 'privacy-center', getTools: getPrivacyCenterTools },
   { name: 'workflows', getTools: getWorkflowTools },
 ] as const;
 

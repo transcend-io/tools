@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-preferences",
-  "version": "0.7.25",
+  "version": "0.8.0",
   "description": "Transcend MCP Server — Preference Management tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-preferences",
   "license": "Apache-2.0",
@@ -39,7 +39,8 @@
   "dependencies": {
     "@transcend-io/mcp-server-base": "workspace:^",
     "@transcend-io/privacy-types": "workspace:^",
-    "@transcend-io/sdk": "workspace:^"
+    "@transcend-io/sdk": "workspace:^",
+    "@transcend-io/type-utils": "workspace:^"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.3",

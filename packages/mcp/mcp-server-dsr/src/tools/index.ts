@@ -5,11 +5,15 @@ import { createDsrCancelTool } from './dsr_cancel.js';
 import { createDsrEnrichIdentifiersTool } from './dsr_enrich_identifiers.js';
 import { createDsrGetDetailsTool } from './dsr_get_details.js';
 import { createDsrListTool } from './dsr_list.js';
+import { createDsrListActionsTool } from './dsr_list_actions.js';
+import { createDsrListEnrichersTool } from './dsr_list_enrichers.js';
 import { createDsrListIdentifiersTool } from './dsr_list_identifiers.js';
 import { createDsrListPendingRequestsTool } from './dsr_list_pending_requests.js';
 import { createDsrListRequestDataSilosTool } from './dsr_list_request_data_silos.js';
 import { createDsrPollStatusTool } from './dsr_poll_status.js';
 import { createDsrSubmitTool } from './dsr_submit.js';
+import { createDsrWriteActionsTool } from './dsr_write_actions.js';
+import { createDsrWriteEnrichersTool } from './dsr_write_enrichers.js';
 
 export function getDSRTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -23,5 +27,9 @@ export function getDSRTools(clients: ToolClients): ToolDefinition[] {
     createDsrEnrichIdentifiersTool(clients),
     createDsrCancelTool(clients),
     createDsrAnalyzeTool(clients),
+    createDsrListEnrichersTool(clients),
+    createDsrWriteEnrichersTool(clients),
+    createDsrListActionsTool(clients),
+    createDsrWriteActionsTool(clients),
   ];
 }

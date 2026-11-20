@@ -32,6 +32,11 @@ jobs:
         name: Check changeset
         run: pnpm check:changeset
 
+      # Same guard as publish.yml, surfaced before the Version Packages PR merges.
+      - if: github.event_name == 'pull_request' && github.head_ref == 'changeset-release/main'
+        name: Check every package already exists on npm
+        run: pnpm check:new-packages
+
       - name: Check package consistency
         run: pnpm check:packages
 

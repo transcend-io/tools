@@ -1,7 +1,8 @@
 import { ScopeName } from '@transcend-io/privacy-types';
+import { getMcpServerOAuthScopes, TranscendMcpServer } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
-import { DSR_OAUTH_SCOPES } from '../src/scopes.js';
+const DSR_OAUTH_SCOPES = getMcpServerOAuthScopes(TranscendMcpServer.Dsr);
 
 describe('DSR_OAUTH_SCOPES', () => {
   it('is non-empty and includes viewRequests and viewWorkflows', () => {

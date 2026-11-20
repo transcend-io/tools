@@ -1,6 +1,5 @@
 export { getDSRTools } from './tools/index.js';
 export { getDsrPrompts } from './prompts/index.js';
-export { DSR_OAUTH_SCOPES } from './scopes.js';
 export { DSRMixin } from './graphql.js';
 
 export { submitDsrSchema, type SubmitDsrInput } from './tools/dsr_submit.js';
@@ -22,3 +21,7 @@ export {
 } from './tools/dsr_list_pending_requests.js';
 export { analyzeDsrSchema, type AnalyzeDsrInput } from './tools/dsr_analyze.js';
 export type { ListRequestDataSilosOptions } from './graphql.js';
+export { listEnrichersSchema, type ListEnrichersInput } from './tools/dsr_list_enrichers.js';
+export { writeEnrichersSchema, type WriteEnrichersInput } from './tools/dsr_write_enrichers.js';
+export { listActionsSchema, type ListActionsInput } from './tools/dsr_list_actions.js';
+export { writeActionsSchema, type WriteActionsInput } from './tools/dsr_write_actions.js';

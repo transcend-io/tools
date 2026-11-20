@@ -212,6 +212,10 @@ export async function syncEnricher(
       },
       logger,
     });
+  } else if (!existingEnricher && !inputIdentifier) {
+    throw new Error(
+      `Cannot create enricher "${enricher.title}" without input-identifier. Set input-identifier in the preflight definition.`,
+    );
   } else if (inputIdentifier) {
     await makeGraphQLRequest(client, CREATE_ENRICHER, {
       variables: {

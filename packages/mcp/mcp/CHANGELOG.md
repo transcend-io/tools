@@ -1,5 +1,86 @@
 # @transcend-io/mcp
 
+## 2.0.0
+
+### Major Changes
+
+- 8e2bf2f: Add `admin_write_teams` and a new Privacy Center MCP server for privacy center config, intl messages, and privacy-center policies (same SDK paths as `transcend inventory` push/pull). Teams writes ask for confirmation. Privacy-center tools use the `privacy_center_*` prefix.
+
+  **Breaking:** `admin_get_privacy_center` is removed from `@transcend-io/mcp-server-admin` and from the unified server. Use `privacy_center_get` on `@transcend-io/mcp-server-privacy-center` (or the umbrella server) instead.
+
+### Minor Changes
+
+- 69b40d1: Add `dsr_list_enrichers`, `dsr_write_enrichers`, `dsr_list_actions` and `dsr_write_actions`. They read and write the `preflights` and `actions` sections of transcend.yml without a file on disk.
+
+  Export shared `createCollectedLogger` from the MCP base package so DSR, config, inventory, and workflows tools reuse one implementation.
+
+- 64d13d6: Add `consent_write_consent_manager` and `consent_write_purposes`. They push the consent-manager and purposes sections of `transcend.yml` without a file on disk. The consent server now also requests the developer settings and preference store scopes. Shared `decodeYmlItems` helper is exported from the base package for yml codec validation.
+
+### Patch Changes
+
+- Updated dependencies [69b40d1]
+- Updated dependencies [8e2bf2f]
+- Updated dependencies [64d13d6]
+  - @transcend-io/mcp-server-base@3.1.2
+  - @transcend-io/mcp-server-config@0.1.2
+  - @transcend-io/mcp-server-dsr@2.1.0
+  - @transcend-io/mcp-server-workflows@1.1.1
+  - @transcend-io/mcp-server-inventory@1.1.1
+  - @transcend-io/mcp-server-admin@2.0.0
+  - @transcend-io/mcp-server-privacy-center@0.1.0
+  - @transcend-io/mcp-server-consent@1.5.0
+
+## 1.10.0
+
+### Minor Changes
+
+- 3cc760c: Add direct inventory MCP tools for business entities, data subjects, identifiers, processing activities, and custom fields in `transcend.yml`, and update the CLI/MCP parity map for those sections. The inventory server also requests request-identity, data subject request settings, and global attribute scopes.
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+- ae6da74: Add `workflows_write_email_templates` so the MCP can create email templates like `transcend inventory push`. Add the `ManageEmailTemplates` scope to the workflows server.
+
+### Patch Changes
+
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [3cc760c]
+- Updated dependencies [7217c74]
+- Updated dependencies [ae6da74]
+  - @transcend-io/mcp-server-base@3.1.1
+  - @transcend-io/mcp-server-docs@0.6.1
+  - @transcend-io/mcp-server-inventory@1.1.0
+  - @transcend-io/mcp-server-config@0.1.1
+  - @transcend-io/mcp-server-preferences@0.8.0
+  - @transcend-io/mcp-server-workflows@1.1.0
+
+## 1.9.2
+
+### Patch Changes
+
+- 8e26b2e: Add a test that tracks which `transcend.yml` sections have direct MCP read and write tools, so new CLI sections cannot land without an explicit parity map.
+
+## 1.9.1
+
+### Patch Changes
+
+- df6b649: Add signed-in `docs_integration_lookup`, which reads one integration's catalog connection docs by name or title and lists close names on a miss. Extend `docs_list` with an `integration` filter for public guides. The standalone docs server now builds a catalog-capable GraphQL client, so the tool works there as well as in the umbrella server.
+- Updated dependencies [df6b649]
+  - @transcend-io/mcp-server-docs@0.6.0
+
+## 1.9.0
+
+### Minor Changes
+
+- 10e4fb7: Add `config_pull`, `config_push` and `config_get_schema`. They read and write `transcend.yml` files on disk, like `transcend inventory pull` and `push`. `config_push` needs confirmation. The tools run over stdio only. The unified server now requests every scope the pull and push paths can need.
+
+### Patch Changes
+
+- Updated dependencies [1023e16]
+- Updated dependencies [b4753ca]
+- Updated dependencies [2624435]
+- Updated dependencies [10e4fb7]
+  - @transcend-io/mcp-server-docs@0.5.2
+  - @transcend-io/mcp-server-config@0.1.0
+
 ## 1.8.0
 
 ### Minor Changes

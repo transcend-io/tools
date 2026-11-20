@@ -1,5 +1,4 @@
 export { getInventoryTools } from './tools/index.js';
-export { INVENTORY_OAUTH_SCOPES } from './scopes.js';
 export { InventoryMixin } from './graphql.js';
 
 export { GetDataSiloSchema, type GetDataSiloInput } from './tools/inventory_get_data_silo.js';
@@ -48,3 +47,31 @@ export {
   WriteProcessingPurposeSchema,
   type WriteProcessingPurposeInput,
 } from './tools/inventory_write_processing_purpose.js';
+export {
+  WriteBusinessEntitiesSchema,
+  type WriteBusinessEntitiesInput,
+} from './tools/inventory_write_business_entities.js';
+export {
+  WriteDataSubjectsSchema,
+  type WriteDataSubjectsInput,
+} from './tools/inventory_write_data_subjects.js';
+export {
+  WriteIdentifiersSchema,
+  type WriteIdentifiersInput,
+} from './tools/inventory_write_identifiers.js';
+export {
+  ListProcessingActivitiesSchema,
+  type ListProcessingActivitiesInput,
+} from './tools/inventory_list_processing_activities.js';
+export {
+  WriteProcessingActivitiesSchema,
+  type WriteProcessingActivitiesInput,
+} from './tools/inventory_write_processing_activities.js';
+export {
+  ListCustomFieldsSchema,
+  type ListCustomFieldsInput,
+} from './tools/inventory_list_custom_fields.js';
+export {
+  WriteCustomFieldsSchema,
+  type WriteCustomFieldsInput,
+} from './tools/inventory_write_custom_fields.js';

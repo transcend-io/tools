@@ -333,13 +333,36 @@
     "templates": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["title"],
-        "properties": {
-          "title": {
-            "type": "string"
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["title"],
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["EMAIL", "TEXT"]
+              },
+              "product": {
+                "type": "string",
+                "enum": ["DSR", "ASSESSMENT", "ROPA"]
+              }
+            }
           }
-        }
+        ]
       }
     },
     "preflights": {
@@ -2446,6 +2469,44 @@
         },
         "transformAccessReportJsonToCsv": {
           "type": "boolean"
+        },
+        "emailPrefix": {
+          "type": "string"
+        },
+        "showCookieMaxAge": {
+          "type": "boolean"
+        },
+        "allowTrackingTechnologiesSiteFilter": {
+          "type": "boolean"
+        },
+        "allowPartitionChange": {
+          "type": "boolean"
+        },
+        "showPartition": {
+          "type": "boolean"
+        },
+        "assets": {
+          "type": "object",
+          "properties": {
+            "logo": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            },
+            "favicon": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            },
+            "logoOnSolid": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            },
+            "logoOnFooter": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            },
+            "hero": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            },
+            "widgetBg": {
+              "$ref": "#/definitions/partial-1x6tpke"
+            }
+          }
         },
         "home": {
           "type": "string"
@@ -9801,6 +9862,20 @@
         "eu-ES",
         "gl-ES"
       ]
+    },
+    "partial-1x6tpke": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        }
+      }
     },
     "intersection-zb9v3p": {
       "allOf": [
