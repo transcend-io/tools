@@ -4,9 +4,9 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { syncTeams, TeamInput } from '@transcend-io/sdk';
 
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { decodeItems, runSync } from '../helpers/syncWrite.js';
 
 export const WriteTeamsSchema = z.object({

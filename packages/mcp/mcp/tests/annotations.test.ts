@@ -197,6 +197,7 @@ describe('MCP Tool Annotations', () => {
       'admin_write_intl_messages',
       'admin_write_privacy_policies',
       'workflows_update_config',
+      'workflows_write_email_templates',
       'preferences_upsert',
       'preferences_update_identifiers',
       'inventory_write_vendor',

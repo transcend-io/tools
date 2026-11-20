@@ -11,3 +11,7 @@ export {
   UpdateWorkflowConfigSchema,
   type UpdateWorkflowConfigInput,
 } from './tools/workflows_update_config.js';
+export {
+  WriteEmailTemplatesSchema,
+  type WriteEmailTemplatesInput,
+} from './tools/workflows_write_email_templates.js';

@@ -6,9 +6,8 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { fetchAllMessages } from '@transcend-io/sdk';
-
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 
 export const ListIntlMessagesSchema = OffsetPaginationSchema.extend({
   text: z

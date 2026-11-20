@@ -6,10 +6,10 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { PrivacyCenterInput, syncPrivacyCenter } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { runSync } from '../helpers/syncWrite.js';
 
 export const WritePrivacyCenterSchema = z.object({
