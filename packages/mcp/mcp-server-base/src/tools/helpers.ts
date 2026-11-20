@@ -99,6 +99,53 @@ export function describeNoMatches(subject: string, appliedFilters: string[]): st
 }
 
 /**
+ * A `paginationNote` telling the caller which of three situations a list page
+ * is in: nothing matched, more pages remain, or this is everything.
+ *
+ * The two failure modes it closes are opposites. An empty `data` array reads
+ * like a filter typo, so agents re-derive the zero by hand; and a page that is
+ * simply full gives no sign that more remain, so agents stop early and report
+ * a partial answer as the whole.
+ *
+ * @param options - Facts about the page just built
+ * @returns The note to attach as `paginationNote`
+ */
+export function describeOutcome({
+  subject,
+  returned,
+  totalCount,
+  offset,
+  limit,
+  appliedFilters,
+}: {
+  /** Plural noun for what was listed, e.g. `data systems` */
+  subject: string;
+  /** Rows on this page */
+  returned: number;
+  /** Rows matching the filters overall */
+  totalCount: number;
+  /** Offset this page started at */
+  offset: number | undefined;
+  /** Page size requested */
+  limit: number | undefined;
+  /** Names of the filters, as the caller passed them */
+  appliedFilters: string[];
+}): string {
+  if (totalCount === 0) return describeNoMatches(subject, appliedFilters);
+  // Tolerates absent paging for the same reason assertOffsetInRange does:
+  // schemas default these, but handlers are also called directly in tests.
+  const start = offset ?? 0;
+  if (start + returned < totalCount) {
+    return `Showing ${returned} of ${totalCount} matches. Fetch the next page with offset ${
+      start + (limit ?? returned)
+    }.`;
+  }
+  return start === 0
+    ? `Showing all ${returned} match${returned === 1 ? '' : 'es'}. No further pages.`
+    : `Showing the last ${returned} of ${totalCount} matches. No further pages.`;
+}
+
+/**
  * Rejects an `offset` that starts past the end of the result set.
  *
  * An empty page from a non-zero offset is byte-identical to filters that
