@@ -10,4 +10,12 @@ export const INVENTORY_OAUTH_SCOPES = [
   ScopeName.ViewAssignedDataInventory,
   ScopeName.ManageDataInventory,
   ScopeName.ManageAssignedDataInventory,
+  // Processing activities, identifiers, data subjects, and custom fields
+  // (TR_PULL_RESOURCE_SCOPE_MAP and TR_PUSH_RESOURCE_SCOPE_MAP in the SDK).
+  ScopeName.ViewRequestIdentitySettings,
+  ScopeName.ManageRequestIdentities,
+  ScopeName.ViewDataSubjectRequestSettings,
+  ScopeName.ManageDataSubjectRequestSettings,
+  ScopeName.ViewGlobalAttributes,
+  ScopeName.ManageGlobalAttributes,
 ] as const;
