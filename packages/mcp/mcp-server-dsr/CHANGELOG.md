@@ -1,5 +1,20 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.1.0
+
+### Minor Changes
+
+- 69b40d1: Add `dsr_list_enrichers`, `dsr_write_enrichers`, `dsr_list_actions` and `dsr_write_actions`. They read and write the `preflights` and `actions` sections of transcend.yml without a file on disk.
+
+  Export shared `createCollectedLogger` from the MCP base package so DSR, config, inventory, and workflows tools reuse one implementation.
+
+### Patch Changes
+
+- Updated dependencies [69b40d1]
+- Updated dependencies [8e2bf2f]
+- Updated dependencies [64d13d6]
+  - @transcend-io/mcp-server-base@3.1.2
+
 ## 2.0.17
 
 ### Patch Changes
