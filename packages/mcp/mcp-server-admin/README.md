@@ -102,6 +102,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
+Privacy center configuration, privacy-center policies, and intl messages live in this package (not `mcp-server-preferences` or `policy_*` tools) because the CLI models them as org-admin `transcend.yml` sections alongside teams and API keys—the same SDK sync paths `transcend inventory push` uses.
+
 - `admin_test_connection` — Test API connectivity
 - `admin_get_current_user` — Get the authenticated user
 - `admin_get_organization` — Get organization details

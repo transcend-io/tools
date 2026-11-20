@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Transcend MCP Server for data inventory management. Provides tools for managing data silos (integrations), data points, vendors, categories, and identifiers.
+Transcend MCP Server for data inventory management. Provides tools for managing data silos (integrations), data points, vendors, categories, identifiers, business entities, data subjects, processing activities, and custom fields.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -114,10 +114,17 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `inventory_list_processing_purposes` — List processing purpose subcategories (optional `text` filter)
 - `inventory_write_processing_purpose` — Create or update a processing purpose subcategory
 - `inventory_list_identifiers` — List identifiers
+- `inventory_write_identifiers` — Create or update identifiers in bulk (matched by name; `identifiers` section of `transcend.yml`)
 - `inventory_list_vendors` — List vendors (contact / DPA / website fields; optional `text` filter)
 - `inventory_write_vendor` — Create or update a vendor (upsert by title or id)
 - `inventory_list_business_entities` — List business entities
+- `inventory_write_business_entities` — Create or update business entities in bulk (matched by title)
 - `inventory_list_data_subjects` — List data subject types
+- `inventory_write_data_subjects` — Create or update data subject types in bulk (matched by type)
+- `inventory_list_processing_activities` — List processing activities in `transcend.yml` shape
+- `inventory_write_processing_activities` — Create or update processing activities in bulk (matched by title)
+- `inventory_list_custom_fields` — List custom fields (attribute keys and values) in `transcend.yml` shape
+- `inventory_write_custom_fields` — Create or update custom fields in bulk (matched by name)
 - `inventory_analyze` — Analyze inventory data
 
 ## Related packages

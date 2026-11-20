@@ -48,3 +48,31 @@ export {
   WriteProcessingPurposeSchema,
   type WriteProcessingPurposeInput,
 } from './tools/inventory_write_processing_purpose.js';
+export {
+  WriteBusinessEntitiesSchema,
+  type WriteBusinessEntitiesInput,
+} from './tools/inventory_write_business_entities.js';
+export {
+  WriteDataSubjectsSchema,
+  type WriteDataSubjectsInput,
+} from './tools/inventory_write_data_subjects.js';
+export {
+  WriteIdentifiersSchema,
+  type WriteIdentifiersInput,
+} from './tools/inventory_write_identifiers.js';
+export {
+  ListProcessingActivitiesSchema,
+  type ListProcessingActivitiesInput,
+} from './tools/inventory_list_processing_activities.js';
+export {
+  WriteProcessingActivitiesSchema,
+  type WriteProcessingActivitiesInput,
+} from './tools/inventory_write_processing_activities.js';
+export {
+  ListCustomFieldsSchema,
+  type ListCustomFieldsInput,
+} from './tools/inventory_list_custom_fields.js';
+export {
+  WriteCustomFieldsSchema,
+  type WriteCustomFieldsInput,
+} from './tools/inventory_write_custom_fields.js';
