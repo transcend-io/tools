@@ -49,6 +49,8 @@ const EXPECTED_TOOL_NAMES = [
   'consent_deploy_bundle',
   'consent_list_sites',
   'consent_write_sites',
+  'consent_write_consent_manager',
+  'consent_write_purposes',
 ] as const;
 
 describe('Consent Tools', () => {

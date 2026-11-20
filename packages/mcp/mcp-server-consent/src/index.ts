@@ -60,6 +60,11 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
+export {
+  WriteConsentManagerSchema,
+  type WriteConsentManagerInput,
+} from './tools/consent_write_consent_manager.js';
+export { WritePurposesSchema, type WritePurposesInput } from './tools/consent_write_purposes.js';
 export { ConsentTriageTypeSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
 export {
   COOKIE_TRIAGE_FETCH_MAX,
