@@ -13,6 +13,10 @@ import {
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
+import {
+  assertResourcesInAllowlist,
+  parseConfigResourceAllowlistFromEnv,
+} from '../helpers/configResourceAllowlist.js';
 import { loadConfigFile } from '../helpers/loadConfigFile.js';
 import { countConfigSections, resourcesInInput, scopesForResources } from '../helpers/sections.js';
 
@@ -92,10 +96,10 @@ export function createConfigPushTool(clients: ToolClients) {
     }) => {
       const { input } = loadConfigFile(filePath, variables);
 
-      const requiredScopes = scopesForResources(
-        resourcesInInput(input),
-        TR_PUSH_RESOURCE_SCOPE_MAP,
-      );
+      const sectionsInFile = resourcesInInput(input);
+      assertResourcesInAllowlist(sectionsInFile, parseConfigResourceAllowlistFromEnv());
+
+      const requiredScopes = scopesForResources(sectionsInFile, TR_PUSH_RESOURCE_SCOPE_MAP);
       assertScopesAvailable(clients.graphql, requiredScopes);
 
       const { logger, logs } = createCollectedLogger();
