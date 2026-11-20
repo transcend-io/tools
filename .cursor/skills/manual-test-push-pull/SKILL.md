@@ -75,6 +75,7 @@ For each case:
 1. Edit the scratch YAML with the single change (trimmed to the resources under test).
 2. Push: `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml`
 3. Re-pull to `verify.yml` and diff — the change should round-trip; nothing else should churn.
+   Then run `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml --dryRun`. It should report `0 to create, 0 to update`. Any update row is server normalization noise or a preview bug for that resource, so record the field path.
 4. Refresh the Admin UI page and tell the user exactly what changed (`field: old → new`). Get sign-off or a failure description.
 5. Record pass/fail + notes; only then move on.
 
@@ -90,13 +91,14 @@ Summarize results in a pass/fail table. For failures, capture the YAML diff, pus
 
 ## Error Handling
 
-| Symptom                            | Likely cause / fix                                            |
-| ---------------------------------- | ------------------------------------------------------------- |
-| 401/403                            | Key missing a scope — check the docgen scopes table           |
-| Push succeeds but UI unchanged     | Wrong org or backend URL, or stale UI — hard-refresh first    |
-| Re-pull diff shows unrelated churn | Server-side normalization — note it, judge if it's a real bug |
-| Field-specific push error          | Check sync semantics in `push/readme.ts`                      |
-| YAML validation failure            | Compare against the codec and `packages/cli/examples/`        |
+| Symptom                                          | Likely cause / fix                                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 401/403                                          | Key missing a scope — check the docgen scopes table                                                                                                           |
+| Push succeeds but UI unchanged                   | Wrong org or backend URL, or stale UI — hard-refresh first                                                                                                    |
+| `push --dryRun` shows updates right after a push | Value differs only by server normalization. Add a rule to `canonicalize` or `ignoreFields` in `packages/sdk/src/transcend-yml/preview/resourceDefinitions.ts` |
+| Re-pull diff shows unrelated churn               | Server-side normalization — note it, judge if it's a real bug                                                                                                 |
+| Field-specific push error                        | Check sync semantics in `push/readme.ts`                                                                                                                      |
+| YAML validation failure                          | Compare against the codec and `packages/cli/examples/`                                                                                                        |
 
 ## Related Skills/Rules
 

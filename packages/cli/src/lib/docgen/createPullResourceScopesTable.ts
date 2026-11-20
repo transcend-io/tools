@@ -93,6 +93,13 @@ const RESOURCE_DOCUMENTATION: Record<
       '[Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)',
     ],
   },
+  [TranscendPullResource.ConsentSites]: {
+    description:
+      'Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.',
+    markdownLinks: [
+      '[Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)',
+    ],
+  },
   [TranscendPullResource.ConsentManager]: {
     description: 'Consent Manager general settings, including domain list.',
     markdownLinks: [

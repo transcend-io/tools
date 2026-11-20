@@ -1,11 +1,16 @@
 import path from 'node:path';
 
 import {
+  buildSnapshotRequest,
   buildTranscendGraphQLClient,
   mergeTranscendInputs,
   parseTranscendYaml,
+  planPush,
+  pullTranscendConfiguration,
+  renderPushPlan,
   syncConfigurationToTranscend,
   TranscendInput,
+  type PushPlan,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -76,6 +81,42 @@ async function syncConfiguration({
   }
 }
 
+/**
+ * Work out what a push would change by pulling the current state of the organization
+ * and comparing it with the file. Nothing is written.
+ *
+ * @param options - Options
+ * @returns The plan
+ */
+async function previewConfiguration({
+  transcendUrl,
+  auth,
+  pageSize,
+  contents,
+  deleteExtraAttributeValues,
+}: {
+  /** Transcend YAML */
+  contents: TranscendInput;
+  /** Transcend URL */
+  transcendUrl: string;
+  /** API key */
+  auth: string;
+  /** Page size */
+  pageSize: number;
+  /** Delete attribute values missing from the file */
+  deleteExtraAttributeValues: boolean;
+}): Promise<PushPlan> {
+  const client = buildTranscendGraphQLClient(transcendUrl, auth);
+  const remote = await pullTranscendConfiguration(client, {
+    ...buildSnapshotRequest(contents),
+    dataSiloIds: [],
+    integrationNames: [],
+    pageSize,
+    debug: false,
+  });
+  return planPush(contents, remote, { deleteExtraAttributeValues });
+}
+
 export interface PushCommandFlags {
   auth: string;
   file: string;
@@ -85,6 +126,8 @@ export interface PushCommandFlags {
   publishToPrivacyCenter: boolean;
   classifyService: boolean;
   deleteExtraAttributeValues: boolean;
+  dryRun: boolean;
+  json: boolean;
 }
 
 export async function push(
@@ -98,6 +141,8 @@ export async function push(
     publishToPrivacyCenter,
     classifyService,
     deleteExtraAttributeValues,
+    dryRun,
+    json,
   }: PushCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
@@ -132,7 +177,7 @@ export async function push(
         ),
       );
       this.process.exit(1);
-    } else {
+    } else if (!json) {
       this.logger.info(colors.magenta(`Reading file "${filePath}"...`));
     }
 
@@ -143,7 +188,9 @@ export async function push(
         vars,
         filePath,
       );
-      this.logger.info(colors.green(`Successfully read in "${filePath}"`));
+      if (!json) {
+        this.logger.info(colors.green(`Successfully read in "${filePath}"`));
+      }
       return {
         content: newContents,
         name: filePath.split('/').pop()!.replace('.yml', ''),
@@ -163,6 +210,28 @@ export async function push(
     // if passed multiple inputs, merge them together
     const [base, ...rest] = transcendInputs.map(({ content }) => content);
     const contents = mergeTranscendInputs(base, ...rest);
+
+    // preview only: show what would change and stop
+    if (dryRun) {
+      try {
+        const plan = await previewConfiguration({
+          transcendUrl,
+          auth: apiKeyOrList,
+          contents,
+          pageSize,
+          deleteExtraAttributeValues,
+        });
+        if (json) {
+          this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: [{ plan }] })}\n`);
+        } else {
+          this.logger.info(renderPushPlan(plan, { title: 'Push preview (nothing was changed)' }));
+        }
+      } catch (err) {
+        this.logger.error(colors.red(`Failed to preview the push: ${err.message}`));
+        this.process.exit(1);
+      }
+      return;
+    }
 
     // sync the configuration
     const success = await syncConfiguration({
@@ -198,11 +267,19 @@ export async function push(
     }
 
     const encounteredErrors: string[] = [];
+    const previews: {
+      /** Organization the plan is for */
+      organization: string;
+      /** What push would do */
+      plan: PushPlan;
+    }[] = [];
     await mapSeries(apiKeyOrList, async (apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      this.logger.info(
-        colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`),
-      );
+      if (!dryRun) {
+        this.logger.info(
+          colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`),
+        );
+      }
 
       // use the merged contents if 1 yml passed, else use the contents that map to that organization
       const useContents =
@@ -218,6 +295,30 @@ export async function push(
           ),
         );
         encounteredErrors.push(apiKey.organizationName);
+        return;
+      }
+
+      if (dryRun) {
+        try {
+          const plan = await previewConfiguration({
+            transcendUrl,
+            auth: apiKey.apiKey,
+            contents: useContents,
+            pageSize,
+            deleteExtraAttributeValues,
+          });
+          previews.push({ organization: apiKey.organizationName, plan });
+          if (!json) {
+            this.logger.info(
+              renderPushPlan(plan, {
+                title: `${prefix}Push preview (nothing was changed)`,
+              }),
+            );
+          }
+        } catch (err) {
+          this.logger.error(colors.red(`${prefix}Failed to preview the push: ${err.message}`));
+          encounteredErrors.push(apiKey.organizationName);
+        }
         return;
       }
 
@@ -240,6 +341,10 @@ export async function push(
       }
     });
 
+    if (json && dryRun) {
+      this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: previews })}\n`);
+    }
+
     if (encounteredErrors.length > 0) {
       this.logger.info(
         colors.red(
@@ -250,6 +355,10 @@ export async function push(
       );
 
       this.process.exit(1);
+    }
+
+    if (dryRun) {
+      return;
     }
   }
 

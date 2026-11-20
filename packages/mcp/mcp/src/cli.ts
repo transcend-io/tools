@@ -5,6 +5,7 @@ import {
   buildMcpServer,
   createTranscendRestClient,
   isOAuthModeEnabled,
+  McpTransport,
   parseTransportArgs,
   resolveStdioStartupAuthOptional,
   configureOAuthScopes,
@@ -56,7 +57,7 @@ function createToolRegistry(
 
 async function main(): Promise<void> {
   const config = parseTransportArgs();
-  const isHttpTransport = config.transport === 'http';
+  const isHttpTransport = config.transport === McpTransport.Http;
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const { sombraUrl, sombraCustomerKey } = readSombraEnvConfig();
@@ -86,7 +87,7 @@ async function main(): Promise<void> {
           return buildMcpServer({
             ...buildServerOptions,
             tools: registry.getAllTools(),
-            transport: 'http',
+            transport: McpTransport.Http,
           });
         },
       },
@@ -124,7 +125,7 @@ async function main(): Promise<void> {
   const server = buildMcpServer({
     ...buildServerOptions,
     tools: toolRegistry.getAllTools(),
-    transport: 'stdio',
+    transport: McpTransport.Stdio,
   });
 
   logger.info(`Starting Transcend MCP Server v${VERSION}...`, {
