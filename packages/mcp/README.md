@@ -52,6 +52,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp`](./mcp/) (unified)                                       | Union of all domain scopes below                                                                                                                                                                 |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`                                                                                                                                                  |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `ViewAssessments`, `ViewAssignedAssessments`, `ManageAssessments`, `ManageAssignedAssessments`                                                                                                   |
+| [`mcp-server-config`](./mcp-server-config/)                     | Union of every scope the `transcend.yml` pull and push paths need (see `src/scopes.ts`)                                                                                                          |
 | [`mcp-server-consent`](./mcp-server-consent/)                   | `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`                                                     |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `ViewCustomFunction`, `ManageCustomFunction`, `ConnectDataSilos`                                                                                                                                 |
 | [`mcp-server-discovery`](./mcp-server-discovery/)               | `ViewDataMap`, `ViewAssignedIntegrations`, `ViewCodeScanning`, `ManageCodeScanning`, `ViewPrompts`, `ViewPromptRuns`, `ExecutePrompt`                                                            |
@@ -241,6 +242,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    89 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    14 | Privacy assessments, templates, groups           |
+| [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
 | [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |

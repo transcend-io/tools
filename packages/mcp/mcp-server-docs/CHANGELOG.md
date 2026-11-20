@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-docs
 
+## 0.5.2
+
+### Patch Changes
+
+- 1023e16: Keep room for full-text results when `docs_list` combines `route` with `query`, refresh the route index hourly, report the real cause when the route index fails to load, accept app URLs pasted without a scheme, and reject a blank `route`.
+- b4753ca: `docs_list` rows now carry the one-line description from `llms.txt` when the page has one, including route, product, search, and section rows, so an agent can pick a page before calling `docs_fetch`.
+- 2624435: Fix `docs_list` search and section listing returning no articles since docs.transcend.io moved `llms.txt` to a nested list with relative URLs. The parser reads both layouts and now fails loudly when a non-empty file yields no articles.
+
 ## 0.5.1
 
 ### Patch Changes

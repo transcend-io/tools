@@ -240,6 +240,7 @@ packages/mcp/
   mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
   mcp-server-admin/      # Domain: org, users, API keys
   mcp-server-assessment/
+  mcp-server-config/
   mcp-server-consent/
   mcp-server-custom-functions/
   mcp-server-discovery/
