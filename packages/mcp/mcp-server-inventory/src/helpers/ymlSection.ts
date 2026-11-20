@@ -1,8 +1,11 @@
 import {
+  CollectedLogLevel,
+  createCollectedLogger,
   createGraphqlRequestClient,
   ErrorCode,
   ToolError,
   z,
+  type CollectedLog,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import {
@@ -14,7 +17,22 @@ import {
 } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { createCollectedLogger, type CollectedLog } from './collectingLogger.js';
+const SYNC_LOG_LEVEL: Record<string, CollectedLogLevel> = {
+  debug: CollectedLogLevel.Debug,
+  info: CollectedLogLevel.Info,
+  warn: CollectedLogLevel.Warn,
+  error: CollectedLogLevel.Error,
+};
+
+/** Map SDK sync log lines to {@link CollectedLog} for tool results. */
+function asCollectedLogs(
+  entries: ReadonlyArray<{ level: string; message: string }>,
+): CollectedLog[] {
+  return entries.map((entry) => ({
+    level: SYNC_LOG_LEVEL[entry.level] ?? CollectedLogLevel.Info,
+    message: entry.message,
+  }));
+}
 
 /** Most items one write call accepts. */
 export const MAX_WRITE_ITEMS = 100;
@@ -122,7 +140,7 @@ export async function pushYmlSection(
     count,
     errors: result.errors,
     ...(result.warnings && { warnings: result.warnings }),
-    ...(!result.success && { logs: result.logs ?? logs }),
+    ...(!result.success && { logs: result.logs ? asCollectedLogs(result.logs) : logs }),
   };
 }
 

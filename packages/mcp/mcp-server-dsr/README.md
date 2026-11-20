@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`, `ViewWorkflows`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`, `ViewWorkflows`, `ViewRequestIdentitySettings`, `ManageRequestIdentities`, `ViewDataSubjectRequestSettings`, `ManageDataSubjectRequestSettings`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -115,6 +115,10 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `dsr_enrich_identifiers` — Enrich request identifiers
 - `dsr_list_identifiers` — List identifier types
 - `dsr_list_pending_requests` — List pending ACCESS/ERASURE jobs for a data silo
+- `dsr_list_enrichers` — List identity enrichers (`preflights` section of transcend.yml)
+- `dsr_write_enrichers` — Create or update identity enrichers by title
+- `dsr_list_actions` — List request action settings (`actions` section of transcend.yml)
+- `dsr_write_actions` — Update request action settings by request type
 
 ## Related packages
 

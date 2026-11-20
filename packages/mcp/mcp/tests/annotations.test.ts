@@ -206,6 +206,8 @@ describe('MCP Tool Annotations', () => {
       'preferences_write_option_values',
       'preferences_write_workflow_configs',
       'inventory_write_vendor',
+      'dsr_write_enrichers',
+      'dsr_write_actions',
       'inventory_write_processing_purpose',
       'inventory_update_or_create_data_point',
       'assessments_update',

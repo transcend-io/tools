@@ -1,5 +1,13 @@
 import type { Logger } from '../clients/graphql/base.js';
 
+/**
+ * Canonical in-memory logger for MCP sync/push tools.
+ *
+ * Domain packages import from `@transcend-io/mcp-server-base` (inventory keeps a
+ * thin re-export under `helpers/collectingLogger.ts`). Config removed its copy in
+ * favor of this module when tools merged to main.
+ */
+
 /** Severity of a captured log line. */
 export enum CollectedLogLevel {
   Debug = 'debug',
