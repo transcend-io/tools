@@ -26,6 +26,7 @@ import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPolicyTools, type PolicyToolClients } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 
 import type { TranscendGraphQLClient } from './graphql-client.js';
@@ -71,6 +72,7 @@ export class ToolRegistry {
     this.registerToolsFromModule(getAssessmentTools(this.clients));
     this.registerToolsFromModule(getWorkflowTools(this.clients));
     this.registerToolsFromModule(getPolicyTools(this.clients));
+    this.registerToolsFromModule(getPrivacyCenterTools(this.clients));
     this.registerToolsFromModule(getAdminTools(this.clients));
     this.registerToolsFromModule(getConfigTools(this.clients));
   }

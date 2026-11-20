@@ -14,6 +14,7 @@ import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -41,6 +42,7 @@ const allTools = [
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
   ...getConfigTools(mockClients),
 ];

@@ -53,6 +53,7 @@
     "@transcend-io/mcp-server-dsr": "workspace:*",
     "@transcend-io/mcp-server-inventory": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",
+    "@transcend-io/mcp-server-privacy-center": "workspace:*",
     "@transcend-io/mcp-server-workflows": "workspace:*",
     "@types/node": "24.13.3",
     "graphql": "16.14.2",

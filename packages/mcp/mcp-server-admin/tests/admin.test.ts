@@ -10,7 +10,7 @@ const EXPECTED_TOOL_NAMES = [
   'admin_list_teams',
   'admin_list_api_keys',
   'admin_list_scopes',
-  'admin_get_privacy_center',
+  'admin_write_teams',
   'admin_test_connection',
 ] as const;
 
@@ -21,7 +21,6 @@ describe('Admin Tools', () => {
     listUsers: ReturnType<typeof vi.fn>;
     listTeams: ReturnType<typeof vi.fn>;
     listApiKeys: ReturnType<typeof vi.fn>;
-    getPrivacyCenter: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
   };
@@ -38,7 +37,6 @@ describe('Admin Tools', () => {
       listUsers: vi.fn(),
       listTeams: vi.fn(),
       listApiKeys: vi.fn(),
-      getPrivacyCenter: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };

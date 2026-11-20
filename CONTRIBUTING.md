@@ -248,6 +248,7 @@ packages/mcp/
   mcp-server-dsr/
   mcp-server-inventory/
   mcp-server-preferences/
+  mcp-server-privacy-center/
   mcp-server-workflows/
   mcp/                   # Unified server that re-exports all domain tools
 ```

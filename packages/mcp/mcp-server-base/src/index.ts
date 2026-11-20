@@ -50,6 +50,8 @@ export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { CollectedLogLevel, createCollectedLogger } from './helpers/collectingLogger.js';
 export type { CollectedLog } from './helpers/collectingLogger.js';
 export { decodeYmlItems } from './helpers/decodeYmlCodec.js';
+export { decodeItems, runSync } from './helpers/syncWrite.js';
+export type { WriteResult } from './helpers/syncWrite.js';
 export { createGraphqlRequestClient } from './clients/graphql/graphql-request-client.js';
 export { derivePageInfo } from './clients/graphql/pagination.js';
 export { TranscendRestClient } from './clients/rest-client.js';

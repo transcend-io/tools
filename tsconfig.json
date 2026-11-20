@@ -20,6 +20,7 @@
     { "path": "./packages/mcp/mcp-server-inventory" },
     { "path": "./packages/mcp/mcp-server-policy" },
     { "path": "./packages/mcp/mcp-server-preferences" },
+    { "path": "./packages/mcp/mcp-server-privacy-center" },
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
     { "path": "./packages/sdk" },

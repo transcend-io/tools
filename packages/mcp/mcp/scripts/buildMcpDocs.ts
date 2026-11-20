@@ -23,6 +23,10 @@ import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { DSR_OAUTH_SCOPES, getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools, INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools, PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
+import {
+  getPrivacyCenterTools,
+  PRIVACY_CENTER_OAUTH_SCOPES,
+} from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools, WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
 import { TRANSCEND_SCOPES, type ScopeName } from '@transcend-io/privacy-types';
 
@@ -177,6 +181,16 @@ const DOMAINS: DomainMeta[] = [
     domain: 'User Preferences',
     scopes: PREFERENCE_OAUTH_SCOPES,
     getTools: getPreferenceTools,
+  },
+  {
+    id: 'privacy-center',
+    dir: 'mcp-server-privacy-center',
+    npmName: '@transcend-io/mcp-server-privacy-center',
+    binary: 'transcend-mcp-privacy-center',
+    description: 'Privacy Center configuration, messages, and policies',
+    domain: 'Privacy Center',
+    scopes: PRIVACY_CENTER_OAUTH_SCOPES,
+    getTools: getPrivacyCenterTools,
   },
   {
     id: 'workflows',
