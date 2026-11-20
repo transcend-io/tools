@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 7.1.1
+
+### Patch Changes
+
+- 947bc9f: Add `DocsAccess` for gated docs frontmatter and `DocsLookupSource.Marketing` for transcend.io pages in docs MCP lookup.
+
 ## 7.1.0
 
 ### Minor Changes
