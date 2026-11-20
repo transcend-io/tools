@@ -1,27 +1,17 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import {
-  createGraphqlRequestClient,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { PartitionInput, syncPartitions } from '@transcend-io/sdk';
-
-import { decodeItems, runSync } from '../helpers/syncRun.js';
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { PartitionInput } from '@transcend-io/sdk';
 
 export const WritePartitionsSchema = z.object({
-  partitions: z
-    .array(
-      z.object({
-        name: z.string().describe('Partition name. Created when no partition has this name.'),
-      }),
-    )
-    .min(1)
-    .max(100)
-    .describe(
-      'Partitions to create, keyed by name. Same shape as the transcend.yml partitions section.',
-    ),
+  partitions: ymlItemsSchema(
+    'Partitions to create, matched by name. Existing names are left alone, and nothing is ' +
+      'deleted. Same as the partitions section of transcend inventory push.',
+  ),
 });
-
 export type WritePartitionsInput = z.infer<typeof WritePartitionsSchema>;
 
 export function createPreferencesWritePartitionsTool(clients: ToolClients) {
@@ -36,9 +26,10 @@ export function createPreferencesWritePartitionsTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WritePartitionsSchema,
     handler: async ({ partitions }) => {
-      const items = decodeItems<PartitionInput>(PartitionInput, partitions, 'partitions');
-      const client = createGraphqlRequestClient(clients.graphql);
-      return runSync(items.length, (logger) => syncPartitions(client, items, { logger }));
+      const items = decodeYmlItems<PartitionInput>(PartitionInput, partitions, 'partitions', {
+        uniqueBy: (item) => item.name,
+      });
+      return pushYmlSection(clients, { partitions: items }, items.length);
     },
   });
 }

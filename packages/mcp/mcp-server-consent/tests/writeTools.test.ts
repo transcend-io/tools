@@ -2,20 +2,29 @@ import type { ToolClients } from '@transcend-io/mcp-server-base';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sdk = vi.hoisted(() => ({
-  syncConsentManager: vi.fn(),
-  syncPurposes: vi.fn(),
-  syncPreferenceTopics: vi.fn(),
+  sync: vi.fn(),
 }));
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
-  ...sdk,
+  syncConfigurationToTranscend: sdk.sync,
 }));
 
-vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),
-  createGraphqlRequestClient: () => ({ marker: 'client' }),
-}));
+vi.mock('@transcend-io/mcp-server-base/transcend-yml', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@transcend-io/mcp-server-base/transcend-yml')>();
+  return {
+    ...actual,
+    pushYmlSection: vi.fn(async (_clients, section, count) => {
+      const result = await sdk.sync(
+        section,
+        { marker: 'client' },
+        { publishToPrivacyCenter: false },
+      );
+      return { success: result.success, count, errors: result.errors ?? [] };
+    }),
+  };
+});
 
 const { getConsentTools } = await import('../src/tools/index.js');
 
@@ -26,24 +35,23 @@ const clients = {
 } satisfies ToolClients;
 
 const tool = (name: string) => getConsentTools(clients).find((t) => t.name === name)!;
-const parse = (result: unknown) => result as { data: Record<string, any> };
+
+beforeEach(() => {
+  sdk.sync.mockReset();
+  sdk.sync.mockResolvedValue({ success: true, errors: [] });
+});
 
 describe('consent_write_consent_manager', () => {
-  beforeEach(() => {
-    sdk.syncConsentManager.mockReset();
-    sdk.syncConsentManager.mockResolvedValue(undefined);
-  });
-
-  it('syncs a valid consent manager and reports success', async () => {
+  it('syncs a valid consent manager through the inventory push pipeline', async () => {
     const result = await tool('consent_write_consent_manager').handler({
       consentManager: { domains: ['example.com'], consentPrecedence: 'user' },
     } as never);
-    expect(sdk.syncConsentManager).toHaveBeenCalledWith(
+    expect(sdk.sync).toHaveBeenCalledWith(
+      { 'consent-manager': { domains: ['example.com'], consentPrecedence: 'user' } },
       { marker: 'client' },
-      { domains: ['example.com'], consentPrecedence: 'user' },
-      expect.objectContaining({ logger: expect.anything() }),
+      expect.objectContaining({ publishToPrivacyCenter: false }),
     );
-    expect(parse(result).data).toMatchObject({ success: true, errors: [] });
+    expect(result).toMatchObject({ success: true, count: 1, errors: [] });
   });
 
   it('rejects a value the yml codec rejects', async () => {
@@ -51,16 +59,19 @@ describe('consent_write_consent_manager', () => {
       tool('consent_write_consent_manager').handler({
         consentManager: { domains: 'not-an-array' },
       } as never),
-    ).rejects.toThrow(/items\[0\] is not valid/);
-    expect(sdk.syncConsentManager).not.toHaveBeenCalled();
+    ).rejects.toThrow(/consent-manager does not match/);
+    expect(sdk.sync).not.toHaveBeenCalled();
   });
 
-  it('returns the SDK error instead of throwing', async () => {
-    sdk.syncConsentManager.mockRejectedValue(new Error('Partition "x" not found'));
+  it('returns sync errors instead of throwing', async () => {
+    sdk.sync.mockResolvedValue({
+      success: false,
+      errors: [{ resource: 'consent-manager', message: 'Partition "x" not found' }],
+    });
     const result = await tool('consent_write_consent_manager').handler({
       consentManager: { partition: 'x' },
     } as never);
-    expect(parse(result).data).toMatchObject({
+    expect(result).toMatchObject({
       success: false,
       errors: [{ resource: 'consent-manager', message: 'Partition "x" not found' }],
     });
@@ -68,55 +79,22 @@ describe('consent_write_consent_manager', () => {
 });
 
 describe('consent_write_purposes', () => {
-  beforeEach(() => {
-    sdk.syncPurposes.mockReset();
-    sdk.syncPreferenceTopics.mockReset();
-    sdk.syncPurposes.mockResolvedValue({ success: true, purposeIdByTrackingType: { Foo: 'id-1' } });
-    sdk.syncPreferenceTopics.mockResolvedValue(true);
-  });
-
-  it('syncs purposes then nested topics tagged with the tracking type', async () => {
-    const result = await tool('consent_write_purposes').handler({
-      purposes: [
-        {
-          trackingType: 'Foo',
-          name: 'Foo',
-          title: 'Foo',
-          'preference-topics': [
-            { slug: 'News', type: 'BOOLEAN', title: 'News', description: 'News emails' },
-          ],
-        },
+  it('syncs purposes through syncConfigurationToTranscend', async () => {
+    const purpose = {
+      trackingType: 'Foo',
+      name: 'Foo',
+      title: 'Foo',
+      'preference-topics': [
+        { slug: 'News', type: 'BOOLEAN', title: 'News', description: 'News emails' },
       ],
-    } as never);
-    expect(sdk.syncPurposes).toHaveBeenCalledOnce();
-    expect(sdk.syncPreferenceTopics).toHaveBeenCalledWith(
+    };
+    const result = await tool('consent_write_purposes').handler({ purposes: [purpose] } as never);
+    expect(sdk.sync).toHaveBeenCalledWith(
+      { purposes: [purpose] },
       { marker: 'client' },
-      [expect.objectContaining({ slug: 'News', 'tracking-type': 'Foo' })],
-      expect.objectContaining({ purposeIdByTrackingType: { Foo: 'id-1' } }),
+      expect.anything(),
     );
-    expect(parse(result).data).toMatchObject({
-      success: true,
-      errors: [],
-      purposes: 1,
-      preferenceTopics: 1,
-    });
-  });
-
-  it('skips topics when none are nested', async () => {
-    await tool('consent_write_purposes').handler({
-      purposes: [{ trackingType: 'Foo', name: 'Foo', title: 'Foo' }],
-    } as never);
-    expect(sdk.syncPreferenceTopics).not.toHaveBeenCalled();
-  });
-
-  it('reports a failed purpose sync', async () => {
-    sdk.syncPurposes.mockResolvedValue({ success: false, purposeIdByTrackingType: {} });
-    const result = await tool('consent_write_purposes').handler({
-      purposes: [{ trackingType: 'Foo', name: 'Foo', title: 'Foo' }],
-    } as never);
-    const { data } = parse(result);
-    expect(data.success).toBe(false);
-    expect(data.errors[0].resource).toBe('purposes');
+    expect(result).toMatchObject({ success: true, count: 1, errors: [] });
   });
 
   it('rejects a purpose without a name', async () => {
@@ -124,7 +102,7 @@ describe('consent_write_purposes', () => {
       tool('consent_write_purposes').handler({
         purposes: [{ trackingType: 'Foo', title: 'Foo' }],
       } as never),
-    ).rejects.toThrow(/items\[0\] is not valid/);
-    expect(sdk.syncPurposes).not.toHaveBeenCalled();
+    ).rejects.toThrow(/purposes\[0\]/);
+    expect(sdk.sync).not.toHaveBeenCalled();
   });
 });

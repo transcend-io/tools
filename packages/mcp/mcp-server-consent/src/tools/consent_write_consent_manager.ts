@@ -1,13 +1,9 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { decodeYmlRecord, pushYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
-  createToolResult,
-  decodeYmlItems,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { ConsentManagerInput, syncConsentManager } from '@transcend-io/sdk';
+  ConsentManagerInput,
+  type ConsentManagerInput as ConsentManagerSettings,
+} from '@transcend-io/sdk';
 
 export const WriteConsentManagerSchema = z.object({
   consentManager: z
@@ -34,23 +30,12 @@ export function createConsentWriteConsentManagerTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteConsentManagerSchema,
     handler: async ({ consentManager }) => {
-      const input = decodeYmlItems(ConsentManagerInput, [consentManager])[0]!;
-      const { logger, logs } = createCollectedLogger();
-      try {
-        await syncConsentManager(createGraphqlRequestClient(clients.graphql), input, { logger });
-      } catch (error) {
-        return createToolResult(true, {
-          success: false,
-          errors: [
-            {
-              resource: 'consent-manager',
-              message: error instanceof Error ? error.message : String(error),
-            },
-          ],
-          logs,
-        });
-      }
-      return createToolResult(true, { success: true, errors: [] });
+      const input = decodeYmlRecord<ConsentManagerSettings>(
+        ConsentManagerInput,
+        consentManager,
+        'consent-manager',
+      );
+      return pushYmlSection(clients, { 'consent-manager': input }, 1);
     },
   });
 }

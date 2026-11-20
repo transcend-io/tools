@@ -1,10 +1,13 @@
 import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { IdentifierInput } from '@transcend-io/sdk';
-
-import { decodeYmlItems, pushYmlSection, ymlItemsSchema } from '../helpers/ymlSection.js';
+import {
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { IdentifierInput, type IdentifierInput as Identifier } from '@transcend-io/sdk';
 
 export const WriteIdentifiersSchema = z.object({
-  items: ymlItemsSchema(
+  identifiers: ymlItemsSchema(
     'Identifiers to create or update, matched by `name`. Required: name, type. Other fields: ' +
       'regex, selectOptions, dataSubjects, isRequiredInForm, displayTitle.',
   ),
@@ -22,8 +25,10 @@ export function createInventoryWriteIdentifiersTool(clients: ToolClients) {
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteIdentifiersSchema,
-    handler: async ({ items }) => {
-      const decoded = decodeYmlItems(IdentifierInput, items);
+    handler: async ({ identifiers }) => {
+      const decoded = decodeYmlItems<Identifier>(IdentifierInput, identifiers, 'identifiers', {
+        uniqueBy: (item) => item.name,
+      });
       return pushYmlSection(clients, { identifiers: decoded }, decoded.length);
     },
   });

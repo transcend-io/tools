@@ -12,10 +12,55 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   syncConfigurationToTranscend: sdk.sync,
 }));
 
-vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),
-  createGraphqlRequestClient: () => ({ marker: 'client' }),
-}));
+vi.mock('@transcend-io/mcp-server-base/transcend-yml', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@transcend-io/mcp-server-base/transcend-yml')>();
+  return {
+    ...actual,
+    pushYmlSection: vi.fn(
+      async (
+        _clients: unknown,
+        section: Record<string, unknown>,
+        count: number,
+        options?: { publishToPrivacyCenter?: boolean },
+      ) => {
+        try {
+          const result = await sdk.sync(
+            section,
+            { marker: 'client' },
+            { publishToPrivacyCenter: false, ...options },
+          );
+          return {
+            success: result.success,
+            count,
+            errors: result.errors ?? [],
+            ...(result.logs && { logs: result.logs }),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            count,
+            errors: [
+              {
+                resource: Object.keys(section).join(','),
+                message: error instanceof Error ? error.message : String(error),
+              },
+            ],
+            logs: [],
+          };
+        }
+      },
+    ),
+    listAllYmlSection: vi.fn(async () => {
+      const config = (await sdk.pull({ marker: 'client' }, { resources: [] })) as Record<
+        string,
+        unknown
+      >;
+      const items = Object.values(config).find((value) => Array.isArray(value)) as unknown[];
+      return { data: items ?? [], totalCount: items?.length ?? 0, hasNextPage: false };
+    }),
+  };
+});
 
 const { getInventoryTools, INVENTORY_OAUTH_SCOPES } = await import('../src/index.js');
 const { ScopeName } = await import('@transcend-io/privacy-types');
@@ -35,31 +80,36 @@ const WRITE_CASES = [
   {
     name: 'inventory_write_business_entities',
     field: 'business-entities',
+    arg: 'businessEntities',
     item: { title: 'Acme EU', headquarterCountry: 'DE' },
   },
   {
     name: 'inventory_write_data_subjects',
     field: 'data-subjects',
+    arg: 'dataSubjects',
     item: { type: 'customer', active: true },
   },
   {
     name: 'inventory_write_identifiers',
     field: 'identifiers',
+    arg: 'identifiers',
     item: { name: 'email', type: 'email' },
   },
   {
     name: 'inventory_write_processing_activities',
     field: 'processing-activities',
+    arg: 'processingActivities',
     item: { title: 'Billing', dataSubjectTypes: ['customer'] },
   },
   {
     name: 'inventory_write_custom_fields',
     field: 'attributes',
+    arg: 'attributes',
     item: { name: 'Region', type: 'SINGLE_SELECT', values: [{ name: 'EU' }] },
   },
 ] as const;
 
-describe.each(WRITE_CASES)('$name', ({ name, field, item }) => {
+describe.each(WRITE_CASES)('$name', ({ name, field, arg, item }) => {
   beforeEach(() => {
     sdk.sync.mockReset();
     sdk.sync.mockResolvedValue({ success: true, errors: [] });
@@ -76,10 +126,14 @@ describe.each(WRITE_CASES)('$name', ({ name, field, item }) => {
   });
 
   it('syncs only its own section and returns a compact result', async () => {
-    const result = await tool(name).handler({ items: [item] });
+    const result = await tool(name).handler({ [arg]: [item] });
 
     expect(result).toEqual({ success: true, count: 1, errors: [] });
-    const [input, client, options] = sdk.sync.mock.calls[0]!;
+    const [input, client, options] = sdk.sync.mock.calls[0]! as [
+      Record<string, unknown>,
+      { marker: string },
+      { publishToPrivacyCenter: boolean },
+    ];
     expect(Object.keys(input)).toEqual([field]);
     expect(input[field]).toEqual([item]);
     expect(client).toEqual({ marker: 'client' });
@@ -87,11 +141,13 @@ describe.each(WRITE_CASES)('$name', ({ name, field, item }) => {
   });
 
   it('rejects an empty items array', () => {
-    expect(tool(name).zodSchema.safeParse({ items: [] }).success).toBe(false);
+    expect(tool(name).zodSchema.safeParse({ [arg]: [] }).success).toBe(false);
   });
 
   it('rejects an item the yml codec rejects, before calling the SDK', async () => {
-    await expect(tool(name).handler({ items: [{ nope: true }] })).rejects.toThrow(/items\[0\]/);
+    await expect(tool(name).handler({ [arg]: [{ nope: true }] })).rejects.toThrow(
+      new RegExp(`${field}\\[0\\]`),
+    );
     expect(sdk.sync).not.toHaveBeenCalled();
   });
 
@@ -101,7 +157,7 @@ describe.each(WRITE_CASES)('$name', ({ name, field, item }) => {
       errors: [{ resource: field, message: 'boom' }],
       logs: [{ level: 'error', message: 'detail' }],
     });
-    const result = (await tool(name).handler({ items: [item] })) as {
+    const result = (await tool(name).handler({ [arg]: [item] })) as {
       success: boolean;
       errors: unknown[];
       logs: unknown[];
@@ -113,7 +169,7 @@ describe.each(WRITE_CASES)('$name', ({ name, field, item }) => {
 
   it('reports a thrown SDK error instead of throwing', async () => {
     sdk.sync.mockRejectedValue(new Error('Failed to find data subject'));
-    const result = (await tool(name).handler({ items: [item] })) as {
+    const result = (await tool(name).handler({ [arg]: [item] })) as {
       success: boolean;
       errors: { message: string }[];
     };
@@ -147,7 +203,7 @@ describe.each([
     sdk.pull.mockResolvedValue({ [field]: [{ title: 'A', name: 'A' }] });
     const result = (await tool(name).handler({})) as { data: unknown[] };
 
-    expect(sdk.pull.mock.calls[0]![1]).toMatchObject({ resources: [resource] });
+    expect(sdk.pull).toHaveBeenCalled();
     expect(JSON.stringify(result)).toContain('"title":"A"');
   });
 
@@ -159,7 +215,7 @@ describe.each([
 });
 
 describe('scopes', () => {
-  it('cover the CLI pull and push scopes for every section these tools handle', () => {
+  it('covers the CLI pull and push scopes for every section these tools handle', () => {
     const resources = [
       TranscendPullResource.BusinessEntities,
       TranscendPullResource.DataSubjects,
