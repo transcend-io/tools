@@ -1,29 +1,7 @@
-import { ADMIN_OAUTH_SCOPES } from '@transcend-io/mcp-server-admin';
-import { ASSESSMENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-assessment';
 import { mergeOAuthScopes } from '@transcend-io/mcp-server-base';
-import { CONFIG_OAUTH_SCOPES } from '@transcend-io/mcp-server-config';
-import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
-import { CUSTOM_FUNCTIONS_OAUTH_SCOPES } from '@transcend-io/mcp-server-custom-functions';
-import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
-import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
-import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
-import { POLICY_OAUTH_SCOPES } from '@transcend-io/mcp-server-policy';
-import { PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
-import { PRIVACY_CENTER_OAUTH_SCOPES } from '@transcend-io/mcp-server-privacy-center';
-import { WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
+import { MCP_SERVER_OAUTH_SCOPES, TranscendMcpServer } from '@transcend-io/sdk';
 
 /** OAuth scopes for the unified MCP server (offline_access added by base). */
 export const UMBRELLA_OAUTH_SCOPES = mergeOAuthScopes(
-  ADMIN_OAUTH_SCOPES,
-  ASSESSMENT_OAUTH_SCOPES,
-  CONFIG_OAUTH_SCOPES,
-  CONSENT_OAUTH_SCOPES,
-  CUSTOM_FUNCTIONS_OAUTH_SCOPES,
-  DISCOVERY_OAUTH_SCOPES,
-  DSR_OAUTH_SCOPES,
-  INVENTORY_OAUTH_SCOPES,
-  PREFERENCE_OAUTH_SCOPES,
-  PRIVACY_CENTER_OAUTH_SCOPES,
-  POLICY_OAUTH_SCOPES,
-  WORKFLOW_OAUTH_SCOPES,
+  ...Object.values(TranscendMcpServer).map((server) => MCP_SERVER_OAUTH_SCOPES[server]),
 );

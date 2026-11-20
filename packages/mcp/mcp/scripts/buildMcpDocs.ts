@@ -9,26 +9,21 @@ import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ADMIN_OAUTH_SCOPES, getAdminTools } from '@transcend-io/mcp-server-admin';
-import { ASSESSMENT_OAUTH_SCOPES, getAssessmentTools } from '@transcend-io/mcp-server-assessment';
+import { getAdminTools } from '@transcend-io/mcp-server-admin';
+import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients, ToolDefinition } from '@transcend-io/mcp-server-base';
-import { CONFIG_OAUTH_SCOPES, getConfigTools } from '@transcend-io/mcp-server-config';
-import { CONSENT_OAUTH_SCOPES, getConsentTools } from '@transcend-io/mcp-server-consent';
-import {
-  CUSTOM_FUNCTIONS_OAUTH_SCOPES,
-  getCustomFunctionsTools,
-} from '@transcend-io/mcp-server-custom-functions';
-import { DISCOVERY_OAUTH_SCOPES, getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
+import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
+import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
-import { DSR_OAUTH_SCOPES, getDSRTools } from '@transcend-io/mcp-server-dsr';
-import { getInventoryTools, INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
-import { getPreferenceTools, PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
-import {
-  getPrivacyCenterTools,
-  PRIVACY_CENTER_OAUTH_SCOPES,
-} from '@transcend-io/mcp-server-privacy-center';
-import { getWorkflowTools, WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
+import { getDSRTools } from '@transcend-io/mcp-server-dsr';
+import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
+import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { TRANSCEND_SCOPES, type ScopeName } from '@transcend-io/privacy-types';
+import { getMcpServerOAuthScopes, TranscendMcpServer } from '@transcend-io/sdk';
 
 const packageRoot = fileURLToPath(new URL('..', import.meta.url));
 const syncJsonPath = join(packageRoot, 'docs', 'mcp-guide-sync.json');
@@ -78,7 +73,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-admin',
     description: 'Organization, users, teams, API keys',
     domain: 'Org, users, teams, API keys',
-    scopes: ADMIN_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Admin),
     getTools: getAdminTools,
   },
   {
@@ -88,7 +83,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-assessment',
     description: 'Privacy assessments, templates, groups',
     domain: 'Privacy assessments',
-    scopes: ASSESSMENT_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Assessment),
     getTools: getAssessmentTools,
   },
   {
@@ -98,7 +93,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-config',
     description: 'transcend.yml pull and push (local files, stdio only)',
     domain: 'Configuration as code',
-    scopes: CONFIG_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Config),
     getTools: getConfigTools,
   },
   {
@@ -108,7 +103,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-consent',
     description: 'Consent management, analytics, cookie triage',
     domain: 'Consent, cookies, data flows',
-    scopes: CONSENT_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Consent),
     getTools: getConsentTools,
   },
   {
@@ -118,7 +113,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-custom-functions',
     description: 'Custom Function authoring and test runs',
     domain: 'Custom Function authoring',
-    scopes: CUSTOM_FUNCTIONS_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.CustomFunctions),
     getTools: getCustomFunctionsTools,
   },
   {
@@ -138,7 +133,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-discovery',
     description: 'Data discovery, classification, NER',
     domain: 'Data discovery, classification',
-    scopes: DISCOVERY_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Discovery),
     getTools: getDiscoveryTools,
   },
   {
@@ -159,7 +154,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-dsr',
     description: 'Data subject requests (submit, track, respond)',
     domain: 'Data subject requests',
-    scopes: DSR_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Dsr),
     getTools: getDSRTools,
   },
   {
@@ -169,7 +164,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-inventory',
     description: 'Data inventory, silos, vendors, data points',
     domain: 'Data inventory, silos, vendors',
-    scopes: INVENTORY_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Inventory),
     getTools: getInventoryTools,
   },
   {
@@ -179,7 +174,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-preferences',
     description: 'Privacy preference store (query, upsert, delete)',
     domain: 'User Preferences',
-    scopes: PREFERENCE_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Preferences),
     getTools: getPreferenceTools,
   },
   {
@@ -189,7 +184,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-privacy-center',
     description: 'Privacy Center configuration, messages, and policies',
     domain: 'Privacy Center',
-    scopes: PRIVACY_CENTER_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.PrivacyCenter),
     getTools: getPrivacyCenterTools,
   },
   {
@@ -199,7 +194,7 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-workflows',
     description: 'Workflow & email-template configuration',
     domain: 'Workflow & email templates',
-    scopes: WORKFLOW_OAUTH_SCOPES,
+    scopes: getMcpServerOAuthScopes(TranscendMcpServer.Workflows),
     getTools: getWorkflowTools,
   },
 ];

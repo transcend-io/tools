@@ -4,15 +4,15 @@ import {
   createTranscendRestClient,
   TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
+import { TranscendMcpServer, getMcpServerOAuthScopes } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
-import { PRIVACY_CENTER_OAUTH_SCOPES } from './scopes.js';
 import { getPrivacyCenterTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-privacy-center',
   version: packageJson.version,
-  oauthScopes: PRIVACY_CENTER_OAUTH_SCOPES,
+  oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.PrivacyCenter),
   getTools: getPrivacyCenterTools,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
     const graphql = new TranscendGraphQLBase(auth, graphqlUrl);
