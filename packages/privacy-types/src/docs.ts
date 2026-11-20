@@ -32,7 +32,7 @@ export const DocsUseCase = {
 export type DocsUseCase = (typeof DocsUseCase)[keyof typeof DocsUseCase];
 
 /**
- * Who may read a docs page without signing in.
+ * Who may read a docs page.
  * Omit `access` in frontmatter for signed-in only. Set `public` to opt in.
  */
 export const DocsAccess = {
