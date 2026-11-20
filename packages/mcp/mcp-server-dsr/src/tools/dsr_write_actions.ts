@@ -4,8 +4,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { fetchAllActions, syncAction } from '@transcend-io/sdk';
-import { ActionInput } from '@transcend-io/sdk/transcend-yml';
+import { ActionInput, fetchAllActions, syncAction } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';

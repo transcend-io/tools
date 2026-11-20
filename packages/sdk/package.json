@@ -16,23 +16,11 @@
   "type": "module",
   "sideEffects": false,
   "types": "./dist/index.d.mts",
-  "typesVersions": {
-    "*": {
-      "transcend-yml": [
-        "./dist/transcend-yml.d.mts"
-      ]
-    }
-  },
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
-    },
-    "./transcend-yml": {
-      "@transcend-io/source": "./src/transcend-yml/index.ts",
-      "types": "./dist/transcend-yml.d.mts",
-      "default": "./dist/transcend-yml.mjs"
     }
   },
   "publishConfig": {

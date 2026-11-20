@@ -5,11 +5,12 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import {
+  ensureAllDataSubjectsExist,
+  EnricherInput,
   fetchAllEnrichers,
   fetchIdentifiersAndCreateMissing,
   syncEnricher,
 } from '@transcend-io/sdk';
-import { ensureAllDataSubjectsExist, EnricherInput } from '@transcend-io/sdk/transcend-yml';
 import { decodeCodec } from '@transcend-io/type-utils';
 
 import { createCollectedLogger } from '../helpers/collectingLogger.js';

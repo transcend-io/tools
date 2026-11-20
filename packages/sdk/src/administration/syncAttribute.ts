@@ -13,7 +13,7 @@ import {
   UPDATE_ATTRIBUTE_VALUES,
 } from './gqls/attribute.js';
 
-interface AttributeValueInput {
+export interface AttributeValueInput {
   /** Name of attribute value */
   name: string;
   /** Description */
@@ -22,7 +22,7 @@ interface AttributeValueInput {
   color?: string;
 }
 
-interface AttributeInput {
+export interface AttributeInput {
   /** Name of attribute */
   name: string;
   /** Type of attribute */

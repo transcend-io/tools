@@ -7,7 +7,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllVendors, type Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
-interface VendorInput {
+export interface VendorInput {
   /** Display title of the vendor */
   title: string;
   /** Description of the vendor */

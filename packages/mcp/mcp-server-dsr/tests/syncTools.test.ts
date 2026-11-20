@@ -18,10 +18,6 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   syncEnricher: sdk.syncEnricher,
   syncAction: sdk.syncAction,
   fetchIdentifiersAndCreateMissing: sdk.fetchIdentifiersAndCreateMissing,
-}));
-
-vi.mock('@transcend-io/sdk/transcend-yml', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/sdk/transcend-yml')>()),
   ensureAllDataSubjectsExist: sdk.ensureAllDataSubjectsExist,
 }));
 
