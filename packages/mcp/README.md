@@ -241,19 +241,19 @@ When both cookie and API key headers are present, the session cookie takes prior
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
 | [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   105 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
-| [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    14 | Privacy assessments, templates, groups           |
+| [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups           |
 | [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
-| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    14 | Consent management, analytics, cookie triage     |
+| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    20 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |
-| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     6 | Data discovery, classification, NER              |
-| [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     2 | Transcend documentation lookup (list + fetch)    |
+| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     4 | Data discovery, classification, NER              |
+| [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     3 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)   |
-| [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    10 | Data inventory, silos, vendors, data points      |
-| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     6 | Privacy preference store (query, upsert, delete) |
+| [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    17 | Data inventory, silos, vendors, data points      |
+| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     7 | Privacy preference store (query, upsert, delete) |
 | [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration          |
 
-Tool counts in this table match each package's `EXPECTED_TOOL_NAMES` vitest lists. The unified server's total is enforced in `mcp/tests/registry.test.ts` via `EXPECTED_UMBRELLA_TOOL_COUNT`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
+Tool counts in this table are verified in `mcp/tests/readme-package-tool-counts.test.ts` against each package's `get*Tools()` factory. The unified total matches `EXPECTED_UMBRELLA_TOOL_COUNT` in `mcp/tests/registry.test.ts`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.
 
