@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-base
 
+## 3.1.1
+
+### Patch Changes
+
+- 3b92b89: Resolve optional stdio startup credentials for MCP servers that mix public and signed-in tools (fixes `docs_integration_lookup` in the standalone docs server), and verify OAuth client setup at startup when OAuth env vars are set without blocking public tools on verification failure.
+- c466144: Add stateless `createWebMcpHandler` for Web Standard Streamable HTTP on docs.transcend.io/mcp.
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+
 ## 3.1.0
 
 ### Minor Changes

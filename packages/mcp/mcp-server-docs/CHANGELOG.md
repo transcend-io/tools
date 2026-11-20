@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-docs
 
+## 0.6.1
+
+### Patch Changes
+
+- 3b92b89: Resolve optional stdio startup credentials for MCP servers that mix public and signed-in tools (fixes `docs_integration_lookup` in the standalone docs server), and verify OAuth client setup at startup when OAuth env vars are set without blocking public tools on verification failure.
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+  - @transcend-io/mcp-server-base@3.1.1
+
 ## 0.6.0
 
 ### Minor Changes
