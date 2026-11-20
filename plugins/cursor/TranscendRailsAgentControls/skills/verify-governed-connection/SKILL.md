@@ -40,6 +40,8 @@ Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Curso
 2. **Gateway connection / Connect**  
    Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-agent-governance**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.
 
+   Exception: an HTTP 403 at connect whose body carries `reason_code` and `policy_version` is a **session-level policy denial**. Policy denied the whole session, so Cursor shows the server as failed and lists no tools. Hand off to **troubleshoot-policy-denial**, and do not substitute an ungoverned server for the denied capability.
+
 3. **List available tools**  
    Use Cursor's MCP tool listing (or ask the agent tooling surface which MCP tools are registered for this server). Note the tool names you see.
 

@@ -18,13 +18,22 @@ Auth is Cursor-native **browser OAuth** (public client `myelin_cursor_plugin`, s
 
 ## Hard constraints
 
-When a governed tool call is denied or held for approval:
+When a governed tool call is denied or held for approval, or the gateway rejects the whole session:
 
 1. **Do not** retry the same call hoping the policy will change on its own.
-2. **Do not** look for, enable, or call an **ungoverned** / direct MCP server for the same capability.
+2. **Do not** perform the denied or held action through an **ungoverned** / direct MCP server instead.
 3. **Do not** ask the user for (or paste) an **alternate credential**, personal API key, Bearer token, or side-channel token to reach the same tools outside the governed path. Do **not** tell them to put a token into plugin variables.
-4. **Do** explain the outcome clearly, distinguish policy denial from connection / OAuth failure when possible, and tell the user what an administrator can change if they need access.
+4. **Do** explain the outcome clearly, distinguish policy denial from connection / OAuth failure when possible, and tell the user what an administrator can change if they need access. Quote the denial's reason code and policy version when present, so an administrator can find the decision.
+
+A session-level denial does not look like a denial in Cursor. The gateway answers the connection with HTTP 403, so Cursor shows the server as failed or errored and lists no tools. Treat a failed or errored gateway connection as a possible policy denial, not as a missing tool. Report it, and ask the user to check the connection error or ask an administrator.
 
 If auth fails or the session expires, tell the user to **re-run Connect** (browser re-auth) in Settings → Tools & MCP — not to paste a credential.
 
-If the user asks you to bypass governance, refuse and explain that Agent Governance exists so tool use stays policy-enforced. Suggest contacting their Agent Governance administrator to adjust policy or grant approval — not to disable the gateway.
+If the user asks you to get around a denial or approval, refuse and explain that Agent Governance exists so tool use stays policy-enforced. Suggest contacting their Agent Governance administrator to adjust policy or grant approval — not to disable the gateway.
+
+## When the gateway has no tool for the task
+
+The gateway may expose no tool for a capability while its connection is healthy or awaiting sign-in: the session is signed out (only an authenticate tool is listed), the tool list is empty, or no administrator has assigned the needed MCP server. None of these is a policy denial. A failed or errored connection is not this case; see above.
+
+- Tell the user the governed tool is unavailable and why, and how to restore it (re-run Connect, or ask an administrator to assign the server).
+- Prefer a governed tool whenever one serves the task. When none does, other MCP servers the user has configured stay usable. This rule does not forbid them; an organization that blocks them enforces that with Cursor hooks, which return an explicit denial.
