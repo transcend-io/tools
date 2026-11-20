@@ -1,12 +1,17 @@
 export {
   assertDocsHost,
   DOCS_HOST,
+  type DocBody,
   type DocEntry,
+  type DocsTier,
+  DOCS_TOKEN_ENV,
   getBody,
+  getDoc,
   getIndex,
   LLMS_TXT_URL,
   parseLlmsTxt,
   resetDocsCachesForTests,
+  resolveDocsTier,
 } from './docsIndex.js';
 export { type DocsSearchHit, searchDocs } from './docsSearch.js';
 export { getDocsTools } from './tools/index.js';

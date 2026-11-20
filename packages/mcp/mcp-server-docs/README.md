@@ -6,7 +6,9 @@ Transcend MCP Server for documentation lookup. Provides tools to list articles f
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
-**Public docs need no authentication.** `docs_list` and `docs_fetch` read public content from `docs.transcend.io` only and never use your Transcend credentials. `docs_integration_lookup` is the one signed-in tool: it reads integration catalog docs with your API key or OAuth sign-in, and asks you to sign in only when it is called.
+**Public docs need no authentication.** Without a token, `docs_list` and `docs_fetch` read public content from `docs.transcend.io`. Rows from `docs_list` have an `access` field (`public` or `signedIn`). For a `signedIn` page, `docs_fetch` returns the public preview and explains how to sign in.
+
+**Signed-in docs.** Set `TRANSCEND_DOCS_TOKEN` (stdio), or sign in over HTTP or OAuth. The server sends the token as `Authorization: Bearer` to `docs.transcend.io` only. Per-request sign-in wins over the env var. Each token gets its own cache and search index, so gated text never reaches a caller without access. `docs_integration_lookup` also reads integration catalog docs with your API key or OAuth sign-in.
 
 ## Install
 

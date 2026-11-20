@@ -1,5 +1,10 @@
 import { toolInputSchema } from '@transcend-io/mcp-server-base';
-import { DocsGuideType, DocsListRouteMatch, DocsProduct } from '@transcend-io/privacy-types';
+import {
+  DocsAccess,
+  DocsGuideType,
+  DocsListRouteMatch,
+  DocsProduct,
+} from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -214,6 +219,7 @@ describe('docs_list route', () => {
       {
         title: 'Saving and publishing to the Privacy Center',
         url: 'https://docs.transcend.io/docs/privacy-center/saving',
+        access: DocsAccess.SignedIn,
         guideType: DocsGuideType.OverviewsAndConcepts,
         match: DocsListRouteMatch.Primary,
         route: '/privacy-center/general-settings',
