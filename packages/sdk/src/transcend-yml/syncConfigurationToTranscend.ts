@@ -283,8 +283,11 @@ export async function syncConfigurationToTranscend(
 
   // Sync data categories
   if (dataCategories) {
-    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, { logger });
-    if (!dataCategoriesSuccess) {
+    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, {
+      logger,
+      onError: (message, item) => recordError('data-categories', message, item),
+    });
+    if (!dataCategoriesSuccess && !errors.some((error) => error.resource === 'data-categories')) {
       recordError('data-categories', 'Failed to sync data-categories');
     }
   }
@@ -582,6 +585,7 @@ export async function syncConfigurationToTranscend(
       pageSize,
       logger,
       progressReporter,
+      onError: (message, item) => recordError('data-silos', message, item),
     });
     dataSilos?.forEach((dataSilo) => {
       // Queue up dependency update
@@ -598,7 +602,7 @@ export async function syncConfigurationToTranscend(
         }
       }
     });
-    if (!success) {
+    if (!success && !errors.some((error) => error.resource === 'data-silos')) {
       recordError('data-silos', 'Failed to sync data-silos');
     }
   }
