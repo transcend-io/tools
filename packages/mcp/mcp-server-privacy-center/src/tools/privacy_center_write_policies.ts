@@ -1,24 +1,18 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
-  decodeItems,
-  defineTool,
-  runSync,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { PolicyInput, syncPolicies } from '@transcend-io/sdk';
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { PolicyInput } from '@transcend-io/sdk';
 
 export const WritePoliciesSchema = z.object({
-  policies: z
-    .array(z.record(z.string(), z.unknown()))
-    .min(1)
-    .max(50)
-    .describe(
-      'Policies to create or update, matched by title. Each needs title. Optional: type, content, ' +
-        'effectiveOn, disableEffectiveOn, disabledLocales. Same shape as the policies section ' +
-        'of transcend.yml; see config_get_schema.',
-    ),
+  policies: ymlItemsSchema(
+    'Policies to create or update, matched by title. Each needs title. Optional: type, content, ' +
+      'effectiveOn, disableEffectiveOn, disabledLocales. Same shape as the policies section ' +
+      'of transcend.yml; see config_get_schema.',
+    50,
+  ),
 });
 export type WritePoliciesInput = z.infer<typeof WritePoliciesSchema>;
 
@@ -34,13 +28,10 @@ export function createPrivacyCenterWritePoliciesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WritePoliciesSchema,
     handler: async ({ policies }) => {
-      const inputs = decodeItems<PolicyInput>(PolicyInput, policies, 'policies');
-      const { logger, logs } = createCollectedLogger();
-      return runSync(
-        () => syncPolicies(createGraphqlRequestClient(clients.graphql), inputs, { logger }),
-        logs,
-        inputs.length,
-      );
+      const inputs = decodeYmlItems<PolicyInput>(PolicyInput, policies, 'policies', {
+        uniqueBy: (item) => item.title,
+      });
+      return pushYmlSection(clients, { policies: inputs }, inputs.length);
     },
   });
 }

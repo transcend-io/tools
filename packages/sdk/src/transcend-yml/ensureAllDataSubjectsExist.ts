@@ -20,21 +20,25 @@ import { TranscendInput } from './codecs.js';
  * @returns The list of data subjects
  */
 export async function ensureAllDataSubjectsExist(
-  {
-    'data-silos': dataSilos = [],
-    'data-subjects': dataSubjects = [],
-    'processing-activities': processingActivities = [],
-    preflights = [],
-  }: TranscendInput,
+  input: TranscendInput,
   client: GraphQLClient,
   fetchAll = false,
   {
     logger = NOOP_LOGGER,
+    createMissing = 'data-subjects' in input,
   }: {
     /** Logger for progress messages */
     logger?: Logger;
+    /** When true, create data subjects that are referenced but missing */
+    createMissing?: boolean;
   } = {},
 ): Promise<{ [type in string]: DataSubject }> {
+  const {
+    'data-silos': dataSilos = [],
+    'data-subjects': dataSubjects = [],
+    'processing-activities': processingActivities = [],
+    preflights = [],
+  } = input;
   const expectedDataSubjects = uniq([
     ...flatten(dataSilos.map((silo) => silo['data-subjects'] || []) || []),
     ...flatten(processingActivities.map(({ dataSubjectTypes }) => dataSubjectTypes ?? []) ?? []),
@@ -54,6 +58,13 @@ export async function ensureAllDataSubjectsExist(
   );
 
   if (missingDataSubjects.length > 0) {
+    if (!createMissing) {
+      throw new Error(
+        `Missing data subject types referenced by this push but not present in the organization: ${missingDataSubjects.join(
+          ', ',
+        )}. Add a data-subjects section to the input or create them in the dashboard.`,
+      );
+    }
     logger.info(`Creating ${missingDataSubjects.length} new data subjects...`);
     for (const dataSubjectType of missingDataSubjects) {
       logger.info(`Creating data subject ${dataSubjectType}...`);

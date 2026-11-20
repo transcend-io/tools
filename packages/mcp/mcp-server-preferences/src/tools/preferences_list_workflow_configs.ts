@@ -1,13 +1,6 @@
-import {
-  createGraphqlRequestClient,
-  defineTool,
-  EmptySchema,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import {
-  convertConsentWorkflowTriggersToInputs,
-  fetchAllConsentWorkflowTriggers,
-} from '@transcend-io/sdk';
+import { defineTool, EmptySchema, type ToolClients } from '@transcend-io/mcp-server-base';
+import { listAllYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 export const ListWorkflowConfigsSchema = EmptySchema;
 export type ListWorkflowConfigsInput = Record<string, never>;
@@ -23,11 +16,7 @@ export function createPreferencesListWorkflowConfigsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListWorkflowConfigsSchema,
-    handler: async () => {
-      const client = createGraphqlRequestClient(clients.graphql);
-      const triggers = await fetchAllConsentWorkflowTriggers(client);
-      const workflowConfigs = await convertConsentWorkflowTriggersToInputs(client, triggers);
-      return { count: workflowConfigs.length, workflowConfigs };
-    },
+    handler: async () =>
+      listAllYmlSection(clients, TranscendPullResource.PreferenceWorkflowConfigs),
   });
 }

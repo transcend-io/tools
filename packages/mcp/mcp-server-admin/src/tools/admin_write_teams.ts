@@ -1,24 +1,16 @@
+import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import {
-  createCollectedLogger,
-  createGraphqlRequestClient,
-  decodeItems,
-  defineTool,
-  runSync,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
-import { syncTeams, TeamInput } from '@transcend-io/sdk';
+  decodeYmlItems,
+  pushYmlSection,
+  ymlItemsSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
+import { TeamInput } from '@transcend-io/sdk';
 
 export const WriteTeamsSchema = z.object({
-  teams: z
-    .array(z.record(z.string(), z.unknown()))
-    .min(1)
-    .max(100)
-    .describe(
-      'Teams to create or update, matched by name. Each needs name and description. ' +
-        'Optional: users (emails), scopes, parent-team-name, sso-department, sso-group, sso-title. ' +
-        'Same shape as the teams section of transcend.yml; see config_get_schema.',
-    ),
+  teams: ymlItemsSchema(
+    'Teams to create or update, matched by name. Each needs name and description. ' +
+      'Optional: users (emails), scopes, parent-team-name, sso-department, sso-group, sso-title.',
+  ),
 });
 export type WriteTeamsInput = z.infer<typeof WriteTeamsSchema>;
 
@@ -40,13 +32,10 @@ export function createAdminWriteTeamsTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteTeamsSchema,
     handler: async ({ teams }) => {
-      const inputs = decodeItems<TeamInput>(TeamInput, teams, 'teams');
-      const { logger, logs } = createCollectedLogger();
-      return runSync(
-        () => syncTeams(createGraphqlRequestClient(clients.graphql), inputs, { logger }),
-        logs,
-        inputs.length,
-      );
+      const decoded = decodeYmlItems<TeamInput>(TeamInput, teams, 'teams', {
+        uniqueBy: (team) => team.name,
+      });
+      return pushYmlSection(clients, { teams: decoded }, decoded.length);
     },
   });
 }

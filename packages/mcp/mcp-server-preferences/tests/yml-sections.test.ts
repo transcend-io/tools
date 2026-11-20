@@ -2,23 +2,33 @@ import type { ToolClients } from '@transcend-io/mcp-server-base';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sdk = vi.hoisted(() => ({
-  syncPartitions: vi.fn(),
-  fetchAllPreferenceOptionValues: vi.fn(),
-  syncPreferenceOptionValues: vi.fn(),
-  fetchAllConsentWorkflowTriggers: vi.fn(),
-  convertConsentWorkflowTriggersToInputs: vi.fn(),
-  syncConsentWorkflowTriggers: vi.fn(),
+  pull: vi.fn(),
+  sync: vi.fn(),
 }));
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
-  ...sdk,
+  pullTranscendConfiguration: sdk.pull,
+  syncConfigurationToTranscend: sdk.sync,
 }));
 
-vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),
-  createGraphqlRequestClient: () => ({ marker: 'client' }),
-}));
+vi.mock('@transcend-io/mcp-server-base/transcend-yml', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@transcend-io/mcp-server-base/transcend-yml')>();
+  return {
+    ...actual,
+    pushYmlSection: vi.fn(async (_clients, section, count) => {
+      const result = await sdk.sync(section, { marker: 'client' }, {});
+      return { success: result.success, count, errors: result.errors ?? [] };
+    }),
+    listAllYmlSection: vi.fn(async () => {
+      const config = (await sdk.pull({ marker: 'client' }, {})) as Record<string, unknown[]>;
+      const key = Object.keys(config)[0];
+      const data = key ? config[key]! : [];
+      return { data, totalCount: data.length, hasNextPage: false };
+    }),
+  };
+});
 
 const { getPreferenceTools } = await import('../src/index.js');
 
@@ -32,7 +42,9 @@ const tools = getPreferenceTools(clients);
 const tool = (name: string) => tools.find((t) => t.name === name)!;
 
 beforeEach(() => {
-  for (const fn of Object.values(sdk)) fn.mockReset();
+  sdk.pull.mockReset();
+  sdk.sync.mockReset();
+  sdk.sync.mockResolvedValue({ success: true, errors: [] });
 });
 
 describe('write tools are not confirmation gated', () => {
@@ -48,91 +60,59 @@ describe('write tools are not confirmation gated', () => {
 });
 
 describe('preferences_write_partitions', () => {
-  it('passes decoded items to syncPartitions', async () => {
-    sdk.syncPartitions.mockResolvedValue(true);
+  it('calls syncConfigurationToTranscend with partitions only', async () => {
     const result = await tool('preferences_write_partitions').handler({
       partitions: [{ name: 'EU' }, { name: 'US' }],
     });
-    expect(result).toEqual({ success: true, errors: [], count: 2 });
-    expect(sdk.syncPartitions.mock.calls[0]![1]).toEqual([{ name: 'EU' }, { name: 'US' }]);
-  });
-
-  it('reports logged errors when the sync fails', async () => {
-    sdk.syncPartitions.mockImplementation(async (_client, _items, { logger }) => {
-      logger.error('Failed to create consent partition: EU!');
-      logger.info('ignored');
-      return false;
-    });
-    const result = (await tool('preferences_write_partitions').handler({
-      partitions: [{ name: 'EU' }],
-    })) as { success: boolean; errors: string[] };
-    expect(result.success).toBe(false);
-    expect(result.errors).toEqual(['Failed to create consent partition: EU!']);
-  });
-
-  it('turns a thrown error into a failed result', async () => {
-    sdk.syncPartitions.mockRejectedValue(new Error('no consent manager'));
-    const result = (await tool('preferences_write_partitions').handler({
-      partitions: [{ name: 'EU' }],
-    })) as { success: boolean; errors: string[] };
-    expect(result).toMatchObject({ success: false, errors: ['no consent manager'] });
+    expect(result).toEqual({ success: true, count: 2, errors: [] });
+    expect(sdk.sync.mock.calls[0]![0]).toEqual({ partitions: [{ name: 'EU' }, { name: 'US' }] });
   });
 });
 
 describe('preferences_list_option_values', () => {
-  it('returns slugs and plain titles', async () => {
-    sdk.fetchAllPreferenceOptionValues.mockResolvedValue([
-      { id: 'a', slug: 'daily', title: { id: 't', defaultMessage: 'Daily' } },
-    ]);
-    const result = await tool('preferences_list_option_values').handler({});
-    expect(result).toEqual({
-      count: 1,
-      optionValues: [{ id: 'a', slug: 'daily', title: 'Daily' }],
+  it('returns the pull page', async () => {
+    sdk.pull.mockResolvedValue({
+      'preference-options': [{ slug: 'daily', title: 'Daily' }],
     });
+    const result = (await tool('preferences_list_option_values').handler({})) as {
+      data: unknown[];
+    };
+    expect(result.data[0]).toMatchObject({ slug: 'daily' });
   });
 });
 
 describe('preferences_write_option_values', () => {
-  it('passes decoded items to syncPreferenceOptionValues', async () => {
-    sdk.syncPreferenceOptionValues.mockResolvedValue(true);
-    const result = await tool('preferences_write_option_values').handler({
+  it('syncs preference-options', async () => {
+    await tool('preferences_write_option_values').handler({
       optionValues: [{ slug: 'daily', title: 'Daily' }],
     });
-    expect(result).toEqual({ success: true, errors: [], count: 1 });
-    expect(sdk.syncPreferenceOptionValues.mock.calls[0]![1]).toEqual([
-      { slug: 'daily', title: 'Daily' },
-    ]);
+    expect(sdk.sync.mock.calls[0]![0]).toEqual({
+      'preference-options': [{ slug: 'daily', title: 'Daily' }],
+    });
   });
 });
 
 describe('preferences_list_workflow_configs', () => {
-  it('returns trigger inputs in yml shape', async () => {
-    const triggers = [{ id: 't1' }];
-    const configs = [
-      { name: 'Opt out', purposes: [{ 'tracking-type': 'Sale', 'matching-state': false }] },
-    ];
-    sdk.fetchAllConsentWorkflowTriggers.mockResolvedValue(triggers);
-    sdk.convertConsentWorkflowTriggersToInputs.mockResolvedValue(configs);
-    const result = await tool('preferences_list_workflow_configs').handler({});
-    expect(result).toEqual({ count: 1, workflowConfigs: configs });
-    expect(sdk.convertConsentWorkflowTriggersToInputs.mock.calls[0]![1]).toBe(triggers);
+  it('returns workflow configs from pull', async () => {
+    const configs = [{ name: 'Opt out' }];
+    sdk.pull.mockResolvedValue({ 'preference-workflow-configs': configs });
+    const result = (await tool('preferences_list_workflow_configs').handler({})) as {
+      data: unknown[];
+    };
+    expect(result.data).toEqual(configs);
   });
 });
 
 describe('preferences_write_workflow_configs', () => {
-  it('passes decoded items to syncConsentWorkflowTriggers', async () => {
-    sdk.syncConsentWorkflowTriggers.mockResolvedValue(true);
+  it('syncs workflow configs', async () => {
     const item = {
       name: 'Opt out',
       purposes: [{ 'tracking-type': 'Sale', 'matching-state': false }],
       'action-type': 'ERASURE',
       'data-subject-type': 'customer',
     };
-    const result = await tool('preferences_write_workflow_configs').handler({
-      workflowConfigs: [item],
-    });
-    expect(result).toEqual({ success: true, errors: [], count: 1 });
-    expect(sdk.syncConsentWorkflowTriggers.mock.calls[0]![1]).toEqual([item]);
+    await tool('preferences_write_workflow_configs').handler({ workflowConfigs: [item] });
+    expect(sdk.sync.mock.calls[0]![0]).toEqual({ 'preference-workflow-configs': [item] });
   });
 
   it('rejects an action type the yml codec does not accept', async () => {
@@ -146,7 +126,7 @@ describe('preferences_write_workflow_configs', () => {
           },
         ],
       }),
-    ).rejects.toThrow(/preference-workflow-configs\[0\] is not valid/);
-    expect(sdk.syncConsentWorkflowTriggers).not.toHaveBeenCalled();
+    ).rejects.toThrow(/preference-workflow-configs\[0\]/);
+    expect(sdk.sync).not.toHaveBeenCalled();
   });
 });

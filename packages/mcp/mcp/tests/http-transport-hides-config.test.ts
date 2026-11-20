@@ -35,12 +35,14 @@ describe('unified server and local filesystem tools', () => {
   it('lists the disk tools over stdio', async () => {
     const names = await listedNames('stdio');
     expect(names).toContain('config_pull');
+    expect(names).toContain('config_diff');
     expect(names).toContain('config_get_schema');
   });
 
-  it('omits config_pull and config_push over http but keeps config_get_schema', async () => {
+  it('omits config disk tools over http but keeps config_get_schema', async () => {
     const names = await listedNames('http');
     expect(names).not.toContain('config_pull');
+    expect(names).not.toContain('config_diff');
     expect(names).not.toContain('config_push');
     expect(names).toContain('config_get_schema');
   });

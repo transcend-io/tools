@@ -5883,6 +5883,7 @@ type Mutation {
   setWorkflowIdentifierDisabled(input: SetWorkflowIdentifierDisabledInput!): SetWorkflowIdentifierDisabledPayload!
   shareComplianceReport(input: ShareComplianceReportInput!): ShareComplianceReportPayload!
   showTcfVendorInUI(input: ShowTCFVendorInput!): ShowTcfVendorInUiPayload!
+  signOutDevice(input: SignOutDeviceInput!): SignOutDevicePayload!
   skipProfileDataPointsByIdentifierType(input: SkipProfileDataPointsByIdentifierTypeInput!): SkipProfileDataPointsByIdentifierTypePayload!
   skipRequestDataSilos(input: SkipRequestDataSilosInput!): SkipRequestDataSilosPayload!
   skipRequestEnricher(id: ID!): SkipRequestEnricherPayload!
@@ -8717,8 +8718,8 @@ type Catalog implements CatalogPreviewInterface {
   dataPoints: [DefaultDataPoint!]!
   allDataPoints: [DefaultDataPoint!]!
   plaintextInformation: [PlaintextRequirement!]!
-  introMessage: String
-  businessUserOverview: String
+  introMessage: String @deprecated(reason: "Integration docs moved to markdown; always empty. Use introMessageMarkdown")
+  businessUserOverview: String @deprecated(reason: "Integration docs moved to markdown; always empty. Use businessUserOverviewMarkdown")
   introMessageMarkdown: String
   businessUserOverviewMarkdown: String
   controllerManualInstructions: String
@@ -19375,6 +19376,12 @@ input SecondLayerThemeInput {
   shrinkToFullWidth: String
 }
 
+type SeededTestDataSubjectRequest {
+  requestId: ID!
+  email: String!
+  type: RequestAction!
+}
+
 input SeedIntegrationProfileInput {
   email: String!
   firstName: String
@@ -19392,6 +19399,14 @@ input SeedIntegrationProfileInput {
 input SeedIntegrationRemotelyInput {
   dataSiloId: ID!
   seedIdentifiers: [SeedIntegrationProfileInput!]
+}
+
+input SeedTestDataSubjectRequestsInput {
+  organizationId: ID!
+  emails: [String!]
+  types: [RequestAction!]!
+  subjectType: String
+  isSilent: Boolean
 }
 
 type SelectableCatalog {
@@ -19757,6 +19772,15 @@ input SignedRequestIdentifiersInput {
   transcend: [SignedRequestIdentifierInput!]
 }
 
+type SignOutDevicePayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input SignOutDeviceInput {
+  token: String!
+}
+
 type SignupCode {
   id: ID!
   code: String!
@@ -20105,6 +20129,7 @@ input SombraKMSKeyEntryInput {
   canaryValue: String!
   canaryType: SombraKMSCanaryValueType!
   index: Int!
+  id: String
 }
 
 type SombraKMSKeyEntryOutput {
@@ -23537,6 +23562,7 @@ type WorkflowConfig {
   extensionTime: [ExpiryTime!]
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
+  confirmations: [WorkflowConfigConfirmation!]
   internalName: String!
   allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
@@ -23554,6 +23580,13 @@ type WorkflowConfigAttributeKey {
   workflowConfigId: ID!
   attributeKeyId: ID!
   attributeKey: AttributeKey!
+}
+
+type WorkflowConfigConfirmation {
+  id: ID!
+  index: Int!
+  isRequired: Boolean!
+  label: LocalizedMessage!
 }
 
 input WorkflowConfigConfirmationInput {

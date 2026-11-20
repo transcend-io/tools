@@ -1,10 +1,9 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { defineTool, EmptySchema, type ToolClients } from '@transcend-io/mcp-server-base';
+import { listAllYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
 import { TranscendPullResource } from '@transcend-io/sdk';
 
-import { pullYmlSection } from '../helpers/ymlSection.js';
-
-export const ListCustomFieldsSchema = z.object({});
-export type ListCustomFieldsInput = z.infer<typeof ListCustomFieldsSchema>;
+export const ListCustomFieldsSchema = EmptySchema;
+export type ListCustomFieldsInput = Record<string, never>;
 
 export function createInventoryListCustomFieldsTool(clients: ToolClients) {
   return defineTool({
@@ -17,9 +16,6 @@ export function createInventoryListCustomFieldsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCustomFieldsSchema,
-    handler: async () => {
-      const items = await pullYmlSection(clients, TranscendPullResource.Attributes);
-      return createListResult(items, { totalCount: items.length, hasNextPage: false });
-    },
+    handler: async () => listAllYmlSection(clients, TranscendPullResource.Attributes),
   });
 }
