@@ -46,14 +46,14 @@ export interface McpHttpServer {
   shutdown: () => Promise<void>;
 }
 
-async function runWithInboundHttpContext(
+export async function runWithInboundHttpContext<T>(
   headers: Record<string, string | string[] | undefined>,
-  fn: () => Promise<void>,
-): Promise<void> {
+  fn: () => Promise<T>,
+): Promise<T> {
   const auth = tryResolveAuth(headers);
   const mcpCaller = extractMcpCallerFromHeaders(headers);
 
-  let contextWrappedFn = fn;
+  let contextWrappedFn: () => Promise<T> = fn;
   if (mcpCaller !== undefined) {
     const prev = contextWrappedFn;
     contextWrappedFn = () => requestMcpCallerContext.run(mcpCaller, prev);
