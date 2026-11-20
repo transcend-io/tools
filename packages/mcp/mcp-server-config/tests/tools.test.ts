@@ -14,6 +14,7 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
+  previewPush: vi.fn(),
 }));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
@@ -37,11 +38,12 @@ function tempDir(): string {
 }
 
 describe('tool definitions', () => {
-  it('exposes the four tools', () => {
+  it('exposes the five tools', () => {
     expect(tools.map((t) => t.name)).toEqual([
       'config_pull',
       'config_diff',
       'config_push',
+      'config_preview_push',
       'config_get_schema',
     ]);
   });

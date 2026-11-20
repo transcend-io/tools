@@ -6,6 +6,7 @@ import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextF
 import { push, type PushCommandFlags } from '../impl.js';
 
 const pullTranscendConfigurationMock = vi.hoisted(() => vi.fn());
+const previewPushMock = vi.hoisted(() => vi.fn());
 const syncConfigurationToTranscendMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@transcend-io/sdk', async (importOriginal) => {
@@ -13,6 +14,7 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => {
   return {
     ...actual,
     buildTranscendGraphQLClient: vi.fn(() => ({})),
+    previewPush: previewPushMock,
     pullTranscendConfiguration: pullTranscendConfigurationMock,
     syncConfigurationToTranscend: syncConfigurationToTranscendMock,
   };
@@ -45,12 +47,25 @@ const testFs = {
 } as unknown as typeof fs;
 
 describe('inventory push', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     pullTranscendConfigurationMock.mockResolvedValue({
       vendors: [{ title: 'Segment', description: 'CDP' }],
     });
     syncConfigurationToTranscendMock.mockResolvedValue({ success: true, errors: [] });
+    const { buildSnapshotRequest, planPush } = await import('@transcend-io/sdk');
+    previewPushMock.mockImplementation(async (client, contents, options = {}) => {
+      const remote = await pullTranscendConfigurationMock(client, {
+        ...buildSnapshotRequest(contents),
+        dataSiloIds: [],
+        integrationNames: [],
+        pageSize: options.pageSize ?? 50,
+        debug: false,
+      });
+      return planPush(contents, remote, {
+        deleteExtraAttributeValues: options.deleteExtraAttributeValues,
+      });
+    });
   });
 
   it('--dryRun prints the plan and never writes', async () => {

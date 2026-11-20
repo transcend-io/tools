@@ -1,4 +1,5 @@
 export * from './createTranscendConsentGotInstance.js';
+export * from './bundleDeployPreview/index.js';
 export * from './deployConsentManager.js';
 export * from './fetchAllConsentSites.js';
 export * from './fetchAllCookies.js';
