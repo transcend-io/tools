@@ -7,6 +7,7 @@ import {
 import {
   projectDryRunParameter,
   projectJsonParameter,
+  projectYesParameter,
 } from '../../../lib/scaffolding/command-parameters.js';
 
 export const pushCommand = buildCommand({
@@ -65,10 +66,21 @@ export const pushCommand = buildCommand({
         ...projectJsonParameter,
         brief: 'With --dryRun, print the plan as JSON on stdout',
       },
+      yes: {
+        ...projectYesParameter,
+        brief: 'Apply the push after showing the preview without asking for confirmation',
+      },
+      skipPreview: {
+        kind: 'boolean',
+        brief:
+          'Push straight away without comparing with your organization first. This is how push worked before previews.',
+        default: false,
+      },
     },
   },
   docs: {
     brief: 'Push metadata from transcend.yml to Transcend',
-    fullDescription: 'Given a transcend.yml file, sync the contents up to your Transcend instance.',
+    fullDescription:
+      'Given a transcend.yml file, sync the contents up to your Transcend instance. Before anything is written, the command compares your file with your organization, shows what will be created, updated, or deleted, and asks you to confirm. Pass --yes to confirm automatically (for example in CI), --dryRun to only look, or --skipPreview to push without a preview.',
   },
 });

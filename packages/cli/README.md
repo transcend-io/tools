@@ -3117,10 +3117,10 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json] [--yes] [--skipPreview]
   transcend inventory push --help
 
-Given a transcend.yml file, sync the contents up to your Transcend instance.
+Given a transcend.yml file, sync the contents up to your Transcend instance. Before anything is written, the command compares your file with your organization, shows what will be created, updated, or deleted, and asks you to confirm. Pass --yes to confirm automatically (for example in CI), --dryRun to only look, or --skipPreview to push without a preview.
 
 FLAGS
       --auth                         The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
@@ -3133,6 +3133,8 @@ FLAGS
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
      [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
      [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
+     [--yes]                         Apply the push after showing the preview without asking for confirmation                                                                                                                                                                                    [default = false]
+     [--skipPreview]                 Push straight away without comparing with your organization first. This is how push worked before previews.                                                                                                                                                 [default = false]
   -h  --help                         Print help information and exit
 ```
 
@@ -3186,6 +3188,18 @@ transcend inventory push --auth="$TRANSCEND_API_KEY"
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
+```
+
+**Apply the push without the confirmation prompt, for example in CI**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --yes
+```
+
+**Push without comparing with your organization first**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --skipPreview
 ```
 
 **Looks for file at custom location ./custom/location.yml**
@@ -3257,9 +3271,14 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=customFields
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
-**Preview a push before applying it**
+**Preview before every push**
 
-`--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
+Before it writes anything, `transcend inventory push` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It then asks you to confirm. The preview also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted.
+
+- `--dryRun` shows the preview and stops. Nothing is changed. Add `--json` for machine-readable output.
+- `--yes` shows the preview and applies it without asking. Use this in CI, where there is no terminal to answer the prompt.
+- `--skipPreview` pushes straight away with no comparison, which is how push worked before previews.
+- If the file already matches your organization, nothing is pushed.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
 
@@ -3346,7 +3365,7 @@ jobs:
       #   run: ./scripts/generate_transcend_yml.py
 
       - name: Push Transcend config
-        run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
+        run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }} --yes
 ```
 
 #### Dynamic variables

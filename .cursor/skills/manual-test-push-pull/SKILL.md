@@ -73,7 +73,7 @@ Show the plan and get user approval before starting.
 For each case:
 
 1. Edit the scratch YAML with the single change (trimmed to the resources under test).
-2. Push: `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml`
+2. Push: `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml --yes`
 3. Re-pull to `verify.yml` and diff — the change should round-trip; nothing else should churn.
    Then run `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml --dryRun`. It should report `0 to create, 0 to update`. Any update row is server normalization noise or a preview bug for that resource, so record the field path.
 4. Refresh the Admin UI page and tell the user exactly what changed (`field: old → new`). Get sign-off or a failure description.
