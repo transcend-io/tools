@@ -1,6 +1,7 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
@@ -36,6 +37,7 @@ const allTools = [
   ...getWorkflowTools(mockClients as never),
   ...getPolicyTools(mockClients as never),
   ...getAdminTools(mockClients),
+  ...getConfigTools(mockClients),
 ];
 
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
@@ -86,6 +88,7 @@ describe('MCP Tool Annotations', () => {
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
       'assessments_submit_response',
+      'config_push',
       'consent_bulk_triage',
       'consent_delete_cookies',
       'consent_delete_data_flows',
@@ -128,6 +131,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'config_push',
       'consent_deploy_bundle',
       'custom_functions_promote_version',
       'custom_functions_test_run',

@@ -20,6 +20,7 @@ import {
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
@@ -49,6 +50,7 @@ const mockClients = {
 const serverFactories = [
   { name: 'admin', getTools: getAdminTools },
   { name: 'assessment', getTools: getAssessmentTools },
+  { name: 'config', getTools: getConfigTools },
   { name: 'consent', getTools: getConsentTools },
   { name: 'custom-functions', getTools: getCustomFunctionsTools },
   { name: 'discovery', getTools: getDiscoveryTools },

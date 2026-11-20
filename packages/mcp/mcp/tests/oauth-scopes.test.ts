@@ -1,6 +1,7 @@
 import { ADMIN_OAUTH_SCOPES } from '@transcend-io/mcp-server-admin';
 import { ASSESSMENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-assessment';
 import { OFFLINE_ACCESS_SCOPE } from '@transcend-io/mcp-server-base';
+import { CONFIG_OAUTH_SCOPES } from '@transcend-io/mcp-server-config';
 import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
 import { CUSTOM_FUNCTIONS_OAUTH_SCOPES } from '@transcend-io/mcp-server-custom-functions';
 import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
@@ -21,6 +22,7 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     for (const scopeList of [
       ADMIN_OAUTH_SCOPES,
       ASSESSMENT_OAUTH_SCOPES,
+      CONFIG_OAUTH_SCOPES,
       CONSENT_OAUTH_SCOPES,
       CUSTOM_FUNCTIONS_OAUTH_SCOPES,
       DISCOVERY_OAUTH_SCOPES,
