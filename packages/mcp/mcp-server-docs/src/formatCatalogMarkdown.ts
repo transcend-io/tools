@@ -1,5 +1,4 @@
 import type { CatalogIntegrationDetail } from './catalogGraphql.js';
-import { INTEGRATION_PRIMARY_GUIDE_URL } from './integrationPublicGuides.js';
 
 function section(title: string, body: string | undefined): string {
   if (!body?.trim()) {
@@ -16,8 +15,11 @@ function listLines(items: string[]): string {
 }
 
 /** Render signed-in catalog metadata as markdown for agents. */
-export function formatCatalogIntegrationMarkdown(catalog: CatalogIntegrationDetail): string {
-  const publicGuideUrl = INTEGRATION_PRIMARY_GUIDE_URL[catalog.integrationName];
+export function formatCatalogIntegrationMarkdown(
+  catalog: CatalogIntegrationDetail,
+  options: { publicGuideUrl?: string } = {},
+): string {
+  const publicGuideUrl = options.publicGuideUrl;
   const datapoints =
     catalog.dataPoints.length > 0
       ? catalog.dataPoints

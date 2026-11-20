@@ -18,8 +18,10 @@ import {
 
 import { getIndex, getRouteIndex, RouteIndexUnavailableError } from '../docsIndex.js';
 import {
+  findIntegrationKey,
   findProductKey,
   findProductTitle,
+  integrationGuidePages,
   lookupRoute,
   normalizeDocUrl,
   normalizeRoute,
@@ -27,7 +29,6 @@ import {
   type RoutePage,
 } from '../docsRoutes.js';
 import { searchDocs } from '../docsSearch.js';
-import { docEntryMatchesIntegration } from '../integrationPublicGuides.js';
 
 /**
  * Cap on articles returned when listing a section. A listing entry is a title
@@ -413,10 +414,41 @@ export function createDocsListTool(_clients?: ToolClients) {
         );
       }
 
-      const integrationFilter =
-        integrationName !== undefined
-          ? (entry: { url: string }) => docEntryMatchesIntegration(entry.url, integrationName)
-          : undefined;
+      let integrationUrlSet: Set<string> | undefined;
+      let integrationPages: RoutePage[] | undefined;
+      if (integrationName !== undefined) {
+        let routeData;
+        try {
+          routeData = await getRouteIndex();
+        } catch (error) {
+          throw new ToolError(
+            ErrorCode.API_ERROR,
+            `Could not load dashboard-routes.json (${error instanceof Error ? error.message : String(error)}). ` +
+              'Use query without integration, or retry later.',
+          );
+        }
+        if (!routeData.integrations) {
+          throw new ToolError(
+            ErrorCode.API_ERROR,
+            'dashboard-routes.json does not include integrations yet (docs may not be deployed). ' +
+              'Use query to search integration docs, or retry after docs deploy.',
+          );
+        }
+        const key = findIntegrationKey(routeData.integrations, integrationName);
+        if (!key) {
+          const names = [...Object.keys(routeData.integrations)].sort();
+          throw new ToolError(
+            ErrorCode.VALIDATION_ERROR,
+            `Unknown integrationName '${integrationName}'. Published names: ${names.join(', ')}.`,
+          );
+        }
+        integrationPages = integrationGuidePages(routeData, integrationName);
+        integrationUrlSet = new Set(integrationPages.map((page) => normalizeDocUrl(page.url)));
+      }
+
+      const integrationFilter = integrationUrlSet
+        ? (entry: { url: string }) => integrationUrlSet!.has(normalizeDocUrl(entry.url))
+        : undefined;
       const scopedEntries = integrationFilter ? entries.filter(integrationFilter) : entries;
 
       const signedInCatalogNote =
@@ -456,22 +488,15 @@ export function createDocsListTool(_clients?: ToolClients) {
       }
 
       if (integrationName !== undefined) {
-        return createListResult(
-          scopedEntries.map(({ title, section: entrySection, url }) => ({
-            title,
-            section: entrySection,
-            url,
-          })),
-          {
-            totalCount: scopedEntries.length,
-            ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
-            ...(!scopedEntries.length && {
-              paginationNote:
-                (signedInCatalogNote ? `${signedInCatalogNote} ` : '') +
-                `No public guide on docs.transcend.io is mapped for integrationName '${integrationName}'.`,
-            }),
-          },
-        );
+        const rows = integrationPages!.map(({ title, url, guideType }) => ({
+          title,
+          section: guideType ?? 'Integration Guides',
+          url,
+        }));
+        return createListResult(await withDescriptions(rows), {
+          totalCount: rows.length,
+          ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
+        });
       }
 
       if (section === undefined) {

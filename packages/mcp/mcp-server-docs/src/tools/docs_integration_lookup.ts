@@ -8,8 +8,9 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import type { DocsCatalogGraphqlClient } from '../catalogGraphql.js';
+import { getRouteIndex } from '../docsIndex.js';
+import { primaryIntegrationGuideUrl } from '../docsRoutes.js';
 import { formatCatalogIntegrationMarkdown } from '../formatCatalogMarkdown.js';
-import { INTEGRATION_PRIMARY_GUIDE_URL } from '../integrationPublicGuides.js';
 
 /** Catalog rows fetched when resolving a name that is not an exact `integrationName`. */
 const RESOLVE_PAGE_SIZE = 25;
@@ -86,11 +87,18 @@ export function createDocsIntegrationLookupTool(clients: ToolClients) {
         }
       }
 
+      let publicGuideUrl: string | undefined;
+      try {
+        publicGuideUrl = primaryIntegrationGuideUrl(await getRouteIndex(), catalog.integrationName);
+      } catch {
+        // Omit when the public route index is unavailable or not deployed yet.
+      }
+
       return createToolResult(true, {
         integrationName: catalog.integrationName,
         title: catalog.title,
-        markdown: formatCatalogIntegrationMarkdown(catalog),
-        publicGuideUrl: INTEGRATION_PRIMARY_GUIDE_URL[catalog.integrationName],
+        markdown: formatCatalogIntegrationMarkdown(catalog, { publicGuideUrl }),
+        ...(publicGuideUrl && { publicGuideUrl }),
       });
     },
   });

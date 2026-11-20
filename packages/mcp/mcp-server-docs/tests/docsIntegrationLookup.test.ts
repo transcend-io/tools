@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import * as docsIndex from '../src/docsIndex.js';
 import { createDocsIntegrationLookupTool } from '../src/tools/docs_integration_lookup.js';
 import { getDocsTools } from '../src/tools/index.js';
 
@@ -34,6 +35,18 @@ describe('getDocsTools', () => {
 
 describe('docs_integration_lookup', () => {
   it('returns catalog markdown for one integration', async () => {
+    vi.spyOn(docsIndex, 'getRouteIndex').mockResolvedValue({
+      routes: {},
+      integrations: {
+        salesforce: [
+          {
+            title: 'Salesforce',
+            url: 'https://docs.transcend.io/docs/integrations/salesforce',
+            guideType: null,
+          },
+        ],
+      },
+    });
     const clients = buildMockClients();
     clients.graphql.getCatalogIntegrationDetail.mockResolvedValue({
       integrationName: 'salesforce',
