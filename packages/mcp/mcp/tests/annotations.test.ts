@@ -10,6 +10,7 @@ import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPolicyTools } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -36,6 +37,7 @@ const allTools = [
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients as never),
   ...getPolicyTools(mockClients as never),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
   ...getConfigTools(mockClients),
 ];
@@ -87,6 +89,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
+      'privacy_center_write',
       'assessments_submit_response',
       'config_push',
       'consent_bulk_triage',
@@ -131,6 +134,7 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
+      'admin_write_teams',
       'config_push',
       'consent_deploy_bundle',
       'custom_functions_promote_version',
@@ -149,6 +153,7 @@ describe('MCP Tool Annotations', () => {
     ];
 
     const expectedGatedNonDestructive = [
+      'admin_write_teams',
       'custom_functions_test_run',
       'custom_functions_upsert',
       'policy_publish',
@@ -189,6 +194,10 @@ describe('MCP Tool Annotations', () => {
 
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
+      'admin_write_teams',
+      'privacy_center_write',
+      'privacy_center_write_intl_messages',
+      'privacy_center_write_policies',
       'workflows_update_config',
       'workflows_write_email_templates',
       'preferences_upsert',

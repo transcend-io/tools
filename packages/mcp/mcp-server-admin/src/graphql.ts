@@ -5,7 +5,6 @@ import {
   type ListOptions,
   type Organization,
   type PaginatedResponse,
-  type PrivacyCenter,
   type Team,
   type User,
 } from '@transcend-io/mcp-server-base';
@@ -126,14 +125,6 @@ const ListApiKeysDoc = graphql(/* GraphQL */ `
   }
 `);
 
-const GetPrivacyCenterDoc = graphql(/* GraphQL */ `
-  query AdminGetPrivacyCenter($lookup: PrivacyCenterLookupInput) {
-    privacyCenter(lookup: $lookup) {
-      id
-    }
-  }
-`);
-
 export class AdminMixin extends TranscendGraphQLBase {
   async getOrganization(): Promise<Organization> {
     const data = await this.makeRequest(GetOrganizationDoc);
@@ -249,26 +240,5 @@ export class AdminMixin extends TranscendGraphQLBase {
       }),
       totalCount: data.apiKeys.totalCount,
     };
-  }
-
-  async getPrivacyCenter(lookup?: { url?: string }): Promise<PrivacyCenter | null> {
-    try {
-      const data = await this.makeRequest(GetPrivacyCenterDoc, {
-        lookup: lookup ?? null,
-      });
-      if (data.privacyCenter) {
-        return {
-          id: data.privacyCenter.id,
-          name: 'Privacy Center',
-          url: lookup?.url ?? '',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return null;
-    } catch {
-      return null;
-    }
   }
 }
