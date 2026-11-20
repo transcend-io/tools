@@ -13,7 +13,7 @@ import {
   UPDATE_ACTION_ITEM_COLLECTION,
 } from './gqls/actionItemCollection.js';
 
-interface ActionItemCollectionInput {
+export interface ActionItemCollectionInput {
   /** The display title of the collection */
   title: string;
   /** Locations where collection is shown */
