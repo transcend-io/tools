@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`, `ManageConsentManagerDeveloperSettings`, `ViewPreferenceStoreSettings`, `ManagePreferenceStoreSettings`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -122,6 +122,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_deploy_bundle` — Deploy the consent manager bundle to `TEST` or `PRODUCTION` (requires `environment`; asks for human confirmation)
 - `consent_list_sites` - List consent sites (hosts Airgap discovers) with owners, teams and attributes
 - `consent_write_sites` - Create or update consent sites by host (like the `consent-sites` section of `transcend.yml`)
+- `consent_write_consent_manager` — Create or update consent manager settings, experiences, UI variants and themes (the `consent-manager` section of `transcend.yml`)
+- `consent_write_purposes` — Create or update consent purposes and their preference topics (the `purposes` section of `transcend.yml`)
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api). `consent_list_roc_records` requires the **ViewManagedConsentDatabaseAdminApi** scope. `consent_list_sites` requires **ViewConsentManager** and `consent_write_sites` requires **ManageConsentManager**.
 
