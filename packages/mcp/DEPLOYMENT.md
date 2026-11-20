@@ -223,7 +223,7 @@ pnpm --dir packages/mcp/mcp sync:sanity
 # optional: -- --discover   (print table/prose block keys)
 ```
 
-**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `genfiles` then `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
+**CI:** Releases do not sync Sanity automatically. Trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
 
 4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
 
