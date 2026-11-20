@@ -1,5 +1,19 @@
 # @transcend-io/mcp-server-inventory
 
+## 1.1.0
+
+### Minor Changes
+
+- 3cc760c: Add direct inventory MCP tools for business entities, data subjects, identifiers, processing activities, and custom fields in `transcend.yml`, and update the CLI/MCP parity map for those sections. The inventory server also requests request-identity, data subject request settings, and global attribute scopes.
+
+### Patch Changes
+
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+  - @transcend-io/mcp-server-base@3.1.1
+  - @transcend-io/sdk@3.3.0
+
 ## 1.0.21
 
 ### Patch Changes

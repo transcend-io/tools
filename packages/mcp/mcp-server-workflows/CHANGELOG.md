@@ -1,5 +1,22 @@
 # @transcend-io/mcp-server-workflows
 
+## 1.1.0
+
+### Minor Changes
+
+- ae6da74: Add `workflows_write_email_templates` so the MCP can create email templates like `transcend inventory push`. Add the `ManageEmailTemplates` scope to the workflows server.
+
+### Patch Changes
+
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+- Updated dependencies [ae6da74]
+  - @transcend-io/mcp-server-base@3.1.1
+  - @transcend-io/mcp-server-config@0.1.1
+  - @transcend-io/sdk@3.3.0
+
 ## 1.0.20
 
 ### Patch Changes
