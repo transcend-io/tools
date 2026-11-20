@@ -1123,6 +1123,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:^
         version: link:../mcp-server-base
+      '@transcend-io/mcp-server-config':
+        specifier: workspace:^
+        version: link:../mcp-server-config
       '@transcend-io/privacy-types':
         specifier: workspace:^
         version: link:../../privacy-types

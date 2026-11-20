@@ -6,10 +6,9 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { createCollectedLogger } from '@transcend-io/mcp-server-config';
 import { syncTemplate, TemplateInput } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
-
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 
 export const WriteEmailTemplatesSchema = z.object({
   templates: z
