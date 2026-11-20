@@ -14,7 +14,13 @@ import {
 } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { createCollectedLogger, type CollectedLog } from './collectingLogger.js';
+import { createCollectedLogger } from './collectingLogger.js';
+
+/** Log line attached to a failed section write */
+type YmlWriteLog = {
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+};
 
 /** Most items one write call accepts. */
 export const MAX_WRITE_ITEMS = 100;
@@ -80,7 +86,7 @@ export interface YmlWriteResult {
   /** Non-fatal warnings */
   warnings?: string[];
   /** Log lines, only on failure */
-  logs?: CollectedLog[];
+  logs?: YmlWriteLog[];
 }
 
 /**
@@ -114,7 +120,7 @@ export async function pushYmlSection(
           message: error instanceof Error ? error.message : String(error),
         },
       ],
-      logs,
+      logs: logs as YmlWriteLog[],
     };
   }
   return {
@@ -122,7 +128,7 @@ export async function pushYmlSection(
     count,
     errors: result.errors,
     ...(result.warnings && { warnings: result.warnings }),
-    ...(!result.success && { logs: result.logs ?? logs }),
+    ...(!result.success && { logs: (result.logs ?? logs) as YmlWriteLog[] }),
   };
 }
 
