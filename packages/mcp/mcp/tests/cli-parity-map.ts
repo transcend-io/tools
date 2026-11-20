@@ -60,7 +60,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['consent_list_sites'],
     write: ['consent_write_sites'],
   },
-  [TranscendPullResource.ConsentManager]: { read: ['consent_list_airgap_bundles'], write: [] },
+  [TranscendPullResource.ConsentManager]: {
+    read: ['consent_list_airgap_bundles'],
+    write: ['consent_write_consent_manager'],
+  },
   [TranscendPullResource.Partitions]: {
     read: ['preferences_list_partitions'],
     write: ['preferences_write_partitions'],
@@ -100,7 +103,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['assessments_list_templates'],
     write: ['assessments_create_template'],
   },
-  [TranscendPullResource.Purposes]: { read: ['consent_list_purposes'], write: [] },
+  [TranscendPullResource.Purposes]: {
+    read: ['consent_list_purposes'],
+    write: ['consent_write_purposes'],
+  },
   [TranscendPullResource.PreferenceOptions]: {
     read: ['preferences_list_option_values'],
     write: ['preferences_write_option_values'],
@@ -134,10 +140,8 @@ export interface SectionGap {
 export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
   [TranscendPullResource.Enrichers]: { read: true, write: true },
   [TranscendPullResource.Actions]: { read: true, write: true },
-  [TranscendPullResource.ConsentManager]: { write: true },
   [TranscendPullResource.ActionItems]: { read: true, write: true },
   [TranscendPullResource.ActionItemCollections]: { read: true, write: true },
-  [TranscendPullResource.Purposes]: { write: true },
   [TranscendPullResource.SystemDiscovery]: { read: true, write: true },
 };
 

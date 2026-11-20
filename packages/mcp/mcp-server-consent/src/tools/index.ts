@@ -18,6 +18,8 @@ import { createConsentListRocRecordsTool } from './consent_list_roc_records.js';
 import { createConsentListSitesTool } from './consent_list_sites.js';
 import { createConsentUpdateCookiesTool } from './consent_update_cookies.js';
 import { createConsentUpdateDataFlowsTool } from './consent_update_data_flows.js';
+import { createConsentWriteConsentManagerTool } from './consent_write_consent_manager.js';
+import { createConsentWritePurposesTool } from './consent_write_purposes.js';
 import { createConsentWriteSitesTool } from './consent_write_sites.js';
 import { createConsentCookieTriageAppTool } from './cookie_triage_app.js';
 
@@ -43,5 +45,7 @@ export function getConsentTools(clients: ToolClients): ToolDefinition[] {
     createConsentDeployBundleTool(clients),
     createConsentListSitesTool(clients),
     createConsentWriteSitesTool(clients),
+    createConsentWriteConsentManagerTool(clients),
+    createConsentWritePurposesTool(clients),
   ];
 }

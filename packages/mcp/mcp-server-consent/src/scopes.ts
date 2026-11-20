@@ -9,4 +9,9 @@ export const CONSENT_OAUTH_SCOPES = [
   ScopeName.ViewDataFlow,
   ScopeName.ManageDataFlow,
   ScopeName.ViewManagedConsentDatabaseAdminApi,
+  // consent_write_consent_manager
+  ScopeName.ManageConsentManagerDeveloperSettings,
+  // consent_write_purposes
+  ScopeName.ViewPreferenceStoreSettings,
+  ScopeName.ManagePreferenceStoreSettings,
 ] as const;
