@@ -80,6 +80,14 @@ describe('config_pull', () => {
     expect(sdk.pull.mock.calls[0]![1].resources.length).toBeGreaterThan(25);
   });
 
+  it('caps pull resources when TRANSCEND_CONFIG_RESOURCES is set', async () => {
+    vi.stubEnv('TRANSCEND_CONFIG_RESOURCES', 'dataSilos,purposes');
+    const filePath = path.join(tempDir(), 'transcend.yml');
+    await tool('config_pull').handler({ filePath, resources: ['all'] });
+    expect(sdk.pull.mock.calls[0]![1].resources).toEqual(['dataSilos', 'purposes']);
+    vi.unstubAllEnvs();
+  });
+
   it('rejects unknown section names and lists the valid ones', async () => {
     const filePath = path.join(tempDir(), 'transcend.yml');
     await expect(tool('config_pull').handler({ filePath, resources: ['nope'] })).rejects.toThrow(

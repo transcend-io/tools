@@ -18,6 +18,10 @@ import {
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
 import { assertConfigFilePath } from '../helpers/configFilePath.js';
 import {
+  assertResourcesInAllowlist,
+  parseConfigResourceAllowlistFromEnv,
+} from '../helpers/configResourceAllowlist.js';
+import {
   countConfigSections,
   resourcesInInput,
   scopesForResources,
@@ -108,10 +112,10 @@ export function createConfigPushTool(clients: ToolClients) {
         );
       }
 
-      const requiredScopes = scopesForResources(
-        resourcesInInput(input),
-        TR_PUSH_RESOURCE_SCOPE_MAP,
-      );
+      const sectionsInFile = resourcesInInput(input);
+      assertResourcesInAllowlist(sectionsInFile, parseConfigResourceAllowlistFromEnv());
+
+      const requiredScopes = scopesForResources(sectionsInFile, TR_PUSH_RESOURCE_SCOPE_MAP);
       assertScopesAvailable(clients.graphql, requiredScopes);
 
       const { logger, logs } = createCollectedLogger();

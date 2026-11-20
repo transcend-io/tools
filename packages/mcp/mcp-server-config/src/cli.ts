@@ -7,12 +7,29 @@ import {
 import { TranscendMcpServer, getMcpServerOAuthScopes } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
+import {
+  oauthScopesForConfigAllowlist,
+  parseConfigResourceAllowlistFromEnv,
+} from './helpers/configResourceAllowlist.js';
 import { getConfigTools } from './index.js';
+
+function resolveConfigOauthScopes(): readonly string[] {
+  try {
+    const allowlist = parseConfigResourceAllowlistFromEnv();
+    if (!allowlist) {
+      return getMcpServerOAuthScopes(TranscendMcpServer.Config);
+    }
+    return oauthScopesForConfigAllowlist(allowlist);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
 
 createMCPServer({
   name: 'transcend-mcp-config',
   version: packageJson.version,
-  oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.Config),
+  oauthScopes: resolveConfigOauthScopes(),
   getTools: getConfigTools,
   createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
     const graphql = new TranscendGraphQLBase(auth, graphqlUrl);

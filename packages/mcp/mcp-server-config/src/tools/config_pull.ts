@@ -15,12 +15,14 @@ import {
   pullTranscendConfiguration,
   serializeTranscendYaml,
   TR_PULL_RESOURCE_SCOPE_MAP,
-  TranscendPullResource,
 } from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
 import { assertConfigFilePath } from '../helpers/configFilePath.js';
-import { parseResources } from '../helpers/resources.js';
+import {
+  parseConfigResourceAllowlistFromEnv,
+  resolvePullResourcesFromInput,
+} from '../helpers/configResourceAllowlist.js';
 import { countConfigSections, scopesForResources } from '../helpers/sections.js';
 import { parseTrackerStatuses } from '../helpers/trackerStatuses.js';
 
@@ -107,11 +109,10 @@ export function createConfigPullTool(clients: ToolClients) {
         );
       }
 
-      const resourcesToPull: TranscendPullResource[] = !resources
-        ? [...DEFAULT_TRANSCEND_PULL_RESOURCES]
-        : resources.includes('all')
-          ? Object.values(TranscendPullResource)
-          : parseResources(resources);
+      const resourcesToPull = resolvePullResourcesFromInput(
+        resources,
+        parseConfigResourceAllowlistFromEnv(),
+      );
 
       const requiredScopes = scopesForResources(resourcesToPull, TR_PULL_RESOURCE_SCOPE_MAP);
       assertScopesAvailable(clients.graphql, requiredScopes);
