@@ -33,6 +33,11 @@ export const ENRICHERS = gql`
           type
         }
         actions
+        databaseName
+        sqlQuery
+        dataSilo {
+          title
+        }
       }
     }
   }

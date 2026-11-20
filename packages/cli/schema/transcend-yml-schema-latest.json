@@ -368,7 +368,7 @@
     "preflights": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/intersection-e113c8"
+        "$ref": "#/definitions/intersection-1skanjm"
       },
       "description": "Preflight check definitions (identity enrichment, fraud checks, etc.) run before privacy request workflows."
     },
@@ -685,6 +685,10 @@
               "active": {
                 "type": "boolean"
               },
+              "subjectClass": {
+                "type": "string",
+                "enum": ["END_USER", "EMPLOYEE", "BUSINESS_CONTACT", "OTHER"]
+              },
               "title": {
                 "type": "string"
               },
@@ -721,6 +725,57 @@
           {
             "type": "object",
             "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "fileFormItems": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": ["internalName", "label", "isRequired", "index"],
+                      "properties": {
+                        "internalName": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "isRequired": {
+                          "type": "boolean"
+                        },
+                        "index": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "info": {
+                          "type": "string"
+                        },
+                        "acceptedMimeTypes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "maxFileSize": {
+                          "type": "string"
+                        },
+                        "maxFiles": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
               "skipSecondaryIfNoFiles": {
                 "type": "boolean"
               },
@@ -811,6 +866,15 @@
               },
               "isUniqueOnPreferenceStore": {
                 "type": "boolean"
+              },
+              "sqlPriority": {
+                "type": "number"
+              },
+              "sql-variable": {
+                "type": "string"
+              },
+              "sql-lookup-variable": {
+                "type": "string"
               }
             }
           }
@@ -3993,7 +4057,7 @@
         }
       }
     },
-    "intersection-e113c8": {
+    "intersection-1skanjm": {
       "allOf": [
         {
           "type": "object",
@@ -4083,6 +4147,15 @@
               "items": {
                 "$ref": "#/definitions/RequestAction"
               }
+            },
+            "data-silo-title": {
+              "type": "string"
+            },
+            "sql-query": {
+              "type": "string"
+            },
+            "database-name": {
+              "type": "string"
             }
           }
         }

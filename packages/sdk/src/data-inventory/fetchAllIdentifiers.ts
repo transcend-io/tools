@@ -41,6 +41,12 @@ export interface Identifier {
   displayOrder: number;
   /** Does this identifier uniquely identify a consent record */
   isUniqueOnPreferenceStore: boolean;
+  /** SQL priority for database-backed identifiers */
+  sqlPriority?: number | null;
+  /** SQL variable name */
+  sqlVariable: string;
+  /** SQL lookup variable name */
+  sqlLookupVariable: string;
 }
 
 const PAGE_SIZE = 20;

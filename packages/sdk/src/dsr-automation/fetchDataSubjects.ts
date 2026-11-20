@@ -1,4 +1,4 @@
-import { RequestActionObjectResolver } from '@transcend-io/privacy-types';
+import { DataSubjectClass, RequestActionObjectResolver } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -10,6 +10,8 @@ export interface DataSubject {
   id: string;
   /** Type of data subject */
   type: string;
+  /** Subject class (immutable after create) */
+  subjectClass: DataSubjectClass;
   /** Whether active */
   active: boolean;
   /** Title of data subject */
@@ -62,11 +64,17 @@ export async function createDataSubject(
   options: {
     /** The type string for the new subject */
     input: string;
+    /** Subject class for the new type */
+    subjectClass?: DataSubjectClass;
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<DataSubject> {
-  const { input: dataSubjectType, logger = NOOP_LOGGER } = options;
+  const {
+    input: dataSubjectType,
+    subjectClass = DataSubjectClass.Other,
+    logger = NOOP_LOGGER,
+  } = options;
   const { createSubject } = await makeGraphQLRequest<{
     /** Create Subject Response */
     createSubject: {
@@ -74,7 +82,14 @@ export async function createDataSubject(
       subject: DataSubject;
     };
   }>(client, CREATE_DATA_SUBJECT, {
-    variables: { type: dataSubjectType, skipPublish: true },
+    variables: {
+      input: {
+        type: dataSubjectType,
+        title: dataSubjectType,
+        subjectClass,
+        skipPublish: true,
+      },
+    },
     logger,
   });
   return createSubject.subject;
@@ -123,3 +138,5 @@ export function convertToDataSubjectAllowlist(
     .filter((silo) => !dataSubjectTypes.includes(silo.type))
     .map(({ type }) => type);
 }
+
+export { DataSubjectClass };
