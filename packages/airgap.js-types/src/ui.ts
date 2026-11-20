@@ -4,7 +4,7 @@ import type {
 } from '@transcend-io/internationalization';
 import { LoadOptions } from '@transcend-io/privacy-types';
 // main
-import { applyEnum, type ObjByString, valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, getProps, type ObjByString, valuesOf } from '@transcend-io/type-utils';
 // external
 import * as t from 'io-ts';
 
@@ -293,27 +293,6 @@ export const TCFConfigInput = t.partial(TCFConfig.props);
 /** Type override */
 export type TCFConfigInput = t.TypeOf<typeof TCFConfigInput>;
 
-/** Collect top-level props from an io-ts interface, partial, or intersection codec. */
-const collectCodecProps = (codec: t.Any): t.Props => {
-  // io-ts does not expose `_tag` on `t.Any`; runtime codecs always have it.
-  const tagged = codec as t.Any & { _tag?: string; types?: t.Any[]; props?: t.Props };
-  if (tagged._tag === 'IntersectionType' && tagged.types) {
-    return tagged.types.reduce<t.Props>(
-      (props, type) => Object.assign(props, collectCodecProps(type)),
-      {},
-    );
-  }
-  if (
-    (tagged._tag === 'InterfaceType' ||
-      tagged._tag === 'PartialType' ||
-      tagged._tag === 'StrictType') &&
-    tagged.props
-  ) {
-    return { ...tagged.props };
-  }
-  return {};
-};
-
 /**
  * Marker the main backend writes in place of `overrides` when a record of consent would exceed
  * the 1,000 KiB Firehose record limit. Read by the ROC query and hydration API.
@@ -329,7 +308,7 @@ export type BannerContextOverridesDropped = t.TypeOf<typeof BannerContextOverrid
 
 const BannerContextOverridesExact = t.exact(
   t.partial({
-    ...(collectCodecProps(LoadOptions) as {
+    ...(getProps(LoadOptions) as {
       [K in keyof LoadOptions]-?: t.Type<LoadOptions[K]>;
     }),
     /** Consent UI variables set by the host page. */

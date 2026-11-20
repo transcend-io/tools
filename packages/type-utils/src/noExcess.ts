@@ -17,7 +17,7 @@ const isPartialCodec = getIsCodec<t.PartialType<t.Props>>('PartialType');
 /**
  * Extract property definitions from various codec types.
  */
-const getProps = (codec: t.HasProps): t.Props => {
+export const getProps = (codec: t.HasProps): t.Props => {
   switch (codec._tag) {
     case 'RefinementType':
     case 'ReadonlyType':
