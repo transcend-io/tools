@@ -6,6 +6,13 @@
         "command": ".cursor/hooks/preload-shell-functions.sh",
         "matcher": "Shell"
       }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/check-pr-content.sh",
+        "matcher": "gh\\s+pr\\s+(create|edit|comment|review)",
+        "failClosed": true
+      }
     ]
   }
 }
