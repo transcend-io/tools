@@ -1251,6 +1251,32 @@ export const ConsentManagerInput = t.partial({
 /** Type override */
 export type ConsentManagerInput = t.TypeOf<typeof ConsentManagerInput>;
 
+/** One privacy center branding asset in transcend.yml */
+export const PrivacyCenterBrandingAssetInput = t.partial({
+  /** Existing asset file id in the target org */
+  id: t.string,
+  /** Source URL to copy into the target org when `id` is absent */
+  src: t.string,
+  /** Alt text for the asset */
+  alt: t.string,
+});
+
+/** Type override */
+export type PrivacyCenterBrandingAssetInput = t.TypeOf<typeof PrivacyCenterBrandingAssetInput>;
+
+/** Branding assets for the privacy center (use `src` when copying across orgs) */
+export const PrivacyCenterBrandingAssetsInput = t.partial({
+  logo: PrivacyCenterBrandingAssetInput,
+  favicon: PrivacyCenterBrandingAssetInput,
+  logoOnSolid: PrivacyCenterBrandingAssetInput,
+  logoOnFooter: PrivacyCenterBrandingAssetInput,
+  hero: PrivacyCenterBrandingAssetInput,
+  widgetBg: PrivacyCenterBrandingAssetInput,
+});
+
+/** Type override */
+export type PrivacyCenterBrandingAssetsInput = t.TypeOf<typeof PrivacyCenterBrandingAssetsInput>;
+
 /**
  * Input to define a privacy center
  */
@@ -1300,14 +1326,7 @@ export const PrivacyCenterInput = t.partial({
   /** Whether to show consent partition controls on the privacy center */
   showPartition: t.boolean,
   /** Branding assets for the privacy center (use `src` when copying across orgs) */
-  assets: t.partial({
-    logo: t.partial({ id: t.string, src: t.string, alt: t.string }),
-    favicon: t.partial({ id: t.string, src: t.string, alt: t.string }),
-    logoOnSolid: t.partial({ id: t.string, src: t.string, alt: t.string }),
-    logoOnFooter: t.partial({ id: t.string, src: t.string, alt: t.string }),
-    hero: t.partial({ id: t.string, src: t.string, alt: t.string }),
-    widgetBg: t.partial({ id: t.string, src: t.string, alt: t.string }),
-  }),
+  assets: PrivacyCenterBrandingAssetsInput,
   /**
    * Privacy Center "home" / back-to-site link URL shown in the privacy center
    * header

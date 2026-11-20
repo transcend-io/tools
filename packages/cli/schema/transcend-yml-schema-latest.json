@@ -2466,88 +2466,22 @@
           "type": "object",
           "properties": {
             "logo": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             },
             "favicon": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             },
             "logoOnSolid": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             },
             "logoOnFooter": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             },
             "hero": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             },
             "widgetBg": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "src": {
-                  "type": "string"
-                },
-                "alt": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/partial-1x6tpke"
             }
           }
         },
@@ -9905,6 +9839,20 @@
         "eu-ES",
         "gl-ES"
       ]
+    },
+    "partial-1x6tpke": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        }
+      }
     },
     "intersection-zb9v3p": {
       "allOf": [

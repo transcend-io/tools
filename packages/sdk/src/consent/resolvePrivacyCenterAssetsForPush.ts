@@ -1,20 +1,15 @@
 import type { GraphQLClient } from 'graphql-request';
 
+import type {
+  PrivacyCenterBrandingAssetInput,
+  PrivacyCenterBrandingAssetsInput,
+} from '../transcend-yml/codecs.js';
 import type { PrivacyCenterAssetSlot } from './privacyCenterAssetSlots.js';
 import { uploadAssetFileFromUrl } from './uploadAssetFileFromUrl.js';
 
-export interface PrivacyCenterAssetYamlInput {
-  /** Existing asset file id in the target org */
-  id?: string;
-  /** Source URL to copy into the target org when `id` is absent */
-  src?: string;
-  /** Alt text for the asset */
-  alt?: string;
-}
+export type PrivacyCenterAssetYamlInput = PrivacyCenterBrandingAssetInput;
 
-export type PrivacyCenterAssetsYamlInput = Partial<
-  Record<PrivacyCenterAssetSlot, PrivacyCenterAssetYamlInput>
->;
+export type PrivacyCenterAssetsYamlInput = PrivacyCenterBrandingAssetsInput;
 
 /**
  * Resolve transcend.yml privacy center assets into GraphQL `UpdatePrivacyCenterAssetsInput`.
