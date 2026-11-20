@@ -25,7 +25,9 @@ import {
   lookupRoute,
   normalizeDocUrl,
   normalizeRoute,
+  primaryAppUrlForDoc,
   resolveRouteProduct,
+  toDashboardLink,
   type RoutePage,
 } from '../docsRoutes.js';
 import { searchDocs } from '../docsSearch.js';
@@ -137,6 +139,32 @@ function toProductRows(pages: RoutePage[], product: string) {
  * rows come from dashboard-routes.json, which has no summaries. A missing or failed
  * llms.txt index leaves the rows as they were, since the summary is a convenience.
  */
+function withAppUrl<T extends { url: string; route?: string }>(
+  data: Awaited<ReturnType<typeof getRouteIndex>>,
+  rows: T[],
+): Array<T & { appUrl?: string }> {
+  return rows.map((row) => {
+    if (typeof row.route === 'string') {
+      const link = toDashboardLink(row.route);
+      if (link.url) {
+        return { ...row, appUrl: link.url };
+      }
+    }
+    const fromDoc = primaryAppUrlForDoc(data, row.url);
+    return fromDoc ? { ...row, appUrl: fromDoc } : row;
+  });
+}
+
+async function enrichRowsWithAppUrl<T extends { url: string }>(
+  rows: T[],
+): Promise<Array<T & { appUrl?: string }>> {
+  try {
+    return withAppUrl(await getRouteIndex(), rows);
+  } catch {
+    return rows;
+  }
+}
+
 async function withDescriptions<T extends { url: string }>(
   rows: T[],
 ): Promise<Array<T & { description?: string }>> {
@@ -199,7 +227,10 @@ async function listDocsByProduct({
       urlFilter: (url) => inProduct.has(normalizeDocUrl(url)),
     });
     return createListResult(
-      await withDescriptions(hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))),
+      withAppUrl(
+        data,
+        await withDescriptions(hits.map((hit) => ({ match: DocsListRouteMatch.Search, ...hit }))),
+      ),
       {
         totalCount,
         paginationNote:
@@ -213,7 +244,7 @@ async function listDocsByProduct({
   }
 
   const page = pages.slice(0, PRODUCT_LISTING_LIMIT);
-  return createListResult(await withDescriptions(toProductRows(page, title)), {
+  return createListResult(withAppUrl(data, await withDescriptions(toProductRows(page, title))), {
     totalCount: pages.length,
     paginationNote:
       pages.length === 0
@@ -300,7 +331,7 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
           'There is no paging: add query to search within them.',
       );
     }
-    return createListResult(await withDescriptions(page), {
+    return createListResult(withAppUrl(data, await withDescriptions(page)), {
       totalCount: rows.length,
       paginationNote: notes.join(' '),
     });
@@ -333,7 +364,7 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
   } else {
     notes.push(`No full-text results for '${terms}' beyond the pages above.`);
   }
-  return createListResult(await withDescriptions(rows), {
+  return createListResult(withAppUrl(data, await withDescriptions(rows)), {
     totalCount: rows.length,
     paginationNote: notes.join(' '),
   });
@@ -345,7 +376,7 @@ export function createDocsListTool(_clients?: ToolClients) {
     description:
       'List or search Transcend documentation. Prefer route for a Dashboard page, product ' +
       'for a product area, or query for full-text search. Rows may include a one-line index ' +
-      'description. section lists one llms.txt section; omit arguments for section names. ' +
+      'description and appUrl when mapped. section lists one llms.txt section; omit arguments for section names. ' +
       'Then call docs_fetch with a url.',
     category: 'Documentation',
     readOnly: true,
@@ -475,7 +506,7 @@ export function createDocsListTool(_clients?: ToolClients) {
           ? hits.filter((hit) => integrationFilter(hit))
           : hits;
         const reportedTotal = integrationFilter ? filteredHits.length : totalCount;
-        return createListResult(await withDescriptions(filteredHits), {
+        return createListResult(await enrichRowsWithAppUrl(await withDescriptions(filteredHits)), {
           totalCount: reportedTotal,
           ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
           ...(!signedInCatalogNote &&
@@ -493,7 +524,7 @@ export function createDocsListTool(_clients?: ToolClients) {
           section: guideType ?? 'Integration Guides',
           url,
         }));
-        return createListResult(await withDescriptions(rows), {
+        return createListResult(await enrichRowsWithAppUrl(await withDescriptions(rows)), {
           totalCount: rows.length,
           ...(signedInCatalogNote && { paginationNote: signedInCatalogNote }),
         });
@@ -516,12 +547,16 @@ export function createDocsListTool(_clients?: ToolClients) {
       const filtered = scopedEntries.filter((entry) => entry.section === section);
       const page = filtered.slice(0, SECTION_LISTING_LIMIT);
       return createListResult(
-        page.map(({ title, section: entrySection, url, description }) => ({
-          title,
-          section: entrySection,
-          url,
-          ...(description && { description }),
-        })),
+        await enrichRowsWithAppUrl(
+          await withDescriptions(
+            page.map(({ title, section: entrySection, url, description }) => ({
+              title,
+              section: entrySection,
+              url,
+              ...(description && { description }),
+            })),
+          ),
+        ),
         {
           totalCount: filtered.length,
           ...(filtered.length > page.length && {

@@ -217,6 +217,7 @@ describe('docs_list route', () => {
         guideType: DocsGuideType.OverviewsAndConcepts,
         match: DocsListRouteMatch.Primary,
         route: '/privacy-center/general-settings',
+        appUrl: 'https://app.transcend.io/privacy-center/general-settings',
       },
       {
         title: 'Consent setup',
@@ -224,6 +225,7 @@ describe('docs_list route', () => {
         guideType: null,
         match: DocsListRouteMatch.Mention,
         route: '/privacy-center/general-settings',
+        appUrl: 'https://app.transcend.io/privacy-center/general-settings',
       },
     ]);
   });

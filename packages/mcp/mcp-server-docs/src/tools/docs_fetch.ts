@@ -1,6 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { assertDocsHost, getBody } from '../docsIndex.js';
+import { assertDocsHost, getBody, getRouteIndex } from '../docsIndex.js';
+import { dashboardPagesForDocUrl } from '../docsRoutes.js';
 
 /** Maximum markdown characters returned per article (long pages are truncated). */
 const MAX_BODY_CHARS = 120_000;
@@ -23,8 +24,7 @@ export function createDocsFetchTool(_clients?: ToolClients) {
   return defineTool({
     name: 'docs_fetch',
     description:
-      'Fetch full markdown content for a Transcend documentation article by URL. ' +
-      'Use urls returned by docs_list.',
+      'Fetch docs markdown by URL from docs_list. Response includes dashboardPages with app URLs when mapped.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
@@ -33,9 +33,17 @@ export function createDocsFetchTool(_clients?: ToolClients) {
     handler: async ({ url }) => {
       assertDocsHost(url);
       const body = await getBody(url);
+      let dashboardPages: ReturnType<typeof dashboardPagesForDocUrl> = [];
+      try {
+        const routeData = await getRouteIndex();
+        dashboardPages = dashboardPagesForDocUrl(routeData, url);
+      } catch {
+        // Route index is optional; markdown alone is still useful.
+      }
       return createToolResult(true, {
         url,
         markdown: formatBody(body, url),
+        ...(dashboardPages.length > 0 && { dashboardPages }),
       });
     },
   });
