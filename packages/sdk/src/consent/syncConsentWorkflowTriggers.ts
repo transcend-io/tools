@@ -14,7 +14,10 @@ import {
 } from '../dsr-automation/fetchAllWorkflowConfigs.js';
 import { fetchAllDataSubjects, type DataSubject } from '../dsr-automation/fetchDataSubjects.js';
 import { fetchAllPurposes, type Purpose } from '../preference-management/fetchAllPurposes.js';
-import { fetchAllConsentWorkflowTriggers } from './fetchAllConsentWorkflowTriggers.js';
+import {
+  fetchAllConsentWorkflowTriggers,
+  type ConsentWorkflowTrigger,
+} from './fetchAllConsentWorkflowTriggers.js';
 import { CREATE_OR_UPDATE_CONSENT_WORKFLOW_TRIGGER } from './gqls/consentWorkflowTrigger.js';
 
 export interface ConsentWorkflowTriggerPurposeInput {
@@ -375,4 +378,59 @@ export async function syncConsentWorkflowTriggers(
 
   logger?.info(`Synced "${inputs.length}" consent workflow triggers!`);
   return !encounteredError;
+}
+
+/**
+ * Convert fetched consent workflow triggers into the transcend.yml input shape.
+ *
+ * Triggers linked to a DSR workflow use `workflow-title`. When that workflow is
+ * gone or unreadable, the trigger falls back to the legacy `action-type` fields.
+ *
+ * @param client - GraphQL client
+ * @param triggers - Triggers from `fetchAllConsentWorkflowTriggers`
+ * @param options - Options
+ * @returns Trigger inputs, the same shape `syncConsentWorkflowTriggers` accepts
+ */
+export async function convertConsentWorkflowTriggersToInputs(
+  client: GraphQLClient,
+  triggers: ConsentWorkflowTrigger[],
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<ConsentWorkflowTriggerSyncInput[]> {
+  const { logger } = options;
+  const needsWorkflowTitles = triggers.some((trigger) => trigger.workflowConfigId);
+  const dsrWorkflows = needsWorkflowTitles
+    ? await fetchAllWorkflowConfigs(client, {
+        logger,
+        workflowConfigType: WorkflowConfigType.DSR,
+      })
+    : [];
+
+  return triggers.map((trigger): ConsentWorkflowTriggerSyncInput => {
+    const shared = {
+      name: trigger.name,
+      'data-subject-type': trigger.subject.type,
+      'is-silent': trigger.isSilent,
+      'allow-unauthenticated': trigger.allowUnauthenticated,
+      'is-active': trigger.isActive,
+      purposes: parsePurposesFromTriggerCondition(trigger.triggerCondition),
+    };
+
+    if (trigger.workflowConfigId) {
+      const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
+      if (workflowTitle) {
+        return { ...shared, 'workflow-title': workflowTitle };
+      }
+      // Workflow deleted or unreadable: fall back to legacy fields so YAML stays usable
+    }
+
+    return {
+      ...shared,
+      'action-type': trigger.action.type,
+      'data-silo-titles':
+        trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+    };
+  });
 }

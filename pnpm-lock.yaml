@@ -1101,6 +1101,9 @@ importers:
       '@transcend-io/sdk':
         specifier: workspace:^
         version: link:../../sdk
+      '@transcend-io/type-utils':
+        specifier: workspace:^
+        version: link:../../type-utils
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.3

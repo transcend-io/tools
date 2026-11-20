@@ -81,7 +81,7 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp`** to get every tool (112 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (117 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 **Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
@@ -239,7 +239,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   112 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   117 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups           |
 | [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
@@ -250,7 +250,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     3 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    24 | Data inventory, silos, vendors, data points      |
-| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     7 | Privacy preference store (query, upsert, delete) |
+| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |    12 | Privacy preference store (query, upsert, delete) |
 | [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration          |
 
 Tool counts in this table are verified in `mcp/tests/readme-package-tool-counts.test.ts` against each package's `get*Tools()` factory. The unified total matches `EXPECTED_UMBRELLA_TOOL_COUNT` in `mcp/tests/registry.test.ts`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
