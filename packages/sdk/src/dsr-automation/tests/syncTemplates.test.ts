@@ -7,6 +7,7 @@ vi.mock('../../api/makeGraphQLRequest.js', () => ({
   makeGraphQLRequest: (...args: unknown[]) => makeGraphQLRequest(...args),
 }));
 
+import { TemplateDeliveryType } from '../../transcend-yml/enums.js';
 import { syncTemplate } from '../syncTemplates.js';
 
 describe('syncTemplate', () => {
@@ -37,7 +38,7 @@ describe('syncTemplate', () => {
       title: 'Receipt',
       subject: 'Your request',
       body: '<p>Hello</p>',
-      type: 'EMAIL',
+      type: TemplateDeliveryType.Email,
     });
 
     expect(makeGraphQLRequest).toHaveBeenLastCalledWith(
@@ -50,7 +51,7 @@ describe('syncTemplate', () => {
             title: 'Receipt',
             subject: 'Your request',
             template: '<p>Hello</p>',
-            type: 'EMAIL',
+            type: TemplateDeliveryType.Email,
           },
         },
       }),

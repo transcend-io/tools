@@ -72,6 +72,8 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
 
+import { TemplateDeliveryType, TemplateProduct } from './enums.js';
+
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
 const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');
 const DataCategoryTypeCodec = valuesOf(DataCategoryType, 'DataCategoryType');
@@ -97,6 +99,8 @@ const DataFlowScopeCodec = valuesOf(DataFlowScope, 'DataFlowScope');
 const ConsentTrackerStatusCodec = valuesOf(ConsentTrackerStatus, 'ConsentTrackerStatus');
 const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequestPolicy');
 const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator');
+const TemplateDeliveryTypeCodec = valuesOf(TemplateDeliveryType, 'TemplateDeliveryType');
+const TemplateProductCodec = valuesOf(TemplateProduct, 'TemplateProduct');
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -115,9 +119,9 @@ export const TemplateInput = t.intersection([
     /** Template body HTML */
     body: t.string,
     /** Template delivery type */
-    type: t.union([t.literal('EMAIL'), t.literal('TEXT')]),
+    type: TemplateDeliveryTypeCodec,
     /** Product line the template belongs to */
-    product: t.union([t.literal('DSR'), t.literal('ASSESSMENT'), t.literal('ROPA')]),
+    product: TemplateProductCodec,
   }),
 ]);
 

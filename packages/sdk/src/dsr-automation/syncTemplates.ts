@@ -2,10 +2,8 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { TemplateDeliveryType, TemplateProduct } from '../transcend-yml/enums.js';
 import { CREATE_TEMPLATE, TEMPLATES, UPDATE_TEMPLATE } from './gqls/template.js';
-
-export type TemplateType = 'EMAIL' | 'TEXT';
-export type TemplateProduct = 'DSR' | 'ASSESSMENT' | 'ROPA';
 
 export interface Template {
   /** ID of Template */
@@ -13,7 +11,7 @@ export interface Template {
   /** Title of Template */
   title: string;
   /** Template delivery type */
-  type: TemplateType;
+  type: TemplateDeliveryType;
   /** Template subject (e.g. email subject) */
   subject: {
     /** Default message for template subject */
@@ -34,7 +32,7 @@ export interface SyncTemplateInput {
   /** Template body HTML */
   body?: string;
   /** Template type */
-  type?: TemplateType;
+  type?: TemplateDeliveryType;
   /** Product line the template belongs to */
   product?: TemplateProduct;
 }
@@ -108,8 +106,8 @@ export async function syncTemplate(
   });
   const existingTemplate = matches.find(({ title }) => title === template.title);
 
-  const product = template.product ?? 'DSR';
-  const type = template.type ?? 'EMAIL';
+  const product = template.product ?? TemplateProduct.Dsr;
+  const type = template.type ?? TemplateDeliveryType.Email;
 
   if (!existingTemplate) {
     await makeGraphQLRequest(client, CREATE_TEMPLATE, {

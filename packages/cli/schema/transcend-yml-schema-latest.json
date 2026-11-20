@@ -353,27 +353,12 @@
                 "type": "string"
               },
               "type": {
-                "anyOf": [
-                  {
-                    "const": "EMAIL"
-                  },
-                  {
-                    "const": "TEXT"
-                  }
-                ]
+                "type": "string",
+                "enum": ["EMAIL", "TEXT"]
               },
               "product": {
-                "anyOf": [
-                  {
-                    "const": "DSR"
-                  },
-                  {
-                    "const": "ASSESSMENT"
-                  },
-                  {
-                    "const": "ROPA"
-                  }
-                ]
+                "type": "string",
+                "enum": ["DSR", "ASSESSMENT", "ROPA"]
               }
             }
           }
