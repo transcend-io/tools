@@ -26,6 +26,9 @@ export type RouteIndex = Record<string, RouteEntry>;
 /** Product title to its docs pages, overview pages first. */
 export type ProductIndex = Record<string, RoutePage[]>;
 
+/** Catalog integrationName to public guide pages, overview first. */
+export type IntegrationIndex = Record<string, RoutePage[]>;
+
 /** Route path prefix mapped to a product title (null for platform routes). */
 export interface ProductPrefix {
   /** Path prefix such as `/privacy-center`. */
@@ -42,6 +45,8 @@ export interface DashboardRouteData {
   products?: ProductIndex;
   /** Path prefixes to products. Absent on older indexes. */
   productPrefixes?: ProductPrefix[];
+  /** Public integration guides by catalog integrationName. Absent until docs deploy. */
+  integrations?: IntegrationIndex;
 }
 
 /** One docs page returned for a route lookup. */
@@ -265,4 +270,34 @@ export function normalizeDocUrl(url: string): string {
     pathname = url;
   }
   return pathname.replace(/\.md$/i, '').replace(/\/+$/, '').toLowerCase();
+}
+
+/** Finds the key of `integrations` that equals `integrationName`, ignoring case. */
+export function findIntegrationKey(
+  integrations: IntegrationIndex,
+  integrationName: string,
+): string | undefined {
+  const wanted = integrationName.toLowerCase();
+  return Object.keys(integrations).find((key) => key.toLowerCase() === wanted);
+}
+
+/** Public guide pages for one integration, in dashboard-routes order. */
+export function integrationGuidePages(
+  data: DashboardRouteData,
+  integrationName: string,
+): RoutePage[] {
+  const { integrations } = data;
+  if (!integrations) {
+    return [];
+  }
+  const key = findIntegrationKey(integrations, integrationName);
+  return key ? (integrations[key] ?? []) : [];
+}
+
+/** First public guide URL for one integration, when the route index lists any. */
+export function primaryIntegrationGuideUrl(
+  data: DashboardRouteData,
+  integrationName: string,
+): string | undefined {
+  return integrationGuidePages(data, integrationName)[0]?.url;
 }

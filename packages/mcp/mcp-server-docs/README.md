@@ -6,7 +6,7 @@ Transcend MCP Server for documentation lookup. Provides tools to list articles f
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
-**No authentication required.** This standalone server reads public content from `docs.transcend.io` only. It does not use your Transcend API key or OAuth credentials, even if they are present in the environment (for example when launched via [`scripts/mcp-run.sh`](../../../scripts/mcp-run.sh) with `secret.env` loaded).
+**Public docs need no authentication.** `docs_list` and `docs_fetch` read public content from `docs.transcend.io` only and never use your Transcend credentials. `docs_integration_lookup` is the one signed-in tool: it reads integration catalog docs with your API key or OAuth sign-in, and asks you to sign in only when it is called.
 
 ## Install
 
@@ -71,6 +71,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `docs_list` — Browse the Transcend docs sections (`llms.txt`), list one section's articles with `section`, or full-text search titles and article bodies with `query` (ranked snippets; then `docs_fetch`), find docs for an Admin Dashboard page with `route` (a route pattern, path, or app URL; then more docs for its product), or list one product's docs with `product`. `route` and `product` can each be combined with `query`
+- `docs_integration_lookup` — Signed in only. Read the catalog docs for one integration (connection steps, datapoints, supported actions) by `integration` name or title. A near miss returns close names
 - `docs_fetch` — Fetch full markdown for a docs article URL (host restricted to `docs.transcend.io`)
 
 ## Related packages

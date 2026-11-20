@@ -141,6 +141,7 @@ export const DashboardRoutesSchema = z.object({
   productPrefixes: z
     .array(z.object({ prefix: z.string(), product: z.string().nullable() }))
     .optional(),
+  integrations: z.record(z.string(), z.array(RoutePageSchema)).optional(),
 });
 
 /** Parses and validates dashboard-routes.json. Throws when the shape is invalid. */
