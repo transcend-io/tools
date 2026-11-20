@@ -686,20 +686,8 @@
                 "type": "boolean"
               },
               "subjectClass": {
-                "anyOf": [
-                  {
-                    "const": "END_USER"
-                  },
-                  {
-                    "const": "EMPLOYEE"
-                  },
-                  {
-                    "const": "BUSINESS_CONTACT"
-                  },
-                  {
-                    "const": "OTHER"
-                  }
-                ]
+                "type": "string",
+                "enum": ["END_USER", "EMPLOYEE", "BUSINESS_CONTACT", "OTHER"]
               },
               "title": {
                 "type": "string"

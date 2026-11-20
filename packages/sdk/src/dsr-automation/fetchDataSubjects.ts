@@ -1,11 +1,9 @@
-import { RequestActionObjectResolver } from '@transcend-io/privacy-types';
+import { DataSubjectClass, RequestActionObjectResolver } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { CREATE_DATA_SUBJECT, DATA_SUBJECTS } from './gqls/dataSubject.js';
-
-export type DataSubjectClass = 'END_USER' | 'EMPLOYEE' | 'BUSINESS_CONTACT' | 'OTHER';
 
 export interface DataSubject {
   /** ID of data subject */
@@ -72,7 +70,11 @@ export async function createDataSubject(
     logger?: Logger;
   },
 ): Promise<DataSubject> {
-  const { input: dataSubjectType, subjectClass = 'OTHER', logger = NOOP_LOGGER } = options;
+  const {
+    input: dataSubjectType,
+    subjectClass = DataSubjectClass.Other,
+    logger = NOOP_LOGGER,
+  } = options;
   const { createSubject } = await makeGraphQLRequest<{
     /** Create Subject Response */
     createSubject: {
@@ -136,3 +138,5 @@ export function convertToDataSubjectAllowlist(
     .filter((silo) => !dataSubjectTypes.includes(silo.type))
     .map(({ type }) => type);
 }
+
+export { DataSubjectClass };

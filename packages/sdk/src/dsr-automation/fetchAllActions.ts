@@ -1,4 +1,5 @@
 import {
+  FormType,
   IsoCountryCode,
   IsoCountrySubdivisionCode,
   RegionDetectionMethod,
@@ -16,7 +17,7 @@ export interface ActionFormItem {
   /** Display order */
   index?: number | null;
   /** Field type */
-  type?: string | null;
+  type?: FormType | null;
   /** Whether the field is required */
   isRequired: boolean;
   /** Accepted MIME types for file uploads */

@@ -1,4 +1,5 @@
 ---
+"@transcend-io/privacy-types": patch
 "@transcend-io/sdk": patch
 ---
 

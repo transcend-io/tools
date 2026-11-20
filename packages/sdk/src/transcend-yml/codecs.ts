@@ -64,6 +64,7 @@ import {
   CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
+  DataSubjectClass,
   LocaleCodec,
   PolicyType,
 } from '@transcend-io/privacy-types';
@@ -75,6 +76,7 @@ import * as t from 'io-ts';
 import { TemplateDeliveryType, TemplateProduct } from './enums.js';
 
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
+const DataSubjectClassCodec = valuesOf(DataSubjectClass, 'DataSubjectClass');
 const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');
 const DataCategoryTypeCodec = valuesOf(DataCategoryType, 'DataCategoryType');
 const AttributeSupportedResourceTypeCodec = valuesOf(
@@ -931,12 +933,7 @@ export const DataSubjectInput = t.intersection([
     /** Whether the data subject is active on the Privacy Center & DSR API */
     active: t.boolean,
     /** Subject class (used on create only; API cannot change this after creation) */
-    subjectClass: t.union([
-      t.literal('END_USER'),
-      t.literal('EMPLOYEE'),
-      t.literal('BUSINESS_CONTACT'),
-      t.literal('OTHER'),
-    ]),
+    subjectClass: DataSubjectClassCodec,
     /** The title of the data subject */
     title: t.string,
     /** Whether or not to default new requests made in the admin dashboard to silent mode */
