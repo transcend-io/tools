@@ -342,6 +342,147 @@ export namespace CustomFunction {
     del: (key: string) => Promise<boolean>;
   }
 
+  /** Options shared by every `sdk` helper that calls the Transcend API. */
+  export interface SdkApiOptions {
+    /** API key to use instead of the `TRANSCEND_API_KEY` environment variable. */
+    apiKey?: string;
+  }
+
+  /** Localized copy as returned by the Transcend API. */
+  export interface LocalizedMessage {
+    /** Copy in the organization's default language. */
+    defaultMessage: string;
+  }
+
+  /** A file listed for a privacy request. */
+  export interface RequestFile {
+    /** Request file ID, matching `id` in the archive manifest. */
+    id: string;
+    /** Opaque key accepted by `GET /v1/files` to download the decrypted file. */
+    downloadKey: string;
+    /** Path of the file inside the archive before duplicate-name resolution. */
+    fileName: string;
+    /** Detected mime type, when known. */
+    mimetype: string | null;
+    /** Size in bytes, or `null` when unknown. */
+    size: number | null;
+    /** Error message recorded against the file, if any. */
+    error: string | null;
+    /** Datapoint that produced the file. */
+    dataPoint: {
+      /** Datapoint ID. */
+      id: string;
+      /** Datapoint machine name. */
+      name: string;
+      /** Human-readable title. */
+      title?: LocalizedMessage | null;
+      /** Human-readable description. */
+      description?: LocalizedMessage | null;
+      /** Data collection the datapoint is grouped under. */
+      dataCollection?: {
+        /** Data collection ID. */
+        id: string;
+        /** Data collection title. */
+        title?: LocalizedMessage | null;
+      } | null;
+      /** Integration the datapoint belongs to. */
+      dataSilo: {
+        /** Integration ID. */
+        id: string;
+        /** Integration title. */
+        title: string;
+        /** Integration description. */
+        description: string | null;
+      };
+    } | null;
+  }
+
+  /** Privacy Center branding returned by {@link SDK.getPrivacyCenterTheme}. */
+  export interface PrivacyCenterTheme {
+    /** Accent color used for links and highlights. */
+    primary: string;
+    /** Secondary color, used for header bands. */
+    secondary: string;
+    /** Whether the Privacy Center uses a light or dark page. */
+    colorMode: 'light' | 'dark';
+    /** Logo as a `data:` URL, so a page that embeds it works offline. */
+    logoDataUrl?: string;
+  }
+
+  /** Profile data returned to the data subject by {@link SDK.uploadProfiles}. */
+  export interface UploadedProfile {
+    /** The data to return to the data subject. */
+    profileData: Record<string, unknown>;
+  }
+
+  /** File type that {@link SdkUtils.getFileFormat} can render inline. */
+  export type EmbeddableFileFormat = 'json' | 'csv' | 'text' | 'image';
+
+  /** Pure helpers for building pages and processing files. */
+  export interface SdkUtils {
+    /**
+     * Escape a value for HTML text or attributes.
+     *
+     * @param value - Value to escape
+     * @returns Escaped string
+     */
+    escapeHtml(value: unknown): string;
+    /**
+     * Serialize JSON that is safe inside a `<script>` tag.
+     *
+     * @param value - Value to serialize
+     * @returns JSON string
+     */
+    toScriptJson(value: unknown): string;
+    /**
+     * Encode bytes as base64.
+     *
+     * @param bytes - Bytes to encode
+     * @returns Base64 string
+     */
+    toBase64(bytes: Uint8Array): string;
+    /**
+     * Format a byte count for display.
+     *
+     * @param size - Size in bytes, or `null` when unknown
+     * @returns Human-readable size
+     */
+    formatBytes(size: number | null): string;
+    /**
+     * Read a non-negative number from an environment variable.
+     *
+     * @param value - Raw environment variable value
+     * @param fallback - Value used when the variable is missing or invalid
+     * @returns Parsed number
+     */
+    readNonNegativeNumber(value: string | undefined, fallback: number): number;
+    /**
+     * Run an async task over items with a fixed number of workers.
+     *
+     * @param items - Items to process
+     * @param limit - Maximum number of tasks in flight
+     * @param task - Task to run for each item
+     * @returns Results in the same order as `items`
+     */
+    mapWithConcurrency<T, R>(
+      items: T[],
+      limit: number,
+      task: (item: T, index: number) => Promise<R>,
+    ): Promise<R[]>;
+    /**
+     * Decide how a file is shown when embedded in a page.
+     *
+     * @param file - File name and mime type
+     * @returns The embed format, or `undefined` when the file is not embeddable
+     */
+    getFileFormat(file: {
+      /** Path or name of the file. */
+      fileName: string;
+      /** Detected mime type, when known. */
+      mimetype: string | null;
+    }): EmbeddableFileFormat | undefined;
+  }
+
   /** Convenience client for calling Transcend APIs. */
   export interface SDK {
     /**
@@ -367,6 +508,115 @@ export namespace CustomFunction {
      * @returns Fetch response
      */
     fetch(path: `/${string}`, options?: RequestInit): Promise<Response>;
+    /**
+     * Call a Transcend API path and parse the JSON response.
+     *
+     * Throws when the response is not successful. Requires Sombra 7.657.0 or later.
+     *
+     * @param path - Transcend API path
+     * @param options - Fetch request options, plus an optional `apiKey`
+     * @returns Parsed response body
+     */
+    fetchJson<T>(path: `/${string}`, options?: RequestInit & SdkApiOptions): Promise<T>;
+    /**
+     * Run a GraphQL query against the Transcend API.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param query - GraphQL document
+     * @param variables - Query variables
+     * @param options - Per-call options
+     * @returns The `data` field of the response
+     */
+    graphql<T>(
+      query: string,
+      variables?: Record<string, unknown>,
+      options?: SdkApiOptions,
+    ): Promise<T>;
+    /**
+     * Return profiles for the current request and mark the data silo ready.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param options - Profiles to return and the status to set
+     */
+    uploadProfiles(
+      options: SdkApiOptions & {
+        /** Profiles to return to the data subject. */
+        profiles: UploadedProfile[];
+        /** Status to set on the data silo. Defaults to `READY`. */
+        status?: 'READY';
+      },
+    ): Promise<void>;
+    /**
+     * Mark this data silo complete without returning data.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param options - Per-call options
+     */
+    markDataSiloComplete(options?: SdkApiOptions): Promise<void>;
+    /**
+     * Upload one file to a datapoint.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param options - Datapoint, content and archive placement
+     */
+    uploadDataPoint(
+      options: SdkApiOptions & {
+        /** Datapoint on this data silo that receives the upload. */
+        dataPointName: string;
+        /** File content. */
+        body: BodyInit;
+        /** Content type of the file. */
+        contentType: string;
+        /** Identifier of the file within the datapoint. Defaults to `archivePath`. */
+        remoteId?: string;
+        /** Place the file at this path in the archive root. */
+        archivePath?: string;
+      },
+    ): Promise<void>;
+    /**
+     * List every file in the archive for a request.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param options - Request and filters
+     * @returns All request files
+     */
+    listRequestFiles(
+      options?: SdkApiOptions & {
+        /** Request to list files for. Defaults to the current request. */
+        requestId?: string;
+        /** Leave out files produced by these integrations. */
+        excludeDataSiloIds?: string[];
+      },
+    ): Promise<RequestFile[]>;
+    /**
+     * Download and decrypt one request file through Sombra.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param file - File to download
+     * @param options - Per-call options
+     * @returns Response ready to read as text or bytes
+     */
+    downloadRequestFile(
+      file: Pick<RequestFile, 'downloadKey'>,
+      options?: SdkApiOptions,
+    ): Promise<Response>;
+    /**
+     * Load Privacy Center colors and logo, falling back to a neutral theme.
+     *
+     * Requires Sombra 7.657.0 or later.
+     *
+     * @param options - Per-call options
+     * @returns Privacy Center theme
+     */
+    getPrivacyCenterTheme(options?: SdkApiOptions): Promise<PrivacyCenterTheme>;
+    /** Pure helpers for building pages and processing files. Requires Sombra 7.657.0 or later. */
+    utils: SdkUtils;
   }
 
   /** Values injected into every Custom Function handler. */
