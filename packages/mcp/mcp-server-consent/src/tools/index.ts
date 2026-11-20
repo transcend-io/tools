@@ -16,6 +16,7 @@ import { createConsentListPurposesTool } from './consent_list_purposes.js';
 import { createConsentListRegimesTool } from './consent_list_regimes.js';
 import { createConsentListRocRecordsTool } from './consent_list_roc_records.js';
 import { createConsentListSitesTool } from './consent_list_sites.js';
+import { createConsentPreviewDeployTool } from './consent_preview_deploy.js';
 import { createConsentUpdateCookiesTool } from './consent_update_cookies.js';
 import { createConsentUpdateDataFlowsTool } from './consent_update_data_flows.js';
 import { createConsentWriteConsentManagerTool } from './consent_write_consent_manager.js';
@@ -42,6 +43,7 @@ export function getConsentTools(clients: ToolClients): ToolDefinition[] {
     createConsentDeleteDataFlowsTool(clients),
     createConsentBulkTriageTool(clients),
     createConsentListRocRecordsTool(clients),
+    createConsentPreviewDeployTool(clients),
     createConsentDeployBundleTool(clients),
     createConsentListSitesTool(clients),
     createConsentWriteSitesTool(clients),

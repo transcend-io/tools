@@ -184,6 +184,64 @@ export const DEPLOY_CONSENT_MANAGER = gql`
   }
 `;
 
+/** Response from CONSENT_MANAGER_CONFIGURATION_JSON */
+export interface TranscendCliConsentManagerConfigurationJsonResponse {
+  /** Configuration JSON wrapper */
+  consentManagerConfigurationJson: {
+    /** Airgap bundle ID */
+    id: string;
+    /** Pending production configuration JSON */
+    configurationJson: string;
+    /** Pending test configuration JSON */
+    testConfigurationJson: string;
+    /** Whether TCF is enabled */
+    useIabFramework: boolean;
+  };
+}
+
+export const CONSENT_MANAGER_CONFIGURATION_JSON = gql`
+  query TranscendCliConsentManagerConfigurationJson($id: ID!) {
+    consentManagerConfigurationJson(id: $id) {
+      id
+      configurationJson
+      testConfigurationJson
+      useIabFramework
+    }
+  }
+`;
+
+/** One airgap bundle version node */
+export interface TranscendCliAirgapBundleVersionNode {
+  /** Serialized core module config at deploy time */
+  coreConfig: string | null;
+  /** When this version was published */
+  createdAt: string;
+}
+
+/** Response from AIRGAP_BUNDLE_VERSIONS */
+export interface TranscendCliAirgapBundleVersionsResponse {
+  /** Version list */
+  airgapBundleVersions: {
+    /** Most recent versions first */
+    nodes: TranscendCliAirgapBundleVersionNode[];
+  };
+}
+
+export const AIRGAP_BUNDLE_VERSIONS = gql`
+  query TranscendCliAirgapBundleVersions(
+    $id: ID!
+    $first: Int!
+    $input: AirgapBundleVersionsInput!
+  ) {
+    airgapBundleVersions(id: $id, first: $first, input: $input) {
+      nodes {
+        coreConfig
+        createdAt
+      }
+    }
+  }
+`;
+
 export const UPDATE_CONSENT_MANAGER_DOMAINS = gql`
   mutation TranscendCliUpdateConsentManagerDomains($airgapBundleId: ID!, $domains: [String!]!) {
     updateConsentManagerDomains(input: { id: $airgapBundleId, domains: $domains }) {

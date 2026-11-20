@@ -14,6 +14,7 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
+  previewPush: vi.fn(),
 }));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
@@ -37,8 +38,13 @@ function tempDir(): string {
 }
 
 describe('tool definitions', () => {
-  it('exposes the three tools', () => {
-    expect(tools.map((t) => t.name)).toEqual(['config_pull', 'config_push', 'config_get_schema']);
+  it('exposes the four tools', () => {
+    expect(tools.map((t) => t.name)).toEqual([
+      'config_pull',
+      'config_push',
+      'config_preview_push',
+      'config_get_schema',
+    ]);
   });
 
   it('marks disk tools as local-filesystem only and gates push', () => {

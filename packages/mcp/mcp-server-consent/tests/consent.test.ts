@@ -46,6 +46,7 @@ const EXPECTED_TOOL_NAMES = [
   'consent_delete_data_flows',
   'consent_bulk_triage',
   'consent_list_roc_records',
+  'consent_preview_deploy',
   'consent_deploy_bundle',
   'consent_list_sites',
   'consent_write_sites',

@@ -6,11 +6,12 @@ These tools read and write files on your machine, so they run over `stdio` only.
 
 ## Tools
 
-| Tool                | What it does                                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `config_pull`       | Writes the organization configuration to an absolute `.yml` path. Returns counts.                                       |
-| `config_push`       | Pushes a `.yml` file to Transcend. Needs confirmation. Returns errors and warnings.                                     |
-| `config_get_schema` | Section catalog by default; pass `resources` for partial schema, or `includeFullSchema` for the full file (very large). |
+| Tool                  | What it does                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `config_pull`         | Writes the organization configuration to an absolute `.yml` path. Returns counts.                                       |
+| `config_preview_push` | Previews what `config_push` would change (dry-run diff).                                                                |
+| `config_push`         | Pushes a `.yml` file to Transcend. Needs confirmation with change summary. Returns errors and warnings.                 |
+| `config_get_schema`   | Section catalog by default; pass `resources` for partial schema, or `includeFullSchema` for the full file (very large). |
 
 ## Run
 

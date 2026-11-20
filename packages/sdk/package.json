@@ -39,6 +39,7 @@
     "@transcend-io/privacy-types": "workspace:^",
     "@transcend-io/type-utils": "workspace:^",
     "@transcend-io/utils": "workspace:^",
+    "diff": "^9.0.0",
     "fp-ts": "^2.16.1",
     "got": "^15.0.0",
     "graphql": "^16.14.2",

@@ -12,6 +12,7 @@ import {
   planHasChanges,
   planPush,
   renderPushPlan,
+  summarizePushPlan,
   type PushPlan,
 } from '../preview/index.js';
 
@@ -418,6 +419,15 @@ describe('planPush', () => {
     it('is true for creates, updates, and side effects', () => {
       expect(planHasChanges(planPush({ vendors: [{ title: 'A' }] }, {}))).toBe(true);
     });
+  });
+});
+
+describe('summarizePushPlan', () => {
+  it('includes totals and changed items', () => {
+    const plan = planPush({ vendors: [{ title: 'New' }] }, { vendors: [{ title: 'Old' }] });
+    const summary = summarizePushPlan(plan);
+    expect(summary).toContain('1 to create');
+    expect(summary).toContain('vendors');
   });
 });
 

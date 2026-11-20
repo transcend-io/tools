@@ -218,6 +218,38 @@ describe('withConfirmation on a host that can show a form', () => {
     expect(message).not.toContain('reason');
   });
 
+  it('prepends confirmation.describe output above the hint', async () => {
+    const mutate = vi.fn(async () => ({ ok: true }));
+    const elicitInput = vi.fn().mockResolvedValue({ action: 'accept', content: {} });
+    const session: McpSession = {
+      client: { capabilities: new Set(ELICITATION), host: McpHostClient.Claude },
+      server: { elicitInput } as unknown as Server,
+      request: { id: CALL_ID, signal: new AbortController().signal },
+    };
+    const described = withConfirmation(
+      defineTool({
+        name: 'test_describe',
+        description: 'Test tool with describe.',
+        category: 'test',
+        readOnly: false,
+        confirmation: {
+          hint: 'This permanently cancels the request.',
+          describe: async () => 'Preview: 2 to update',
+        },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+        zodSchema: CANCEL_SCHEMA,
+        handler: mutate,
+      }),
+      askOrToken(),
+    );
+    await mcpSessionContext.run(session, async () => described.handler({ requestId: 'req-1' }));
+
+    const { message } = elicitInput.mock.calls[0]![0] as { message: string };
+    expect(message.indexOf('Preview: 2 to update')).toBeLessThan(
+      message.indexOf('This permanently cancels the request.'),
+    );
+  });
+
   it('does not mutate when the user declines', async () => {
     const { result, mutate } = await callAs({
       capabilities: ELICITATION,

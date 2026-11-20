@@ -40,6 +40,11 @@ export interface ToolUiBinding {
 export interface ToolConfirmation {
   /** What the action does and what it costs to get wrong. */
   hint: string;
+  /**
+   * Optional async recap of pending changes, shown above `hint` in the confirmation
+   * form. Failures time out after ~20s and fall back to hint-only text.
+   */
+  describe?: (args: Record<string, unknown>) => Promise<string | undefined>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

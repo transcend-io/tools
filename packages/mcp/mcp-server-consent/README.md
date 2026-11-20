@@ -119,7 +119,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_delete_data_flows` — Permanently delete data flows by ID (MCP App only; hidden from agents)
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
 - `consent_list_roc_records` - List record of consent records for a user
-- `consent_deploy_bundle` — Deploy the consent manager bundle to `TEST` or `PRODUCTION` (requires `environment`; asks for human confirmation)
+- `consent_preview_deploy` — Preview consent bundle changes before deploy (per-module diffs; read-only)
+- `consent_deploy_bundle` — Deploy the consent manager bundle to `TEST` or `PRODUCTION` (requires `environment`; asks for human confirmation with change summary)
 - `consent_list_sites` - List consent sites (hosts Airgap discovers) with owners, teams and attributes
 - `consent_write_sites` - Create or update consent sites by host (like the `consent-sites` section of `transcend.yml`)
 - `consent_write_consent_manager` — Create or update consent manager settings, experiences, UI variants and themes (the `consent-manager` section of `transcend.yml`)

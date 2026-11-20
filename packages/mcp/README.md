@@ -240,12 +240,12 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   125 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   127 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-privacy-center`](./mcp-server-privacy-center/)     | `transcend-mcp-privacy-center`   |     6 | Privacy Center config, messages, policies        |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups           |
-| [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
-| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    22 | Consent management, analytics, cookie triage     |
+| [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     4 | transcend.yml pull and push (local files, stdio) |
+| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    23 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |
 | [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     4 | Data discovery, classification, NER              |
