@@ -55,6 +55,7 @@ export async function resolvePrivacyCenterAssetsForPush(
 
     let assetId = asset.id;
     if (!assetId && asset.src) {
+      // Re-host `src` on the org's Transcend asset CDN via `/files/assetFile/upload`.
       const uploaded = await uploadAssetFileFromUrl(transcendUrl, authorization, asset.src);
       assetId = uploaded.id;
     }
