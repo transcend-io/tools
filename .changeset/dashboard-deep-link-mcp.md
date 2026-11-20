@@ -1,4 +1,5 @@
 ---
+"@transcend-io/mcp": patch
 "@transcend-io/mcp-server-docs": minor
 "@transcend-io/privacy-types": minor
 ---
