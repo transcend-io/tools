@@ -4,11 +4,11 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncPreferenceOptionValues } from '@transcend-io/sdk';
 import {
   ConsentPreferenceTopicOptionValue,
+  syncPreferenceOptionValues,
   type ConsentPreferenceTopicOptionValue as OptionValueInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 
 import { decodeItems, runSync } from '../helpers/syncRun.js';
 

@@ -4,11 +4,11 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncConsentWorkflowTriggers } from '@transcend-io/sdk';
 import {
   PreferenceWorkflowConfigInput,
+  syncConsentWorkflowTriggers,
   type PreferenceWorkflowConfigInput as WorkflowConfigInput,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 
 import { decodeItems, runSync } from '../helpers/syncRun.js';
 

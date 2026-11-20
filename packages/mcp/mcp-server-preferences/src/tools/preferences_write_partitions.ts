@@ -4,8 +4,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncPartitions } from '@transcend-io/sdk';
-import { PartitionInput } from '@transcend-io/sdk/transcend-yml';
+import { PartitionInput, syncPartitions } from '@transcend-io/sdk';
 
 import { decodeItems, runSync } from '../helpers/syncRun.js';
 
