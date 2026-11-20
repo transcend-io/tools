@@ -867,6 +867,7 @@ export async function pullTranscendConfiguration(
         type,
         title,
         active,
+        subjectClass,
         adminDashboardDefaultSilentMode,
         supportsAuthorizedAgent,
         actions,
@@ -874,6 +875,7 @@ export async function pullTranscendConfiguration(
         type,
         title: title?.defaultMessage,
         active,
+        subjectClass,
         adminDashboardDefaultSilentMode,
         supportsAuthorizedAgent,
         actions: actions.map(({ type }) => type),
@@ -1060,6 +1062,9 @@ export async function pullTranscendConfiguration(
     result.actions = actions.map(
       ({
         type,
+        title,
+        description,
+        formItems,
         skipSecondaryIfNoFiles,
         skipDownloadableStep,
         requiresReview,
@@ -1068,6 +1073,28 @@ export async function pullTranscendConfiguration(
         waitingPeriod,
       }): ActionInput => ({
         type,
+        ...(title?.defaultMessage ? { title: title.defaultMessage } : {}),
+        ...(description?.defaultMessage ? { description: description.defaultMessage } : {}),
+        ...(formItems && formItems.length > 0
+          ? {
+              fileFormItems: formItems
+                .filter((item) => item.type === 'file')
+                .map((item) => ({
+                  internalName: item.name,
+                  label: item.label?.defaultMessage ?? item.name,
+                  ...(item.info?.defaultMessage ? { info: item.info.defaultMessage } : {}),
+                  isRequired: item.isRequired,
+                  index: item.index ?? 0,
+                  ...(item.acceptedMimeTypes && item.acceptedMimeTypes.length > 0
+                    ? { acceptedMimeTypes: item.acceptedMimeTypes }
+                    : {}),
+                  ...(item.maxFileSize ? { maxFileSize: item.maxFileSize } : {}),
+                  ...(item.maxFiles !== null && item.maxFiles !== undefined
+                    ? { maxFiles: item.maxFiles }
+                    : {}),
+                })),
+            }
+          : {}),
         ...(type === RequestAction.Erasure
           ? {
               skipSecondaryIfNoFiles,
@@ -1098,6 +1125,9 @@ export async function pullTranscendConfiguration(
         displayDescription,
         displayOrder,
         isUniqueOnPreferenceStore,
+        sqlPriority,
+        sqlVariable,
+        sqlLookupVariable,
       }): IdentifierInput => ({
         name,
         type,
@@ -1112,6 +1142,9 @@ export async function pullTranscendConfiguration(
         displayDescription: displayDescription?.defaultMessage,
         displayOrder,
         isUniqueOnPreferenceStore,
+        ...(sqlPriority !== null && sqlPriority !== undefined ? { sqlPriority } : {}),
+        ...(sqlVariable ? { 'sql-variable': sqlVariable } : {}),
+        ...(sqlLookupVariable ? { 'sql-lookup-variable': sqlLookupVariable } : {}),
       }),
     );
   }
@@ -1546,6 +1579,9 @@ export async function pullTranscendConfiguration(
         transitionRequestStatus,
         phoneNumbers,
         regionList,
+        databaseName,
+        sqlQuery,
+        dataSilo,
       }): EnricherInput => ({
         title,
         description: description || undefined,
@@ -1562,6 +1598,9 @@ export async function pullTranscendConfiguration(
         phoneNumbers: phoneNumbers && phoneNumbers.length > 0 ? phoneNumbers : undefined,
         regionList: regionList && regionList.length > 0 ? regionList : undefined,
         'data-subjects': dataSubjects.map(({ type }) => type),
+        ...(dataSilo?.title ? { 'data-silo-title': dataSilo.title } : {}),
+        ...(sqlQuery ? { 'sql-query': sqlQuery } : {}),
+        ...(databaseName ? { 'database-name': databaseName } : {}),
       }),
     );
   }

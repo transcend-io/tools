@@ -10,6 +10,7 @@ export const DATA_SUBJECTS: DocumentNode = parse(gql`
       }
       active
       type
+      subjectClass
       adminDashboardDefaultSilentMode
       supportsAuthorizedAgent
       actions {
@@ -20,8 +21,8 @@ export const DATA_SUBJECTS: DocumentNode = parse(gql`
 `);
 
 export const CREATE_DATA_SUBJECT: DocumentNode = parse(gql`
-  mutation TranscendCliCreateDataSubject($type: String!) {
-    createSubject(input: { type: $type, title: $type, subjectClass: OTHER }) {
+  mutation TranscendCliCreateDataSubject($input: CreateSubjectInput!) {
+    createSubject(input: $input) {
       subject {
         id
         type

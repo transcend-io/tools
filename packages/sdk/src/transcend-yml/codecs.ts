@@ -258,6 +258,12 @@ export const EnricherInput = t.intersection([
     headers: t.array(WebhookHeader),
     /** The privacy actions that the preflight check should run against */
     'privacy-actions': t.array(RequestActionCodec),
+    /** Linked data silo title (database enrichers) */
+    'data-silo-title': t.string,
+    /** SQL query for database enrichers */
+    'sql-query': t.string,
+    /** Database name for database enrichers */
+    'database-name': t.string,
   }),
 ]);
 
@@ -924,6 +930,13 @@ export const DataSubjectInput = t.intersection([
   t.partial({
     /** Whether the data subject is active on the Privacy Center & DSR API */
     active: t.boolean,
+    /** Subject class (used on create only; API cannot change this after creation) */
+    subjectClass: t.union([
+      t.literal('END_USER'),
+      t.literal('EMPLOYEE'),
+      t.literal('BUSINESS_CONTACT'),
+      t.literal('OTHER'),
+    ]),
     /** The title of the data subject */
     title: t.string,
     /** Whether or not to default new requests made in the admin dashboard to silent mode */
@@ -952,6 +965,27 @@ export const ActionInput = t.intersection([
     type: RequestActionCodec,
   }),
   t.partial({
+    /** Default locale title */
+    title: t.string,
+    /** Default locale description */
+    description: t.string,
+    /** File upload form fields on the privacy center */
+    fileFormItems: t.array(
+      t.intersection([
+        t.type({
+          internalName: t.string,
+          label: t.string,
+          isRequired: t.boolean,
+          index: t.number,
+        }),
+        t.partial({
+          info: t.string,
+          acceptedMimeTypes: t.array(t.string),
+          maxFileSize: t.string,
+          maxFiles: t.number,
+        }),
+      ]),
+    ),
     /** Whether or not to skip deletion phase when no data is found */
     skipSecondaryIfNoFiles: t.boolean,
     /** Whether to skip the downloadable step */
@@ -1005,6 +1039,12 @@ export const IdentifierInput = t.intersection([
     displayOrder: t.number,
     /** Whether or not the identifier is unique on the preference store */
     isUniqueOnPreferenceStore: t.boolean,
+    /** SQL priority for database-backed identifiers */
+    sqlPriority: t.number,
+    /** SQL variable name */
+    'sql-variable': t.string,
+    /** SQL lookup variable name */
+    'sql-lookup-variable': t.string,
   }),
 ]);
 

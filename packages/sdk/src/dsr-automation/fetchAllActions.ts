@@ -10,11 +10,38 @@ import { GraphQLClient } from 'graphql-request';
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { ACTIONS } from './gqls/action.js';
 
+export interface ActionFormItem {
+  /** Internal name of the form field */
+  name: string;
+  /** Display order */
+  index?: number | null;
+  /** Field type */
+  type?: string | null;
+  /** Whether the field is required */
+  isRequired: boolean;
+  /** Accepted MIME types for file uploads */
+  acceptedMimeTypes?: string[] | null;
+  /** Max file size */
+  maxFileSize?: string | null;
+  /** Max files */
+  maxFiles?: number | null;
+  /** Field label */
+  label?: { defaultMessage: string };
+  /** Help text */
+  info?: { defaultMessage: string } | null;
+}
+
 export interface Action {
   /** ID of identifier */
   id: string;
   /** Type of action */
   type: RequestAction;
+  /** Default locale title */
+  title?: { defaultMessage: string };
+  /** Default locale description */
+  description?: { defaultMessage: string };
+  /** Privacy center form fields */
+  formItems?: ActionFormItem[];
   /** Whether to skip secondary when no files exist */
   skipSecondaryIfNoFiles: boolean;
   /** Whether to skip downloadable step */

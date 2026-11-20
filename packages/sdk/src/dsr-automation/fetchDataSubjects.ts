@@ -5,11 +5,15 @@ import { GraphQLClient } from 'graphql-request';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { CREATE_DATA_SUBJECT, DATA_SUBJECTS } from './gqls/dataSubject.js';
 
+export type DataSubjectClass = 'END_USER' | 'EMPLOYEE' | 'BUSINESS_CONTACT' | 'OTHER';
+
 export interface DataSubject {
   /** ID of data subject */
   id: string;
   /** Type of data subject */
   type: string;
+  /** Subject class (immutable after create) */
+  subjectClass: DataSubjectClass;
   /** Whether active */
   active: boolean;
   /** Title of data subject */
@@ -62,11 +66,13 @@ export async function createDataSubject(
   options: {
     /** The type string for the new subject */
     input: string;
+    /** Subject class for the new type */
+    subjectClass?: DataSubjectClass;
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<DataSubject> {
-  const { input: dataSubjectType, logger = NOOP_LOGGER } = options;
+  const { input: dataSubjectType, subjectClass = 'OTHER', logger = NOOP_LOGGER } = options;
   const { createSubject } = await makeGraphQLRequest<{
     /** Create Subject Response */
     createSubject: {
@@ -74,7 +80,14 @@ export async function createDataSubject(
       subject: DataSubject;
     };
   }>(client, CREATE_DATA_SUBJECT, {
-    variables: { type: dataSubjectType, skipPublish: true },
+    variables: {
+      input: {
+        type: dataSubjectType,
+        title: dataSubjectType,
+        subjectClass,
+        skipPublish: true,
+      },
+    },
     logger,
   });
   return createSubject.subject;

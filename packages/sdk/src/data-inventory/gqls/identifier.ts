@@ -29,6 +29,9 @@ export const IDENTIFIERS: DocumentNode = parse(gql`
         }
         displayOrder
         isUniqueOnPreferenceStore
+        sqlPriority
+        sqlVariable
+        sqlLookupVariable
       }
     }
   }
