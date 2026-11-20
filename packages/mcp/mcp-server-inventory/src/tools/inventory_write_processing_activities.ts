@@ -1,5 +1,5 @@
 import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { ProcessingActivityInput } from '@transcend-io/sdk/transcend-yml';
+import { ProcessingActivityInput } from '@transcend-io/sdk';
 
 import { decodeYmlItems, pushYmlSection, ymlItemsSchema } from '../helpers/ymlSection.js';
 

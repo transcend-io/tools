@@ -6,8 +6,8 @@ const sdk = vi.hoisted(() => ({
   sync: vi.fn(),
 }));
 
-vi.mock('@transcend-io/sdk/transcend-yml', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@transcend-io/sdk/transcend-yml')>()),
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
 }));
@@ -20,7 +20,7 @@ vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
 const { getInventoryTools, INVENTORY_OAUTH_SCOPES } = await import('../src/index.js');
 const { ScopeName } = await import('@transcend-io/privacy-types');
 const { TranscendPullResource, TR_PULL_RESOURCE_SCOPE_MAP, TR_PUSH_RESOURCE_SCOPE_MAP } =
-  await import('@transcend-io/sdk/transcend-yml');
+  await import('@transcend-io/sdk');
 
 const clients = {
   rest: {} as never,

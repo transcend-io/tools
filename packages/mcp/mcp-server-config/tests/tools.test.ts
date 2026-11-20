@@ -10,14 +10,11 @@ const sdk = vi.hoisted(() => ({
   sync: vi.fn(),
 }));
 
-const mockSdkPullSync = async (importOriginal: () => Promise<Record<string, unknown>>) => ({
-  ...(await importOriginal()),
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
-});
-
-vi.mock('@transcend-io/sdk', (importOriginal) => mockSdkPullSync(importOriginal));
-vi.mock('@transcend-io/sdk/transcend-yml', (importOriginal) => mockSdkPullSync(importOriginal));
+}));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/mcp-server-base')>()),

@@ -1,5 +1,5 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { TranscendPullResource } from '@transcend-io/sdk/transcend-yml';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 import { pullYmlSection } from '../helpers/ymlSection.js';
 

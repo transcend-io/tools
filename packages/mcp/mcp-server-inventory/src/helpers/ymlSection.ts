@@ -11,7 +11,7 @@ import {
   TR_YML_RESOURCE_TO_FIELD_NAME,
   type TranscendInput,
   type TranscendPullResource,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
 import { createCollectedLogger, type CollectedLog } from './collectingLogger.js';

@@ -15,7 +15,7 @@ import {
   serializeTranscendYaml,
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,
-} from '@transcend-io/sdk/transcend-yml';
+} from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
 import { createCollectedLogger } from '../helpers/collectingLogger.js';

@@ -5,4 +5,5 @@ export const WORKFLOW_OAUTH_SCOPES = [
   ScopeName.ViewAllActionItems,
   ScopeName.ManageAllActionItems,
   ScopeName.ViewEmailTemplates,
+  ScopeName.ManageEmailTemplates,
 ] as const;

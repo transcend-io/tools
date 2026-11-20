@@ -6,7 +6,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllRepositories, type Repository } from './fetchAllRepositories.js';
 import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/repository.js';
 
-interface RepositoryInput {
+export interface RepositoryInput {
   /** Title of repository */
   name: string;
   /** Description of the repository */
