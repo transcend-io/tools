@@ -1,4 +1,5 @@
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   z,
@@ -13,7 +14,6 @@ import {
 } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 import { decodeItems, errorMessage, type ItemError } from '../helpers/syncItems.js';
 
 export const writeEnrichersSchema = z.object({

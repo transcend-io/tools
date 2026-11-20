@@ -1,9 +1,17 @@
-import type { Logger } from '@transcend-io/mcp-server-base';
+import type { Logger } from '../clients/graphql/base.js';
+
+/** Severity of a captured log line. */
+export enum CollectedLogLevel {
+  Debug = 'debug',
+  Info = 'info',
+  Warn = 'warn',
+  Error = 'error',
+}
 
 /** A captured log line. */
 export interface CollectedLog {
   /** Severity */
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: CollectedLogLevel;
   /** Message text */
   message: string;
 }
@@ -22,16 +30,21 @@ const MAX_LOGS = 200;
 export function createCollectedLogger(): { logger: Logger; logs: CollectedLog[] } {
   const logs: CollectedLog[] = [];
   const add =
-    (level: CollectedLog['level']) =>
+    (level: CollectedLogLevel) =>
     (...args: unknown[]): void => {
-      if (level === 'debug' || logs.length >= MAX_LOGS) return;
+      if (level === CollectedLogLevel.Debug || logs.length >= MAX_LOGS) return;
       logs.push({
         level,
         message: args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' '),
       });
     };
   return {
-    logger: { debug: add('debug'), info: add('info'), warn: add('warn'), error: add('error') },
+    logger: {
+      debug: add(CollectedLogLevel.Debug),
+      info: add(CollectedLogLevel.Info),
+      warn: add(CollectedLogLevel.Warn),
+      error: add(CollectedLogLevel.Error),
+    },
     logs,
   };
 }

@@ -60,7 +60,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`, `ViewRequestIdentitySettings`, `ManageRequestIdentities`, `ViewDataSubjectRequestSettings`, `ManageDataSubjectRequestSettings` |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `ViewDataMap`, `ViewAssignedIntegrations`, `ManageDataMap`, `ManageAssignedIntegrations`, `ViewDataInventory`, `ViewAssignedDataInventory`, `ManageDataInventory`, `ManageAssignedDataInventory`                                                                                 |
 | [`mcp-server-preferences`](./mcp-server-preferences/)           | `ViewPrivacyCenter`, `ManagePrivacyCenter`                                                                                                                                                                                                                                       |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`                                                                                                                                                                                                               |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`, `ManageEmailTemplates`                                                                                                                                                                                       |
 
 Canonical scope lists live in each package's `src/scopes.ts`.
 
@@ -239,7 +239,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    93 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   105 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     3 | transcend.yml pull and push (local files, stdio) |
@@ -251,7 +251,9 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    10 | Data inventory, silos, vendors, data points      |
 | [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |     6 | Privacy preference store (query, upsert, delete) |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     3 | Workflow & email-template configuration          |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration          |
+
+Tool counts in this table match each package's `EXPECTED_TOOL_NAMES` vitest lists. The unified server's total is enforced in `mcp/tests/registry.test.ts` via `EXPECTED_UMBRELLA_TOOL_COUNT`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.
 

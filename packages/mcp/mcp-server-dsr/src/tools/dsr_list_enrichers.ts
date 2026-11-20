@@ -1,4 +1,5 @@
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   z,
@@ -6,8 +7,6 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { RequestAction } from '@transcend-io/privacy-types';
 import { fetchAllEnrichers } from '@transcend-io/sdk';
-
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 
 export const listEnrichersSchema = z.object({
   title: z.string().optional().describe('Only return enrichers whose title matches this text.'),

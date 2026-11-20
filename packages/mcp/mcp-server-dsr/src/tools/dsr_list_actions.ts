@@ -1,4 +1,5 @@
 import {
+  createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
   z,
@@ -6,8 +7,6 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { RequestAction } from '@transcend-io/privacy-types';
 import { fetchAllActions } from '@transcend-io/sdk';
-
-import { createCollectedLogger } from '../helpers/collectingLogger.js';
 
 export const listActionsSchema = z.object({});
 export type ListActionsInput = z.infer<typeof listActionsSchema>;

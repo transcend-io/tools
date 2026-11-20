@@ -190,6 +190,7 @@ describe('MCP Tool Annotations', () => {
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
+      'workflows_write_email_templates',
       'preferences_upsert',
       'preferences_update_identifiers',
       'inventory_write_vendor',

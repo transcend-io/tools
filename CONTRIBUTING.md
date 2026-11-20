@@ -55,6 +55,7 @@ Additional checks:
 - `pnpm check:exports`: validate published package shape with `attw`
 - `pnpm check:publint`: validate published package compatibility and packaging metadata
 - `pnpm check:deps`: enforce dependency version policy
+- `pnpm check:new-packages`: fail when a publishable package does not exist on npm yet (runs in `Publish` and on the Version Packages PR)
 
 `pnpm quality` intentionally excludes `pnpm check:changeset`, since that check compares the current branch to its base and is mainly useful in pull request workflows.
 
@@ -205,7 +206,7 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 Transcend Team:
 
 - See our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
-- If this is a net-new npm package, it needs to first be created [here](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10), and it needs trusted publishing set up (see the HOWTO guide above for more on that). Once that is done, it should publish successfully the next time a release PR merges with a changeset for that package.
+- If this is a net-new npm package, trusted publishing cannot create it. Before merging the release PR that first versions it, check out the release PR head, run `pnpm build`, then run `pnpm publish --access public --no-git-checks` from the package directory (pnpm, not npm, so `workspace:` ranges get rewritten). Then grant the [developers team](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10) access and set up trusted publishing for `publish.yml` (see the HOWTO guide above). `pnpm check:new-packages` blocks the release PR and the `Publish` workflow until this is done.
 
 New packages should match the shape used in `packages/sdk` and `packages/utils`.
 

@@ -1,4 +1,5 @@
 ---
+'@transcend-io/mcp-server-base': patch
 '@transcend-io/mcp-server-dsr': minor
 '@transcend-io/mcp': minor
 ---
