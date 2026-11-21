@@ -22,9 +22,7 @@ export function createWorkflowsWriteActionItemCollectionsTool(clients: ToolClien
   return defineTool({
     name: 'workflows_write_action_item_collections',
     description:
-      'Create or update action item collections (the `action-item-collections` section of ' +
-      'transcend.yml), matched by title. Push collections before action items that reference them. ' +
-      'Same behavior as `transcend inventory push` for that section.',
+      'Create or update `action-item-collections` rows in transcend.yml shape, matched by title.',
     category: 'Workflows',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },

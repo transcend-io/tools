@@ -19,9 +19,8 @@ export function createWorkflowsWriteActionItemsTool(clients: ToolClients) {
   return defineTool({
     name: 'workflows_write_action_items',
     description:
-      'Create or update action items (the `action-items` section of transcend.yml), matched ' +
-      'by title. Same behavior as `transcend inventory push` for that section. Returns success ' +
-      'and per-item errors.',
+      'Create or update `action-items` rows in transcend.yml shape, matched by title. Same as ' +
+      'inventory push for that section.',
     category: 'Workflows',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
