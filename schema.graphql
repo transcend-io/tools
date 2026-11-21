@@ -1366,7 +1366,6 @@ enum TranscendProduct {
   ADMINISTRATION
   ASSESSMENTS
   PREFERENCE_MANAGEMENT
-  PROMPT_MANAGER
   WEB_AUDITOR
   SOMBRA
   SILO_DISCOVERY
@@ -23562,6 +23561,7 @@ type WorkflowConfig {
   extensionTime: [ExpiryTime!]
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
+  formItems: [WorkflowConfigFormItem!]
   confirmations: [WorkflowConfigConfirmation!]
   internalName: String!
   allowLegacyApiSubmission: Boolean!
