@@ -1,5 +1,31 @@
 # @transcend-io/sdk
 
+## 3.4.0
+
+### Minor Changes
+
+- 2ec345c: Add `renderPushPlanDiff` for inventory push previews and a read-only `config_diff` MCP tool that returns a paste-ready diff before `config_push`.
+- 5110643: Centralized MCP OAuth scope lists in the SDK so OAuth clients and servers can pin scopes by server type. Domain MCP packages no longer export per-server `*_OAUTH_SCOPES` constants; import `getMcpServerOAuthScopes` from `@transcend-io/sdk` instead.
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+
+### Patch Changes
+
+- f4c51c9: The unified MCP server and Admin domain server add list and write tools for `action-items` and `action-item-collections` in transcend.yml shape. The Discovery server adds a list tool for system-discovery results. Action-item OAuth scopes now apply to the Admin server instead of Workflows.
+- 460eb96: Privacy center settings in `transcend.yml` now include branding assets and additional toggle fields for org-to-org configuration copy. Pull writes each asset's `src` (and optional `alt`); push can re-host assets from `src` URLs when copying into another organization.
+- 353a73d: Email templates in `transcend.yml` now round-trip subject, body, and type. Push updates existing templates matched by title instead of only creating empty shells.
+- 6eb83b5: Org config copy now round-trips DSR action copy and file form fields, data subject class on create, database preflight SQL settings, and identifier SQL metadata through `transcend.yml`.
+- 3214d5b: Pushing selected `transcend.yml` sections is safer when keys are minted with only section scopes.
+  - Data silo, preflight, and processing-activity pushes now include the view scope needed to resolve referenced data subjects. Missing subjects are no longer auto-created unless the push includes a `data-subjects` section.
+  - SDK helpers throw errors instead of calling `process.exit`, so servers and MCP hosts are not killed on validation failures.
+  - Data category sync reports per-item errors and no longer crashes the batch when one create fails.
+  - Data silo batch updates retry per silo when a chunk fails, so one bad silo does not block the rest.
+
+  If you push data silos that reference new data subject types without a `data-subjects` section, add those subjects to the yaml first.
+
+- Updated dependencies [460eb96]
+- Updated dependencies [6eb83b5]
+  - @transcend-io/privacy-types@7.1.2
+
 ## 3.3.0
 
 ### Minor Changes
