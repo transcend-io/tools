@@ -53,6 +53,16 @@ const toolByName = (name: string) => {
 };
 
 const sectionWrites: [string, Record<string, unknown>][] = [
+  [
+    'admin_write_action_items',
+    {
+      actionItems: [{ title: 'Review vendor', type: 'API_KEY_STALE', collections: ['Privacy'] }],
+    },
+  ],
+  [
+    'admin_write_action_item_collections',
+    { actionItemCollections: [{ title: 'Privacy', productLine: 'CONSENT' }] },
+  ],
   ['admin_write_teams', { teams: [{ name: 'Legal', description: 'd' }] }],
   ['consent_write_sites', { sites: [{ host: 'example.com' }] }],
   ['consent_write_purposes', { purposes: [{ trackingType: 'Advertising' }] }],

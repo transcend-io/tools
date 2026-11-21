@@ -10,6 +10,10 @@ const EXPECTED_TOOL_NAMES = [
   'admin_list_teams',
   'admin_list_api_keys',
   'admin_list_scopes',
+  'admin_list_action_items',
+  'admin_write_action_items',
+  'admin_list_action_item_collections',
+  'admin_write_action_item_collections',
   'admin_write_teams',
   'admin_test_connection',
 ] as const;
@@ -53,9 +57,9 @@ describe('Admin Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 8 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
