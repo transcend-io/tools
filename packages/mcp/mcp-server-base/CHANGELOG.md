@@ -1,5 +1,32 @@
 # @transcend-io/mcp-server-base
 
+## 3.2.0
+
+### Minor Changes
+
+- 0c71caf: Section write tools now use the same push pipeline as `transcend inventory push` and share one result shape (`success`, `count`, `errors`, optional `warnings` and `logs`). Helpers live on `@transcend-io/mcp-server-base/transcend-yml`.
+
+  **Breaking for direct tool callers**
+  - Inventory write tools renamed `items` to section-specific args (for example `businessEntities`, `identifiers`, `attributes`).
+  - `privacy_center_write` renamed `publish` to `publishToPrivacyCenter`.
+  - DSR write results no longer use `synced` or per-item `{ item, message }` errors; they match other section writes.
+  - `consent_write_sites` uses the yaml codec for each site instead of a custom zod shape.
+
+  `privacy_center_write` now asks for confirmation before applying changes that can delete footer links.
+
+### Patch Changes
+
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+- Updated dependencies [2ec345c]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [3214d5b]
+  - @transcend-io/sdk@3.4.0
+
 ## 3.1.2
 
 ### Patch Changes
