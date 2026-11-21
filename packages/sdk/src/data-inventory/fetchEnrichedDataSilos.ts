@@ -133,6 +133,48 @@ export interface DataSiloEnriched {
     /** Sombra instance ID */
     id: string;
   } | null;
+  /** Linked vendor in the data inventory */
+  vendor?: {
+    /** Vendor title */
+    title: string;
+  } | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  websiteUrl?: string | null;
+  notes: string;
+  dataRetentionNote: string;
+  dsrProcessingDocumentation: string;
+  dataProcessingAgreementLink?: string | null;
+  dataProcessingAgreementStatus?:
+    | 'ONLINE_DPA'
+    | 'CUSTOM_DPA'
+    | 'REQUIRES_UPDATE'
+    | 'NOT_REQUIRED'
+    | 'MISSING';
+  notifyWebhookUrl?: string | null;
+  isPausedForDsrs: boolean;
+  skipSecondaryIfNoFiles: boolean;
+  allowDsrProcessingStartTime?: string | null;
+  allowDsrProcessingEndTime?: string | null;
+  customSiloConnectionStrategy?: 'WEBHOOK' | 'CUSTOM_FUNCTION' | null;
+  recommendedForConsent?:
+    | 'REGULATED'
+    | 'PARTIALLY_REGULATED'
+    | 'DETECTED'
+    | 'PENDING_REGULATION'
+    | 'VERY_LIKELY'
+    | 'POSSIBLE'
+    | 'NOT_RECOMMENDED'
+    | 'UNDETERMINED';
+  recommendedForPrivacy?:
+    | 'CONNECTED'
+    | 'PENDING_CONNECTION'
+    | 'VERY_LIKELY'
+    | 'LIKELY'
+    | 'POSSIBLE'
+    | 'NOT_RECOMMENDED'
+    | 'UNDETERMINED';
+  hasPersonalData?: 'YES' | 'LIKELY' | 'UNLIKELY' | 'NO' | 'UNSPECIFIED';
 }
 
 /**

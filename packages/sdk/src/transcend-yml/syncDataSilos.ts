@@ -12,12 +12,14 @@ import {
   convertToDataSubjectBlockList,
   type DataSubject,
   fetchAllDataSilos,
+  fetchAllVendors,
   type DataSilo,
   CREATE_DATA_SILOS,
   UPDATE_DATA_SILOS,
   UPDATE_OR_CREATE_DATA_POINT,
 } from '../index.js';
 import { DataSiloInput } from './codecs.js';
+import { pushDataSiloInventoryFields } from './dataSiloInventoryFields.js';
 
 const BATCH_SILOS_LIMIT = 20;
 
@@ -26,34 +28,46 @@ function buildDataSiloUpdateRows(
   existingDataSiloByTitle: { [title: string]: Pick<DataSilo, 'id' | 'title'> },
   apiKeysByTitle: { [title: string]: ApiKey },
   dataSubjectsByName: { [type in string]: DataSubject },
+  vendorsByTitle: { [title: string]: { id: string } | undefined },
 ) {
-  return inputs.map((input) => ({
-    id: existingDataSiloByTitle[input.title]!.id,
-    country: input.country,
-    countrySubDivision: input.countrySubDivision,
-    url: input.url,
-    headers: input.headers,
-    description: input.description,
-    identifiers: input['identity-keys'],
-    isLive: !input.disabled,
-    ownerEmails: input.owners,
-    teamNames: input.teams,
-    dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
-    apiKeyId: input['api-key-title'] ? apiKeysByTitle[input['api-key-title']]!.id : undefined,
-    dataSubjectBlockListIds: input['data-subjects']
-      ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
-      : undefined,
-    attributes: input.attributes,
-    businessEntityTitles: input.businessEntityTitles,
-    sombraId: input['sombra-id'],
-    notifyEmailAddress: input['email-settings']?.['notify-email-address'],
-    promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
-    promptAVendorEmailSendType: input['email-settings']?.['send-type'],
-    promptAVendorEmailIncludeIdentifiersAttachment:
-      input['email-settings']?.['include-identifiers-attachment'],
-    promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
-    manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
-  }));
+  return inputs.map((input) => {
+    const inventoryPush = pushDataSiloInventoryFields(input, vendorsByTitle);
+    if (inventoryPush.missingVendorTitle) {
+      throw new Error(
+        `Unknown vendor "${inventoryPush.missingVendorTitle}" for data silo "${input.title}"`,
+      );
+    }
+    const { missingVendorTitle: _missingVendorTitle, ...inventoryFields } = inventoryPush;
+
+    return {
+      id: existingDataSiloByTitle[input.title]!.id,
+      country: input.country,
+      countrySubDivision: input.countrySubDivision,
+      url: input.url,
+      headers: input.headers,
+      description: input.description,
+      identifiers: input['identity-keys'],
+      isLive: !input.disabled,
+      ownerEmails: input.owners,
+      teamNames: input.teams,
+      dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
+      apiKeyId: input['api-key-title'] ? apiKeysByTitle[input['api-key-title']]!.id : undefined,
+      dataSubjectBlockListIds: input['data-subjects']
+        ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
+        : undefined,
+      attributes: input.attributes,
+      businessEntityTitles: input.businessEntityTitles,
+      sombraId: input['sombra-id'],
+      notifyEmailAddress: input['email-settings']?.['notify-email-address'],
+      promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
+      promptAVendorEmailSendType: input['email-settings']?.['send-type'],
+      promptAVendorEmailIncludeIdentifiersAttachment:
+        input['email-settings']?.['include-identifiers-attachment'],
+      promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
+      manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
+      ...inventoryFields,
+    };
+  });
 }
 
 async function updateDataSiloChunk(
@@ -62,6 +76,7 @@ async function updateDataSiloChunk(
   existingDataSiloByTitle: { [title: string]: Pick<DataSilo, 'id' | 'title'> },
   apiKeysByTitle: { [title: string]: ApiKey },
   dataSubjectsByName: { [type in string]: DataSubject },
+  vendorsByTitle: { [title: string]: { id: string } | undefined },
   logger: Logger,
 ): Promise<void> {
   await makeGraphQLRequest<{
@@ -74,6 +89,7 @@ async function updateDataSiloChunk(
           existingDataSiloByTitle,
           apiKeysByTitle,
           dataSubjectsByName,
+          vendorsByTitle,
         ),
       },
     },
@@ -145,6 +161,11 @@ export async function syncDataSilos(
   // Create a mapping of title -> existing silo, if it exists
   const existingDataSiloByTitle = keyBy<Pick<DataSilo, 'id' | 'title'>>(existingDataSilos, 'title');
 
+  const needsVendorLookup = dataSilos.some(({ 'vendor-title': vendorTitle }) => vendorTitle);
+  const vendorsByTitle = needsVendorLookup
+    ? keyBy(await fetchAllVendors(client, { logger }), 'title')
+    : {};
+
   // Create new silos that do not exist
   const newDataSiloInputs = dataSilos.filter(({ title }) => !existingDataSiloByTitle[title]);
   if (newDataSiloInputs.length > 0) {
@@ -198,6 +219,7 @@ export async function syncDataSilos(
         existingDataSiloByTitle,
         apiKeysByTitle,
         dataSubjectsByName,
+        vendorsByTitle,
         logger,
       );
       logger.info(
@@ -218,6 +240,7 @@ export async function syncDataSilos(
             existingDataSiloByTitle,
             apiKeysByTitle,
             dataSubjectsByName,
+            vendorsByTitle,
             logger,
           );
           logger.info(`Successfully synced data silo "${input.title}"!`);
