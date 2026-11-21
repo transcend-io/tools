@@ -100,6 +100,7 @@ import {
   ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
 } from './codecs.js';
+import { pullDataSiloInventoryFields } from './dataSiloInventoryFields.js';
 import { TranscendPullResource } from './enums.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -1609,87 +1610,59 @@ export async function pullTranscendConfiguration(
   if (dataSilos.length > 0 && resources.includes(TranscendPullResource.DataSilos)) {
     const indexedDataSubjects = keyBy(dataSubjects, 'type');
     result['data-silos'] = dataSilos.map(
-      ([
-        {
-          title,
-          description,
-          url,
-          type,
-          outerType,
-          apiKeys,
-          notifyEmailAddress,
-          identifiers,
-          dependentDataSilos,
-          dependedOnDataSilosPerWorkflow,
-          owners,
-          country,
-          countrySubDivision,
-          teams,
-          subjectBlocklist,
-          isLive,
-          promptAVendorEmailSendFrequency,
-          promptAVendorEmailSendType,
-          promptAVendorEmailIncludeIdentifiersAttachment,
-          promptAVendorEmailCompletionLinkType,
-          manualWorkRetryFrequency,
-          catalog,
-          attributeValues,
-          discoveredBy,
-          businessEntities,
-          sombra,
-        },
-        dataPoints,
-      ]): DataSiloInput => ({
-        title,
-        description,
-        integrationName: type,
-        'outer-type': outerType || undefined,
-        url: url || undefined,
-        'api-key-title': apiKeys[0]?.title,
-        'sombra-id': sombra?.id || undefined,
-        'identity-keys': identifiers
+      ([silo, dataPoints]): DataSiloInput => ({
+        title: silo.title,
+        description: silo.description,
+        integrationName: silo.type,
+        'outer-type': silo.outerType || undefined,
+        url: silo.url || undefined,
+        'api-key-title': silo.apiKeys[0]?.title,
+        'sombra-id': silo.sombra?.id || undefined,
+        'identity-keys': silo.identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
         ...buildDeletionDependenciesInput({
-          dependentDataSilos,
-          dependedOnDataSilosPerWorkflow,
+          dependentDataSilos: silo.dependentDataSilos,
+          dependedOnDataSilosPerWorkflow: silo.dependedOnDataSilosPerWorkflow,
         }),
-        ...(owners.length > 0 ? { owners: owners.map(({ email }) => email) } : {}),
-        ...(teams.length > 0 ? { teams: teams.map(({ name }) => name) } : {}),
-        ...(discoveredBy.length > 0
-          ? { discoveredBy: discoveredBy.map(({ title }) => title) }
+        ...(silo.owners.length > 0 ? { owners: silo.owners.map(({ email }) => email) } : {}),
+        ...(silo.teams.length > 0 ? { teams: silo.teams.map(({ name }) => name) } : {}),
+        ...(silo.discoveredBy.length > 0
+          ? { discoveredBy: silo.discoveredBy.map(({ title }) => title) }
           : {}),
-        ...(businessEntities.length > 0
+        ...(silo.businessEntities.length > 0
           ? {
-              businessEntityTitles: businessEntities.map(({ title }) => title),
+              businessEntityTitles: silo.businessEntities.map(({ title }) => title),
             }
           : {}),
-        country: country || undefined,
-        countrySubDivision: countrySubDivision || undefined,
-        disabled: !isLive,
+        country: silo.country || undefined,
+        countrySubDivision: silo.countrySubDivision || undefined,
+        disabled: !silo.isLive,
         'data-subjects':
-          subjectBlocklist.length > 0
+          silo.subjectBlocklist.length > 0
             ? convertToDataSubjectAllowlist(
-                subjectBlocklist.map(({ type }) => type),
+                silo.subjectBlocklist.map(({ type }) => type),
                 indexedDataSubjects,
               )
             : undefined,
-        ...(catalog.hasAvcFunctionality
+        ...(silo.catalog.hasAvcFunctionality
           ? {
               'email-settings': {
-                'notify-email-address': notifyEmailAddress || undefined,
-                'send-frequency': promptAVendorEmailSendFrequency,
-                'send-type': promptAVendorEmailSendType,
-                'include-identifiers-attachment': promptAVendorEmailIncludeIdentifiersAttachment,
-                'completion-link-type': promptAVendorEmailCompletionLinkType,
-                'manual-work-retry-frequency': manualWorkRetryFrequency,
+                'notify-email-address': silo.notifyEmailAddress || undefined,
+                'send-frequency': silo.promptAVendorEmailSendFrequency,
+                'send-type': silo.promptAVendorEmailSendType,
+                'include-identifiers-attachment':
+                  silo.promptAVendorEmailIncludeIdentifiersAttachment,
+                'completion-link-type': silo.promptAVendorEmailCompletionLinkType,
+                'manual-work-retry-frequency': silo.manualWorkRetryFrequency,
               },
             }
           : {}),
         attributes:
-          attributeValues !== undefined && attributeValues.length > 0
-            ? formatAttributeValues(attributeValues)
+          silo.attributeValues !== undefined && silo.attributeValues.length > 0
+            ? formatAttributeValues(silo.attributeValues)
             : undefined,
+        ...pullDataSiloInventoryFields(silo),
 
         datapoints: dataPoints
           .map(

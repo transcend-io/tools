@@ -73,7 +73,15 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
 
-import { TemplateDeliveryType, TemplateProduct } from './enums.js';
+import {
+  ConsentManagerConnectionStatus,
+  CustomSiloConnectionStrategy,
+  DataProcessingAgreementStatus,
+  HasPersonalDataStatus,
+  PrivacyRequestConnectionStatus,
+  TemplateDeliveryType,
+  TemplateProduct,
+} from './enums.js';
 
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
 const DataSubjectClassCodec = valuesOf(DataSubjectClass, 'DataSubjectClass');
@@ -103,6 +111,28 @@ const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequest
 const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator');
 const TemplateDeliveryTypeCodec = valuesOf(TemplateDeliveryType, 'TemplateDeliveryType');
 const TemplateProductCodec = valuesOf(TemplateProduct, 'TemplateProduct');
+
+const DataProcessingAgreementStatusCodec = valuesOf(
+  DataProcessingAgreementStatus,
+  'DataProcessingAgreementStatus',
+);
+
+const CustomSiloConnectionStrategyCodec = valuesOf(
+  CustomSiloConnectionStrategy,
+  'CustomSiloConnectionStrategy',
+);
+
+const ConsentManagerConnectionStatusCodec = valuesOf(
+  ConsentManagerConnectionStatus,
+  'ConsentManagerConnectionStatus',
+);
+
+const PrivacyRequestConnectionStatusCodec = valuesOf(
+  PrivacyRequestConnectionStatus,
+  'PrivacyRequestConnectionStatus',
+);
+
+const HasPersonalDataStatusCodec = valuesOf(HasPersonalDataStatus, 'HasPersonalDataStatus');
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -1646,6 +1676,42 @@ export const DataSiloInput = t.intersection([
      * The business entities associated with this data silo
      */
     businessEntityTitles: t.array(t.string),
+    /** Title of the vendor linked to this data silo in the inventory */
+    'vendor-title': t.string,
+    /** Primary contact name for this data silo or its vendor */
+    contactName: t.string,
+    /** Primary contact email for DPA or operational questions */
+    contactEmail: t.string,
+    /** Public website for the vendor or system */
+    websiteUrl: t.string,
+    /** Free-form notes about the data silo */
+    notes: t.string,
+    /** Description of how long data is retained in this system */
+    dataRetentionNote: t.string,
+    /** Internal documentation for how DSRs are processed in this silo */
+    dsrProcessingDocumentation: t.string,
+    /** URL to the signed or online data processing agreement */
+    dataProcessingAgreementLink: t.string,
+    /** Status of the data processing agreement */
+    dataProcessingAgreementStatus: DataProcessingAgreementStatusCodec,
+    /** Webhook URL for DSR notifications (distinct from integration webhook `url`) */
+    notifyWebhookUrl: t.string,
+    /** When true, new DSR work is paused for this data silo */
+    isPausedForDsrs: t.boolean,
+    /** When true, skip secondary actions when a DSR has no files to process */
+    skipSecondaryIfNoFiles: t.boolean,
+    /** Earliest time of day (HH:mm) when DSR processing may start */
+    allowDsrProcessingStartTime: t.string,
+    /** Latest time of day (HH:mm) when DSR processing may end */
+    allowDsrProcessingEndTime: t.string,
+    /** Connection strategy for custom integrations */
+    customSiloConnectionStrategy: CustomSiloConnectionStrategyCodec,
+    /** Consent Manager recommendation for connecting this silo */
+    recommendedForConsent: ConsentManagerConnectionStatusCodec,
+    /** Privacy request automation recommendation for connecting this silo */
+    recommendedForPrivacy: PrivacyRequestConnectionStatusCodec,
+    /** Whether this silo is believed to store personal data */
+    hasPersonalData: HasPersonalDataStatusCodec,
   }),
 ]);
 
