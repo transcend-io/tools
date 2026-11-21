@@ -6,6 +6,7 @@ import {
   pullDataSiloInventoryFields,
   pushDataSiloInventoryFields,
 } from '../dataSiloInventoryFields.js';
+import { DataProcessingAgreementStatus } from '../enums.js';
 
 const baseSilo = (): DataSiloEnriched =>
   ({
@@ -14,7 +15,7 @@ const baseSilo = (): DataSiloEnriched =>
     dsrProcessingDocumentation: 'See runbook',
     contactEmail: 'dpo@example.com',
     isPausedForDsrs: true,
-    dataProcessingAgreementStatus: 'ONLINE_DPA',
+    dataProcessingAgreementStatus: DataProcessingAgreementStatus.OnlineDpa,
   }) as DataSiloEnriched;
 
 describe('pullDataSiloInventoryFields', () => {
@@ -25,7 +26,7 @@ describe('pullDataSiloInventoryFields', () => {
       dsrProcessingDocumentation: 'See runbook',
       contactEmail: 'dpo@example.com',
       isPausedForDsrs: true,
-      dataProcessingAgreementStatus: 'ONLINE_DPA',
+      dataProcessingAgreementStatus: DataProcessingAgreementStatus.OnlineDpa,
     });
   });
 });
