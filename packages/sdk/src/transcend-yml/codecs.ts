@@ -104,6 +104,60 @@ const ComparisonOperatorCodec = valuesOf(ComparisonOperator, 'ComparisonOperator
 const TemplateDeliveryTypeCodec = valuesOf(TemplateDeliveryType, 'TemplateDeliveryType');
 const TemplateProductCodec = valuesOf(TemplateProduct, 'TemplateProduct');
 
+const DataProcessingAgreementStatusCodec = t.union(
+  [
+    t.literal('ONLINE_DPA'),
+    t.literal('CUSTOM_DPA'),
+    t.literal('REQUIRES_UPDATE'),
+    t.literal('NOT_REQUIRED'),
+    t.literal('MISSING'),
+  ],
+  'DataProcessingAgreementStatus',
+);
+
+const CustomSiloConnectionStrategyCodec = t.union(
+  [t.literal('WEBHOOK'), t.literal('CUSTOM_FUNCTION')],
+  'CustomSiloConnectionStrategy',
+);
+
+const ConsentManagerConnectionStatusCodec = t.union(
+  [
+    t.literal('REGULATED'),
+    t.literal('PARTIALLY_REGULATED'),
+    t.literal('DETECTED'),
+    t.literal('PENDING_REGULATION'),
+    t.literal('VERY_LIKELY'),
+    t.literal('POSSIBLE'),
+    t.literal('NOT_RECOMMENDED'),
+    t.literal('UNDETERMINED'),
+  ],
+  'ConsentManagerConnectionStatus',
+);
+
+const PrivacyRequestConnectionStatusCodec = t.union(
+  [
+    t.literal('CONNECTED'),
+    t.literal('PENDING_CONNECTION'),
+    t.literal('VERY_LIKELY'),
+    t.literal('LIKELY'),
+    t.literal('POSSIBLE'),
+    t.literal('NOT_RECOMMENDED'),
+    t.literal('UNDETERMINED'),
+  ],
+  'PrivacyRequestConnectionStatus',
+);
+
+const HasPersonalDataStatusCodec = t.union(
+  [
+    t.literal('YES'),
+    t.literal('LIKELY'),
+    t.literal('UNLIKELY'),
+    t.literal('NO'),
+    t.literal('UNSPECIFIED'),
+  ],
+  'HasPersonalDataStatus',
+);
+
 /**
  * Input to define email templates that can be used to communicate to end-users
  * about the status of their requests
@@ -1646,6 +1700,26 @@ export const DataSiloInput = t.intersection([
      * The business entities associated with this data silo
      */
     businessEntityTitles: t.array(t.string),
+    /** Title of the vendor linked to this data silo in the inventory */
+    'vendor-title': t.string,
+    contactName: t.string,
+    contactEmail: t.string,
+    websiteUrl: t.string,
+    notes: t.string,
+    dataRetentionNote: t.string,
+    dsrProcessingDocumentation: t.string,
+    dataProcessingAgreementLink: t.string,
+    dataProcessingAgreementStatus: DataProcessingAgreementStatusCodec,
+    /** Webhook URL for DSR notifications (distinct from integration webhook `url`) */
+    notifyWebhookUrl: t.string,
+    isPausedForDsrs: t.boolean,
+    skipSecondaryIfNoFiles: t.boolean,
+    allowDsrProcessingStartTime: t.string,
+    allowDsrProcessingEndTime: t.string,
+    customSiloConnectionStrategy: CustomSiloConnectionStrategyCodec,
+    recommendedForConsent: ConsentManagerConnectionStatusCodec,
+    recommendedForPrivacy: PrivacyRequestConnectionStatusCodec,
+    hasPersonalData: HasPersonalDataStatusCodec,
   }),
 ]);
 

@@ -1273,6 +1273,146 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "vendor-title": {
+                "type": "string"
+              },
+              "contactName": {
+                "type": "string"
+              },
+              "contactEmail": {
+                "type": "string"
+              },
+              "websiteUrl": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "dataRetentionNote": {
+                "type": "string"
+              },
+              "dsrProcessingDocumentation": {
+                "type": "string"
+              },
+              "dataProcessingAgreementLink": {
+                "type": "string"
+              },
+              "dataProcessingAgreementStatus": {
+                "anyOf": [
+                  {
+                    "const": "ONLINE_DPA"
+                  },
+                  {
+                    "const": "CUSTOM_DPA"
+                  },
+                  {
+                    "const": "REQUIRES_UPDATE"
+                  },
+                  {
+                    "const": "NOT_REQUIRED"
+                  },
+                  {
+                    "const": "MISSING"
+                  }
+                ]
+              },
+              "notifyWebhookUrl": {
+                "type": "string"
+              },
+              "isPausedForDsrs": {
+                "type": "boolean"
+              },
+              "skipSecondaryIfNoFiles": {
+                "type": "boolean"
+              },
+              "allowDsrProcessingStartTime": {
+                "type": "string"
+              },
+              "allowDsrProcessingEndTime": {
+                "type": "string"
+              },
+              "customSiloConnectionStrategy": {
+                "anyOf": [
+                  {
+                    "const": "WEBHOOK"
+                  },
+                  {
+                    "const": "CUSTOM_FUNCTION"
+                  }
+                ]
+              },
+              "recommendedForConsent": {
+                "anyOf": [
+                  {
+                    "const": "REGULATED"
+                  },
+                  {
+                    "const": "PARTIALLY_REGULATED"
+                  },
+                  {
+                    "const": "DETECTED"
+                  },
+                  {
+                    "const": "PENDING_REGULATION"
+                  },
+                  {
+                    "const": "VERY_LIKELY"
+                  },
+                  {
+                    "const": "POSSIBLE"
+                  },
+                  {
+                    "const": "NOT_RECOMMENDED"
+                  },
+                  {
+                    "const": "UNDETERMINED"
+                  }
+                ]
+              },
+              "recommendedForPrivacy": {
+                "anyOf": [
+                  {
+                    "const": "CONNECTED"
+                  },
+                  {
+                    "const": "PENDING_CONNECTION"
+                  },
+                  {
+                    "const": "VERY_LIKELY"
+                  },
+                  {
+                    "const": "LIKELY"
+                  },
+                  {
+                    "const": "POSSIBLE"
+                  },
+                  {
+                    "const": "NOT_RECOMMENDED"
+                  },
+                  {
+                    "const": "UNDETERMINED"
+                  }
+                ]
+              },
+              "hasPersonalData": {
+                "anyOf": [
+                  {
+                    "const": "YES"
+                  },
+                  {
+                    "const": "LIKELY"
+                  },
+                  {
+                    "const": "UNLIKELY"
+                  },
+                  {
+                    "const": "NO"
+                  },
+                  {
+                    "const": "UNSPECIFIED"
+                  }
+                ]
               }
             }
           }
