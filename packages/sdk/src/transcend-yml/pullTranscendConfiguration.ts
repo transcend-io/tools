@@ -899,7 +899,7 @@ export async function pullTranscendConfiguration(
   if (messages.length > 0) {
     result.messages = messages.map(
       ({ id, defaultMessage, targetReactIntlId, description, translations }): IntlMessageInput => ({
-        id,
+        id: targetReactIntlId ?? id,
         defaultMessage,
         description,
         targetReactIntlId: targetReactIntlId || undefined,
