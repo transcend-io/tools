@@ -14,6 +14,7 @@ vi.mock('@transcend-io/sdk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   pullTranscendConfiguration: sdk.pull,
   syncConfigurationToTranscend: sdk.sync,
+  previewPush: vi.fn(),
 }));
 
 vi.mock('@transcend-io/mcp-server-base', async (importOriginal) => ({
@@ -37,11 +38,12 @@ function tempDir(): string {
 }
 
 describe('tool definitions', () => {
-  it('exposes the four tools', () => {
+  it('exposes the five tools', () => {
     expect(tools.map((t) => t.name)).toEqual([
       'config_pull',
       'config_diff',
       'config_push',
+      'config_preview_push',
       'config_get_schema',
     ]);
   });
@@ -86,6 +88,14 @@ describe('config_pull', () => {
     const filePath = path.join(tempDir(), 'transcend.yml');
     await tool('config_pull').handler({ filePath, resources: ['all'] });
     expect(sdk.pull.mock.calls[0]![1].resources.length).toBeGreaterThan(25);
+  });
+
+  it('caps pull resources when TRANSCEND_CONFIG_RESOURCES is set', async () => {
+    vi.stubEnv('TRANSCEND_CONFIG_RESOURCES', 'dataSilos,purposes');
+    const filePath = path.join(tempDir(), 'transcend.yml');
+    await tool('config_pull').handler({ filePath, resources: ['all'] });
+    expect(sdk.pull.mock.calls[0]![1].resources).toEqual(['dataSilos', 'purposes']);
+    vi.unstubAllEnvs();
   });
 
   it('rejects unknown section names and lists the valid ones', async () => {

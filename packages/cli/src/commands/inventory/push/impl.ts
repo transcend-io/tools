@@ -1,12 +1,10 @@
 import path from 'node:path';
 
 import {
-  buildSnapshotRequest,
   buildTranscendGraphQLClient,
   mergeTranscendInputs,
   parseTranscendYaml,
-  planPush,
-  pullTranscendConfiguration,
+  previewPush,
   renderPushPlan,
   syncConfigurationToTranscend,
   TranscendInput,
@@ -107,14 +105,7 @@ async function previewConfiguration({
   deleteExtraAttributeValues: boolean;
 }): Promise<PushPlan> {
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const remote = await pullTranscendConfiguration(client, {
-    ...buildSnapshotRequest(contents),
-    dataSiloIds: [],
-    integrationNames: [],
-    pageSize,
-    debug: false,
-  });
-  return planPush(contents, remote, { deleteExtraAttributeValues });
+  return previewPush(client, contents, { pageSize, deleteExtraAttributeValues });
 }
 
 export interface PushCommandFlags {

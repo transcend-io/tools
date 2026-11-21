@@ -31,7 +31,39 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
  */
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
+/** Max wait for {@link ToolConfirmation.describe} before falling back to hint-only text. */
+export const CONFIRMATION_DESCRIBE_TIMEOUT_MS = 20_000;
+
 const logger = new SimpleLogger();
+
+const DESCRIBE_UNAVAILABLE = 'Could not load a summary of changes.';
+
+async function resolveConfirmationDescribe(
+  toolName: string,
+  describe: NonNullable<ToolDefinition['confirmation']>['describe'],
+  args: Record<string, unknown>,
+): Promise<string | undefined> {
+  if (!describe) return undefined;
+  try {
+    const text = await Promise.race([
+      describe(args),
+      new Promise<string | undefined>((_, reject) => {
+        setTimeout(() => reject(new Error('describe timeout')), CONFIRMATION_DESCRIBE_TIMEOUT_MS);
+      }),
+    ]);
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+    return trimmed.length > 0 ? trimmed : undefined;
+  } catch (error) {
+    logger.warn(`Failed to build confirmation summary for ${toolName}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return DESCRIBE_UNAVAILABLE;
+  }
+}
+
+function messageWithDescribe(hint: string, describeText: string | undefined): string {
+  return describeText ? `${describeText}\n\n${hint}` : hint;
+}
 
 /**
  * Whether a gated tool could actually be approved on this connection.
@@ -105,6 +137,7 @@ export function withConfirmation(
 
   const mutate = tool.handler;
   const message = tool.confirmation.hint;
+  const describeFn = tool.confirmation.describe;
   const tokens = gate.policy === ConfirmationPolicy.ElicitOrToken ? gate.tokens : undefined;
 
   return {
@@ -123,7 +156,10 @@ export function withConfirmation(
       // the restriction applies to it, which is backwards.
       if (gate.policy === ConfirmationPolicy.Refuse) return refusedByPolicy(tool.name, message);
 
-      const asked = await askForConfirmation(tool.name, message, args, {
+      const describeText = await resolveConfirmationDescribe(tool.name, describeFn, args);
+      const promptMessage = messageWithDescribe(message, describeText);
+
+      const asked = await askForConfirmation(tool.name, promptMessage, args, {
         // An unbound prompt lands on the connection's shared stream, where it can
         // surface in the wrong user's turn or go undelivered and silently expire.
         // stdio has one stream and a token to fall back on, so neither applies.
@@ -136,8 +172,8 @@ export function withConfirmation(
       if (asked.outcome === 'refused') return asked.result;
 
       return tokens
-        ? mintApproval(tool.name, message, args, tokens, asked.reason)
-        : refusedUnanswered(tool.name, message);
+        ? mintApproval(tool.name, promptMessage, args, tokens, asked.reason)
+        : refusedUnanswered(tool.name, promptMessage);
     },
   };
 }

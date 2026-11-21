@@ -5,9 +5,18 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { syncConfigurationToTranscend, TR_PUSH_RESOURCE_SCOPE_MAP } from '@transcend-io/sdk';
+import {
+  previewPush,
+  summarizePushPlan,
+  syncConfigurationToTranscend,
+  TR_PUSH_RESOURCE_SCOPE_MAP,
+} from '@transcend-io/sdk';
 
 import { assertScopesAvailable } from '../helpers/assertScopesAvailable.js';
+import {
+  assertResourcesInAllowlist,
+  parseConfigResourceAllowlistFromEnv,
+} from '../helpers/configResourceAllowlist.js';
 import { loadConfigFile } from '../helpers/loadConfigFile.js';
 import { countConfigSections, resourcesInInput, scopesForResources } from '../helpers/sections.js';
 
@@ -47,8 +56,9 @@ export function createConfigPushTool(clients: ToolClients) {
     description:
       'Push a transcend.yml file from disk to Transcend, creating and updating resources to ' +
       'match it. Same behavior as `transcend inventory push`. Empty sections are skipped. ' +
-      'Run config_diff first. Use config_get_schema for the file ' +
-      'format and config_pull to start from the current state.',
+      'Run config_diff first (or config_preview_push for a structured summary). Returns success, ' +
+      'per-resource errors, and warnings. Use config_get_schema for the file format and config_pull ' +
+      'to start from the current state.',
     category: 'Config',
     readOnly: false,
     requireLocalFilesystem: true,
@@ -58,6 +68,22 @@ export function createConfigPushTool(clients: ToolClients) {
         'file at filePath. Run config_diff first and confirm the diff with the user. Resources ' +
         'missing from the file are not deleted in most sections, but consent-manager domains and ' +
         'some lists are replaced wholesale. Check filePath and publishToPrivacyCenter before agreeing.',
+      describe: async (args) => {
+        const filePath = args.filePath;
+        if (typeof filePath !== 'string') return undefined;
+        const variables =
+          args.variables !== null &&
+          typeof args.variables === 'object' &&
+          !Array.isArray(args.variables)
+            ? (args.variables as Record<string, string>)
+            : {};
+        const pageSize = typeof args.pageSize === 'number' ? args.pageSize : 50;
+
+        const { input } = loadConfigFile(filePath, variables);
+        const client = createGraphqlRequestClient(clients.graphql);
+        const plan = await previewPush(client, input, { pageSize });
+        return summarizePushPlan(plan);
+      },
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: ConfigPushSchema,
@@ -70,10 +96,10 @@ export function createConfigPushTool(clients: ToolClients) {
     }) => {
       const { input } = loadConfigFile(filePath, variables);
 
-      const requiredScopes = scopesForResources(
-        resourcesInInput(input),
-        TR_PUSH_RESOURCE_SCOPE_MAP,
-      );
+      const sectionsInFile = resourcesInInput(input);
+      assertResourcesInAllowlist(sectionsInFile, parseConfigResourceAllowlistFromEnv());
+
+      const requiredScopes = scopesForResources(sectionsInFile, TR_PUSH_RESOURCE_SCOPE_MAP);
       assertScopesAvailable(clients.graphql, requiredScopes);
 
       const { logger, logs } = createCollectedLogger();
