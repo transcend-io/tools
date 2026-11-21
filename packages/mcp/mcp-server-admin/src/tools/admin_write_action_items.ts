@@ -15,13 +15,13 @@ export const writeActionItemsSchema = z.object({
 });
 export type WriteActionItemsInput = z.infer<typeof writeActionItemsSchema>;
 
-export function createWorkflowsWriteActionItemsTool(clients: ToolClients) {
+export function createAdminWriteActionItemsTool(clients: ToolClients) {
   return defineTool({
-    name: 'workflows_write_action_items',
+    name: 'admin_write_action_items',
     description:
       'Create or update `action-items` rows in transcend.yml shape, matched by title. Same as ' +
       'inventory push for that section.',
-    category: 'Workflows',
+    category: 'Admin',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: writeActionItemsSchema,

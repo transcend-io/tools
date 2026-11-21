@@ -18,12 +18,12 @@ export const writeActionItemCollectionsSchema = z.object({
 });
 export type WriteActionItemCollectionsInput = z.infer<typeof writeActionItemCollectionsSchema>;
 
-export function createWorkflowsWriteActionItemCollectionsTool(clients: ToolClients) {
+export function createAdminWriteActionItemCollectionsTool(clients: ToolClients) {
   return defineTool({
-    name: 'workflows_write_action_item_collections',
+    name: 'admin_write_action_item_collections',
     description:
       'Create or update `action-item-collections` rows in transcend.yml shape, matched by title.',
-    category: 'Workflows',
+    category: 'Admin',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: writeActionItemCollectionsSchema,

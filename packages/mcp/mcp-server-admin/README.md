@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`, `ManageAccessControl`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`, `ManageAccessControl`, `ViewAllActionItems`, `ManageAllActionItems`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -109,6 +109,10 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `admin_list_teams` — List teams
 - `admin_list_api_keys` — List API keys
 - `admin_list_scopes` — List valid API-key scope names (compact catalog)
+- `admin_list_action_items` — List action items (`action-items` in transcend.yml)
+- `admin_write_action_items` — Create or update action items by title
+- `admin_list_action_item_collections` — List action item collections
+- `admin_write_action_item_collections` — Create or update action item collections by title
 - `admin_write_teams` — Create or update teams (asks for confirmation)
 
 Privacy center configuration, intl messages, and privacy-center policies are on [`@transcend-io/mcp-server-privacy-center`](../mcp-server-privacy-center/README.md).

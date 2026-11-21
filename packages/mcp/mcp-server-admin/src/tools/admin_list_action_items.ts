@@ -5,13 +5,13 @@ import { TranscendPullResource } from '@transcend-io/sdk';
 export const listActionItemsSchema = EmptySchema;
 export type ListActionItemsInput = Record<string, never>;
 
-export function createWorkflowsListActionItemsTool(clients: ToolClients) {
+export function createAdminListActionItemsTool(clients: ToolClients) {
   return defineTool({
-    name: 'workflows_list_action_items',
+    name: 'admin_list_action_items',
     description:
       'List action items (the `action-items` section of transcend.yml) for the organization. ' +
       'Same data as `transcend inventory pull --resources=actionItems`.',
-    category: 'Workflows',
+    category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: listActionItemsSchema,

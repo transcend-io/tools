@@ -84,12 +84,12 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     write: ['inventory_write_processing_purpose'],
   },
   [TranscendPullResource.ActionItems]: {
-    read: ['workflows_list_action_items'],
-    write: ['workflows_write_action_items'],
+    read: ['admin_list_action_items'],
+    write: ['admin_write_action_items'],
   },
   [TranscendPullResource.ActionItemCollections]: {
-    read: ['workflows_list_action_item_collections'],
-    write: ['workflows_write_action_item_collections'],
+    read: ['admin_list_action_item_collections'],
+    write: ['admin_write_action_item_collections'],
   },
   [TranscendPullResource.Teams]: { read: ['admin_list_teams'], write: ['admin_write_teams'] },
   [TranscendPullResource.PrivacyCenters]: {

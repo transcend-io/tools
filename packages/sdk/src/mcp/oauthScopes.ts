@@ -40,6 +40,8 @@ export const MCP_SERVER_OAUTH_SCOPES: Record<TranscendMcpServer, readonly ScopeN
     ScopeName.ViewApiKeys,
     ScopeName.ManageApiKeys,
     ScopeName.ManageAccessControl,
+    ScopeName.ViewAllActionItems,
+    ScopeName.ManageAllActionItems,
   ],
   [TranscendMcpServer.Assessment]: [
     ScopeName.ViewAssessments,
@@ -123,12 +125,7 @@ export const MCP_SERVER_OAUTH_SCOPES: Record<TranscendMcpServer, readonly ScopeN
     ScopeName.ViewPolicies,
     ScopeName.ManagePolicies,
   ],
-  [TranscendMcpServer.Workflows]: [
-    ScopeName.ViewAllActionItems,
-    ScopeName.ManageAllActionItems,
-    ScopeName.ViewEmailTemplates,
-    ScopeName.ManageEmailTemplates,
-  ],
+  [TranscendMcpServer.Workflows]: [ScopeName.ViewEmailTemplates, ScopeName.ManageEmailTemplates],
 };
 
 /** npm package name for each domain MCP server. */
