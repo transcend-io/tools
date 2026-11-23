@@ -128,11 +128,11 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['preferences_list_workflow_configs'],
     write: ['preferences_write_workflow_configs'],
   },
-  // `workflows_update_config` edits title, subtitle and description only. The CLI
-  // push also creates configs and sets their steps.
+  // `workflows_update_config` edits title, subtitle and description only.
+  // `workflows_write_configs` runs the full `workflow-configs` inventory push path.
   [TranscendPullResource.WorkflowConfigs]: {
     read: ['workflows_list'],
-    write: ['workflows_update_config'],
+    write: ['workflows_update_config', 'workflows_write_configs'],
   },
 };
 

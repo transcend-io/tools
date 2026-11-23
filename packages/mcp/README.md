@@ -240,7 +240,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                        |
 | --------------------------------------------------------------- | -------------------------------- | ----: | -------------------------------------------------- |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   134 | Unified server — all tools in one process          |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   135 | Unified server — all tools in one process          |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |    12 | Organization, users, teams, API keys, action items |
 | [`mcp-server-privacy-center`](./mcp-server-privacy-center/)     | `transcend-mcp-privacy-center`   |     6 | Privacy Center config, messages, policies          |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups             |
@@ -253,7 +253,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)     |
 | [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    24 | Data inventory, silos, vendors, data points        |
 | [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |    12 | Privacy preference store (query, upsert, delete)   |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration            |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     5 | Workflow & email-template configuration            |
 
 Tool counts in this table are verified in `mcp/tests/readme-package-tool-counts.test.ts` against each package's `get*Tools()` factory. The unified total matches `EXPECTED_UMBRELLA_TOOL_COUNT` in `mcp/tests/registry.test.ts`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
 

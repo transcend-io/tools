@@ -201,6 +201,7 @@ describe('MCP Tool Annotations', () => {
       'privacy_center_write_policies',
       'workflows_update_config',
       'workflows_write_email_templates',
+      'workflows_write_configs',
       'preferences_upsert',
       'preferences_update_identifiers',
       'preferences_write_partitions',

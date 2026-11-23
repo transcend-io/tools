@@ -7,6 +7,7 @@ const EXPECTED_TOOL_NAMES = [
   'workflows_update_config',
   'workflows_list_email_templates',
   'workflows_write_email_templates',
+  'workflows_write_configs',
 ] as const;
 
 describe('Workflows Tools', () => {
@@ -31,9 +32,9 @@ describe('Workflows Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 4 tools with expected names', () => {
+  it('registers exactly 5 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(4);
+    expect(tools).toHaveLength(5);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

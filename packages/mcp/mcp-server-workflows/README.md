@@ -106,6 +106,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `workflows_list_email_templates` — List email templates
 - `workflows_update_config` — Update workflow configuration
 - `workflows_write_email_templates` — Create email templates by title
+- `workflows_write_configs` — Create or update DSR workflow configs (`workflow-configs` in transcend.yml)
 
 ## Related packages
 
