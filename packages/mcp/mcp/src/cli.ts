@@ -23,14 +23,14 @@ import packageJson from '../package.json' with { type: 'json' };
 import { TranscendGraphQLClient } from './graphql-client.js';
 import { UMBRELLA_OAUTH_SCOPES } from './oauth-scopes.js';
 import { ToolRegistry } from './registry.js';
-import { UMBRELLA_DOCS_SERVER_INSTRUCTIONS } from './server-instructions.js';
+import { buildUmbrellaServerInstructions } from './server-instructions.js';
 
 const VERSION = packageJson.version;
 
 const buildServerOptions = {
   name: 'transcend-mcp',
   version: VERSION,
-  instructions: UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
+  instructions: buildUmbrellaServerInstructions(),
   prompts: [...getConsentPrompts(), ...getDsrPrompts()],
 };
 

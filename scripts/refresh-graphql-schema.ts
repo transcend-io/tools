@@ -130,8 +130,16 @@ async function main(): Promise<void> {
   const outputPath = resolve(process.cwd(), 'schema.graphql');
   writeFileSync(outputPath, `${banner}\n${sdl}\n`);
 
+  const mcpAdminSnapshot = resolve(
+    process.cwd(),
+    'packages/mcp/mcp-server-admin/src/tools/graphql/schema-snapshot.graphql',
+  );
+  writeFileSync(mcpAdminSnapshot, `${banner}\n${sdl}\n`);
+
   // eslint-disable-next-line no-console
   console.error(`Wrote ${outputPath} (${sdl.length} bytes).`);
+  // eslint-disable-next-line no-console
+  console.error(`Wrote ${mcpAdminSnapshot} for MCP graphql_inspect_schema.`);
 }
 
 main().catch((err: unknown) => {

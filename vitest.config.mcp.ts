@@ -18,12 +18,15 @@ function mcpAppViewLoader(): Plugin {
   return {
     name: 'transcend:mcp-app-view-loader',
     load(id) {
-      if (!id.endsWith('.html')) return undefined;
+      if (!id.endsWith('.html') && !id.endsWith('.graphql')) return undefined;
 
       // A gitignored build output, so a clean clone reaches here before anything
       // has produced it. Naming the command beats a bare ENOENT.
       if (!existsSync(id)) {
-        throw new Error(`${id} has not been built. Run \`pnpm build:ui\` in the package first.`);
+        const hint = id.endsWith('.html')
+          ? 'Run `pnpm build:ui` in the package first.'
+          : 'Ensure schema.graphql exists at the repo root.';
+        throw new Error(`${id} has not been built. ${hint}`);
       }
 
       return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;

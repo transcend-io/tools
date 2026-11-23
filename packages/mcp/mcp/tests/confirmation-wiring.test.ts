@@ -62,6 +62,7 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
     code: 'export default async () => ({ ok: true });',
   },
   dsr_cancel: { requestId: 'req-1' },
+  graphql_mutate: { query: 'mutation { __typename }' },
   dsr_submit: {
     workflowConfigId: '00000000-0000-4000-8000-000000000001',
     email: 'a@example.com',

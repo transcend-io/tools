@@ -238,22 +238,22 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 ## Packages
 
-| Package                                                         | Binary                           | Tools | Description                                        |
-| --------------------------------------------------------------- | -------------------------------- | ----: | -------------------------------------------------- |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   133 | Unified server — all tools in one process          |
-| [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |    12 | Organization, users, teams, API keys, action items |
-| [`mcp-server-privacy-center`](./mcp-server-privacy-center/)     | `transcend-mcp-privacy-center`   |     6 | Privacy Center config, messages, policies          |
-| [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups             |
-| [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     5 | transcend.yml pull, diff preview, push (stdio)     |
-| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    23 | Consent management, analytics, cookie triage       |
-| [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)     |
-| [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs            |
-| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     5 | Data discovery, classification, NER                |
-| [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     3 | Transcend documentation lookup (list + fetch)      |
-| [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)     |
-| [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    24 | Data inventory, silos, vendors, data points        |
-| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |    12 | Privacy preference store (query, upsert, delete)   |
-| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration            |
+| Package                                                         | Binary                           | Tools | Description                                                          |
+| --------------------------------------------------------------- | -------------------------------- | ----: | -------------------------------------------------------------------- |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |   136 | Unified server — all tools in one process                            |
+| [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |    15 | Organization, users, teams, API keys, action items, GraphQL fallback |
+| [`mcp-server-privacy-center`](./mcp-server-privacy-center/)     | `transcend-mcp-privacy-center`   |     6 | Privacy Center config, messages, policies                            |
+| [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    16 | Privacy assessments, templates, groups                               |
+| [`mcp-server-config`](./mcp-server-config/)                     | `transcend-mcp-config`           |     5 | transcend.yml pull, diff preview, push (stdio)                       |
+| [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    23 | Consent management, analytics, cookie triage                         |
+| [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)                       |
+| [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs                              |
+| [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     5 | Data discovery, classification, NER                                  |
+| [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     3 | Transcend documentation lookup (list + fetch)                        |
+| [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    14 | Data subject requests (submit, track, respond)                       |
+| [`mcp-server-inventory`](./mcp-server-inventory/)               | `transcend-mcp-inventory`        |    24 | Data inventory, silos, vendors, data points                          |
+| [`mcp-server-preferences`](./mcp-server-preferences/)           | `transcend-mcp-preferences`      |    12 | Privacy preference store (query, upsert, delete)                     |
+| [`mcp-server-workflows`](./mcp-server-workflows/)               | `transcend-mcp-workflows`        |     4 | Workflow & email-template configuration                              |
 
 Tool counts in this table are verified in `mcp/tests/readme-package-tool-counts.test.ts` against each package's `get*Tools()` factory. The unified total matches `EXPECTED_UMBRELLA_TOOL_COUNT` in `mcp/tests/registry.test.ts`. Release docs (`pnpm --dir packages/mcp/mcp docgen`) regenerate counts for Sanity from the same factories.
 
@@ -565,6 +565,7 @@ All servers share the same environment variables:
 | `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                                                          |
 | `MCP_SKIP_CONFIRMATION`         | No                     | —                          | When `1`, bypasses server confirmation gates for consequential tools. **Never set in production** — removes human approval before mutations run                                    |
 | `TRANSCEND_MCP_EXPERIMENTAL`    | No                     | —                          | When `1`, registers tools marked `experimental: true`. Unset or any other value omits them from the catalog                                                                        |
+| `TRANSCEND_MCP_GRAPHQL_TOOLS`   | No                     | `all` (unset same)         | GraphQL fallback tools: `all` registers inspect, query, and mutate; `read` registers inspect and query only; `off` disables all. Invalid values disable and log a warning          |
 
 Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
 

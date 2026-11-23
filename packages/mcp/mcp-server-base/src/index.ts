@@ -218,11 +218,16 @@ export {
   ALLOW_TEST_OVERRIDES_ENV,
   MCP_SKIP_CONFIRMATION_ENV,
   TRANSCEND_MCP_EXPERIMENTAL_ENV,
+  TRANSCEND_MCP_GRAPHQL_TOOLS_ENV,
   allowTestOverrides,
   experimentalToolsEnabled,
+  graphqlMutateToolsEnabled,
+  graphqlReadToolsEnabled,
+  graphqlToolsMode,
   resolveTestOverride,
   skipConfirmation,
 } from './oauth/env.js';
+export type { GraphqlToolsMode } from './oauth/env.js';
 export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
 export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';

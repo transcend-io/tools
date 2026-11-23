@@ -106,6 +106,7 @@ describe('MCP Tool Annotations', () => {
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
+      'graphql_mutate',
     ];
 
     it.each(expectedDestructive)('%s has destructiveHint: true', (name) => {
@@ -151,6 +152,7 @@ describe('MCP Tool Annotations', () => {
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
       'preferences_upsert',
+      'graphql_mutate',
     ];
 
     const expectedGatedNonDestructive = [
