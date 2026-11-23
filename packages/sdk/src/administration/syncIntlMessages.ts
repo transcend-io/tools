@@ -3,7 +3,9 @@ import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { fetchAllMessages } from './fetchAllMessages.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
+import { intlMessageStableKey, resolveIntlMessageMatch } from './resolveIntlMessageMatch.js';
 
 export interface IntlMessageInput {
   /** React Intl message ID */
@@ -19,6 +21,33 @@ export interface IntlMessageInput {
 }
 
 const MAX_PAGE_SIZE = 100;
+
+function toGraphQlMessageInput(
+  message: IntlMessageInput,
+  resolvedId?: string,
+): {
+  id?: string;
+  defaultMessage: string;
+  targetReactIntlId?: string;
+  translations?: { locale: string; value: string }[];
+} {
+  const defaultMessage = message.defaultMessage ?? '';
+  const useResolvedId = resolvedId ?? (message.id.includes('.') ? undefined : message.id);
+
+  return {
+    ...(useResolvedId ? { id: useResolvedId } : {}),
+    defaultMessage,
+    ...(message.targetReactIntlId !== undefined
+      ? { targetReactIntlId: message.targetReactIntlId }
+      : {}),
+    translations: !message.translations
+      ? []
+      : Object.entries(message.translations).map(([locale, value]) => ({
+          locale,
+          value,
+        })),
+  };
+}
 
 /**
  * Update or create intl messages
@@ -37,20 +66,15 @@ export async function updateIntlMessages(
 ): Promise<void> {
   const { input: messages, logger = NOOP_LOGGER } = options;
   // Batch update messages
+  const existing = await fetchAllMessages(client, { logger });
+
   await mapSeries(chunk(messages, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
       variables: {
-        messages: page.map((message) => ({
-          ...(message.id.includes('.') ? {} : { id: message.id }),
-          defaultMessage: message.defaultMessage,
-          targetReactIntlId: message.targetReactIntlId,
-          translations: !message.translations
-            ? undefined
-            : Object.entries(message.translations).map(([locale, value]) => ({
-                locale,
-                value,
-              })),
-        })),
+        messages: page.map((message) => {
+          const match = resolveIntlMessageMatch(message, existing);
+          return toGraphQlMessageInput(message, match?.id);
+        }),
       },
       logger,
     });
@@ -77,14 +101,19 @@ export async function syncIntlMessages(
   logger.info(`Syncing "${messages.length}" messages...`);
 
   // Ensure no duplicates are being uploaded
-  const notUnique = messages.filter(
-    (message) => messages.filter((pol) => message.id === pol.id).length > 1,
-  );
-  if (notUnique.length > 0) {
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
+  for (const message of messages) {
+    const key = intlMessageStableKey(message);
+    if (seen.has(key)) {
+      duplicates.push(key);
+    } else {
+      seen.add(key);
+    }
+  }
+  if (duplicates.length > 0) {
     throw new Error(
-      `Failed to upload messages as there were non-unique entries found: ${notUnique
-        .map(({ id }) => id)
-        .join(',')}`,
+      `Failed to upload messages as there were non-unique entries found: ${duplicates.join(',')}`,
     );
   }
 
