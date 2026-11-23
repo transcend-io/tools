@@ -1299,23 +1299,8 @@
                 "type": "string"
               },
               "dataProcessingAgreementStatus": {
-                "anyOf": [
-                  {
-                    "const": "ONLINE_DPA"
-                  },
-                  {
-                    "const": "CUSTOM_DPA"
-                  },
-                  {
-                    "const": "REQUIRES_UPDATE"
-                  },
-                  {
-                    "const": "NOT_REQUIRED"
-                  },
-                  {
-                    "const": "MISSING"
-                  }
-                ]
+                "type": "string",
+                "enum": ["ONLINE_DPA", "CUSTOM_DPA", "REQUIRES_UPDATE", "NOT_REQUIRED", "MISSING"]
               },
               "notifyWebhookUrl": {
                 "type": "string"
@@ -1333,86 +1318,37 @@
                 "type": "string"
               },
               "customSiloConnectionStrategy": {
-                "anyOf": [
-                  {
-                    "const": "WEBHOOK"
-                  },
-                  {
-                    "const": "CUSTOM_FUNCTION"
-                  }
-                ]
+                "type": "string",
+                "enum": ["WEBHOOK", "CUSTOM_FUNCTION"]
               },
               "recommendedForConsent": {
-                "anyOf": [
-                  {
-                    "const": "REGULATED"
-                  },
-                  {
-                    "const": "PARTIALLY_REGULATED"
-                  },
-                  {
-                    "const": "DETECTED"
-                  },
-                  {
-                    "const": "PENDING_REGULATION"
-                  },
-                  {
-                    "const": "VERY_LIKELY"
-                  },
-                  {
-                    "const": "POSSIBLE"
-                  },
-                  {
-                    "const": "NOT_RECOMMENDED"
-                  },
-                  {
-                    "const": "UNDETERMINED"
-                  }
+                "type": "string",
+                "enum": [
+                  "REGULATED",
+                  "PARTIALLY_REGULATED",
+                  "DETECTED",
+                  "PENDING_REGULATION",
+                  "VERY_LIKELY",
+                  "POSSIBLE",
+                  "NOT_RECOMMENDED",
+                  "UNDETERMINED"
                 ]
               },
               "recommendedForPrivacy": {
-                "anyOf": [
-                  {
-                    "const": "CONNECTED"
-                  },
-                  {
-                    "const": "PENDING_CONNECTION"
-                  },
-                  {
-                    "const": "VERY_LIKELY"
-                  },
-                  {
-                    "const": "LIKELY"
-                  },
-                  {
-                    "const": "POSSIBLE"
-                  },
-                  {
-                    "const": "NOT_RECOMMENDED"
-                  },
-                  {
-                    "const": "UNDETERMINED"
-                  }
+                "type": "string",
+                "enum": [
+                  "CONNECTED",
+                  "PENDING_CONNECTION",
+                  "VERY_LIKELY",
+                  "LIKELY",
+                  "POSSIBLE",
+                  "NOT_RECOMMENDED",
+                  "UNDETERMINED"
                 ]
               },
               "hasPersonalData": {
-                "anyOf": [
-                  {
-                    "const": "YES"
-                  },
-                  {
-                    "const": "LIKELY"
-                  },
-                  {
-                    "const": "UNLIKELY"
-                  },
-                  {
-                    "const": "NO"
-                  },
-                  {
-                    "const": "UNSPECIFIED"
-                  }
-                ]
+                "type": "string",
+                "enum": ["YES", "LIKELY", "UNLIKELY", "NO", "UNSPECIFIED"]
               }
             }
           }
