@@ -14,3 +14,7 @@ export {
   WriteEmailTemplatesSchema,
   type WriteEmailTemplatesInput,
 } from './tools/workflows_write_email_templates.js';
+export {
+  WriteWorkflowConfigsSchema,
+  type WriteWorkflowConfigsInput,
+} from './tools/workflows_write_configs.js';
