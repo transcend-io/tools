@@ -4,6 +4,7 @@ import { checkCommand } from './check/command.js';
 import { initCommand } from './init/command.js';
 import { listCommand } from './list/command.js';
 import { newCommand } from './new/command.js';
+import { pullCommand } from './pull/command.js';
 import { pushCommand } from './push/command.js';
 import { runCommand } from './run/command.js';
 
@@ -14,6 +15,7 @@ export const customFunctionsRoutes = buildRouteMap({
     check: checkCommand,
     run: runCommand,
     push: pushCommand,
+    pull: pullCommand,
     list: listCommand,
   },
   docs: {

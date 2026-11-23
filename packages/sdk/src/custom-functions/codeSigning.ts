@@ -41,6 +41,60 @@ export function decodeJwtPayload<T extends object>(token: string): T | undefined
 }
 
 /**
+ * Decode plaintext TypeScript source from a signed custom function code JWT.
+ *
+ * @param signedCodeJwt - JWT from the GraphQL API
+ * @returns Decoded source, or undefined when the token is malformed
+ */
+export function decodeCustomFunctionSourceFromJwt(signedCodeJwt: string): string | undefined {
+  const payload = decodeJwtPayload<SignedCustomFunctionCode>(signedCodeJwt);
+  if (!payload?.base64Code) {
+    return undefined;
+  }
+  return Buffer.from(payload.base64Code, 'base64').toString('utf-8');
+}
+
+/** Manifest-relevant fields decoded from a signed context JWT. */
+export interface DecodedCustomFunctionContext {
+  /** Hosts the function may call */
+  allowedHosts?: string[];
+  /** Third party import flag */
+  allowThirdPartyImports?: boolean;
+  /** Timeout in milliseconds */
+  timeoutMs?: number;
+  /** Environment variable names (values are encrypted server-side) */
+  envKeys?: string[];
+}
+
+/**
+ * Decode execution context metadata from a signed context JWT.
+ *
+ * Environment values cannot be recovered; only key names are returned.
+ *
+ * @param signedCodeContextJwt - JWT from the GraphQL API
+ * @returns Decoded context metadata
+ */
+export function decodeCustomFunctionContextFromJwt(
+  signedCodeContextJwt: string,
+): DecodedCustomFunctionContext | undefined {
+  const payload = decodeJwtPayload<SignedCustomFunctionCodeContext>(signedCodeContextJwt);
+  if (!payload) {
+    return undefined;
+  }
+  const envKeys = payload.userDefinedEncryptedEnv
+    ? Object.keys(payload.userDefinedEncryptedEnv).sort()
+    : undefined;
+  return {
+    ...(payload.allowedHosts?.length ? { allowedHosts: [...payload.allowedHosts].sort() } : {}),
+    ...(payload.allowThirdPartyImports !== undefined
+      ? { allowThirdPartyImports: payload.allowThirdPartyImports }
+      : {}),
+    ...(payload.timeoutMs !== undefined ? { timeoutMs: payload.timeoutMs } : {}),
+    ...(envKeys?.length ? { envKeys } : {}),
+  };
+}
+
+/**
  * The decoded payload of a signed custom function code JWT.
  */
 export interface SignedCustomFunctionCode {

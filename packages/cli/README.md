@@ -45,6 +45,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions check`](#transcend-custom-functions-check)
   - [`transcend custom-functions run`](#transcend-custom-functions-run)
   - [`transcend custom-functions push`](#transcend-custom-functions-push)
+  - [`transcend custom-functions pull`](#transcend-custom-functions-pull)
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
@@ -2865,6 +2866,27 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --sombraAuth="$SOMBR
 
 ```sh
 transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend custom-functions pull`
+
+```txt
+USAGE
+  transcend custom-functions pull (--auth value) [--transcendUrl value] [--manifest value] [--force] [--json] [<directory>]
+  transcend custom-functions pull --help
+
+Fetch custom functions from the organization, decode active (or pending draft) source from signed JWTs, and write transcend-functions.yml plus functions/*.ts under the project directory. Encrypted env var values cannot be recovered; only execution context metadata is copied.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--manifest]      Path to transcend-functions.yml; defaults inside the target directory
+     [--force]         Overwrite an existing manifest and source files                                                                                                                                                    [default = false]
+     [--json]          Emit stable JSON output and disable prompts                                                                                                                                                        [default = false]
+  -h  --help           Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
 ```
 
 ### `transcend custom-functions list`
