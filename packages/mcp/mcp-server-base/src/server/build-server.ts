@@ -25,8 +25,12 @@ import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import {
   experimentalToolsEnabled,
+  graphqlMutateToolsEnabled,
+  graphqlReadToolsEnabled,
+  graphqlToolsMode,
   skipConfirmation,
   TRANSCEND_MCP_EXPERIMENTAL_ENV,
+  TRANSCEND_MCP_GRAPHQL_TOOLS_ENV,
 } from '../oauth/env.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import type { PromptDefinition } from '../prompts/types.js';
@@ -278,6 +282,21 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         `${TRANSCEND_MCP_EXPERIMENTAL_ENV}=1 to load)`,
       { tools: skippedExperimental },
     );
+  }
+
+  const gqlMode = graphqlToolsMode();
+  if (gqlMode === 'off') {
+    logger.info(
+      `GraphQL fallback tools are disabled (set ${TRANSCEND_MCP_GRAPHQL_TOOLS_ENV}=all or read to enable)`,
+    );
+  } else if (gqlMode === 'read') {
+    logger.info(
+      `${TRANSCEND_MCP_GRAPHQL_TOOLS_ENV}=read: graphql_inspect_schema and graphql_query only`,
+    );
+  } else if (graphqlReadToolsEnabled()) {
+    logger.info(`${TRANSCEND_MCP_GRAPHQL_TOOLS_ENV} allows full GraphQL fallback tools`, {
+      mutateEnabled: graphqlMutateToolsEnabled(),
+    });
   }
 
   if (skippedLocalFilesystem.length > 0) {

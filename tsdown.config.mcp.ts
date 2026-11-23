@@ -11,7 +11,7 @@ import sharedLibraryConfig from './tsdown.config.base.ts';
  */
 const mcpServerConfig: UserConfig = {
   ...sharedLibraryConfig,
-  loader: { ...sharedLibraryConfig.loader, '.html': 'text' },
+  loader: { ...sharedLibraryConfig.loader, '.html': 'text', '.graphql': 'text' },
   outputOptions: {
     // Maps reference their sources rather than embedding them, which is most of
     // what a published map weighs. Node reads each source from disk, so a server

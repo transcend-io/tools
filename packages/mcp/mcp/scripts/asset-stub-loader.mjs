@@ -10,7 +10,11 @@ import { fileURLToPath } from 'node:url';
 
 export async function resolve(specifier, context, nextResolve) {
   const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith('.svg') || resolved.url.endsWith('.html')) {
+  if (
+    resolved.url.endsWith('.svg') ||
+    resolved.url.endsWith('.html') ||
+    resolved.url.endsWith('.graphql')
+  ) {
     return {
       ...resolved,
       format: 'module',
@@ -29,11 +33,14 @@ export async function load(url, context, nextLoad) {
     };
   }
 
-  if (url.endsWith('.html')) {
+  if (url.endsWith('.html') || url.endsWith('.graphql')) {
     const path = fileURLToPath(url);
     // Generated MCP App views are gitignored; build first (publish / sync-mcp-docs do).
     if (!existsSync(path)) {
-      throw new Error(`${path} has not been built. Run the package view build before docgen.`);
+      const hint = url.endsWith('.html')
+        ? 'Run the package view build before docgen.'
+        : 'Ensure schema.graphql exists at the repo root.';
+      throw new Error(`${path} has not been built. ${hint}`);
     }
     return {
       format: 'module',

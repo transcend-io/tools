@@ -12,6 +12,7 @@ import { createAdminTestConnectionTool } from './admin_test_connection.js';
 import { createAdminWriteActionItemCollectionsTool } from './admin_write_action_item_collections.js';
 import { createAdminWriteActionItemsTool } from './admin_write_action_items.js';
 import { createAdminWriteTeamsTool } from './admin_write_teams.js';
+import { getGraphqlTools } from './graphql/index.js';
 
 export function getAdminTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -27,5 +28,6 @@ export function getAdminTools(clients: ToolClients): ToolDefinition[] {
     createAdminWriteActionItemCollectionsTool(clients),
     createAdminWriteTeamsTool(clients),
     createAdminTestConnectionTool(clients),
+    ...getGraphqlTools(clients),
   ];
 }

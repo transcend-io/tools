@@ -16,6 +16,9 @@ const EXPECTED_TOOL_NAMES = [
   'admin_write_action_item_collections',
   'admin_write_teams',
   'admin_test_connection',
+  'graphql_inspect_schema',
+  'graphql_query',
+  'graphql_mutate',
 ] as const;
 
 describe('Admin Tools', () => {
@@ -57,9 +60,9 @@ describe('Admin Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 12 tools with expected names', () => {
+  it('registers exactly 15 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(12);
+    expect(tools).toHaveLength(15);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

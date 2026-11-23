@@ -15,6 +15,9 @@ secret.env
 # and is rebuilt on every `pnpm codegen`/`pnpm typecheck`/`pnpm build`.
 **/__generated__/
 
+# Inlined SDL for graphql_inspect_schema; copied from repo-root schema.graphql on `pnpm codegen`.
+packages/mcp/mcp-server-admin/src/tools/graphql/schema-snapshot.graphql
+
 # Vite-built MCP App views, rebuilt by `pnpm prebuild` / `pnpm build:ui`.
 **/src/ui/generated/
 

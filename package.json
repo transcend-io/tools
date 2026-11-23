@@ -11,7 +11,7 @@
     "changeset": "changeset",
     "mcp:inspect": "node ./scripts/mcp-inspect.ts",
     "mcp:new": "node ./scripts/mcp-new.ts",
-    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen": "cp schema.graphql packages/mcp/mcp-server-admin/src/tools/graphql/schema-snapshot.graphql && graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "graphql:refresh-schema": "node scripts/refresh-graphql-schema.ts",
     "typecheck": "turbo run typecheck typecheck:root",
