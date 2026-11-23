@@ -232,7 +232,11 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
   'api-keys': { kind: PreviewResourceKind.PullOnly },
   assessments: { kind: PreviewResourceKind.PullOnly },
   'assessment-templates': { kind: PreviewResourceKind.PullOnly },
-  'system-discovery': { kind: PreviewResourceKind.PullOnly },
+  'system-discovery': listOf('resourceId', {
+    identity: pair('resourceId', 'plugin'),
+    mode: PreviewListResourceMode.UpdateOnly,
+    label: (item) => str(item.title) ?? str(item.resourceId) ?? '(unnamed)',
+  }),
 
   templates: listOf('title', { mode: PreviewListResourceMode.CreateOnly }),
   teams: listOf('name'),

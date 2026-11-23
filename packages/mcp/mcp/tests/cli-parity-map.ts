@@ -120,7 +120,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['preferences_list_option_values'],
     write: ['preferences_write_option_values'],
   },
-  [TranscendPullResource.SystemDiscovery]: { read: ['discovery_list_results'], write: [] },
+  [TranscendPullResource.SystemDiscovery]: {
+    read: ['discovery_list_results'],
+    write: ['discovery_write_results'],
+  },
   [TranscendPullResource.PreferenceWorkflowConfigs]: {
     read: ['preferences_list_workflow_configs'],
     write: ['preferences_write_workflow_configs'],
@@ -131,23 +134,6 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['workflows_list'],
     write: ['workflows_update_config'],
   },
-};
-
-/** Direction of a gap. */
-export interface SectionGap {
-  /** No direct read tool yet. */
-  read?: true;
-  /** No direct write tool yet. */
-  write?: true;
-}
-
-/**
- * Sections still missing a direct tool. Each PR that adds a tool removes its
- * entry. The parity test fails on an entry that is no longer true, so this list
- * only shrinks.
- */
-export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
-  [TranscendPullResource.SystemDiscovery]: { write: true },
 };
 
 /**

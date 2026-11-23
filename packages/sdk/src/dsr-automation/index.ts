@@ -36,3 +36,4 @@ export { pullWorkflowConfigAssociationFields } from './fetchWorkflowConfigAssoci
 export { syncWorkflowConfigAssociations } from './syncWorkflowConfigAssociations.js';
 export { diffTitleAssociations } from './diffTitleAssociations.js';
 export * from './uploadSiloDiscoveryResults.js';
+export { siloDiscoveryResultKey, syncSiloDiscoveryResults } from './syncSiloDiscoveryResults.js';
