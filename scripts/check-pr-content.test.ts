@@ -52,6 +52,10 @@ describe('findPrContentIssues', () => {
     ['placeholder email', 'user@example.com'],
     ['noreply email', '12345+someone@users.noreply.github.com'],
     ['short hex', 'commit bc3f4938'],
+    [
+      'Cursor agent footer',
+      '<a href="https://cursor.com/background-agent?bcId=cf4b4ff2-16c6-4ed0-8d11-f83062407bb1">',
+    ],
   ])('allows a %s', (_name, text) => {
     expect(findPrContentIssues(text)).toEqual([]);
   });

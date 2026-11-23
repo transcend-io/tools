@@ -28,8 +28,8 @@ type Rule = {
   pattern: RegExp;
   /** What to do instead. */
   hint: string;
-  /** Return true to accept a match. */
-  isAllowed?: (match: string) => boolean;
+  /** Return true to accept a match on this line. */
+  isAllowed?: (match: string, lineText: string) => boolean;
 };
 
 const INTERNAL_LINK_HOSTS = [
@@ -76,12 +76,13 @@ const RULES: Rule[] = [
     id: 'uuid',
     pattern: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
     hint: 'Remove IDs. Org, request, and data silo IDs identify a customer.',
+    isAllowed: (_match, lineText) => /cursor\.com\/agents\/|bcId=/i.test(lineText),
   },
   {
     id: 'email',
     pattern: /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi,
     hint: 'Remove email addresses. Use a placeholder such as user@example.com.',
-    isAllowed: (match) => {
+    isAllowed: (match, _lineText) => {
       const domain = match.slice(match.lastIndexOf('@') + 1).toLowerCase();
       return ALLOWED_EMAIL_DOMAINS.has(domain) || domain.endsWith('.transcend.io');
     },
@@ -101,7 +102,7 @@ export function findPrContentIssues(text: string): PrContentFinding[] {
   lines.forEach((lineText, index) => {
     for (const rule of RULES) {
       for (const [match] of lineText.matchAll(rule.pattern)) {
-        if (rule.isAllowed?.(match)) {
+        if (rule.isAllowed?.(match, lineText)) {
           continue;
         }
         findings.push({
