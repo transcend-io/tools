@@ -58,6 +58,12 @@ export interface WorkflowConfigSyncInput {
   }[];
   /** Attribute key (custom field) names to associate with the workflow */
   'attribute-keys'?: string[];
+  /** Data silos associated with this workflow (reconciled when present) */
+  'data-silo-titles'?: string[];
+  /** Preflight checks associated with this workflow (reconciled when present) */
+  'preflight-titles'?: string[];
+  /** Intake identifier names enabled on this workflow (reconciled when present) */
+  'input-identifiers'?: string[];
 }
 
 /**

@@ -30,6 +30,7 @@ import {
   syncProcessingPurposes,
   syncConsentWorkflowTriggers,
   syncWorkflowConfigs,
+  syncWorkflowConfigAssociations,
   syncPreferenceOptionValues,
   syncPurposes,
   syncPreferenceTopics,
@@ -615,6 +616,20 @@ export async function syncConfigurationToTranscend(
     });
     if (!dependenciesSuccess) {
       recordError('data-silo-dependencies', 'Failed to sync data-silo-dependencies');
+    }
+  }
+
+  if (workflowConfigs?.length) {
+    const workflowAssociationsSuccess = await syncWorkflowConfigAssociations(
+      client,
+      workflowConfigs,
+      {
+        pageSize,
+        logger,
+      },
+    );
+    if (!workflowAssociationsSuccess) {
+      recordError('workflow-configs', 'Failed to sync workflow config associations');
     }
   }
 

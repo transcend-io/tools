@@ -62,3 +62,70 @@ export const UPDATE_WORKFLOW_CONFIG: DocumentNode = parse(gql`
     }
   }
 `);
+
+export const WORKFLOW_ENRICHERS: DocumentNode = parse(gql`
+  query TranscendCliWorkflowEnrichers(
+    $input: WorkflowEnrichersInput!
+    $first: Int!
+    $offset: Int!
+  ) {
+    workflowEnrichers(first: $first, offset: $offset, input: $input) {
+      nodes {
+        id
+        title
+      }
+      totalCount
+    }
+  }
+`);
+
+export const WORKFLOW_IDENTIFIERS: DocumentNode = parse(gql`
+  query TranscendCliWorkflowIdentifiers(
+    $input: WorkflowConfigIdInput!
+    $first: Int!
+    $offset: Int!
+  ) {
+    workflowIdentifiers(first: $first, offset: $offset, input: $input) {
+      nodes {
+        id
+        name
+        isDisabled
+      }
+      totalCount
+    }
+  }
+`);
+
+export const ADD_DATA_SILO_TO_WORKFLOW_CONFIG: DocumentNode = parse(gql`
+  mutation TranscendCliAddDataSiloToWorkflowConfig($input: WorkflowDataSiloInput!) {
+    addDataSiloToWorkflowConfig(input: $input) {
+      success
+    }
+  }
+`);
+
+export const REMOVE_DATA_SILO_FROM_WORKFLOW_CONFIG: DocumentNode = parse(gql`
+  mutation TranscendCliRemoveDataSiloFromWorkflowConfig($input: WorkflowDataSiloInput!) {
+    removeDataSiloFromWorkflowConfig(input: $input) {
+      success
+    }
+  }
+`);
+
+export const ADD_ENRICHERS_TO_WORKFLOW_CONFIG: DocumentNode = parse(gql`
+  mutation TranscendCliAddEnrichersToWorkflowConfig($input: AddEnrichersToWorkflowConfigInput!) {
+    addEnrichersToWorkflowConfig(input: $input) {
+      success
+    }
+  }
+`);
+
+export const REMOVE_ENRICHERS_FROM_WORKFLOW_CONFIG: DocumentNode = parse(gql`
+  mutation TranscendCliRemoveEnrichersFromWorkflowConfig(
+    $input: RemoveEnrichersFromWorkflowConfigInput!
+  ) {
+    removeEnrichersFromWorkflowConfig(input: $input) {
+      success
+    }
+  }
+`);

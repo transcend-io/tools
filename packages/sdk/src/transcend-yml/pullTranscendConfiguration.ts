@@ -9,7 +9,7 @@ import {
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
-import type { Logger } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
 
@@ -59,6 +59,7 @@ import {
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
   workflowConfigMatchKey,
+  pullWorkflowConfigAssociationFields,
   type AssessmentRule,
 } from '../index.js';
 import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
@@ -1441,8 +1442,12 @@ export async function pullTranscendConfiguration(
   }
 
   if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
-    const pulledWorkflowConfigs = workflowConfigs.map(
-      (config): WorkflowConfigInput => ({
+    const pulledWorkflowConfigs = await mapSeries(workflowConfigs, async (config) => {
+      const associationFields = await pullWorkflowConfigAssociationFields(client, config.id, {
+        pageSize,
+        logger,
+      });
+      return {
         title: config.title.defaultMessage,
         'action-type': config.action.type,
         ...(config.internalName ? { 'internal-name': config.internalName } : {}),
@@ -1467,8 +1472,9 @@ export async function pullTranscendConfiguration(
               ),
             }
           : {}),
-      }),
-    );
+        ...associationFields,
+      } satisfies WorkflowConfigInput;
+    });
     // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
     const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
     for (const configs of Object.values(configsByMatchKey)) {
