@@ -1273,6 +1273,82 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "vendor-title": {
+                "type": "string"
+              },
+              "contactName": {
+                "type": "string"
+              },
+              "contactEmail": {
+                "type": "string"
+              },
+              "websiteUrl": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "dataRetentionNote": {
+                "type": "string"
+              },
+              "dsrProcessingDocumentation": {
+                "type": "string"
+              },
+              "dataProcessingAgreementLink": {
+                "type": "string"
+              },
+              "dataProcessingAgreementStatus": {
+                "type": "string",
+                "enum": ["ONLINE_DPA", "CUSTOM_DPA", "REQUIRES_UPDATE", "NOT_REQUIRED", "MISSING"]
+              },
+              "notifyWebhookUrl": {
+                "type": "string"
+              },
+              "isPausedForDsrs": {
+                "type": "boolean"
+              },
+              "skipSecondaryIfNoFiles": {
+                "type": "boolean"
+              },
+              "allowDsrProcessingStartTime": {
+                "type": "string"
+              },
+              "allowDsrProcessingEndTime": {
+                "type": "string"
+              },
+              "customSiloConnectionStrategy": {
+                "type": "string",
+                "enum": ["WEBHOOK", "CUSTOM_FUNCTION"]
+              },
+              "recommendedForConsent": {
+                "type": "string",
+                "enum": [
+                  "REGULATED",
+                  "PARTIALLY_REGULATED",
+                  "DETECTED",
+                  "PENDING_REGULATION",
+                  "VERY_LIKELY",
+                  "POSSIBLE",
+                  "NOT_RECOMMENDED",
+                  "UNDETERMINED"
+                ]
+              },
+              "recommendedForPrivacy": {
+                "type": "string",
+                "enum": [
+                  "CONNECTED",
+                  "PENDING_CONNECTION",
+                  "VERY_LIKELY",
+                  "LIKELY",
+                  "POSSIBLE",
+                  "NOT_RECOMMENDED",
+                  "UNDETERMINED"
+                ]
+              },
+              "hasPersonalData": {
+                "type": "string",
+                "enum": ["YES", "LIKELY", "UNLIKELY", "NO", "UNSPECIFIED"]
               }
             }
           }

@@ -114,6 +114,26 @@ export const DATA_SILOS_ENRICHED = gql`
         sombra {
           id
         }
+        vendor {
+          title
+        }
+        contactName
+        contactEmail
+        websiteUrl
+        notes
+        dataRetentionNote
+        dsrProcessingDocumentation
+        dataProcessingAgreementLink
+        dataProcessingAgreementStatus
+        notifyWebhookUrl
+        isPausedForDsrs
+        skipSecondaryIfNoFiles
+        allowDsrProcessingStartTime
+        allowDsrProcessingEndTime
+        customSiloConnectionStrategy
+        recommendedForConsent
+        recommendedForPrivacy
+        hasPersonalData
       }
     }
   }
