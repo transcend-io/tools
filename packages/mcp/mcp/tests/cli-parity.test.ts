@@ -4,12 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
 import { ToolRegistry } from '../src/registry.js';
-import {
-  CLI_SECTION_TOOLS,
-  PENDING_GAPS,
-  READ_ONLY_BY_DESIGN,
-  type SectionGap,
-} from './cli-parity-map.js';
+import { CLI_SECTION_TOOLS, READ_ONLY_BY_DESIGN } from './cli-parity-map.js';
 
 const TEST_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-key' };
 
@@ -39,36 +34,21 @@ describe('CLI parity', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('gives every section a read tool unless it is pending', () => {
-    const missing = sections.filter(
-      (section) => CLI_SECTION_TOOLS[section].read.length === 0 && !PENDING_GAPS[section]?.read,
-    );
-    expect(missing, 'Add a read tool, or list the section in PENDING_GAPS').toEqual([]);
+  it('gives every section a read tool', () => {
+    const missing = sections.filter((section) => CLI_SECTION_TOOLS[section].read.length === 0);
+    expect(missing, 'Add a read tool for each section').toEqual([]);
   });
 
-  it('gives every section a write tool unless it is pending or read only by design', () => {
+  it('gives every section a write tool unless it is read only by design', () => {
     const missing = sections.filter(
       (section) =>
-        CLI_SECTION_TOOLS[section].write.length === 0 &&
-        !PENDING_GAPS[section]?.write &&
-        !READ_ONLY_BY_DESIGN.includes(section),
+        CLI_SECTION_TOOLS[section].write.length === 0 && !READ_ONLY_BY_DESIGN.includes(section),
     );
-    expect(missing, 'Add a write tool, or list the section in PENDING_GAPS').toEqual([]);
+    expect(missing, 'Add a write tool for each section').toEqual([]);
   });
 
-  it('keeps PENDING_GAPS free of entries that are no longer true', () => {
-    const stale = (
-      Object.entries(PENDING_GAPS) as Array<[TranscendPullResource, SectionGap]>
-    ).flatMap(([section, gap]) => [
-      ...(gap.read && CLI_SECTION_TOOLS[section].read.length > 0 ? [`${section}.read`] : []),
-      ...(gap.write && CLI_SECTION_TOOLS[section].write.length > 0 ? [`${section}.write`] : []),
-    ]);
-    expect(stale, 'Remove these from PENDING_GAPS').toEqual([]);
-  });
-
-  it('does not list a read only by design section as a write gap', () => {
+  it('keeps read only by design sections without write tools', () => {
     for (const section of READ_ONLY_BY_DESIGN) {
-      expect(PENDING_GAPS[section]?.write).toBeUndefined();
       expect(CLI_SECTION_TOOLS[section].write).toEqual([]);
     }
   });

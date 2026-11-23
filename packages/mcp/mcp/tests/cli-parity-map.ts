@@ -136,21 +136,6 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
   },
 };
 
-/** Direction of a gap. */
-export interface SectionGap {
-  /** No direct read tool yet. */
-  read?: true;
-  /** No direct write tool yet. */
-  write?: true;
-}
-
-/**
- * Sections still missing a direct tool. Each PR that adds a tool removes its
- * entry. The parity test fails on an entry that is no longer true, so this list
- * only shrinks.
- */
-export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {};
-
 /**
  * Sections with no write tool by design. CLI push only resolves API key titles
  * for these, so there is nothing to create or update.
