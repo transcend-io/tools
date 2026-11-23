@@ -1,4 +1,5 @@
 ---
+"@transcend-io/cli": patch
 "@transcend-io/sdk": patch
 ---
 

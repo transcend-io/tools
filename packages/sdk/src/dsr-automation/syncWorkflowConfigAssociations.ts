@@ -23,6 +23,7 @@ import {
 import { fetchAllEnrichers } from './syncEnrichers.js';
 import type { WorkflowConfigSyncInput } from './syncWorkflowConfigs.js';
 
+/** True when the YAML entry includes association fields to reconcile on push. */
 function hasAssociationFields(config: WorkflowConfigSyncInput): boolean {
   return (
     config['data-silo-titles'] !== undefined ||

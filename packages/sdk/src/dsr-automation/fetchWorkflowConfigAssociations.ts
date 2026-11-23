@@ -37,6 +37,14 @@ export async function pullWorkflowConfigAssociationFields(
   };
 }
 
+/**
+ * Paginated preflight check titles linked to one workflow config.
+ *
+ * @param client - GraphQL client
+ * @param workflowConfigId - Workflow config ID
+ * @param options - Pagination and logging options
+ * @returns Sorted enricher titles
+ */
 async function fetchWorkflowEnricherTitles(
   client: GraphQLClient,
   workflowConfigId: string,
@@ -95,7 +103,14 @@ async function fetchWorkflowInputIdentifierNames(
   return names.sort((a, b) => a.localeCompare(b));
 }
 
-/** Enricher id and title on a workflow (for sync diff). */
+/**
+ * Paginated preflight checks linked to one workflow config (id + title for sync diff).
+ *
+ * @param client - GraphQL client
+ * @param workflowConfigId - Workflow config ID
+ * @param options - Pagination and logging options
+ * @returns Enricher id and title rows
+ */
 export async function fetchWorkflowConfigEnrichers(
   client: GraphQLClient,
   workflowConfigId: string,
