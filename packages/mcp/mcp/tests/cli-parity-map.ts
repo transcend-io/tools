@@ -120,7 +120,10 @@ export const CLI_SECTION_TOOLS: Record<TranscendPullResource, SectionTools> = {
     read: ['preferences_list_option_values'],
     write: ['preferences_write_option_values'],
   },
-  [TranscendPullResource.SystemDiscovery]: { read: ['discovery_list_results'], write: [] },
+  [TranscendPullResource.SystemDiscovery]: {
+    read: ['discovery_list_results'],
+    write: ['discovery_write_results'],
+  },
   [TranscendPullResource.PreferenceWorkflowConfigs]: {
     read: ['preferences_list_workflow_configs'],
     write: ['preferences_write_workflow_configs'],
@@ -146,9 +149,7 @@ export interface SectionGap {
  * entry. The parity test fails on an entry that is no longer true, so this list
  * only shrinks.
  */
-export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {
-  [TranscendPullResource.SystemDiscovery]: { write: true },
-};
+export const PENDING_GAPS: Partial<Record<TranscendPullResource, SectionGap>> = {};
 
 /**
  * Sections with no write tool by design. CLI push only resolves API key titles

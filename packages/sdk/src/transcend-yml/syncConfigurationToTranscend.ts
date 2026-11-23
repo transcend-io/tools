@@ -29,6 +29,7 @@ import {
   syncProcessingActivities,
   syncProcessingPurposes,
   syncConsentWorkflowTriggers,
+  syncSiloDiscoveryResults,
   syncWorkflowConfigs,
   syncWorkflowConfigAssociations,
   syncPreferenceOptionValues,
@@ -124,6 +125,7 @@ export async function syncConfigurationToTranscend(
     partitions,
     'preference-workflow-configs': preferenceWorkflowConfigs,
     'workflow-configs': workflowConfigs,
+    'system-discovery': systemDiscovery,
   } = input;
 
   const preferenceOptions = input['preference-options'];
@@ -640,6 +642,15 @@ export async function syncConfigurationToTranscend(
     });
     if (!processingActivitySuccess) {
       recordError('processing-activities', 'Failed to sync processing-activities');
+    }
+  }
+
+  if (systemDiscovery?.length) {
+    const systemDiscoverySuccess = await syncSiloDiscoveryResults(client, systemDiscovery, {
+      logger,
+    });
+    if (!systemDiscoverySuccess) {
+      recordError('system-discovery', 'Failed to sync system-discovery');
     }
   }
 
