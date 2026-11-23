@@ -1,5 +1,27 @@
 # @transcend-io/mcp-server-policy
 
+## 0.2.10
+
+### Patch Changes
+
+- 5110643: Centralized MCP OAuth scope lists in the SDK so OAuth clients and servers can pin scopes by server type. Domain MCP packages no longer export per-server `*_OAUTH_SCOPES` constants; import `getMcpServerOAuthScopes` from `@transcend-io/sdk` instead.
+- Updated dependencies [2ec345c]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [0c71caf]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [8bd784e]
+- Updated dependencies [faada80]
+- Updated dependencies [3214d5b]
+- Updated dependencies [ef4a7ba]
+  - @transcend-io/sdk@3.4.0
+  - @transcend-io/mcp-server-base@3.2.0
+  - @transcend-io/privacy-types@7.1.2
+
 ## 0.2.9
 
 ### Patch Changes
