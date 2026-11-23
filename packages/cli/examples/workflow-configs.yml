@@ -25,6 +25,13 @@ workflow-configs:
         value: 30
     attribute-keys:
       - Priority
+    # Optional associations (synced after data silos and preflights exist)
+    # data-silo-titles:
+    #   - Customer CRM
+    # preflight-titles:
+    #   - Verify customer email
+    # input-identifiers:
+    #   - email
 
   - internal-name: customer-erasure-workflow
     action-type: ERASURE

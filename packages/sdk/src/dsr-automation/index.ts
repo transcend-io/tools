@@ -32,4 +32,7 @@ export type { SyncTemplateInput, Template } from './syncTemplates.js';
 export * from './resolveWorkflowConfigMatch.js';
 export { syncWorkflowConfigs } from './syncWorkflowConfigs.js';
 export type { WorkflowConfigSyncInput } from './syncWorkflowConfigs.js';
+export { pullWorkflowConfigAssociationFields } from './fetchWorkflowConfigAssociations.js';
+export { syncWorkflowConfigAssociations } from './syncWorkflowConfigAssociations.js';
+export { diffTitleAssociations } from './diffTitleAssociations.js';
 export * from './uploadSiloDiscoveryResults.js';

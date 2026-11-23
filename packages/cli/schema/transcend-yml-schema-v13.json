@@ -4104,6 +4104,24 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "data-silo-titles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "preflight-titles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "input-identifiers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }

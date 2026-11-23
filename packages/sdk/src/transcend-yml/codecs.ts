@@ -2240,6 +2240,12 @@ export const WorkflowConfigInput = t.intersection([
     ),
     /** Attribute key (custom field) names to associate with the workflow */
     'attribute-keys': t.array(t.string),
+    /** Data silos associated with this DSR workflow */
+    'data-silo-titles': t.array(t.string),
+    /** Preflight checks wired into this workflow */
+    'preflight-titles': t.array(t.string),
+    /** Identifier names shown on the workflow intake form */
+    'input-identifiers': t.array(t.string),
   }),
 ]);
 
