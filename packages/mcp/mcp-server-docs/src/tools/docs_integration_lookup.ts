@@ -1,11 +1,11 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { DocsCatalogGraphqlClient } from '../catalogGraphql.js';
 import { getRouteIndex } from '../docsIndex.js';
@@ -78,7 +78,7 @@ export function createDocsIntegrationLookupTool(clients: ToolClients) {
           catalog = await graphql.getCatalogIntegrationDetail(match);
         } else if (suggestions.length > 0) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             `No catalog integration named '${integration}'. Close names: ` +
               `${suggestions.join(', ')}. Call again with one of them.`,
           );

@@ -1,11 +1,11 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 /** Minimum Sombra gateway version that serves POST /v1/preferences/{partition}/consent-records. */
 export const MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS = '7.578.4';
@@ -61,9 +61,9 @@ export function createConsentListRocRecordsTool(clients: ToolClients) {
         result = await rest.listRocRecords({ partition, identifier, limit, includeRawRequest });
       } catch (error) {
         // This route is only available on Sombra >= 7.578.4.
-        if (error instanceof ToolError && error.code === ErrorCode.NOT_FOUND) {
+        if (error instanceof ToolError && error.code === McpToolErrorCode.NotFound) {
           throw new ToolError(
-            ErrorCode.NOT_FOUND,
+            McpToolErrorCode.NotFound,
             `Consent-record lookup is unavailable on this Sombra gateway. This route requires ` +
               `Sombra >= ${MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS}; self-hosted gateways below ` +
               `that version do not serve it. Original error: ${error.message}`,

@@ -1,10 +1,9 @@
 import {
-  ErrorCode,
   getOAuthScopes,
   ToolError,
   type TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
-import type { ScopeName } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, type ScopeName } from '@transcend-io/privacy-types';
 
 /**
  * Fail fast when a stdio OAuth session never asked for scopes the call needs.
@@ -34,7 +33,7 @@ export function assertScopesAvailable(
   if (missing.length === 0) return;
 
   throw new ToolError(
-    ErrorCode.PERMISSION_ERROR,
+    McpToolErrorCode.PermissionError,
     `This session did not request scopes needed for these sections: ${missing.join(', ')}. ` +
       'Sign in again with a server that includes the config tools, or use an API key that has them.',
     false,

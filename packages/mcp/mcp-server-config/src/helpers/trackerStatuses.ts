@@ -1,5 +1,5 @@
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
-import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 const VALID_STATUSES = new Set<string>(Object.values(ConsentTrackerStatus));
 
@@ -14,7 +14,7 @@ export function parseTrackerStatuses(names: readonly string[]): ConsentTrackerSt
   const unknown = names.filter((name) => !VALID_STATUSES.has(name));
   if (unknown.length > 0) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Unknown tracker statuses: ${unknown.join(', ')}. Valid: ${[...VALID_STATUSES].join(', ')}.`,
       false,
     );

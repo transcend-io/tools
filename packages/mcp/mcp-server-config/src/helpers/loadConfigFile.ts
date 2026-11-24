@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { parseTranscendYaml, type TranscendInput } from '@transcend-io/sdk';
 
 import { assertConfigFilePath } from './configFilePath.js';
@@ -24,7 +25,7 @@ export function loadConfigFile(
     contents = readFileSync(source, 'utf-8');
   } catch (error) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Could not read ${source}: ${error instanceof Error ? error.message : String(error)}`,
       false,
     );
@@ -35,7 +36,7 @@ export function loadConfigFile(
     return { source, input };
   } catch (error) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `${source} is not a valid transcend.yml: ${
         error instanceof Error ? error.message : String(error)
       }`,

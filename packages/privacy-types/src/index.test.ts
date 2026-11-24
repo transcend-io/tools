@@ -5,10 +5,16 @@ import {
   DefaultPurposeSubCategoryType,
   LocaleCodec,
   PrivacyCenterAccessTokenFormat,
+  McpToolErrorCode,
   RequestAction,
 } from './index.js';
 
 describe('@transcend-io/privacy-types', () => {
+  it('exports seven stable MCP tool error codes', () => {
+    expect(Object.values(McpToolErrorCode)).toHaveLength(7);
+    expect(McpToolErrorCode.PermissionError).toBe('PERMISSION_ERROR');
+  });
+
   it('exports ACCESS as a request action', () => {
     expect(Object.values(RequestAction)).toContain('ACCESS');
   });

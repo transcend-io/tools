@@ -1,4 +1,5 @@
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { TranscendPullResource } from '@transcend-io/sdk';
 
 const VALID_RESOURCES = new Set<string>(Object.values(TranscendPullResource));
@@ -18,7 +19,7 @@ export function parseResources(names: readonly string[]): TranscendPullResource[
   const unknown = names.filter((name) => !VALID_RESOURCES.has(name));
   if (unknown.length > 0) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Unknown sections: ${unknown.join(', ')}. Valid sections: ${[...VALID_RESOURCES].join(', ')}.`,
       false,
     );

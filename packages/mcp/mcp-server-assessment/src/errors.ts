@@ -7,7 +7,7 @@
  * one code with opposite retry advice. Naming the pair once removes the choice
  * from the call site.
  *
- * These name the remedy rather than the class of problem. `ErrorCode` is the
+ * These name the remedy rather than the class of problem. `McpToolErrorCode` is the
  * transport taxonomy for thrown `ToolError`s and answers "was this auth, or a
  * timeout"; a caller that reached one of these already knows the request was
  * accepted and needs to be told what to change.

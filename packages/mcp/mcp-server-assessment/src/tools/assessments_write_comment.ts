@@ -1,12 +1,12 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
   ToolError,
   z,
   type AssessmentComment,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
@@ -91,7 +91,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
         const resolvedTargetId = targetId ?? (level === 'FORM' ? assessmentId : undefined);
         if (forQuestion && level === 'QUESTION' && resolvedTargetId === undefined) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             `targetId is required when ${action} a QUESTION comment. Pass the question id ` +
               'from assessments_list_comments (the row targetId).',
             false,
@@ -104,7 +104,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
       if (commentId !== undefined) {
         if (parentCommentId !== undefined) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             'Pass either commentId (to edit or resolve) or parentCommentId (to reply), not both. ' +
               'Call assessments_list_comments for the comment id and its level/targetId.',
             false,
@@ -113,7 +113,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
         }
         if (content === undefined && resolved === undefined) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             'When commentId is set, pass content to edit the comment, resolved to close or ' +
               'reopen it, or both. Call assessments_list_comments for the comment id.',
             false,
@@ -153,7 +153,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
 
       if (resolved !== undefined && parentCommentId === undefined) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'resolved requires commentId (to close or reopen that comment) or parentCommentId ' +
             '(to reply and then close that parent thread). Call assessments_list_comments for ids.',
           false,
@@ -163,7 +163,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
 
       if (content === undefined) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'content is required when creating or replying to a comment. To only resolve or ' +
             'reopen, pass commentId with resolved instead.',
           false,
@@ -173,7 +173,7 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
 
       if (targetId === undefined) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'targetId is required when creating or replying to a comment. Pass the form, ' +
             'section, or question id from assessments_list_comments (the row targetId). ' +
             'For a new FORM comment, targetId is the same as assessmentId.',

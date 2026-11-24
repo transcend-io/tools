@@ -1,13 +1,13 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
   ToolError,
   z,
   type ToolClients,
   type Assessment,
   type AssessmentSection,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import {
   PREFILL_ASSIGNEE_REQUIRED,
@@ -78,7 +78,7 @@ function failWithFormId(
     ? `holds ${answersApplied}/${totalQuestions} answers`
     : 'holds no answers yet';
   throw new ToolError(
-    ErrorCode.API_ERROR,
+    McpToolErrorCode.ApiError,
     `Assessment "${title}" was created but ${step} failed: ${
       error instanceof Error ? error.message : String(error)
     }. The form exists and ${held}. Read it with ` +

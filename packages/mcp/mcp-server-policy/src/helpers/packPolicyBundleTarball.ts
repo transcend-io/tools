@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import fg from 'fast-glob';
 
@@ -270,7 +271,7 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
   });
   if (tarResult.status !== 0) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
       false,
     );
@@ -280,7 +281,7 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
   if (compressedBytes.byteLength > MAX_BUNDLE_COMPRESSED_BYTES) {
     fs.unlinkSync(outputPath);
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_COMPRESSED_BYTES)} compressed upload limit ` +
         `(bundle is ${formatBytes(compressedBytes.byteLength)}). ${OVERSIZE_RECOVERY_HINT}`,
       false,
@@ -291,7 +292,7 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
   if (decompressedBytes.byteLength > MAX_BUNDLE_DECOMPRESSED_BYTES) {
     fs.unlinkSync(outputPath);
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_DECOMPRESSED_BYTES)} decompressed upload limit ` +
         `(bundle is ${formatBytes(decompressedBytes.byteLength)} decompressed). ${OVERSIZE_RECOVERY_HINT}`,
       false,

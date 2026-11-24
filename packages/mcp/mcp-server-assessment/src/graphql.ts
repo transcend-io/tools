@@ -1,6 +1,5 @@
 import {
   derivePageInfo,
-  ErrorCode,
   ToolError,
   TranscendGraphQLBase,
   type Assessment,
@@ -19,6 +18,7 @@ import {
   type ListOptions,
   type PaginatedResponse,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
 
@@ -98,7 +98,7 @@ function toComments(
 /** Not-found for a form ID, pointing the caller at the tool that lists valid IDs. */
 function assessmentNotFound(id: string): ToolError {
   return new ToolError(
-    ErrorCode.NOT_FOUND,
+    McpToolErrorCode.NotFound,
     `No assessment form with id "${id}". Call assessments_list to find valid assessment IDs, ` +
       'or assessments_list_templates if you meant a template rather than a filled-in form.',
     false,
@@ -120,7 +120,7 @@ function sectionNotFound(
   available: { id: string; title?: string | null }[],
 ): ToolError {
   return new ToolError(
-    ErrorCode.NOT_FOUND,
+    McpToolErrorCode.NotFound,
     `Assessment "${assessmentId}" has no section with ID ${missing.map((s) => `"${s}"`).join(', ')}. ` +
       'No sections were returned, including any that did match. Call assessments_get without ' +
       'sectionIds to list the sections this form has.',
@@ -1510,7 +1510,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const created = data.createAssessmentFormComments.assessmentFormComments[0];
       if (!created) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'createAssessmentFormComments returned no comment',
           false,
         );
@@ -1526,7 +1526,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const created = data.createAssessmentSectionComments.assessmentSectionComments[0];
       if (!created) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'createAssessmentSectionComments returned no comment',
           false,
         );
@@ -1541,7 +1541,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     const created = data.createAssessmentQuestionComments.assessmentQuestionComments[0];
     if (!created) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         'createAssessmentQuestionComments returned no comment',
         false,
       );
@@ -1572,7 +1572,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     if (level === 'FORM') {
       if (!targetId) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'targetId is required when editing a FORM comment. Pass the assessment ' +
             'form id (same as assessmentId). Call assessments_list_comments to look it up.',
           false,
@@ -1587,7 +1587,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const updated = data.updateAssessmentFormComments.assessmentFormComments[0];
       if (!updated) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'updateAssessmentFormComments returned no comment',
           false,
         );
@@ -1601,7 +1601,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const updated = data.updateAssessmentSectionComments.assessmentSectionComments[0];
       if (!updated) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'updateAssessmentSectionComments returned no comment',
           false,
         );
@@ -1609,7 +1609,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const sectionId = updated.assessmentSectionId || targetId;
       if (!sectionId) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'targetId is required when editing a SECTION comment and the API did not ' +
             'return assessmentSectionId. Pass the section id from assessments_list_comments.',
           false,
@@ -1620,7 +1620,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     }
     if (!targetId) {
       throw new ToolError(
-        ErrorCode.VALIDATION_ERROR,
+        McpToolErrorCode.ValidationError,
         'targetId is required when editing a QUESTION comment. Pass the question ' +
           'id from assessments_list_comments (the row targetId).',
         false,
@@ -1633,7 +1633,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     const updated = data.updateAssessmentQuestionComments.assessmentQuestionComments[0];
     if (!updated) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         'updateAssessmentQuestionComments returned no comment',
         false,
       );
@@ -1664,7 +1664,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     if (level === 'FORM') {
       if (!targetId) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'targetId is required when resolving a FORM comment. Pass the assessment ' +
             'form id (same as assessmentId). Call assessments_list_comments to look it up.',
           false,
@@ -1677,7 +1677,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const updated = data.resolveAssessmentFormComments.assessmentFormComments[0];
       if (!updated) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'resolveAssessmentFormComments returned no comment',
           false,
         );
@@ -1691,7 +1691,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const updated = data.resolveAssessmentSectionComments.assessmentSectionComments[0];
       if (!updated) {
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           'resolveAssessmentSectionComments returned no comment',
           false,
         );
@@ -1699,7 +1699,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       const sectionId = updated.assessmentSectionId || targetId;
       if (!sectionId) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'targetId is required when resolving a SECTION comment and the API did not ' +
             'return assessmentSectionId. Pass the section id from assessments_list_comments.',
           false,
@@ -1710,7 +1710,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     }
     if (!targetId) {
       throw new ToolError(
-        ErrorCode.VALIDATION_ERROR,
+        McpToolErrorCode.ValidationError,
         'targetId is required when resolving a QUESTION comment. Pass the question ' +
           'id from assessments_list_comments (the row targetId).',
         false,
@@ -1723,7 +1723,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     const updated = data.resolveAssessmentQuestionComments.assessmentQuestionComments[0];
     if (!updated) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         'resolveAssessmentQuestionComments returned no comment',
         false,
       );

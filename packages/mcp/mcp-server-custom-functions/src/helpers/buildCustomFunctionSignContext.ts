@@ -1,8 +1,5 @@
-import {
-  ErrorCode,
-  ToolError,
-  type CustomFunctionCodeContext,
-} from '@transcend-io/mcp-server-base';
+import { ToolError, type CustomFunctionCodeContext } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { StoredContextJwtPayload } from './decodeStoredContextJwt.js';
 import type { CustomFunctionEnvironmentVariableInput } from './environmentVariableInput.js';
@@ -210,7 +207,7 @@ export function assertSignContextPreservesEnvKeys(
     return;
   }
   throw new ToolError(
-    ErrorCode.VALIDATION_ERROR,
+    McpToolErrorCode.ValidationError,
     `Signing would drop environment variable keys: ${missing.join(', ')}. Retry with legacy-compatible ` +
       'settings or contact support if the gateway version is unknown.',
     false,

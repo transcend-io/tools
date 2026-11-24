@@ -1,5 +1,4 @@
 import {
-  ErrorCode,
   ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
@@ -30,7 +29,7 @@ import {
   type VendorUpdateInput,
   type VendorWriteInput,
 } from '@transcend-io/mcp-server-base';
-import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
 
@@ -610,7 +609,7 @@ export class InventoryMixin extends TranscendGraphQLBase {
       } catch (error) {
         const updateError = error instanceof Error ? error.message : String(error);
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           `Data silo created but metadata update failed. Retry with dataSiloId "${dataSilo.id}" instead of integrationName.`,
           false,
           {

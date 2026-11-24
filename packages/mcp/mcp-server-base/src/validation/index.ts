@@ -1,6 +1,6 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { z } from 'zod';
 
-import { ErrorCode } from '../errors.js';
 import { createToolResult } from '../tools/helpers.js';
 
 export { CursorPaginationSchema, OffsetPaginationSchema } from './schemas.js';
@@ -23,7 +23,7 @@ export function validateArgs<T>(
   return {
     success: false,
     error: createToolResult(false, undefined, `Invalid input: ${issues}`, {
-      code: ErrorCode.VALIDATION_ERROR,
+      code: McpToolErrorCode.ValidationError,
       retryable: false,
     }),
   };

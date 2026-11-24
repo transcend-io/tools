@@ -1,4 +1,5 @@
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionSummary } from '../graphql.js';
 
@@ -108,7 +109,7 @@ export function assertUpsertVersionIdEditable(
   const activeId = summary.activeVersion?.id;
   if (activeId === versionId) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       'Cannot edit the active version in place. Omit versionId to continue the pending draft ' +
         '(or start a new draft from active). Use custom_functions_get_code with versionId to read ' +
         'older versions.',
@@ -117,7 +118,7 @@ export function assertUpsertVersionIdEditable(
   }
   if (!summary.hasPendingDraft || !draftId) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `versionId ${versionId} is not editable. Omit versionId to start a new draft from the ` +
         'active version.',
       false,
@@ -125,7 +126,7 @@ export function assertUpsertVersionIdEditable(
   }
   if (versionId !== draftId) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `versionId must be the pending draft ${draftId}, not ${versionId}. Omit versionId to ` +
         'continue the draft.',
       false,
