@@ -5,11 +5,11 @@ import {
   createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
-  ErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import {
   DEFAULT_TRANSCEND_PULL_RESOURCES,
   pullTranscendConfiguration,
@@ -103,7 +103,7 @@ export function createConfigPullTool(clients: ToolClients) {
       const target = assertConfigFilePath(filePath);
       if (existsSync(target) && !overwrite) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `${target} already exists. Pass overwrite: true to replace it.`,
           false,
         );

@@ -14979,7 +14979,6 @@ type IdentifierUpdate {
   id: ID!
   identifierName: String!
   newValue: String!
-  isEncrypted: Boolean!
 }
 
 type ImportOneTrustAssessmentFormsPayload {

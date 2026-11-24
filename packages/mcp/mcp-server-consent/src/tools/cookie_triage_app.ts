@@ -1,7 +1,6 @@
 import {
   createToolResult,
   defineToolWithCapabilities,
-  ErrorCode,
   getMcpSession,
   McpClientCapability,
   McpHostClient,
@@ -10,6 +9,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import { COOKIE_TRIAGE_APP_RESOURCE } from '../apps/cookie-triage.js';
 import {
@@ -64,7 +64,7 @@ function wrapTriageFetchError(
   error: unknown,
 ): ToolError {
   const message = error instanceof Error ? error.message : String(error);
-  const code = error instanceof ToolError ? error.code : ErrorCode.API_ERROR;
+  const code = error instanceof ToolError ? error.code : McpToolErrorCode.ApiError;
   const retryable = error instanceof ToolError ? error.retryable : false;
   const details = {
     step,

@@ -1,6 +1,5 @@
 import {
   EMPTY_CAPABILITY_REPORT,
-  ErrorCode,
   isCapabilityAwareTool,
   McpClientCapability,
   McpHostClient,
@@ -10,6 +9,7 @@ import {
   type RocUserRecord,
 } from '@transcend-io/mcp-server-base';
 import {
+  McpToolErrorCode,
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
 } from '@transcend-io/privacy-types';
@@ -878,11 +878,11 @@ describe('Consent Tools', () => {
 
     it('names the Sombra minimum version on a 404, keeping the original error', async () => {
       mockRest.listRocRecords.mockRejectedValue(
-        new ToolError(ErrorCode.NOT_FOUND, 'Resource not found (404): Not Found', false),
+        new ToolError(McpToolErrorCode.NotFound, 'Resource not found (404): Not Found', false),
       );
 
       await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
-        code: ErrorCode.NOT_FOUND,
+        code: McpToolErrorCode.NotFound,
         message: expect.stringContaining(MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS),
       });
       // A 404 can also mean a renamed path, so the cause must stay visible.
@@ -891,11 +891,15 @@ describe('Consent Tools', () => {
 
     it('passes through non-404 failures untouched', async () => {
       mockRest.listRocRecords.mockRejectedValue(
-        new ToolError(ErrorCode.PERMISSION_ERROR, 'Authentication failed (403): denied', false),
+        new ToolError(
+          McpToolErrorCode.PermissionError,
+          'Authentication failed (403): denied',
+          false,
+        ),
       );
 
       await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
-        code: ErrorCode.PERMISSION_ERROR,
+        code: McpToolErrorCode.PermissionError,
         message: 'Authentication failed (403): denied',
       });
     });

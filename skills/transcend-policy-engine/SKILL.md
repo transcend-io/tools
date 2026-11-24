@@ -33,6 +33,7 @@ transcend policy check --noInteractive
 
 - Every Transcend CLI command and subcommand provides contextual help with `transcend <command> --help`.
 - Use the [Transcend CLI README](https://github.com/transcend-io/tools/tree/main/packages/cli#readme) for command documentation and examples.
+- Use the [Policy Engine documentation](https://docs.transcend.io/docs/preference-management/policy-engine) for how decisions work, the Permissions API contract, and the agent, CLI, and CI publishing guides.
 - Use the [Transcend documentation index](https://docs.transcend.io/llms.txt) to find current product documentation.
 
 ## Guardrails

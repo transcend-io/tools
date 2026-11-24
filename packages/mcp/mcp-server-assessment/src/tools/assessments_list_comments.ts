@@ -2,7 +2,6 @@ import {
   createToolResult,
   defineTool,
   derivePageInfo,
-  ErrorCode,
   OffsetPaginationSchema,
   ToolError,
   z,
@@ -10,6 +9,7 @@ import {
   type AssessmentCommentLevel,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
@@ -203,7 +203,7 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       // agent corrects the offset instead of reporting the form has no feedback.
       if (offset > 0 && offset >= matched.length && matched.length > 0) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `offset ${offset} is past the end of the result set: ${matched.length} ` +
             `comment(s) match resolution ${resolution}${
               authorIds && authorIds.length > 0 ? ` and the authorIds filter` : ''

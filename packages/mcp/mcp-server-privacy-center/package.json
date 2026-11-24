@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-privacy-center",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Transcend MCP Server — Privacy Center configuration, messages, and policies.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-privacy-center",
   "license": "Apache-2.0",

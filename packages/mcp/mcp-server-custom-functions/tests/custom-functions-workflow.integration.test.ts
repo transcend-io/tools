@@ -1,11 +1,7 @@
 import { Buffer } from 'node:buffer';
 
-import {
-  ErrorCode,
-  ToolError,
-  TranscendRestClient,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
+import { ToolError, TranscendRestClient, type ToolClients } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {

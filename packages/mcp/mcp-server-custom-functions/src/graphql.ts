@@ -1,9 +1,10 @@
-import { ErrorCode, ToolError, TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
-import type {
-  CustomFunctionLifecycleState,
-  CustomFunctionPayloadType,
-  CustomFunctionType,
-  CustomFunctionVersionLifecycleState,
+import { ToolError, TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
+import {
+  McpToolErrorCode,
+  type CustomFunctionLifecycleState,
+  type CustomFunctionPayloadType,
+  type CustomFunctionType,
+  type CustomFunctionVersionLifecycleState,
 } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
@@ -432,7 +433,11 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     });
     const node = data.customFunctions.nodes[0];
     if (!node) {
-      throw new ToolError(ErrorCode.NOT_FOUND, `No custom function found with id ${id}.`, false);
+      throw new ToolError(
+        McpToolErrorCode.NotFound,
+        `No custom function found with id ${id}.`,
+        false,
+      );
     }
     return node;
   }
@@ -470,7 +475,7 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
         ? versions.map((v) => `${v.id} (${v.versionNumber}, ${v.lifecycleState})`).join('; ')
         : '(none)';
     return new ToolError(
-      ErrorCode.NOT_FOUND,
+      McpToolErrorCode.NotFound,
       `Version ${versionId} cannot be read for custom function ${customFunctionId}. Known versions: ${catalog}.`,
       false,
     );
@@ -513,7 +518,7 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
         : (node.activeVersion ?? node.draftVersion);
     if (!defaultVersion) {
       throw new ToolError(
-        ErrorCode.NOT_FOUND,
+        McpToolErrorCode.NotFound,
         `Custom function ${id} has no readable version.`,
         false,
       );
@@ -543,7 +548,7 @@ export class CustomFunctionsMixin extends TranscendGraphQLBase {
     const signedCodeContextJwt = selectedVersion.signedCodeContextJwt;
     if (!signedCodeJwt || !signedCodeContextJwt) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         `Custom function ${id} version ${selectedVersion.id} is missing signed JWTs. Retry later.`,
         true,
       );

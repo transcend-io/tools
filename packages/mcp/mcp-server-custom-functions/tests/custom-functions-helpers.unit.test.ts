@@ -1,11 +1,7 @@
 import { Buffer } from 'node:buffer';
 
-import {
-  ErrorCode,
-  ToolError,
-  TranscendRestClient,
-  type ToolClients,
-} from '@transcend-io/mcp-server-base';
+import { ToolError, TranscendRestClient, type ToolClients } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -132,7 +128,7 @@ describe('mapCustomFunctionUpsertError', () => {
     );
     expect(mapped).toBeInstanceOf(ToolError);
     expect(mapped.message).toMatch(/inventory_get_data_silo[\s\S]*omit dataSiloId/);
-    expect((mapped as ToolError).code).toBe(ErrorCode.VALIDATION_ERROR);
+    expect((mapped as ToolError).code).toBe(McpToolErrorCode.ValidationError);
     expect((mapped as ToolError).retryable).toBe(false);
     expect((mapped as ToolError).details).toEqual({
       dataSiloId: 'silo-1',

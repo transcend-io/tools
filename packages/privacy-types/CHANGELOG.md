@@ -1,5 +1,18 @@
 # @transcend-io/privacy-types
 
+## 7.2.0
+
+### Minor Changes
+
+- 87ce10b: Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages import it from privacy-types directly (not re-exported through mcp-server-base). The former `ErrorCode` enum on mcp-server-base is removed.
+
+## 7.1.2
+
+### Patch Changes
+
+- 460eb96: Privacy center settings in `transcend.yml` now include branding assets and additional toggle fields for org-to-org configuration copy. Pull writes each asset's `src` (and optional `alt`); push can re-host assets from `src` URLs when copying into another organization.
+- 6eb83b5: Org config copy now round-trips DSR action copy and file form fields, data subject class on create, database preflight SQL settings, and identifier SQL metadata through `transcend.yml`.
+
 ## 7.1.1
 
 ### Patch Changes

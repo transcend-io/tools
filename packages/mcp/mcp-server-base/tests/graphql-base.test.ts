@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
-import { ToolError, ErrorCode } from '../src/errors.js';
+import { ToolError } from '../src/errors.js';
 import { TOOLCALL_ID_HEADER, TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 import { toolCallContext } from '../src/tool-call-context.js';
 
@@ -362,7 +363,7 @@ describe('TranscendGraphQLBase', () => {
         expect.fail('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(ToolError);
-        expect((err as ToolError).code).toBe(ErrorCode.AUTH_ERROR);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.AuthError);
         expect((err as ToolError).retryable).toBe(false);
       }
     });
@@ -388,7 +389,7 @@ describe('TranscendGraphQLBase', () => {
       try {
         await promise;
       } catch (err) {
-        expect((err as ToolError).code).toBe(ErrorCode.RATE_LIMITED);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.RateLimited);
         expect((err as ToolError).retryable).toBe(true);
       }
 
@@ -418,7 +419,7 @@ describe('TranscendGraphQLBase', () => {
         expect.fail('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(ToolError);
-        expect((err as ToolError).code).toBe(ErrorCode.API_ERROR);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.ApiError);
         expect((err as ToolError).message).toMatch(/GraphQL errors: Unauthorized; Invalid query/);
       }
       expect(fetch).toHaveBeenCalledTimes(1);
@@ -455,7 +456,7 @@ describe('TranscendGraphQLBase', () => {
         expect.fail('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(ToolError);
-        expect((err as ToolError).code).toBe(ErrorCode.PERMISSION_ERROR);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.PermissionError);
         expect((err as ToolError).retryable).toBe(false);
         expect((err as ToolError).details).toEqual({
           route: 'updateOrCreateCookies',

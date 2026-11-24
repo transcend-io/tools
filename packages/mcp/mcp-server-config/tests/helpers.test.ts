@@ -2,12 +2,11 @@ import {
   CollectedLogLevel,
   configureOAuthScopes,
   createCollectedLogger,
-  ErrorCode,
   resetConfiguredOAuthScopes,
   ToolError,
   TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
-import { ScopeName } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, ScopeName } from '@transcend-io/privacy-types';
 import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,
@@ -120,7 +119,7 @@ describe('assertScopesAvailable', () => {
     }
 
     expect(caught).toBeInstanceOf(ToolError);
-    expect((caught as ToolError).code).toBe(ErrorCode.PERMISSION_ERROR);
+    expect((caught as ToolError).code).toBe(McpToolErrorCode.PermissionError);
     expect((caught as ToolError).details).toEqual({ missingScopes: [ScopeName.ManageDataMap] });
   });
 

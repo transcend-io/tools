@@ -1,4 +1,6 @@
-import { ErrorCode, ToolError } from '../errors.js';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
+
+import { ToolError } from '../errors.js';
 
 export function createToolResult(
   /** Whether the tool call succeeded */
@@ -128,7 +130,7 @@ export function assertOffsetInRange({
   // called directly, and an unpaged call must never be the thing that throws.
   if (!offset || offset < totalCount) return;
   throw new ToolError(
-    ErrorCode.VALIDATION_ERROR,
+    McpToolErrorCode.ValidationError,
     `offset ${offset} is past the end of the result set: ${totalCount} ` +
       `${subject}(s) match ${
         appliedFilters.length > 0

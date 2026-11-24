@@ -1,10 +1,5 @@
-import {
-  createToolResult,
-  defineTool,
-  ErrorCode,
-  ToolError,
-  z,
-} from '@transcend-io/mcp-server-base';
+import { createToolResult, defineTool, ToolError, z } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import {
   activatePolicyBundleVersion,
@@ -63,7 +58,7 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
 
       if (!versionId && !version) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'Provide versionId or version when action is "activate".',
           false,
         );

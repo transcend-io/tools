@@ -1,5 +1,42 @@
 # @transcend-io/cli
 
+## 13.4.2
+
+### Patch Changes
+
+- d80abc6: Link the Policy Engine documentation from the bundled Policy Engine agent skill.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+
+## 13.4.1
+
+### Patch Changes
+
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+- 3214d5b: Pushing selected `transcend.yml` sections is safer when keys are minted with only section scopes.
+  - Data silo, preflight, and processing-activity pushes now include the view scope needed to resolve referenced data subjects. Missing subjects are no longer auto-created unless the push includes a `data-subjects` section.
+  - SDK helpers throw errors instead of calling `process.exit`, so servers and MCP hosts are not killed on validation failures.
+  - Data category sync reports per-item errors and no longer crashes the batch when one create fails.
+  - Data silo batch updates retry per silo when a chunk fails, so one bad silo does not block the rest.
+
+  If you push data silos that reference new data subject types without a `data-subjects` section, add those subjects to the yaml first.
+
+- ef4a7ba: Org config copy now pulls and pushes DSR workflow associations: linked data silos, preflight checks, and intake identifiers in `transcend.yml`.
+- Updated dependencies [2ec345c]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [8bd784e]
+- Updated dependencies [faada80]
+- Updated dependencies [3214d5b]
+- Updated dependencies [ef4a7ba]
+  - @transcend-io/sdk@3.4.0
+  - @transcend-io/privacy-types@7.1.2
+
 ## 13.4.0
 
 ### Minor Changes

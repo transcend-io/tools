@@ -1,23 +1,11 @@
-export enum ErrorCode {
-  /** Invalid tool arguments or request shape */
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  /** Missing or invalid credentials (HTTP 401/403, OAuth failures) */
-  AUTH_ERROR = 'AUTH_ERROR',
-  /** Missing GraphQL route scopes (or similar authorization denial) */
-  PERMISSION_ERROR = 'PERMISSION_ERROR',
-  /** Requested resource does not exist */
-  NOT_FOUND = 'NOT_FOUND',
-  /** Upstream rate limit; may be retried */
-  RATE_LIMITED = 'RATE_LIMITED',
-  /** Generic API / GraphQL failure */
-  API_ERROR = 'API_ERROR',
-  /** Request aborted due to timeout; may be retried */
-  TIMEOUT = 'TIMEOUT',
-}
+import {
+  McpToolErrorCode,
+  type McpToolErrorCode as McpToolErrorCodeType,
+} from '@transcend-io/privacy-types';
 
 /**
  * Stable GraphQL `errors[].extensions.code` for missing route scopes.
- * Emitted by the Transcend GraphQL server; MCP maps it to {@link ErrorCode.PERMISSION_ERROR}.
+ * Emitted by the Transcend GraphQL server; MCP maps it to {@link McpToolErrorCode.PermissionError}.
  */
 export const GRAPHQL_ACCESS_DENIED_CODE = 'ACCESS_DENIED' as const;
 
@@ -30,12 +18,12 @@ export interface GraphQLErrorItem {
 }
 
 export class ToolError extends Error {
-  public readonly code: ErrorCode;
+  public readonly code: McpToolErrorCodeType;
   public readonly retryable: boolean;
   public readonly details?: Record<string, unknown>;
 
   constructor(
-    code: ErrorCode,
+    code: McpToolErrorCodeType,
     message: string,
     retryable: boolean = false,
     details?: Record<string, unknown>,
@@ -50,26 +38,30 @@ export class ToolError extends Error {
 
 export function classifyHttpError(status: number, body: string): ToolError {
   if (status === 401 || status === 403) {
-    return new ToolError(ErrorCode.AUTH_ERROR, `Authentication failed (${status}): ${body}`, false);
+    return new ToolError(
+      McpToolErrorCode.AuthError,
+      `Authentication failed (${status}): ${body}`,
+      false,
+    );
   }
   if (status === 404) {
-    return new ToolError(ErrorCode.NOT_FOUND, `Resource not found (404): ${body}`, false);
+    return new ToolError(McpToolErrorCode.NotFound, `Resource not found (404): ${body}`, false);
   }
   if (status === 429) {
-    return new ToolError(ErrorCode.RATE_LIMITED, `Rate limited (429): ${body}`, true);
+    return new ToolError(McpToolErrorCode.RateLimited, `Rate limited (429): ${body}`, true);
   }
   if (status >= 400 && status < 500) {
-    return new ToolError(ErrorCode.API_ERROR, `Client error (${status}): ${body}`, false);
+    return new ToolError(McpToolErrorCode.ApiError, `Client error (${status}): ${body}`, false);
   }
-  return new ToolError(ErrorCode.API_ERROR, `Server error (${status}): ${body}`, true);
+  return new ToolError(McpToolErrorCode.ApiError, `Server error (${status}): ${body}`, true);
 }
 
 /**
  * Map GraphQL `errors[]` to a {@link ToolError}.
  *
  * When any error has `extensions.code === "ACCESS_DENIED"`, returns
- * {@link ErrorCode.PERMISSION_ERROR} with optional `route` / `requiredScopes`
- * details from the first such error. Otherwise returns {@link ErrorCode.API_ERROR}.
+ * {@link McpToolErrorCode.PermissionError} with optional `route` / `requiredScopes`
+ * details from the first such error. Otherwise returns {@link McpToolErrorCode.ApiError}.
  */
 export function classifyGraphQLErrors(errors: GraphQLErrorItem[]): ToolError {
   const errorMessages = errors.map((e) => e.message).join('; ');
@@ -78,7 +70,7 @@ export function classifyGraphQLErrors(errors: GraphQLErrorItem[]): ToolError {
   const accessDenied = errors.find((e) => e.extensions?.code === GRAPHQL_ACCESS_DENIED_CODE);
 
   if (!accessDenied) {
-    return new ToolError(ErrorCode.API_ERROR, message, false);
+    return new ToolError(McpToolErrorCode.ApiError, message, false);
   }
 
   const details: Record<string, unknown> = {};
@@ -94,7 +86,7 @@ export function classifyGraphQLErrors(errors: GraphQLErrorItem[]): ToolError {
   }
 
   return new ToolError(
-    ErrorCode.PERMISSION_ERROR,
+    McpToolErrorCode.PermissionError,
     message,
     false,
     Object.keys(details).length > 0 ? details : undefined,
