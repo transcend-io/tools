@@ -6,22 +6,6 @@ import {
 export { McpToolErrorCode };
 
 /**
- * @deprecated Use {@link McpToolErrorCode} from `@transcend-io/privacy-types`.
- */
-export const ErrorCode = {
-  VALIDATION_ERROR: McpToolErrorCode.ValidationError,
-  AUTH_ERROR: McpToolErrorCode.AuthError,
-  PERMISSION_ERROR: McpToolErrorCode.PermissionError,
-  NOT_FOUND: McpToolErrorCode.NotFound,
-  RATE_LIMITED: McpToolErrorCode.RateLimited,
-  API_ERROR: McpToolErrorCode.ApiError,
-  TIMEOUT: McpToolErrorCode.Timeout,
-} as const;
-
-/** @deprecated Use {@link McpToolErrorCode} from `@transcend-io/privacy-types`. */
-export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
-
-/**
  * Stable GraphQL `errors[].extensions.code` for missing route scopes.
  * Emitted by the Transcend GraphQL server; MCP maps it to {@link McpToolErrorCode.PermissionError}.
  */

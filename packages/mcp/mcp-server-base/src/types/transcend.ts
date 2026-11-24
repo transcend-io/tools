@@ -10,9 +10,6 @@ import {
   type RequestStatus,
 } from '@transcend-io/privacy-types';
 
-export type { RequestStatus };
-export { AssessmentFormStatus, ConsentTrackerSource, ConsentTrackerStatus, DataFlowScope };
-
 // Common Types
 export interface PaginationInfo {
   hasNextPage: boolean;

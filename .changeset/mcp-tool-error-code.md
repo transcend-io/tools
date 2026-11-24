@@ -16,4 +16,4 @@
 "@transcend-io/mcp-server-workflows": patch
 ---
 
-Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages use it instead of the local `ErrorCode` enum; `ErrorCode` remains as a deprecated alias on mcp-server-base. `transcend.ts` types now import matching enums from privacy-types.
+Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages use it instead of the former `ErrorCode` enum on mcp-server-base. Shared transcend types import matching enums from privacy-types directly rather than re-exporting them.
