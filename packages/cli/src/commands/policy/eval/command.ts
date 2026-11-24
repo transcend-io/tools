@@ -18,13 +18,7 @@ export const POLICY_EVAL_FORMATS = [
 export type PolicyEvalFormat = (typeof POLICY_EVAL_FORMATS)[number];
 
 /** Explanation modes supported by `opa eval --explain`. */
-export const POLICY_EVAL_EXPLAIN_MODES = [
-  'off',
-  OPAExplainMode.Full,
-  OPAExplainMode.Notes,
-  OPAExplainMode.Fails,
-  OPAExplainMode.Debug,
-] as const;
+export const POLICY_EVAL_EXPLAIN_MODES = ['off', ...Object.values(OPAExplainMode)] as const;
 
 /** One `opa eval --explain` value. */
 export type PolicyEvalExplainMode = (typeof POLICY_EVAL_EXPLAIN_MODES)[number];

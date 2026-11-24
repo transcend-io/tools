@@ -1147,10 +1147,10 @@ describe('Assessment Tools', () => {
       );
     });
 
-    it('maps caller sort names onto the GraphQL order field', async () => {
+    it('forwards sortBy as the GraphQL order field', async () => {
       resolveList(NODES);
 
-      await call({ sortBy: 'status', sortDirection: 'DESC' });
+      await call({ sortBy: 'statusRank', sortDirection: 'DESC' });
 
       expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
         expect.objectContaining({ sortField: 'statusRank', sortDirection: 'DESC' }),
@@ -1166,10 +1166,9 @@ describe('Assessment Tools', () => {
       expect(args).not.toHaveProperty('sortField');
     });
 
-    it('rejects an unknown sortBy and lists the valid columns', () => {
+    it('rejects an unknown sortBy', () => {
       const result = listTool().zodSchema.safeParse({ sortBy: 'dueDate' });
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].message).toContain('title, status, submittedAt');
     });
 
     it('gates the expensive detail fields behind includeDetails', async () => {

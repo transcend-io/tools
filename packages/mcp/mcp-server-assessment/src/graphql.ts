@@ -1075,9 +1075,6 @@ export interface ListAssessmentsFilter {
   dueDateAfter?: string;
 }
 
-/** Sortable columns on the assessment index, in `AssessmentFormRawOrderField` terms. */
-export type ListAssessmentsSortField = AssessmentFormRawOrderField;
-
 export class AssessmentsMixin extends TranscendGraphQLBase {
   /**
    * Page the assessment index. `first`/`offset` map straight onto the query;
@@ -1091,7 +1088,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       /** Filters forwarded to `AssessmentFormFiltersInput` */
       filterBy?: ListAssessmentsFilter;
       /** Column to sort on; omit to keep the API default order */
-      sortField?: ListAssessmentsSortField;
+      sortField?: AssessmentFormRawOrderField;
       /** Sort direction, applied only alongside `sortField` */
       sortDirection?: 'ASC' | 'DESC';
       /** Fetch people, dates and lock state on each row */
