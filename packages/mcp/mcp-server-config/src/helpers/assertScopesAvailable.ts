@@ -1,10 +1,9 @@
 import {
-  McpToolErrorCode,
   getOAuthScopes,
   ToolError,
   type TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
-import type { ScopeName } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, type ScopeName } from '@transcend-io/privacy-types';
 
 /**
  * Fail fast when a stdio OAuth session never asked for scopes the call needs.

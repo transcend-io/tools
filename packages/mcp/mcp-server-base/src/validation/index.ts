@@ -1,6 +1,6 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { z } from 'zod';
 
-import { McpToolErrorCode } from '../errors.js';
 import { createToolResult } from '../tools/helpers.js';
 
 export { CursorPaginationSchema, OffsetPaginationSchema } from './schemas.js';

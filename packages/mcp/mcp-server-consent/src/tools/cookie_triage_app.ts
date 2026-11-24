@@ -1,7 +1,6 @@
 import {
   createToolResult,
   defineToolWithCapabilities,
-  McpToolErrorCode,
   getMcpSession,
   McpClientCapability,
   McpHostClient,
@@ -10,6 +9,7 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import { COOKIE_TRIAGE_APP_RESOURCE } from '../apps/cookie-triage.js';
 import {

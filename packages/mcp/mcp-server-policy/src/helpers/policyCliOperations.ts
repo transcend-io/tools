@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import type { Got } from 'got';
 
 import { buildPolicyBundleFormData } from './buildPolicyBundleFormData.js';

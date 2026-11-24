@@ -1,11 +1,11 @@
 import {
   createToolResult,
   defineTool,
-  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 /** Minimum Sombra gateway version that serves POST /v1/preferences/{partition}/consent-records. */
 export const MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS = '7.578.4';

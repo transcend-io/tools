@@ -2,12 +2,11 @@ import {
   CollectedLogLevel,
   configureOAuthScopes,
   createCollectedLogger,
-  McpToolErrorCode,
   resetConfiguredOAuthScopes,
   ToolError,
   TranscendGraphQLBase,
 } from '@transcend-io/mcp-server-base';
-import { ScopeName } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, ScopeName } from '@transcend-io/privacy-types';
 import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TranscendPullResource,

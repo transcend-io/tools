@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { parseTranscendYaml, type TranscendInput } from '@transcend-io/sdk';
 
 import { assertConfigFilePath } from './configFilePath.js';

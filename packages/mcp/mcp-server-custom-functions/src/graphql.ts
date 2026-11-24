@@ -1,9 +1,10 @@
-import { McpToolErrorCode, ToolError, TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
-import type {
-  CustomFunctionLifecycleState,
-  CustomFunctionPayloadType,
-  CustomFunctionType,
-  CustomFunctionVersionLifecycleState,
+import { ToolError, TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
+import {
+  McpToolErrorCode,
+  type CustomFunctionLifecycleState,
+  type CustomFunctionPayloadType,
+  type CustomFunctionType,
+  type CustomFunctionVersionLifecycleState,
 } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';

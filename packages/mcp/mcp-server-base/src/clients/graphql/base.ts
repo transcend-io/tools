@@ -1,15 +1,11 @@
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { type DocumentNode, print } from 'graphql';
 
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
-import {
-  ToolError,
-  McpToolErrorCode,
-  classifyGraphQLErrors,
-  classifyHttpError,
-} from '../../errors.js';
+import { ToolError, classifyGraphQLErrors, classifyHttpError } from '../../errors.js';
 import {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,

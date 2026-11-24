@@ -2,7 +2,6 @@ import {
   createToolResult,
   defineTool,
   derivePageInfo,
-  McpToolErrorCode,
   OffsetPaginationSchema,
   ToolError,
   z,
@@ -10,6 +9,7 @@ import {
   type AssessmentCommentLevel,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';

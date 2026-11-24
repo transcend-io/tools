@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { McpToolErrorCode } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

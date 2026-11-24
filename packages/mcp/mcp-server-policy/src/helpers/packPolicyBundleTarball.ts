@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import fg from 'fast-glob';
 

@@ -1,4 +1,5 @@
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 /**
  * Rewrite known GraphQL create failures into agent-recoverable guidance.

@@ -1,4 +1,5 @@
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { TranscendPullResource } from '@transcend-io/sdk';
 
 const VALID_RESOURCES = new Set<string>(Object.values(TranscendPullResource));

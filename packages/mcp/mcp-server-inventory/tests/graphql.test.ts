@@ -1,5 +1,5 @@
-import { McpToolErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
-import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
+import { ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InventoryMixin } from '../src/graphql.js';

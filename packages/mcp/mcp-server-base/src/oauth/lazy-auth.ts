@@ -1,7 +1,9 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
+
 import { getRequestAuth } from '../auth-context.js';
 import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
-import { McpToolErrorCode, ToolError } from '../errors.js';
+import { ToolError } from '../errors.js';
 import { getOAuthClientSecret, getOAuthIssuer, isOAuthModeEnabled } from './config.js';
 import {
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,

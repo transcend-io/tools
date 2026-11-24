@@ -1,6 +1,5 @@
 import {
   derivePageInfo,
-  McpToolErrorCode,
   ToolError,
   TranscendGraphQLBase,
   type Assessment,
@@ -19,6 +18,7 @@ import {
   type ListOptions,
   type PaginatedResponse,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
 

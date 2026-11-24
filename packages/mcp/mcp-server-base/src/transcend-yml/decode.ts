@@ -1,6 +1,7 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { McpToolErrorCode, ToolError } from '../errors.js';
+import { ToolError } from '../errors.js';
 import type { DecodeYmlItemsOptions } from './types.js';
 
 /** An io-ts codec, as `decodeCodec` takes it. */

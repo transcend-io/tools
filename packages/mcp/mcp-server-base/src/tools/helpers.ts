@@ -1,4 +1,6 @@
-import { McpToolErrorCode, ToolError } from '../errors.js';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
+
+import { ToolError } from '../errors.js';
 
 export function createToolResult(
   /** Whether the tool call succeeded */

@@ -1,12 +1,11 @@
 import {
   createToolResult,
   defineTool,
-  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { CustomFunctionType } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionSummary, CustomFunctionsMixin } from '../graphql.js';
 import {

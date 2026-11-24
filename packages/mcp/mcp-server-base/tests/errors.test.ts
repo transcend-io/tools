@@ -1,7 +1,7 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { describe, it, expect } from 'vitest';
 
 import {
-  McpToolErrorCode,
   GRAPHQL_ACCESS_DENIED_CODE,
   ToolError,
   classifyGraphQLErrors,

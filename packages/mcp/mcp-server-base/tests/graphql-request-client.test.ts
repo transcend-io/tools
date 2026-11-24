@@ -1,9 +1,10 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { createGraphqlRequestClient } from '../src/clients/graphql/graphql-request-client.js';
-import { McpToolErrorCode, ToolError } from '../src/errors.js';
+import { ToolError } from '../src/errors.js';
 import { TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 
 const BASE_URL = 'https://api.example.test';

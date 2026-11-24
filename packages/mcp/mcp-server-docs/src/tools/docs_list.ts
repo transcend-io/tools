@@ -1,7 +1,6 @@
 import {
   createListResult,
   defineTool,
-  McpToolErrorCode,
   getRequestAuth,
   groupBy,
   ToolError,
@@ -9,6 +8,7 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import {
+  McpToolErrorCode,
   DocsGuideType,
   DocsListRouteMatch,
   DocsLookupSource,

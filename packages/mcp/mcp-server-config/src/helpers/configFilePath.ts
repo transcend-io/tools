@@ -1,6 +1,7 @@
 import path from 'node:path';
 
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 const YAML_EXTENSIONS = new Set(['.yml', '.yaml']);
 

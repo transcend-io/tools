@@ -1,13 +1,13 @@
 import {
   createToolResult,
   defineTool,
-  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
   type Assessment,
   type AssessmentSection,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import {
   PREFILL_ASSIGNEE_REQUIRED,

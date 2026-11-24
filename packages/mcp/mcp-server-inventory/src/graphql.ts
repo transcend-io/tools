@@ -1,5 +1,4 @@
 import {
-  McpToolErrorCode,
   ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
@@ -30,7 +29,7 @@ import {
   type VendorUpdateInput,
   type VendorWriteInput,
 } from '@transcend-io/mcp-server-base';
-import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
+import { McpToolErrorCode, DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
 

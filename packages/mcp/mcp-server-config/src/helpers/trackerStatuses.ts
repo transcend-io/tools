@@ -1,5 +1,5 @@
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
-import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 const VALID_STATUSES = new Set<string>(Object.values(ConsentTrackerStatus));
 

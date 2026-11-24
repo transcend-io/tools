@@ -1,4 +1,4 @@
-import { McpToolErrorCode } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { describe, expect, it, vi } from 'vitest';
 
 import {

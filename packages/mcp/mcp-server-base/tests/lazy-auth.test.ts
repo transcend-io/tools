@@ -1,7 +1,8 @@
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
-import { McpToolErrorCode, ToolError } from '../src/errors.js';
+import { ToolError } from '../src/errors.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
 import {

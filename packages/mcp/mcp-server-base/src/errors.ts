@@ -3,8 +3,6 @@ import {
   type McpToolErrorCode as McpToolErrorCodeType,
 } from '@transcend-io/privacy-types';
 
-export { McpToolErrorCode };
-
 /**
  * Stable GraphQL `errors[].extensions.code` for missing route scopes.
  * Emitted by the Transcend GraphQL server; MCP maps it to {@link McpToolErrorCode.PermissionError}.

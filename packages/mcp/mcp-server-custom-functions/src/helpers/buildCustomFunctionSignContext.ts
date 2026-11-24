@@ -1,8 +1,5 @@
-import {
-  McpToolErrorCode,
-  ToolError,
-  type CustomFunctionCodeContext,
-} from '@transcend-io/mcp-server-base';
+import { ToolError, type CustomFunctionCodeContext } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import type { StoredContextJwtPayload } from './decodeStoredContextJwt.js';
 import type { CustomFunctionEnvironmentVariableInput } from './environmentVariableInput.js';

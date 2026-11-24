@@ -1,5 +1,5 @@
-import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
-import type { ScopeName } from '@transcend-io/privacy-types';
+import { ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, type ScopeName } from '@transcend-io/privacy-types';
 import {
   DEFAULT_TRANSCEND_PULL_RESOURCES,
   TR_PULL_RESOURCE_SCOPE_MAP,

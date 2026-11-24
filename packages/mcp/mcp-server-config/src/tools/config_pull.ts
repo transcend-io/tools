@@ -5,11 +5,11 @@ import {
   createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
-  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import {
   DEFAULT_TRANSCEND_PULL_RESOURCES,
   pullTranscendConfiguration,

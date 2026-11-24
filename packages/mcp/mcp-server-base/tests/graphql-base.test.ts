@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
-import { ToolError, McpToolErrorCode } from '../src/errors.js';
+import { ToolError } from '../src/errors.js';
 import { TOOLCALL_ID_HEADER, TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 import { toolCallContext } from '../src/tool-call-context.js';
 

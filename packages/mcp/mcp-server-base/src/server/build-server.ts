@@ -9,6 +9,7 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { z } from 'zod';
 
 import { getRequestAuth, requestAuthContext } from '../auth-context.js';
@@ -20,7 +21,6 @@ import {
   type ClientCapabilityReport,
 } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
-import { McpToolErrorCode } from '../errors.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import {

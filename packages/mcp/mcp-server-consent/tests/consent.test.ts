@@ -1,6 +1,5 @@
 import {
   EMPTY_CAPABILITY_REPORT,
-  McpToolErrorCode,
   isCapabilityAwareTool,
   McpClientCapability,
   McpHostClient,
@@ -10,6 +9,7 @@ import {
   type RocUserRecord,
 } from '@transcend-io/mcp-server-base';
 import {
+  McpToolErrorCode,
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
 } from '@transcend-io/privacy-types';
