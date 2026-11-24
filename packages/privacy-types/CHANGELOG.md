@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 7.2.0
+
+### Minor Changes
+
+- 87ce10b: Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages import it from privacy-types directly (not re-exported through mcp-server-base). The former `ErrorCode` enum on mcp-server-base is removed.
+
 ## 7.1.2
 
 ### Patch Changes
