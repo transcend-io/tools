@@ -14,3 +14,18 @@ export const PolicyType = {
 
 /** Type override */
 export type PolicyType = (typeof PolicyType)[keyof typeof PolicyType];
+
+/**
+ * OPA Data API `explain` option on `POST /v1/data/{path}`.
+ *
+ * @see https://www.openpolicyagent.org/docs/latest/rest-api/#query-api
+ */
+export const OPAExplainMode = {
+  Notes: 'notes',
+  Fails: 'fails',
+  Full: 'full',
+  Debug: 'debug',
+} as const;
+
+/** Type override */
+export type OPAExplainMode = (typeof OPAExplainMode)[keyof typeof OPAExplainMode];

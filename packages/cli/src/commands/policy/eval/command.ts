@@ -1,4 +1,5 @@
 import { buildCommand } from '@stricli/core';
+import { OPAExplainMode } from '@transcend-io/privacy-types';
 
 import { policyBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
@@ -17,7 +18,7 @@ export const POLICY_EVAL_FORMATS = [
 export type PolicyEvalFormat = (typeof POLICY_EVAL_FORMATS)[number];
 
 /** Explanation modes supported by `opa eval --explain`. */
-export const POLICY_EVAL_EXPLAIN_MODES = ['off', 'full', 'notes', 'fails', 'debug'] as const;
+export const POLICY_EVAL_EXPLAIN_MODES = ['off', ...Object.values(OPAExplainMode)] as const;
 
 /** One `opa eval --explain` value. */
 export type PolicyEvalExplainMode = (typeof POLICY_EVAL_EXPLAIN_MODES)[number];

@@ -2,6 +2,19 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /**
+ * Fields by which assessment forms can be ordered.
+ */
+export const AssessmentFormRawOrderField = {
+  StatusRank: 'statusRank',
+  SubmittedAt: 'submittedAt',
+  Title: 'title',
+} as const;
+
+/** Type override */
+export type AssessmentFormRawOrderField =
+  (typeof AssessmentFormRawOrderField)[keyof typeof AssessmentFormRawOrderField];
+
+/**
  * AssessmentForm status types
  */
 export enum AssessmentFormStatus {

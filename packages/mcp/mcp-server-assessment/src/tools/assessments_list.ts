@@ -7,9 +7,9 @@ import {
   OffsetPaginationSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { AssessmentFormStatus } from '@transcend-io/privacy-types';
+import { AssessmentFormRawOrderField, AssessmentFormStatus } from '@transcend-io/privacy-types';
 
-import type { AssessmentsMixin, ListAssessmentsSortField } from '../graphql.js';
+import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
 export const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
@@ -42,13 +42,6 @@ const idList = (description: string) =>
     .optional()
     .describe(description);
 
-/** Caller-facing sort names mapped onto `AssessmentFormRawOrderField`. */
-const SORT_FIELDS: Record<string, ListAssessmentsSortField> = {
-  title: 'title',
-  status: 'statusRank',
-  submittedAt: 'submittedAt',
-};
-
 export const ListAssessmentsSchema = z
   .object({
     statuses: z
@@ -73,12 +66,10 @@ export const ListAssessmentsSchema = z
       'Only forms due on or before this date. Use for overdue.',
     ),
     sortBy: z
-      .enum(['title', 'status', 'submittedAt'], {
-        message: 'sortBy must be one of: title, status, submittedAt',
-      })
+      .nativeEnum(AssessmentFormRawOrderField)
       .optional()
       .describe(
-        'Column to sort on; the API offers no creation-date sort. Omit for its default order.',
+        'Column to sort on (`title`, `statusRank`, `submittedAt`). The API offers no creation-date sort. Omit for its default order.',
       ),
     sortDirection: z
       .enum(['ASC', 'DESC'], { message: 'sortDirection must be ASC or DESC' })
@@ -161,7 +152,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
         offset,
         filterBy,
         includeDetails,
-        ...(sortBy && { sortField: SORT_FIELDS[sortBy], sortDirection }),
+        ...(sortBy && { sortField: sortBy, sortDirection }),
       });
 
       const totalCount = result.totalCount ?? 0;

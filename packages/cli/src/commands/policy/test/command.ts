@@ -1,4 +1,5 @@
 import { buildCommand } from '@stricli/core';
+import { OPAExplainMode } from '@transcend-io/privacy-types';
 
 import { policyWorkspaceOrBundleDirectoryParameter } from '../helpers/policyCommandParameters.js';
 
@@ -9,10 +10,10 @@ export const POLICY_TEST_FORMATS = ['pretty', 'json', 'gobench'] as const;
 export type PolicyTestFormat = (typeof POLICY_TEST_FORMATS)[number];
 
 /** Explanation modes supported by `opa test --explain`. */
-export const POLICY_TEST_EXPLAIN_MODES = ['fails', 'full', 'notes', 'debug'] as const;
+export const POLICY_TEST_EXPLAIN_MODES = Object.values(OPAExplainMode);
 
 /** One `opa test --explain` value. */
-export type PolicyTestExplainMode = (typeof POLICY_TEST_EXPLAIN_MODES)[number];
+export type PolicyTestExplainMode = OPAExplainMode;
 
 export const testCommand = buildCommand({
   loader: async () => {
