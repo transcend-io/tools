@@ -425,7 +425,7 @@ export type AirgapConsentEventType = 'consent-change' | 'sync' | 'consent-resolu
 /**
  * airgap.js event type
  */
-export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load';
+export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load' | 'policy-update';
 
 export interface ConsentChangeEventPayload {
   /** consent change event details */
@@ -850,6 +850,7 @@ type PendingEventUnserializableProps =
   | 'omitCredentials'
   | 'allow'
   | 'deny'
+  | 'block'
   | 'purposes'
   | 'allowed'
   | 'blocked';
@@ -976,6 +977,7 @@ type PendingCookieMutationUnserializableProps =
   | 'mutator'
   | 'allow'
   | 'deny'
+  | 'block'
   | 'purposes'
   | 'allowed'
   | 'blocked';

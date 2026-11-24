@@ -5,13 +5,10 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { OrderDirection, ScopeName } from '@transcend-io/privacy-types';
+import { OrderDirection, ScopeName, UserOrderField } from '@transcend-io/privacy-types';
 
 import type { ScopeName as GraphqlScopeName } from '../__generated__/graphql.js';
 import type { AdminMixin } from '../graphql.js';
-
-/** GraphQL UserOrderField values exposed on admin_list_users */
-const USER_ORDER_FIELDS = ['name', 'createdAt', 'updatedAt'] as const;
 
 const SCOPE_NAME_VALUES = new Set<string>(Object.values(ScopeName));
 
@@ -69,7 +66,7 @@ export const ListUsersSchema = OffsetPaginationSchema.extend({
     .optional()
     .describe('ISO 8601 upper bound for lastLoggedIn (inclusive)'),
   orderField: z
-    .enum(USER_ORDER_FIELDS)
+    .nativeEnum(UserOrderField)
     .optional()
     .describe('Field to sort by (default: name). One of name, createdAt, updatedAt'),
   orderDirection: z
@@ -141,7 +138,7 @@ export function createAdminListUsersTool(clients: ToolClients) {
         filterBy,
         orderBy: [
           {
-            field: orderField ?? 'name',
+            field: orderField ?? UserOrderField.Name,
             direction: orderDirection ?? OrderDirection.Asc,
           },
         ],

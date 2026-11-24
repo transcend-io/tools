@@ -49,4 +49,5 @@ export * from './scopes.js';
 export * from './subcategories/index.js';
 export * from './team.js';
 export * from './theme.js';
+export * from './user.js';
 export * from './workflowConfig.js';

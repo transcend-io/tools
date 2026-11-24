@@ -7,7 +7,7 @@ import {
   OffsetPaginationSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import { AssessmentFormStatus } from '@transcend-io/privacy-types';
+import { AssessmentFormRawOrderField, AssessmentFormStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin, ListAssessmentsSortField } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
@@ -44,9 +44,9 @@ const idList = (description: string) =>
 
 /** Caller-facing sort names mapped onto `AssessmentFormRawOrderField`. */
 const SORT_FIELDS: Record<string, ListAssessmentsSortField> = {
-  title: 'title',
-  status: 'statusRank',
-  submittedAt: 'submittedAt',
+  title: AssessmentFormRawOrderField.Title,
+  status: AssessmentFormRawOrderField.StatusRank,
+  submittedAt: AssessmentFormRawOrderField.SubmittedAt,
 };
 
 export const ListAssessmentsSchema = z

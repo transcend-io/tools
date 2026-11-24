@@ -19,6 +19,7 @@ import {
   type ListOptions,
   type PaginatedResponse,
 } from '@transcend-io/mcp-server-base';
+import type { AssessmentFormRawOrderField } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
 
@@ -1076,7 +1077,7 @@ export interface ListAssessmentsFilter {
 }
 
 /** Sortable columns on the assessment index, in `AssessmentFormRawOrderField` terms. */
-export type ListAssessmentsSortField = 'statusRank' | 'submittedAt' | 'title';
+export type ListAssessmentsSortField = AssessmentFormRawOrderField;
 
 export class AssessmentsMixin extends TranscendGraphQLBase {
   /**
