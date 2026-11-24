@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 13.4.2
+
+### Patch Changes
+
+- d80abc6: Link the Policy Engine documentation from the bundled Policy Engine agent skill.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+
 ## 13.4.1
 
 ### Patch Changes
