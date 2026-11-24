@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 7.3.0
+
+### Minor Changes
+
+- 1f2072c: Align airgap.js-types with main ag-types for policy-update events and pending-event block() serialization. Add UserOrderField, AssessmentFormRawOrderField, and OPAExplainMode to privacy-types and consume them in admin and assessment MCP tools and policy CLI explain flags.
+
 ## 7.2.0
 
 ### Minor Changes
