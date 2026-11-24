@@ -1,7 +1,7 @@
 import {
   createListResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   getRequestAuth,
   groupBy,
   ToolError,
@@ -117,7 +117,7 @@ const ROUTE_PRODUCT_LIMIT_WITH_QUERY = 5;
 function throwRouteIndexError(error: unknown): never {
   if (error instanceof RouteIndexUnavailableError) {
     throw new ToolError(
-      ErrorCode.API_ERROR,
+      McpToolErrorCode.ApiError,
       `${error.message}. Use query to search the docs instead.`,
     );
   }
@@ -170,7 +170,7 @@ async function listDocsByProduct({
   const title = findProductTitle(product);
   if (!title) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `Unknown product '${product}'. Valid products: ${docsProductTitles.join(', ')}.`,
     );
   }
@@ -183,7 +183,7 @@ async function listDocsByProduct({
   }
   if (!data.products) {
     throw new ToolError(
-      ErrorCode.API_ERROR,
+      McpToolErrorCode.ApiError,
       'The docs index has no product data, so product is not available. Use query to ' +
         'search the docs instead.',
     );
@@ -231,7 +231,7 @@ async function listDocsForRoute({ route, query }: { route: string; query?: strin
     path = normalizeRoute(route);
   } catch (error) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -356,14 +356,14 @@ export function createDocsListTool(_clients?: ToolClients) {
       if (section !== undefined && (route !== undefined || product !== undefined)) {
         const other = route !== undefined ? 'route' : 'product';
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `${other} cannot be combined with section. Pass ${other} alone or with query to find ` +
             'docs for a page or product, or drop it to browse a section.',
         );
       }
       if (route !== undefined && product !== undefined) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'route cannot be combined with product. A route already resolves to its product: ' +
             'pass route, or pass product to list that product directly.',
         );
@@ -373,7 +373,7 @@ export function createDocsListTool(_clients?: ToolClients) {
         (route !== undefined || product !== undefined || section !== undefined)
       ) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'integration cannot be combined with route, product, or section. Pass integration ' +
             'alone or with query to list public integration guides.',
         );
@@ -382,7 +382,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       // A blank route would look up `/`, which has no docs, and report an empty success.
       if (route !== undefined && route.trim() === '') {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'route was empty. Pass an Admin Dashboard route pattern, path, or app URL, or omit ' +
             'route.',
         );
@@ -392,7 +392,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       // the section overview would answer a search with a browse and report success.
       if (query !== undefined && query.trim() === '') {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'query was empty. Pass the most distinctive terms for the topic, or omit query ' +
             'entirely to browse the sections.',
         );
@@ -409,7 +409,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       const integrationName = integration?.trim();
       if (integrationName !== undefined && integrationName.length === 0) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'integration was empty. Pass a catalog integrationName, or omit integration.',
         );
       }
@@ -422,14 +422,14 @@ export function createDocsListTool(_clients?: ToolClients) {
           routeData = await getRouteIndex();
         } catch (error) {
           throw new ToolError(
-            ErrorCode.API_ERROR,
+            McpToolErrorCode.ApiError,
             `Could not load dashboard-routes.json (${error instanceof Error ? error.message : String(error)}). ` +
               'Use query without integration, or retry later.',
           );
         }
         if (!routeData.integrations) {
           throw new ToolError(
-            ErrorCode.API_ERROR,
+            McpToolErrorCode.ApiError,
             'dashboard-routes.json does not include integrations yet (docs may not be deployed). ' +
               'Use query to search integration docs, or retry after docs deploy.',
           );
@@ -438,7 +438,7 @@ export function createDocsListTool(_clients?: ToolClients) {
         if (!key) {
           const names = [...Object.keys(routeData.integrations)].sort();
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             `Unknown integrationName '${integrationName}'. Published names: ${names.join(', ')}.`,
           );
         }
@@ -463,7 +463,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       // an empty list that looks like "no such articles" rather than a typo.
       if (section !== undefined && !Object.hasOwn(sectionCounts, section)) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `Unknown section '${section}'. Valid sections: ${Object.keys(sectionCounts).join(', ')}.`,
         );
       }

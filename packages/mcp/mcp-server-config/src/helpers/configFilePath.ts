@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 
 const YAML_EXTENSIONS = new Set(['.yml', '.yaml']);
 
@@ -17,7 +17,7 @@ const YAML_EXTENSIONS = new Set(['.yml', '.yaml']);
 export function assertConfigFilePath(filePath: string): string {
   if (!path.isAbsolute(filePath)) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `filePath must be absolute, got "${filePath}".`,
       false,
     );
@@ -25,7 +25,7 @@ export function assertConfigFilePath(filePath: string): string {
   const normalized = path.normalize(filePath);
   if (!YAML_EXTENSIONS.has(path.extname(normalized).toLowerCase())) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `filePath must end in .yml or .yaml, got "${filePath}".`,
       false,
     );

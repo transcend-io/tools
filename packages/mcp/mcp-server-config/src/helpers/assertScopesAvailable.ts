@@ -1,5 +1,5 @@
 import {
-  ErrorCode,
+  McpToolErrorCode,
   getOAuthScopes,
   ToolError,
   type TranscendGraphQLBase,
@@ -34,7 +34,7 @@ export function assertScopesAvailable(
   if (missing.length === 0) return;
 
   throw new ToolError(
-    ErrorCode.PERMISSION_ERROR,
+    McpToolErrorCode.PermissionError,
     `This session did not request scopes needed for these sections: ${missing.join(', ')}. ` +
       'Sign in again with a server that includes the config tools, or use an API key that has them.',
     false,

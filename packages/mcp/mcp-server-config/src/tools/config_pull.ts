@@ -5,7 +5,7 @@ import {
   createCollectedLogger,
   createGraphqlRequestClient,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -103,7 +103,7 @@ export function createConfigPullTool(clients: ToolClients) {
       const target = assertConfigFilePath(filePath);
       if (existsSync(target) && !overwrite) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `${target} already exists. Pass overwrite: true to replace it.`,
           false,
         );

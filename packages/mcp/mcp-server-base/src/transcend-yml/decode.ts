@@ -1,6 +1,6 @@
 import { decodeCodec } from '@transcend-io/type-utils';
 
-import { ErrorCode, ToolError } from '../errors.js';
+import { McpToolErrorCode, ToolError } from '../errors.js';
 import type { DecodeYmlItemsOptions } from './types.js';
 
 /** An io-ts codec, as `decodeCodec` takes it. */
@@ -20,7 +20,7 @@ export function decodeYmlRecord<T>(codec: Codec, record: unknown, section: strin
     return decodeCodec(codec, record, false) as T;
   } catch (error) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       `${section} does not match the transcend.yml format: ${
         error instanceof Error ? error.message : String(error)
       }. Use config_get_schema for the full schema.`,
@@ -50,7 +50,7 @@ export function decodeYmlItems<T>(
       return decodeCodec(codec, item, false) as T;
     } catch (error) {
       throw new ToolError(
-        ErrorCode.VALIDATION_ERROR,
+        McpToolErrorCode.ValidationError,
         `${section}[${index}] does not match the transcend.yml format: ${
           error instanceof Error ? error.message : String(error)
         }. Use config_get_schema for the full schema.`,
@@ -65,7 +65,7 @@ export function decodeYmlItems<T>(
       const key = options.uniqueBy(item);
       if (seen.has(key)) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `${section}: duplicate key "${key}" in this call`,
           false,
         );

@@ -60,6 +60,7 @@
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "^3.2.0",
+    "@transcend-io/privacy-types": "workspace:^",
     "@transcend-io/sdk": "workspace:^",
     "@transcend-io/type-utils": "workspace:^",
     "cors": "^2.8.5",

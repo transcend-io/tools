@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
 } from '@transcend-io/mcp-server-base';
@@ -63,7 +63,7 @@ export function createPolicySetLiveTool(clients: PolicyToolClients) {
 
       if (!versionId && !version) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'Provide versionId or version when action is "activate".',
           false,
         );

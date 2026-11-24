@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { ErrorCode } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/mcp-server-base';
 import { MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -196,7 +196,7 @@ describe('Policy MCP tools', () => {
         }),
       ).rejects.toMatchObject({
         name: 'ToolError',
-        code: ErrorCode.VALIDATION_ERROR,
+        code: McpToolErrorCode.ValidationError,
         retryable: false,
         message: expect.stringMatching(/Shrink the \.rego policies/),
       });

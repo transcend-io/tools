@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import {
-  ErrorCode,
+  McpToolErrorCode,
   GRAPHQL_ACCESS_DENIED_CODE,
   ToolError,
   classifyGraphQLErrors,
@@ -17,7 +17,7 @@ describe('classifyGraphQLErrors', () => {
     ]);
 
     expect(error).toBeInstanceOf(ToolError);
-    expect(error.code).toBe(ErrorCode.API_ERROR);
+    expect(error.code).toBe(McpToolErrorCode.ApiError);
     expect(error.retryable).toBe(false);
     expect(error.message).toBe('GraphQL errors: Unauthorized; Invalid query');
     expect(error.details).toBeUndefined();
@@ -36,7 +36,7 @@ describe('classifyGraphQLErrors', () => {
       },
     ]);
 
-    expect(error.code).toBe(ErrorCode.PERMISSION_ERROR);
+    expect(error.code).toBe(McpToolErrorCode.PermissionError);
     expect(error.retryable).toBe(false);
     expect(error.message).toContain('updateOrCreateCookies');
     expect(error.details).toEqual({
@@ -58,7 +58,7 @@ describe('classifyGraphQLErrors', () => {
       },
     ]);
 
-    expect(error.code).toBe(ErrorCode.PERMISSION_ERROR);
+    expect(error.code).toBe(McpToolErrorCode.PermissionError);
     expect(error.details).toEqual({
       route: 'purposes',
       requiredScopes: ['ManageDataFlows'],
@@ -73,7 +73,7 @@ describe('classifyGraphQLErrors', () => {
       },
     ]);
 
-    expect(error.code).toBe(ErrorCode.PERMISSION_ERROR);
+    expect(error.code).toBe(McpToolErrorCode.PermissionError);
     expect(error.details).toBeUndefined();
   });
 
@@ -98,15 +98,15 @@ describe('classifyGraphQLErrors', () => {
 
 describe('classifyHttpError', () => {
   it('maps 401 and 403 to AUTH_ERROR', () => {
-    expect(classifyHttpError(401, 'nope').code).toBe(ErrorCode.AUTH_ERROR);
-    expect(classifyHttpError(403, 'forbidden').code).toBe(ErrorCode.AUTH_ERROR);
+    expect(classifyHttpError(401, 'nope').code).toBe(McpToolErrorCode.AuthError);
+    expect(classifyHttpError(403, 'forbidden').code).toBe(McpToolErrorCode.AuthError);
   });
 });
 
 describe('createErrorResult', () => {
   it('serializes ToolError details into the tool result JSON shape', () => {
     const result = createErrorResult(
-      new ToolError(ErrorCode.PERMISSION_ERROR, 'GraphQL errors: denied', false, {
+      new ToolError(McpToolErrorCode.PermissionError, 'GraphQL errors: denied', false, {
         route: 'updateOrCreateCookies',
         requiredScopes: ['ManageDataFlows'],
       }),
@@ -115,7 +115,7 @@ describe('createErrorResult', () => {
     expect(result).toMatchObject({
       success: false,
       error: 'GraphQL errors: denied',
-      code: ErrorCode.PERMISSION_ERROR,
+      code: McpToolErrorCode.PermissionError,
       retryable: false,
       details: {
         route: 'updateOrCreateCookies',
@@ -126,15 +126,14 @@ describe('createErrorResult', () => {
   });
 
   it('omits details when ToolError has none', () => {
-    const result = createErrorResult(new ToolError(ErrorCode.API_ERROR, 'boom', false)) as Record<
-      string,
-      unknown
-    >;
+    const result = createErrorResult(
+      new ToolError(McpToolErrorCode.ApiError, 'boom', false),
+    ) as Record<string, unknown>;
 
     expect(result).toMatchObject({
       success: false,
       error: 'boom',
-      code: ErrorCode.API_ERROR,
+      code: McpToolErrorCode.ApiError,
       retryable: false,
     });
     expect(result).not.toHaveProperty('details');

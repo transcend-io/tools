@@ -1,4 +1,4 @@
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import type { ScopeName } from '@transcend-io/privacy-types';
 import {
   DEFAULT_TRANSCEND_PULL_RESOURCES,
@@ -55,7 +55,7 @@ export function assertResourcesInAllowlist(
   const disallowed = requested.filter((resource) => !allowed.has(resource));
   if (disallowed.length > 0) {
     throw new ToolError(
-      ErrorCode.VALIDATION_ERROR,
+      McpToolErrorCode.ValidationError,
       formatAllowlistError(disallowed, allowlist),
       false,
     );

@@ -1,5 +1,5 @@
 import {
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
@@ -610,7 +610,7 @@ export class InventoryMixin extends TranscendGraphQLBase {
       } catch (error) {
         const updateError = error instanceof Error ? error.message : String(error);
         throw new ToolError(
-          ErrorCode.API_ERROR,
+          McpToolErrorCode.ApiError,
           `Data silo created but metadata update failed. Retry with dataSiloId "${dataSilo.id}" instead of integrationName.`,
           false,
           {

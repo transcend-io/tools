@@ -1,4 +1,4 @@
-import { ErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
 import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -856,7 +856,7 @@ describe('InventoryMixin', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ToolError);
         const toolError = error as ToolError;
-        expect(toolError.code).toBe(ErrorCode.API_ERROR);
+        expect(toolError.code).toBe(McpToolErrorCode.ApiError);
         expect(toolError.retryable).toBe(false);
         expect(toolError.message).toContain('Retry with dataSiloId "silo-new"');
         expect(toolError.details).toMatchObject({

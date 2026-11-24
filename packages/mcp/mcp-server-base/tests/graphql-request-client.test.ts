@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { requestAuthContext } from '../src/auth-context.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { createGraphqlRequestClient } from '../src/clients/graphql/graphql-request-client.js';
-import { ErrorCode, ToolError } from '../src/errors.js';
+import { McpToolErrorCode, ToolError } from '../src/errors.js';
 import { TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 
 const BASE_URL = 'https://api.example.test';
@@ -42,7 +42,7 @@ describe('createGraphqlRequestClient', () => {
     }
 
     expect(caught).toBeInstanceOf(ToolError);
-    expect((caught as ToolError).code).toBe(ErrorCode.AUTH_ERROR);
+    expect((caught as ToolError).code).toBe(McpToolErrorCode.AuthError);
   });
 
   describe('request timeout', () => {

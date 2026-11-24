@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 
 import {
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   TranscendRestClient,
   type ToolClients,
@@ -1122,7 +1122,7 @@ describe('Custom Functions tools', () => {
         versionId: 'version-1',
         code: 'export default () => true;',
       }),
-    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+    ).rejects.toMatchObject({ code: McpToolErrorCode.ValidationError });
   });
 
   it('rejects type changes on update', async () => {
@@ -1139,12 +1139,12 @@ describe('Custom Functions tools', () => {
         type: 'DSR',
         code: 'export default () => true;',
       }),
-    ).rejects.toMatchObject({ code: ErrorCode.VALIDATION_ERROR });
+    ).rejects.toMatchObject({ code: McpToolErrorCode.ValidationError });
   });
 
   it('rejects no-op updates with only id', async () => {
     await expect(getTool('custom_functions_upsert').handler({ id: 'cf-1' })).rejects.toMatchObject({
-      code: ErrorCode.VALIDATION_ERROR,
+      code: McpToolErrorCode.ValidationError,
     });
   });
 

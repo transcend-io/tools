@@ -1,7 +1,7 @@
 import { getRequestAuth } from '../auth-context.js';
 import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
-import { ErrorCode, ToolError } from '../errors.js';
+import { McpToolErrorCode, ToolError } from '../errors.js';
 import { getOAuthClientSecret, getOAuthIssuer, isOAuthModeEnabled } from './config.js';
 import {
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
@@ -178,12 +178,12 @@ async function performLazyOAuthLogin(state: InFlightOAuthLogin, logger: Logger):
     const message = error instanceof Error ? error.message : String(error);
     logger.error('OAuth login failed', { error: message });
     if (/timed out/i.test(message)) {
-      throw new ToolError(ErrorCode.AUTH_ERROR, OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE, false);
+      throw new ToolError(McpToolErrorCode.AuthError, OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE, false);
     }
     if (/access_denied/i.test(message)) {
-      throw new ToolError(ErrorCode.AUTH_ERROR, OAUTH_CALLBACK_DENIED_AGENT_MESSAGE, false);
+      throw new ToolError(McpToolErrorCode.AuthError, OAUTH_CALLBACK_DENIED_AGENT_MESSAGE, false);
     }
-    throw new ToolError(ErrorCode.AUTH_ERROR, message, false);
+    throw new ToolError(McpToolErrorCode.AuthError, message, false);
   } finally {
     await session?.close().catch(() => undefined);
   }

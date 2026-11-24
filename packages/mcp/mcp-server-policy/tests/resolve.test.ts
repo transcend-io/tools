@@ -1,4 +1,4 @@
-import { ErrorCode } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode } from '@transcend-io/mcp-server-base';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -95,7 +95,7 @@ describe('policyCliOperations', () => {
       resolvePolicyBundle({ get } as never, { bundleName: 'missing' }),
     ).rejects.toMatchObject({
       name: 'ToolError',
-      code: ErrorCode.NOT_FOUND,
+      code: McpToolErrorCode.NotFound,
       retryable: false,
       message: 'Policy bundle "missing" was not found.',
     });
@@ -104,7 +104,7 @@ describe('policyCliOperations', () => {
   it('resolvePolicyBundle throws non-retryable VALIDATION_ERROR without id or name', async () => {
     await expect(resolvePolicyBundle({ get: vi.fn() } as never, {})).rejects.toMatchObject({
       name: 'ToolError',
-      code: ErrorCode.VALIDATION_ERROR,
+      code: McpToolErrorCode.ValidationError,
       retryable: false,
       message: 'Provide bundleId or bundleName.',
     });

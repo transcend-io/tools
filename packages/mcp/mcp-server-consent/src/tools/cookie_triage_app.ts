@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineToolWithCapabilities,
-  ErrorCode,
+  McpToolErrorCode,
   getMcpSession,
   McpClientCapability,
   McpHostClient,
@@ -64,7 +64,7 @@ function wrapTriageFetchError(
   error: unknown,
 ): ToolError {
   const message = error instanceof Error ? error.message : String(error);
-  const code = error instanceof ToolError ? error.code : ErrorCode.API_ERROR;
+  const code = error instanceof ToolError ? error.code : McpToolErrorCode.ApiError;
   const retryable = error instanceof ToolError ? error.retryable : false;
   const details = {
     step,

@@ -4,7 +4,12 @@ import { type DocumentNode, print } from 'graphql';
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
-import { ToolError, ErrorCode, classifyGraphQLErrors, classifyHttpError } from '../../errors.js';
+import {
+  ToolError,
+  McpToolErrorCode,
+  classifyGraphQLErrors,
+  classifyHttpError,
+} from '../../errors.js';
 import {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,
@@ -177,7 +182,7 @@ export class TranscendGraphQLBase {
     const effectiveAuth = this.effectiveAuth();
     if (!effectiveAuth) {
       throw new ToolError(
-        ErrorCode.AUTH_ERROR,
+        McpToolErrorCode.AuthError,
         'No authentication configured. Provide an API key or session cookie.',
         false,
       );
@@ -281,7 +286,7 @@ export class TranscendGraphQLBase {
         }
 
         if (!result.data) {
-          throw new ToolError(ErrorCode.API_ERROR, 'GraphQL response missing data', false);
+          throw new ToolError(McpToolErrorCode.ApiError, 'GraphQL response missing data', false);
         }
 
         return result.data;
@@ -290,7 +295,7 @@ export class TranscendGraphQLBase {
 
         if (error instanceof Error && error.name === 'AbortError') {
           throw new ToolError(
-            ErrorCode.TIMEOUT,
+            McpToolErrorCode.Timeout,
             `GraphQL request timeout after ${timeout}ms`,
             true,
           );

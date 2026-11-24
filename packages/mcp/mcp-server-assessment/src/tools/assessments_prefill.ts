@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -78,7 +78,7 @@ function failWithFormId(
     ? `holds ${answersApplied}/${totalQuestions} answers`
     : 'holds no answers yet';
   throw new ToolError(
-    ErrorCode.API_ERROR,
+    McpToolErrorCode.ApiError,
     `Assessment "${title}" was created but ${step} failed: ${
       error instanceof Error ? error.message : String(error)
     }. The form exists and ${held}. Read it with ` +

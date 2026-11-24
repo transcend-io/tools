@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -40,7 +40,7 @@ export function createCustomFunctionsPromoteVersionTool(clients: ToolClients) {
       const summary = await graphql.getCustomFunctionSummary(customFunctionId);
       if (!summary.hasPendingDraft || !summary.draftVersion) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `Custom function ${customFunctionId} has no pending draft to promote. Save a draft with ` +
             'custom_functions_upsert first.',
           false,
@@ -48,7 +48,7 @@ export function createCustomFunctionsPromoteVersionTool(clients: ToolClients) {
       }
       if (summary.draftVersion.id !== versionId) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `versionId must be the pending draft ${summary.draftVersion.id}, not ${versionId}.`,
           false,
           { draftVersionId: summary.draftVersion.id },

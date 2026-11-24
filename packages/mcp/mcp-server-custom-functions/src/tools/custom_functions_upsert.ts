@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -329,7 +329,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         })
       ) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           'Nothing to update. Pass name, description, code, environmentVariables, allowedHosts, ' +
             'or other version fields.',
           false,
@@ -342,7 +342,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
         storedSummary = await graphql.getCustomFunctionSummary(id);
         if (inputType && inputType !== storedSummary.type) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             `type cannot be changed after create (stored type is ${storedSummary.type}).`,
             false,
             { storedType: storedSummary.type },
@@ -431,7 +431,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           priorEnvKeys = envEntries.map((entry) => entry.key);
           const flipError = secretToPlainFlipError(envEntries, environmentVariables);
           if (flipError) {
-            throw new ToolError(ErrorCode.VALIDATION_ERROR, flipError, false, {
+            throw new ToolError(McpToolErrorCode.ValidationError, flipError, false, {
               recovery: 'dashboard',
             });
           }

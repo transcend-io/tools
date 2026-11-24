@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
-import { ErrorCode, ToolError } from '../src/errors.js';
+import { McpToolErrorCode, ToolError } from '../src/errors.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
 import {
@@ -252,7 +252,7 @@ describe('ensureLazyOAuthAuth', () => {
 
     await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
       name: 'ToolError',
-      code: ErrorCode.AUTH_ERROR,
+      code: McpToolErrorCode.AuthError,
       message: OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
       retryable: false,
     } satisfies Partial<ToolError>);
@@ -270,7 +270,7 @@ describe('ensureLazyOAuthAuth', () => {
 
     await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
       name: 'ToolError',
-      code: ErrorCode.AUTH_ERROR,
+      code: McpToolErrorCode.AuthError,
       message: OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
       retryable: false,
     } satisfies Partial<ToolError>);
@@ -288,7 +288,7 @@ describe('ensureLazyOAuthAuth', () => {
 
     await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
       name: 'ToolError',
-      code: ErrorCode.AUTH_ERROR,
+      code: McpToolErrorCode.AuthError,
       message: 'OAuth authorization failed',
       retryable: false,
     } satisfies Partial<ToolError>);

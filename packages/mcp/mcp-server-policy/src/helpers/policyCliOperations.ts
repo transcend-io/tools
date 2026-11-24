@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { McpToolErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import type { Got } from 'got';
 
 import { buildPolicyBundleFormData } from './buildPolicyBundleFormData.js';
@@ -121,7 +121,7 @@ export async function resolvePolicyBundle(
       return byId;
     }
     throw new ToolError(
-      ErrorCode.NOT_FOUND,
+      McpToolErrorCode.NotFound,
       `Policy bundle with id "${options.bundleId}" was not found.`,
       false,
     );
@@ -139,13 +139,13 @@ export async function resolvePolicyBundle(
       return byName;
     }
     throw new ToolError(
-      ErrorCode.NOT_FOUND,
+      McpToolErrorCode.NotFound,
       `Policy bundle "${options.bundleName}" was not found.`,
       false,
     );
   }
 
-  throw new ToolError(ErrorCode.VALIDATION_ERROR, 'Provide bundleId or bundleName.', false);
+  throw new ToolError(McpToolErrorCode.ValidationError, 'Provide bundleId or bundleName.', false);
 }
 
 /**
@@ -351,12 +351,16 @@ export async function activatePolicyBundleVersion(
     if (!match) {
       if (options.version) {
         throw new ToolError(
-          ErrorCode.NOT_FOUND,
+          McpToolErrorCode.NotFound,
           `Version "${options.version}" was not found for this policy bundle.`,
           false,
         );
       }
-      throw new ToolError(ErrorCode.NOT_FOUND, 'No versions found for this policy bundle.', false);
+      throw new ToolError(
+        McpToolErrorCode.NotFound,
+        'No versions found for this policy bundle.',
+        false,
+      );
     }
     resolvedVersion = match;
   }
@@ -375,7 +379,7 @@ export async function activatePolicyBundleVersion(
       ?.response?.statusCode;
     if (statusCode === 409) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         `Version "${resolvedVersion.version}" of policy bundle "${options.bundleName}" is already the active version.`,
         false,
       );
@@ -408,7 +412,7 @@ export async function deactivatePolicyBundle(
       ?.response?.statusCode;
     if (statusCode === 409) {
       throw new ToolError(
-        ErrorCode.API_ERROR,
+        McpToolErrorCode.ApiError,
         `Policy bundle "${bundleName}" has no active version.`,
         false,
       );

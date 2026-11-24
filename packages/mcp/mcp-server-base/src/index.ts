@@ -68,6 +68,7 @@ export {
 export {
   ToolError,
   ErrorCode,
+  McpToolErrorCode,
   GRAPHQL_ACCESS_DENIED_CODE,
   classifyHttpError,
   classifyGraphQLErrors,

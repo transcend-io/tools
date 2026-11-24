@@ -2,6 +2,17 @@
  * Transcend MCP Server - Shared Type Definitions
  */
 
+import {
+  AssessmentFormStatus,
+  ConsentTrackerSource,
+  ConsentTrackerStatus,
+  DataFlowScope,
+  type RequestStatus,
+} from '@transcend-io/privacy-types';
+
+export type { RequestStatus };
+export { AssessmentFormStatus, ConsentTrackerSource, ConsentTrackerStatus, DataFlowScope };
+
 // Common Types
 export interface PaginationInfo {
   hasNextPage: boolean;
@@ -49,24 +60,6 @@ export type RequestType =
   | 'BUSINESS_PURPOSE'
   | 'PLACE_ON_LEGAL_HOLD'
   | 'REMOVE_FROM_LEGAL_HOLD';
-
-export type RequestStatus =
-  | 'REQUEST_MADE'
-  | 'FAILED_VERIFICATION'
-  | 'ENRICHING'
-  | 'ON_HOLD'
-  | 'WAITING'
-  | 'COMPILING'
-  | 'APPROVING'
-  | 'DELAYED'
-  | 'COMPLETED'
-  | 'DOWNLOADABLE'
-  | 'VIEW_CATEGORIES'
-  | 'CANCELED'
-  | 'SECONDARY'
-  | 'SECONDARY_COMPLETED'
-  | 'SECONDARY_APPROVING'
-  | 'REVOKED';
 
 export interface Subject {
   id: string;
@@ -584,10 +577,6 @@ export interface DataFlow {
   status: string;
   createdAt: string;
 }
-
-export type ConsentTrackerStatus = 'LIVE' | 'NEEDS_REVIEW';
-export type ConsentTrackerSource = 'MANUAL' | 'SCAN' | 'TELEMETRY';
-export type DataFlowScope = 'HOST' | 'PATH' | 'QUERY_PARAM' | 'REGEX' | 'CSP';
 
 export interface CookieService {
   id: string;
@@ -1282,14 +1271,6 @@ export interface PendingRequestItem {
 }
 
 // Assessment Types
-export type AssessmentFormStatus =
-  | 'DRAFT'
-  | 'SHARED'
-  | 'IN_PROGRESS'
-  | 'IN_REVIEW'
-  | 'CHANGES_REQUESTED'
-  | 'REJECTED'
-  | 'APPROVED';
 
 /** @deprecated Use AssessmentFormStatus */
 export type AssessmentStatus = AssessmentFormStatus;

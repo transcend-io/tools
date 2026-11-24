@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -61,9 +61,9 @@ export function createConsentListRocRecordsTool(clients: ToolClients) {
         result = await rest.listRocRecords({ partition, identifier, limit, includeRawRequest });
       } catch (error) {
         // This route is only available on Sombra >= 7.578.4.
-        if (error instanceof ToolError && error.code === ErrorCode.NOT_FOUND) {
+        if (error instanceof ToolError && error.code === McpToolErrorCode.NotFound) {
           throw new ToolError(
-            ErrorCode.NOT_FOUND,
+            McpToolErrorCode.NotFound,
             `Consent-record lookup is unavailable on this Sombra gateway. This route requires ` +
               `Sombra >= ${MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS}; self-hosted gateways below ` +
               `that version do not serve it. Original error: ${error.message}`,

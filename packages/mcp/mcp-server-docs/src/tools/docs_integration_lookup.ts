@@ -1,7 +1,7 @@
 import {
   createToolResult,
   defineTool,
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   z,
   type ToolClients,
@@ -78,7 +78,7 @@ export function createDocsIntegrationLookupTool(clients: ToolClients) {
           catalog = await graphql.getCatalogIntegrationDetail(match);
         } else if (suggestions.length > 0) {
           throw new ToolError(
-            ErrorCode.VALIDATION_ERROR,
+            McpToolErrorCode.ValidationError,
             `No catalog integration named '${integration}'. Close names: ` +
               `${suggestions.join(', ')}. Call again with one of them.`,
           );

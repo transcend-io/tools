@@ -2,7 +2,7 @@ import {
   createToolResult,
   defineTool,
   derivePageInfo,
-  ErrorCode,
+  McpToolErrorCode,
   OffsetPaginationSchema,
   ToolError,
   z,
@@ -203,7 +203,7 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       // agent corrects the offset instead of reporting the form has no feedback.
       if (offset > 0 && offset >= matched.length && matched.length > 0) {
         throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
+          McpToolErrorCode.ValidationError,
           `offset ${offset} is past the end of the result set: ${matched.length} ` +
             `comment(s) match resolution ${resolution}${
               authorIds && authorIds.length > 0 ? ` and the authorIds filter` : ''

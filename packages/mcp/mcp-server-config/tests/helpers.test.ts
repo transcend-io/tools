@@ -2,7 +2,7 @@ import {
   CollectedLogLevel,
   configureOAuthScopes,
   createCollectedLogger,
-  ErrorCode,
+  McpToolErrorCode,
   resetConfiguredOAuthScopes,
   ToolError,
   TranscendGraphQLBase,
@@ -120,7 +120,7 @@ describe('assertScopesAvailable', () => {
     }
 
     expect(caught).toBeInstanceOf(ToolError);
-    expect((caught as ToolError).code).toBe(ErrorCode.PERMISSION_ERROR);
+    expect((caught as ToolError).code).toBe(McpToolErrorCode.PermissionError);
     expect((caught as ToolError).details).toEqual({ missingScopes: [ScopeName.ManageDataMap] });
   });
 

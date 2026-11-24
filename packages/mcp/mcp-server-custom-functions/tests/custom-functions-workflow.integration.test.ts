@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 
 import {
-  ErrorCode,
+  McpToolErrorCode,
   ToolError,
   TranscendRestClient,
   type ToolClients,
