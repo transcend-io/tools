@@ -1,5 +1,49 @@
 # @transcend-io/mcp
 
+## 2.1.0
+
+### Minor Changes
+
+- 2ec345c: Add `renderPushPlanDiff` for inventory push previews and a read-only `config_diff` MCP tool that returns a paste-ready diff before `config_push`.
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+- 0c71caf: Section write tools now use the same push pipeline as `transcend inventory push` and share one result shape (`success`, `count`, `errors`, optional `warnings` and `logs`). Helpers live on `@transcend-io/mcp-server-base/transcend-yml`.
+
+  **Breaking for direct tool callers**
+  - Inventory write tools renamed `items` to section-specific args (for example `businessEntities`, `identifiers`, `attributes`).
+  - `privacy_center_write` renamed `publish` to `publishToPrivacyCenter`.
+  - DSR write results no longer use `synced` or per-item `{ item, message }` errors; they match other section writes.
+  - `consent_write_sites` uses the yaml codec for each site instead of a custom zod shape.
+
+  `privacy_center_write` now asks for confirmation before applying changes that can delete footer links.
+
+### Patch Changes
+
+- 23bdda1: Inventory push and MCP can now update existing system discovery triage from `transcend.yml` (title, suggested catalog, and ignore status). Use `discovery_write_results` or include `system-discovery` in config push.
+- f4c51c9: The unified MCP server and Admin domain server add list and write tools for `action-items` and `action-item-collections` in transcend.yml shape. The Discovery server adds a list tool for system-discovery results. Action-item OAuth scopes now apply to the Admin server instead of Workflows.
+- 5110643: Centralized MCP OAuth scope lists in the SDK so OAuth clients and servers can pin scopes by server type. Domain MCP packages no longer export per-server `*_OAUTH_SCOPES` constants; import `getMcpServerOAuthScopes` from `@transcend-io/sdk` instead.
+- 945cf74: MCP can push full DSR `workflow-configs` sections via `workflows_write_configs`, matching `transcend inventory push`.
+- Updated dependencies [2ec345c]
+- Updated dependencies [234002f]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [945cf74]
+- Updated dependencies [0c71caf]
+  - @transcend-io/mcp-server-config@0.2.0
+  - @transcend-io/mcp-server-discovery@1.1.0
+  - @transcend-io/mcp-server-admin@2.1.0
+  - @transcend-io/mcp-server-assessment@2.1.18
+  - @transcend-io/mcp-server-consent@1.6.0
+  - @transcend-io/mcp-server-custom-functions@0.3.5
+  - @transcend-io/mcp-server-dsr@2.2.0
+  - @transcend-io/mcp-server-inventory@1.2.0
+  - @transcend-io/mcp-server-policy@0.2.10
+  - @transcend-io/mcp-server-preferences@0.9.0
+  - @transcend-io/mcp-server-privacy-center@0.2.0
+  - @transcend-io/mcp-server-workflows@1.2.0
+  - @transcend-io/mcp-server-base@3.2.0
+
 ## 2.0.0
 
 ### Major Changes
