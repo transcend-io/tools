@@ -27,6 +27,28 @@
             "type": "integer",
             "minimum": 0,
             "description": "Whole days since the preference was last set. Omitted when no timestamp is available."
+          },
+          "topics": {
+            "type": "array",
+            "description": "Topic choices stored under this purpose. Omitted when the purpose has none; unset topics are absent rather than padded.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "choice"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Topic slug (for example Frequency or SnowAlerts)."
+                },
+                "choice": {
+                  "type": ["boolean", "string", "array", "null"],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Boolean topic choice, single-select value, multi-select values, or null when unset."
+                }
+              }
+            }
           }
         }
       }
@@ -43,7 +65,13 @@
         {
           "name": "Analytics",
           "choice": true,
-          "days_since_choice": 42
+          "days_since_choice": 42,
+          "topics": [
+            {
+              "name": "Frequency",
+              "choice": "Weekly"
+            }
+          ]
         },
         {
           "name": "SaleOfInfo",
