@@ -4381,7 +4381,7 @@ The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zi
 
 ```txt
 USAGE
-  transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|full|notes|fails|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <bundle>
+  transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|notes|fails|full|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <bundle>
   transcend policy eval --help
 
 Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as check/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
@@ -4392,7 +4392,7 @@ FLAGS
      [--stdin-input]          Read the input document from stdin (opa eval --stdin-input)                [default = false]
      [--format]               Output format (opa eval --format)                                          [pretty|json|values|bindings|source|raw|discard, default = pretty]
      [--schema]               JSON Schema file or directory for input type-checking (opa eval --schema)
-     [--explain]              Explanation mode (opa eval --explain)                                      [off|full|notes|fails|debug]
+     [--explain]              Explanation mode (opa eval --explain)                                      [off|notes|fails|full|debug]
      [--metrics]              Report evaluation metrics (opa eval --metrics)                             [default = false]
      [--instrument]           Enable instrumentation; implies --metrics (opa eval --instrument)          [default = false]
      [--profile]              Enable performance profiling (opa eval --profile)                          [default = false]
@@ -4705,7 +4705,7 @@ Requires the **Manage Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [--coverage] [--threshold value] [--timeout value] [--var-values] [--explain fails|full|notes|debug] [--schema value] [--exit-zero-on-skipped] [<workspace|bundle>]
+  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [--coverage] [--threshold value] [--timeout value] [--var-values] [--explain notes|fails|full|debug] [--schema value] [--exit-zero-on-skipped] [<workspace|bundle>]
   transcend policy test --help
 
 Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, run, coverage, threshold, timeout, var-values, explain, schema, and exit-zero-on-skipped; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
@@ -4718,7 +4718,7 @@ FLAGS
      [--threshold]             Fail when coverage is below this % (requires --coverage)
      [--timeout]               Test timeout duration, e.g. 5s (opa test --timeout)
      [--var-values]            Show variable values in failures (opa test --var-values)                     [default = false]
-     [--explain]               Explanation mode (opa test --explain)                                        [fails|full|notes|debug]
+     [--explain]               Explanation mode (opa test --explain)                                        [notes|fails|full|debug]
      [--schema]                JSON Schema file or directory for input type-checking (opa test --schema)
      [--exit-zero-on-skipped]  Exit 0 when all matching tests are skipped (opa test --exit-zero-on-skipped) [default = false]
   -h  --help                   Print help information and exit
