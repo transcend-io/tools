@@ -3,22 +3,29 @@ import path from 'node:path';
 import {
   buildTranscendGraphQLClient,
   mergeTranscendInputs,
-  parseTranscendYaml,
+  normalizeTranscendInput,
   previewPush,
   renderPushPlan,
+  replaceVariablesInYaml,
   syncConfigurationToTranscend,
   TranscendInput,
   type PushPlan,
 } from '@transcend-io/sdk';
+import { decodeCodec } from '@transcend-io/type-utils';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
+import yaml from 'js-yaml';
 
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import {
+  formatPushValidationErrors,
+  validateTranscendInputForPush,
+} from '../../../lib/validateTranscendInputForPush.js';
 
 /**
  * Sync configuration to Transcend
@@ -35,6 +42,7 @@ async function syncConfiguration({
   deleteExtraAttributeValues = false,
   classifyService = false,
   logger,
+  warnings = [],
 }: {
   /** Transcend YAML */
   contents: TranscendInput;
@@ -52,6 +60,8 @@ async function syncConfiguration({
   deleteExtraAttributeValues?: boolean;
   /** Logger for reporting sync progress and errors */
   logger: LocalContext['logger'];
+  /** Non-fatal validation warnings */
+  warnings?: string[];
 }): Promise<boolean> {
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -64,7 +74,13 @@ async function syncConfiguration({
       deleteExtraAttributeValues,
       logger,
       progressReporter: new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic),
+      warnings,
     });
+    if (result.warnings?.length) {
+      result.warnings.forEach((warning) => {
+        logger.warn(colors.yellow(warning));
+      });
+    }
     if (!result.success) {
       result.errors.forEach(({ resource, item, message }) => {
         logger.error(
@@ -173,11 +189,23 @@ export async function push(
     }
 
     try {
-      // Read in the yaml file and validate it's shape
-      const newContents = parseTranscendYaml(
-        this.fs.readFileSync(filePath, 'utf8'),
+      const fileContents = this.fs.readFileSync(filePath, 'utf8');
+      const replacedVariables = replaceVariablesInYaml(
+        fileContents,
         vars,
-        filePath,
+        `Also check that there are no extra variables defined in your yaml: ${filePath}`,
+      );
+      const validation = validateTranscendInputForPush(yaml.load(replacedVariables));
+      if (!validation.valid) {
+        throw new Error(formatPushValidationErrors(validation));
+      }
+      if (!json) {
+        validation.warnings.forEach((warning) => {
+          this.logger.warn(colors.yellow(warning));
+        });
+      }
+      const newContents = normalizeTranscendInput(
+        decodeCodec(TranscendInput, validation.normalizedConfig ?? {}),
       );
       if (!json) {
         this.logger.info(colors.green(`Successfully read in "${filePath}"`));
@@ -185,6 +213,7 @@ export async function push(
       return {
         content: newContents,
         name: filePath.split('/').pop()!.replace('.yml', ''),
+        warnings: validation.warnings,
       };
     } catch (err) {
       this.logger.error(
@@ -201,6 +230,7 @@ export async function push(
     // if passed multiple inputs, merge them together
     const [base, ...rest] = transcendInputs.map(({ content }) => content);
     const contents = mergeTranscendInputs(base, ...rest);
+    const warnings = transcendInputs.flatMap((input) => input.warnings);
 
     // preview only: show what would change and stop
     if (dryRun) {
@@ -234,6 +264,7 @@ export async function push(
       pageSize,
       classifyService: !!classifyService,
       logger: this.logger,
+      warnings,
     });
 
     // exist with error code
