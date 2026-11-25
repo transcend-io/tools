@@ -1,9 +1,10 @@
+import { BrowserLanguage } from '@transcend-io/airgap.js-types/enums/browserLanguage';
+import { OnConsentExpiry } from '@transcend-io/airgap.js-types/enums/consentExpiry';
+import { InitialViewState } from '@transcend-io/airgap.js-types/enums/viewState';
 import { valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
-import { BrowserLanguage } from './browserLanguage.js';
 import { BrowserTimeZone } from './browserTimeZones.js';
-import { OnConsentExpiry } from './consentExpiry.js';
 import {
   ConsentBundleType,
   ConsentPrecedenceOption,
@@ -15,8 +16,6 @@ import {
 import { ConsentThemeInput, ConsentVariantInput } from './consentUiInventory.js';
 import { IsoCountryCodeCodec, IsoCountrySubdivisionCodeCodec } from './isoRegion.js';
 import { PrefixModuleCatalogCodec, PrefixModuleConfig } from './prefixModule.js';
-import { InitialViewState } from './viewState.js';
-
 const UnknownRequestPolicyCodec = valuesOf(UnknownRequestPolicy, 'UnknownRequestPolicy');
 
 export const WebhookHeader = t.intersection([
