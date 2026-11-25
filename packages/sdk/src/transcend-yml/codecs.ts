@@ -1329,6 +1329,10 @@ export const ConsentManagerInput = t.partial({
   consentThemes: t.array(ConsentThemeInput),
   /** Prefix modules on the bundle. Pull only, push ignores it (no public API to write them) */
   prefixModules: t.array(ConsentManagerPrefixModuleInput),
+  /** Deployment webhook URL */
+  webhookUrl: t.string,
+  /** Custom headers for the deployment webhook */
+  webhookHeaders: t.array(WebhookHeader),
 });
 
 /** Type override */

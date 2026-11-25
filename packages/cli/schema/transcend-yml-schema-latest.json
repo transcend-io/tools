@@ -2550,6 +2550,15 @@
               }
             ]
           }
+        },
+        "webhookUrl": {
+          "type": "string"
+        },
+        "webhookHeaders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/intersection-xgvhyu"
+          }
         }
       }
     },

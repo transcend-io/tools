@@ -81,6 +81,7 @@ export const FETCH_CONSENT_MANAGER = gql`
         id
         bundleURL
         testBundleURL
+        webhookUrl
         configuration {
           domains
           consentPrecedence
@@ -160,6 +161,17 @@ export const CREATE_CONSENT_MANAGER = gql`
 export const UPDATE_CONSENT_MANAGER_VERSION = gql`
   mutation TranscendCliUpdateConsentManager($airgapBundleId: ID!, $version: String!) {
     updateConsentManager(id: $airgapBundleId, input: { version: $version }) {
+      clientMutationId
+    }
+  }
+`;
+
+export const UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK = gql`
+  mutation TranscendCliUpdateConsentManagerDeploymentWebhook(
+    $airgapBundleId: ID!
+    $input: UpdateConsentManagerInput!
+  ) {
+    updateConsentManager(id: $airgapBundleId, input: $input) {
       clientMutationId
     }
   }
