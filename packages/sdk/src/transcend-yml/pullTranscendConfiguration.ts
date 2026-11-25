@@ -1298,6 +1298,7 @@ export async function pullTranscendConfiguration(
         trackingType,
         service,
         status,
+        isJunk,
         owners,
         teams,
         attributeValues,
@@ -1307,6 +1308,8 @@ export async function pullTranscendConfiguration(
         description: description || undefined,
         trackingPurposes: trackingType,
         status,
+        // Only emit isJunk when true, so yml files stay unchanged for regular rows
+        isJunk: isJunk ? true : undefined,
         service: service?.integrationName,
         owners: owners.map(({ email }) => email),
         teams: teams.map(({ name }) => name),
@@ -1328,6 +1331,7 @@ export async function pullTranscendConfiguration(
         trackingPurposes,
         service,
         status,
+        isJunk,
         owners,
         teams,
         attributeValues,
@@ -1337,6 +1341,8 @@ export async function pullTranscendConfiguration(
         description: description || undefined,
         trackingPurposes,
         status,
+        // Only emit isJunk when true, so yml files stay unchanged for regular rows
+        isJunk: isJunk ? true : undefined,
         service: service?.integrationName,
         owners: owners.map(({ email }) => email),
         teams: teams.map(({ name }) => name),
@@ -1351,10 +1357,20 @@ export async function pullTranscendConfiguration(
   // Save consent sites
   if (consentSites.length > 0 && resources.includes(TranscendPullResource.ConsentSites)) {
     result['consent-sites'] = consentSites.map(
-      ({ host, site, description, owners, teams, attributeValues }): ConsentSiteInput => ({
+      ({
+        host,
+        site,
+        description,
+        includeInMetadata,
+        owners,
+        teams,
+        attributeValues,
+      }): ConsentSiteInput => ({
         host,
         site,
         description: description || undefined,
+        // Only emit includeInMetadata when true, so hosts that opt out stay unchanged
+        includeInMetadata: includeInMetadata ? true : undefined,
         owners: owners.map(({ email }) => email),
         teams: teams.map(({ name }) => name),
         attributes:

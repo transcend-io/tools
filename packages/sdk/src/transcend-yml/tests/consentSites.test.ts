@@ -53,6 +53,8 @@ interface UpsertVariables {
     site?: string;
     /** Description */
     description?: string;
+    /** Included in metadata */
+    includeInMetadata?: boolean;
     /** Owner emails */
     ownerEmails?: string[];
     /** Team names */
@@ -117,7 +119,7 @@ function buildFakeClient(
           host: input.host,
           site: input.site ?? input.host.split('.').slice(-2).join('.'),
           description: input.description ?? null,
-          includeInMetadata: true,
+          includeInMetadata: input.includeInMetadata ?? true,
           deletedAt: null,
           owners: (input.ownerEmails ?? []).map((email) => ({
             id: `user-${email}`,
@@ -175,6 +177,7 @@ describe('consent-sites', () => {
           host: 'admin.example.com',
           site: 'example.com',
           description: 'Admin app',
+          includeInMetadata: false,
           owners: ['a@example.com'],
           teams: ['Privacy'],
           attributes: [{ key: 'Env', values: ['prod'] }],
@@ -183,6 +186,58 @@ describe('consent-sites', () => {
     });
     expect(decoded._tag).toBe('Right');
     expect(TranscendInput.decode({ 'consent-sites': [{ site: 'example.com' }] })._tag).toBe('Left');
+    expect(
+      TranscendInput.decode({
+        'consent-sites': [{ host: 'app.example.com', includeInMetadata: 'yes' }],
+      })._tag,
+    ).toBe('Left');
+  });
+
+  it('pushes includeInMetadata only when it is set', async () => {
+    const { client, upserts } = buildFakeClient([]);
+
+    const result = await syncConfigurationToTranscend(
+      {
+        'consent-sites': [
+          { host: 'on.example.com', includeInMetadata: true },
+          { host: 'off.example.com', includeInMetadata: false },
+          { host: 'unset.example.com' },
+        ],
+      },
+      client,
+      {},
+    );
+
+    expect(result.success).toBe(true);
+    expect(
+      upserts[0]?.sites.map(({ host, includeInMetadata }) => [host, includeInMetadata]),
+    ).toEqual([
+      ['on.example.com', true],
+      ['off.example.com', false],
+      ['unset.example.com', undefined],
+    ]);
+  });
+
+  it('pulls includeInMetadata only for hosts where it is true', async () => {
+    const { client } = buildFakeClient([
+      buildHost({ host: 'on.example.com', site: 'example.com', includeInMetadata: true }),
+      buildHost({ host: 'off.example.com', site: 'example.com', includeInMetadata: false }),
+    ]);
+
+    const result = await pullTranscendConfiguration(client, {
+      dataSiloIds: [],
+      integrationNames: [],
+      debug: false,
+      pageSize: 50,
+      resources: [TranscendPullResource.ConsentSites],
+    });
+
+    const byHost = Object.fromEntries(
+      (result['consent-sites'] ?? []).map((site) => [site.host, site]),
+    );
+    expect(byHost['on.example.com']?.includeInMetadata).toBe(true);
+    expect(byHost['off.example.com']).not.toHaveProperty('includeInMetadata', false);
+    expect(byHost['off.example.com']?.includeInMetadata).toBeUndefined();
   });
 
   it('leaves consent-manager.domains as a plain string list', () => {
@@ -243,6 +298,7 @@ describe('consent-sites', () => {
         host: 'app.example.com',
         site: 'example.com',
         description: 'Main app',
+        includeInMetadata: true,
         owners: ['ann@example.com'],
         teams: ['Privacy'],
         attributes: [{ key: 'Env', values: ['prod', 'internal'] }],
@@ -251,6 +307,7 @@ describe('consent-sites', () => {
         host: 'bare.other.org',
         site: 'other.org',
         description: undefined,
+        includeInMetadata: true,
         owners: [],
         teams: [],
         attributes: undefined,
@@ -311,6 +368,7 @@ describe('consent-sites', () => {
         host: 'app.example.com',
         site: 'example.com',
         description: 'Main app',
+        includeInMetadata: true,
         ownerEmails: ['ann@example.com', 'bob@example.com'],
         teamNames: ['Privacy'],
         attributes: [{ key: 'Env', values: ['prod'] }],
