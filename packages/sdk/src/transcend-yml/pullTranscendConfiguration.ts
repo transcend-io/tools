@@ -417,6 +417,7 @@ export async function pullTranscendConfiguration(
         TEST: consentManager.testBundleURL,
         PRODUCTION: consentManager.bundleURL,
       },
+      reportOnly: consentManager.off,
       domains: consentManager.configuration.domains || undefined,
       partition: consentManager.configuration.partition || undefined,
       consentPrecedence: consentManager.configuration.consentPrecedence || undefined,

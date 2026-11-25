@@ -2559,6 +2559,9 @@
           "items": {
             "$ref": "#/definitions/intersection-xgvhyu"
           }
+        },
+        "reportOnly": {
+          "type": "boolean"
         }
       }
     },

@@ -10,7 +10,7 @@ export const WriteConsentManagerSchema = z.object({
     .record(z.string(), z.unknown())
     .describe(
       'Consent manager settings, same shape as the consent-manager section of transcend.yml. ' +
-        'Optional keys include domains, partition, version, consentPrecedence, ' +
+        'Optional keys include domains, partition, version, consentPrecedence, reportOnly, ' +
         'unknownRequestPolicy, experiences, consentVariants, consentThemes and theme. ' +
         'Use config_get_schema for the full schema.',
     ),

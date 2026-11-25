@@ -1348,6 +1348,11 @@ export const ConsentManagerInput = t.partial({
    * `  isSecret: true`
    */
   webhookHeaders: t.array(WebhookHeader),
+  /**
+   * When true, traffic is report-only (enforcement off).
+   * Deploy the bundle after push for the live /cm bundle to change.
+   */
+  reportOnly: t.boolean,
 });
 
 /** Type override */

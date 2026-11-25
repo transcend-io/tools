@@ -13,6 +13,7 @@ const { mockLogger } = vi.hoisted(() => ({
 vi.mock('../../api/makeGraphQLRequest.js', () => ({
   makeGraphQLRequest: vi.fn(async () => ({
     updateConsentManager: { clientMutationId: '1' },
+    toggleConsentManagerEnforcement: { clientMutationId: '1' },
   })),
   NOOP_LOGGER: mockLogger,
 }));
@@ -22,10 +23,62 @@ vi.mock('../fetchConsentManagerId.js', () => ({
 }));
 
 import { makeGraphQLRequest } from '../../api/makeGraphQLRequest.js';
-import { UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK } from '../gqls/consentManager.js';
+import {
+  TOGGLE_CONSENT_MANAGER_ENFORCEMENT,
+  UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK,
+} from '../gqls/consentManager.js';
 import { syncConsentManager } from '../syncConsentManager.js';
 
 const client = {} as GraphQLClient;
+
+describe('syncConsentManager reportOnly', () => {
+  beforeEach(() => {
+    vi.mocked(makeGraphQLRequest).mockClear();
+  });
+
+  it('sends off: true when reportOnly is true', async () => {
+    await syncConsentManager(client, { reportOnly: true });
+
+    expect(makeGraphQLRequest).toHaveBeenCalledWith(
+      client,
+      TOGGLE_CONSENT_MANAGER_ENFORCEMENT,
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: 'bundle-1',
+            off: true,
+          },
+        },
+      }),
+    );
+  });
+
+  it('sends off: false when reportOnly is false', async () => {
+    await syncConsentManager(client, { reportOnly: false });
+
+    expect(makeGraphQLRequest).toHaveBeenCalledWith(
+      client,
+      TOGGLE_CONSENT_MANAGER_ENFORCEMENT,
+      expect.objectContaining({
+        variables: {
+          input: {
+            id: 'bundle-1',
+            off: false,
+          },
+        },
+      }),
+    );
+  });
+
+  it('does not toggle enforcement when reportOnly is omitted', async () => {
+    await syncConsentManager(client, { domains: ['example.com'] });
+
+    const enforcementCall = vi
+      .mocked(makeGraphQLRequest)
+      .mock.calls.find(([, query]) => query === TOGGLE_CONSENT_MANAGER_ENFORCEMENT);
+    expect(enforcementCall).toBeUndefined();
+  });
+});
 
 describe('syncConsentManager deployment webhook', () => {
   beforeEach(() => {

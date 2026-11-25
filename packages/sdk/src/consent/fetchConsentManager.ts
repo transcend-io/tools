@@ -13,6 +13,8 @@ import { FETCH_CONSENT_MANAGER } from './gqls/consentManager.js';
 export interface ConsentManager {
   /** ID of consent manager */
   id: string;
+  /** When true, the bundle is in reporting-only mode (enforcement off) */
+  off: boolean;
   /** Production bundle URL */
   bundleURL: string;
   /** Test bundle URL */
