@@ -1,1 +1,5 @@
-pnpm exec turbo run test --output-logs=errors-only --no-update-notifier
+# Test only the packages this branch changed, plus their dependents. CI tests the full workspace.
+# A local `main` is often stale, so compare against origin/main.
+export TURBO_SCM_BASE="${TURBO_SCM_BASE:-origin/main}"
+
+pnpm exec turbo run test --affected --concurrency=4 --output-logs=errors-only --no-update-notifier
