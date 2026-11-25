@@ -1,13 +1,14 @@
+import { LOCALE_KEY } from '@transcend-io/internationalization';
+import { map } from '@transcend-io/utils';
 import got from 'got';
 
 import type { PendingConsentBundleConfig } from './types.js';
 
-/** CDN module names that are not locale message keys */
-export const KNOWN_COMPANION_MODULE_KEYS = new Set([
-  'tcfVendorsList',
-  'nativeAppConfig',
-  'stylesheet',
-]);
+/** Max concurrent CDN requests per module group while loading a deployed bundle */
+const MAX_CONCURRENT_CDN_FETCHES = 10;
+
+/** Prefix of UI v2 message module keys, for example `uiV2-default-consent-en` */
+const UI_V2_MODULE_PREFIX = 'uiV2-';
 
 /**
  * Parse consent manager configuration JSON, returning an empty object on failure.
@@ -68,6 +69,9 @@ export async function fetchConsentCdnText(url: string): Promise<string> {
 /**
  * Load companion modules for a deployed core snapshot from the CDN.
  *
+ * Requests run in parallel. A bundle can list 60+ locale modules, and loading them
+ * one at a time used up the host's 60 second tool call limit.
+ *
  * @param deployedCore - Parsed deployed core module (includes `modules` map)
  * @param cdnOrigin - CDN origin derived from the bundle script URL
  * @returns Partial pending config with deployed module payloads
@@ -79,32 +83,44 @@ export async function fetchDeployedCompanionModules(
   const modules = deployedCore.modules as Record<string, { location?: string }> | undefined;
   if (!modules) return {};
 
-  const out: Partial<PendingConsentBundleConfig> = {};
-
+  const urlFor = (location: string): string => `${cdnOrigin}/${location}`;
   const tcfLoc = modules.tcfVendorsList?.location;
-  if (tcfLoc) out.tcf = await fetchConsentCdnJson(`${cdnOrigin}/${tcfLoc}`);
-
   const nativeLoc = modules.nativeAppConfig?.location;
-  if (nativeLoc) out.nativeApp = await fetchConsentCdnJson(`${cdnOrigin}/${nativeLoc}`);
-
   const cssLoc = modules.stylesheet?.location;
-  if (cssLoc) out.stylesheet = await fetchConsentCdnText(`${cdnOrigin}/${cssLoc}`);
 
-  const messages: Record<string, unknown> = {};
-  for (const [key, mod] of Object.entries(modules)) {
-    if (KNOWN_COMPANION_MODULE_KEYS.has(key) || key.startsWith('uiV2-') || !mod?.location) {
-      continue;
-    }
-    messages[key] = await fetchConsentCdnJson(`${cdnOrigin}/${mod.location}`);
-  }
-  if (Object.keys(messages).length > 0) out.messages = messages;
+  // Deployed locale modules are keyed by LOCALE_KEY names (`En`, `AfZz`). Pending
+  // config uses locale codes (`en`, `af-ZA`), so key the results by code to compare.
+  // Other module keys (`metadata`, `mobileUiLoadOptions`, ...) are not messages.
+  const localeModuleKeys = Object.keys(modules).filter(
+    (key): key is keyof typeof LOCALE_KEY =>
+      Object.hasOwn(LOCALE_KEY, key) && !!modules[key]?.location,
+  );
+  const uiV2ModuleKeys = Object.keys(modules).filter(
+    (key) => key.startsWith(UI_V2_MODULE_PREFIX) && !!modules[key]?.location,
+  );
 
-  const uiV2Messages: Record<string, unknown> = {};
-  for (const [key, mod] of Object.entries(modules)) {
-    if (!key.startsWith('uiV2-') || !mod?.location) continue;
-    uiV2Messages[key] = await fetchConsentCdnJson(`${cdnOrigin}/${mod.location}`);
-  }
-  if (Object.keys(uiV2Messages).length > 0) out.uiV2Messages = uiV2Messages;
+  const [tcf, nativeApp, stylesheet, localeEntries, uiV2Entries] = await Promise.all([
+    tcfLoc ? fetchConsentCdnJson(urlFor(tcfLoc)) : undefined,
+    nativeLoc ? fetchConsentCdnJson(urlFor(nativeLoc)) : undefined,
+    cssLoc ? fetchConsentCdnText(urlFor(cssLoc)) : undefined,
+    map(
+      localeModuleKeys,
+      async (key) =>
+        [LOCALE_KEY[key], await fetchConsentCdnJson(urlFor(modules[key]!.location!))] as const,
+      { concurrency: MAX_CONCURRENT_CDN_FETCHES },
+    ),
+    map(
+      uiV2ModuleKeys,
+      async (key) => [key, await fetchConsentCdnJson(urlFor(modules[key]!.location!))] as const,
+      { concurrency: MAX_CONCURRENT_CDN_FETCHES },
+    ),
+  ]);
 
+  const out: Partial<PendingConsentBundleConfig> = {};
+  if (tcfLoc) out.tcf = tcf;
+  if (nativeLoc) out.nativeApp = nativeApp;
+  if (cssLoc) out.stylesheet = stylesheet;
+  if (localeEntries.length > 0) out.messages = Object.fromEntries(localeEntries);
+  if (uiV2Entries.length > 0) out.uiV2Messages = Object.fromEntries(uiV2Entries);
   return out;
 }
