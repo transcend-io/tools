@@ -1,5 +1,18 @@
 # @transcend-io/mcp-server-workflows
 
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [39efde0]
+- Updated dependencies [f132514]
+- Updated dependencies [618c640]
+- Updated dependencies [3a70163]
+- Updated dependencies [3833044]
+  - @transcend-io/sdk@3.6.0
+  - @transcend-io/mcp-server-base@3.2.2
+  - @transcend-io/mcp-server-config@0.3.0
+
 ## 1.2.1
 
 ### Patch Changes

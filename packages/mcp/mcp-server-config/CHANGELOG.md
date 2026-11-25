@@ -1,5 +1,20 @@
 # @transcend-io/mcp-server-config
 
+## 0.3.0
+
+### Minor Changes
+
+- 3a70163: Add `TRANSCEND_MCP_SERVERS` to `@transcend-io/mcp` to register a subset of domains (for example `config,consent`) and request only their OAuth scopes. `@transcend-io/mcp-server-config` now exports its `TRANSCEND_CONFIG_RESOURCES` helpers so the unified server can cap config scopes the same way.
+
+### Patch Changes
+
+- Updated dependencies [39efde0]
+- Updated dependencies [f132514]
+- Updated dependencies [618c640]
+- Updated dependencies [3833044]
+  - @transcend-io/sdk@3.6.0
+  - @transcend-io/mcp-server-base@3.2.2
+
 ## 0.2.2
 
 ### Patch Changes
