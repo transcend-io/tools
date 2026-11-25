@@ -1,0 +1,54 @@
+name: Claude Plugin Manifests
+
+# JSON parse + required-field checks for the Claude marketplace and plugin
+# manifests, plus best-effort `claude plugin validate` when the CLI is
+# reachable from npm. Runs without pnpm bootstrap — plugins live outside
+# the workspace. Sibling to cursor-plugin-manifests.yml (separate manifest
+# schemas: .claude-plugin/plugin.json vs .cursor-plugin/plugin.json).
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/claude-plugin-manifests.yml'
+      - '.claude-plugin/**'
+      - 'plugins/**'
+      - 'scripts/validate-claude-plugin.mjs'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/claude-plugin-manifests.yml'
+      - '.claude-plugin/**'
+      - 'plugins/**'
+      - 'scripts/validate-claude-plugin.mjs'
+  merge_group:
+
+concurrency:
+  group: claude-plugin-manifests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Validate Claude plugin manifests (required)
+        run: node scripts/validate-claude-plugin.mjs
+
+      # Best-effort: the official CLI gives deeper checks (e.g. reserved
+      # names, Claude Desktop field-length limits) than the node script
+      # above, but isn't a published platform binary we pin a version for
+      # here. A fetch failure or CLI regression must not block the
+      # required check above.
+      - name: Validate with claude CLI (best effort)
+        continue-on-error: true
+        run: |
+          if npx --yes @anthropic-ai/claude-code --version; then
+            npx --yes @anthropic-ai/claude-code plugin validate .
+            npx --yes @anthropic-ai/claude-code plugin validate ./plugins/claude/TranscendRailsAgentControls
+          else
+            echo "claude CLI unavailable from npm; relying on scripts/validate-claude-plugin.mjs only."
+          fi

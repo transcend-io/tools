@@ -58,6 +58,17 @@ pnpm-workspace.yaml @transcend-io/lakitu @transcend-io/zelda
 # /packages/utils/                  TBD?
 
 # -----------------------------------------------
+# Plugins
+# -----------------------------------------------
+
+# Cursor and Claude marketplace plugins for Transcend Rails Agent Controls.
+# Neither /plugins/cursor/ nor /.cursor-plugin/ had a prior CODEOWNERS entry;
+# @transcend-io/zelda is assigned here as the MCP-adjacent owner pending
+# confirmation — flagged for review in the PR that added this section.
+/plugins/ @transcend-io/zelda
+/.claude-plugin/ @transcend-io/zelda
+
+# -----------------------------------------------
 # Development-only packages
 # -----------------------------------------------
 
