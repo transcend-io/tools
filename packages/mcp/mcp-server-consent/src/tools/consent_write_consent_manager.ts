@@ -1,19 +1,20 @@
 import { defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { decodeYmlRecord, pushYmlSection } from '@transcend-io/mcp-server-base/transcend-yml';
+import {
+  decodeYmlRecord,
+  pushYmlSection,
+  ymlRecordSchema,
+} from '@transcend-io/mcp-server-base/transcend-yml';
 import {
   ConsentManagerInput,
   type ConsentManagerInput as ConsentManagerSettings,
 } from '@transcend-io/sdk';
 
 export const WriteConsentManagerSchema = z.object({
-  consentManager: z
-    .record(z.string(), z.unknown())
-    .describe(
-      'Consent manager settings, same shape as the consent-manager section of transcend.yml. ' +
-        'Optional keys include domains, partition, version, consentPrecedence, reportOnly, ' +
-        'unknownRequestPolicy, experiences, consentVariants, consentThemes and theme. ' +
-        'Use config_get_schema for the full schema.',
-    ),
+  consentManager: ymlRecordSchema(
+    ConsentManagerInput,
+    'Consent manager settings, same shape as the consent-manager section of transcend.yml. ' +
+      'Only keys you pass are changed.',
+  ),
 });
 export type WriteConsentManagerInput = z.infer<typeof WriteConsentManagerSchema>;
 
