@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 13.7.1
+
+### Patch Changes
+
+- 02fac5a: Clarified that `inventory push` respects `consent-manager.version` in `transcend.yml` and does not upgrade airgap.js; that upgrade is `consent update-consent-manager` only.
+
 ## 13.7.0
 
 ### Minor Changes

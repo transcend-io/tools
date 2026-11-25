@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-consent
 
+## 1.6.3
+
+### Patch Changes
+
+- 4204f74: The consent deploy tool description explains retrying when an approval form expires before anyone answers.
+
 ## 1.6.2
 
 ### Patch Changes
