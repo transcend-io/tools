@@ -24,7 +24,8 @@ export const updateConsentManagerCommand = buildCommand({
       },
       deploy: {
         kind: 'boolean',
-        brief: 'When true, deploy the Consent Manager after updating the version',
+        brief:
+          'When true, deploy the Consent Manager after updating the version. This always updates airgap.js to the latest version first. To deploy without a version update, use `transcend consent deploy`.',
         default: false,
       },
       transcendUrl: createTranscendUrlParameter(),
@@ -33,6 +34,6 @@ export const updateConsentManagerCommand = buildCommand({
   docs: {
     brief: 'Update consent manager',
     fullDescription:
-      'This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command.',
+      'This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command, but only after the version is updated. To deploy without changing the airgap.js version, use `transcend consent deploy`.',
   },
 });
