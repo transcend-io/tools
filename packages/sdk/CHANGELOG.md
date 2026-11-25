@@ -1,5 +1,11 @@
 # @transcend-io/sdk
 
+## 3.7.0
+
+### Minor Changes
+
+- e65594d: Add `transcend inventory check` to validate a transcend.yml offline, with opt-in consent site and tracker rules.
+
 ## 3.6.0
 
 ### Minor Changes
