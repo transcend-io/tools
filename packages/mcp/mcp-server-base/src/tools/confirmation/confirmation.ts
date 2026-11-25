@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../../capabilities/types.js';
 import { SimpleLogger } from '../../clients/graphql/base.js';
+import { logMcpDebugEvent } from '../../debug-log.js';
 import { getMcpSession, hasCapability, requestElicitation } from '../../mcp-session-context.js';
 import { skipConfirmation } from '../../oauth/env.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from '../approval-tokens.js';
@@ -31,12 +32,21 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
  */
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
-/** Max wait for {@link ToolConfirmation.describe} before falling back to hint-only text. */
-export const CONFIRMATION_DESCRIBE_TIMEOUT_MS = 20_000;
+/**
+ * Max wait for {@link ToolConfirmation.describe} before falling back to hint-only text.
+ *
+ * Kept well under the host's 60s call limit, which also counts the time the form
+ * stays open. A summary that needs longer is not worth the person's remaining time.
+ */
+export const CONFIRMATION_DESCRIBE_TIMEOUT_MS = 8_000;
 
 const logger = new SimpleLogger();
 
-const DESCRIBE_UNAVAILABLE = 'Could not load a summary of changes.';
+/** Shown in place of the summary. Written for the person reading the form. */
+const DESCRIBE_TIMED_OUT = 'Summary of changes unavailable: it took too long to load.';
+const DESCRIBE_FAILED = 'Summary of changes unavailable: loading it failed.';
+
+const DESCRIBE_TIMEOUT = Symbol('describe timed out');
 
 async function resolveConfirmationDescribe(
   toolName: string,
@@ -44,20 +54,45 @@ async function resolveConfirmationDescribe(
   args: Record<string, unknown>,
 ): Promise<string | undefined> {
   if (!describe) return undefined;
+
+  const startedAt = Date.now();
+  let timer: NodeJS.Timeout | undefined;
+  logMcpDebugEvent('confirmation.describe.start');
   try {
     const text = await Promise.race([
       describe(args),
-      new Promise<string | undefined>((_, reject) => {
-        setTimeout(() => reject(new Error('describe timeout')), CONFIRMATION_DESCRIBE_TIMEOUT_MS);
+      new Promise<typeof DESCRIBE_TIMEOUT>((resolve) => {
+        timer = setTimeout(() => resolve(DESCRIBE_TIMEOUT), CONFIRMATION_DESCRIBE_TIMEOUT_MS);
       }),
     ]);
+    if (text === DESCRIBE_TIMEOUT) {
+      logger.warn(`Confirmation summary for ${toolName} timed out`, {
+        timeoutMs: CONFIRMATION_DESCRIBE_TIMEOUT_MS,
+      });
+      logMcpDebugEvent('confirmation.describe.end', {
+        elapsedMs: Date.now() - startedAt,
+        outcome: 'timeout',
+      });
+      return DESCRIBE_TIMED_OUT;
+    }
     const trimmed = typeof text === 'string' ? text.trim() : '';
+    logMcpDebugEvent('confirmation.describe.end', {
+      elapsedMs: Date.now() - startedAt,
+      outcome: trimmed.length > 0 ? 'ok' : 'empty',
+    });
     return trimmed.length > 0 ? trimmed : undefined;
   } catch (error) {
-    logger.warn(`Failed to build confirmation summary for ${toolName}`, {
-      error: error instanceof Error ? error.message : String(error),
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.warn(`Failed to build confirmation summary for ${toolName}`, { error: reason });
+    logMcpDebugEvent('confirmation.describe.end', {
+      elapsedMs: Date.now() - startedAt,
+      outcome: 'error',
+      error: reason,
     });
-    return DESCRIBE_UNAVAILABLE;
+    return DESCRIBE_FAILED;
+  } finally {
+    // The race leaves the timer running when `describe` wins
+    clearTimeout(timer);
   }
 }
 
