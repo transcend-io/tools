@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../../capabilities/types.js';
 import { SimpleLogger } from '../../clients/graphql/base.js';
-import { logMcpDebugEvent } from '../../debug-log.js';
+import { getCallRef, isMcpDebugLogEnabled, logMcpDebugEvent } from '../../debug-log.js';
 import { getMcpSession, hasCapability, requestElicitation } from '../../mcp-session-context.js';
 import { skipConfirmation } from '../../oauth/env.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from '../approval-tokens.js';
@@ -211,6 +211,10 @@ export function withConfirmation(
           return { promptMessage: text, asked: outcome };
         },
       );
+      logMcpDebugEvent('confirmation.decision', {
+        outcome: asked.outcome,
+        ...(asked.outcome === 'unasked' && { reason: asked.reason }),
+      });
       if (asked.outcome === 'confirmed') return await mutate(args);
       if (asked.outcome === 'refused') return asked.result;
 
@@ -245,19 +249,28 @@ async function askForConfirmation(
 ): Promise<AskOutcome> {
   const unasked = { outcome: 'unasked', reason: UnaskedReason.NoAnswer } as const;
 
-  if (!hasCapability(McpClientCapability.Elicitation)) return unasked;
+  if (!hasCapability(McpClientCapability.Elicitation)) {
+    logMcpDebugEvent('confirmation.skipped', { reason: 'host_has_no_elicitation' });
+    return unasked;
+  }
 
   if (options.requireBinding && getMcpSession()?.request === undefined) {
     logger.warn(
       `Not asking for confirmation of ${toolName}: no originating call to bind the form to`,
     );
+    logMcpDebugEvent('confirmation.skipped', { reason: 'no_originating_call' });
     return unasked;
   }
 
-  const prompt = renderConfirmationPrompt(message, describeArgs(args));
+  const recap = renderConfirmationPrompt(message, describeArgs(args));
+  // With the debug log on, the form shows the same reference as the log lines, so a
+  // screenshot of a form is enough to find its events.
+  const ref = getCallRef();
+  const prompt = isMcpDebugLogEnabled() && ref ? `${recap}\n\nRef: ${ref}` : recap;
 
   const askedAt = Date.now();
   let answer: ElicitResult | undefined;
+  logMcpDebugEvent('confirmation.form.sent', { promptChars: prompt.length });
   try {
     answer = await requestElicitation(prompt, NO_FIELDS, {
       timeout: CONFIRMATION_TIMEOUT_MS,
@@ -268,20 +281,30 @@ async function askForConfirmation(
       // The caller gave up while the form was open, so nothing is wrong here — but
       // the answer that never arrived must not be treated as one.
       logger.debug(`Confirmation of ${toolName} abandoned by the caller`);
+      logMcpDebugEvent('confirmation.form.abandoned', { elapsedMs: Date.now() - askedAt });
       return unasked;
     }
     // A warning rather than silence: the host said it could ask and then did not,
     // so whatever happens below is covering for a host-side problem someone may
     // need to fix.
+    const reason = error instanceof Error ? error.message : String(error);
     logger.warn(`Host failed to show the confirmation form for ${toolName}`, {
-      error: error instanceof Error ? error.message : String(error),
+      error: reason,
       host: session?.client.host,
       clientName: session?.client.clientInfo?.name,
+    });
+    logMcpDebugEvent('confirmation.form.error', {
+      elapsedMs: Date.now() - askedAt,
+      error: reason,
     });
     return unasked;
   }
 
   if (!answer) return unasked;
+  logMcpDebugEvent('confirmation.form.answered', {
+    elapsedMs: Date.now() - askedAt,
+    action: answer.action,
+  });
 
   if (answer.action === 'cancel') {
     return {
