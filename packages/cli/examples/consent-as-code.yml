@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema/transcend-yml-schema-latest.json
+
+# Consent as code. Keep this file in git and sync it with the CLI:
+#
+#   transcend inventory pull --resources=consentManager,purposes,dataFlows,cookies,consentSites
+#   transcend inventory push --dryRun
+#   transcend inventory push
+#   transcend consent update-consent-manager --deploy
+#
+# A push saves these settings. It does not publish a new consent manager bundle.
+
+consent-manager:
+  # Pin the airgap.js version. Pull does not return this key, so add it by hand.
+  version: 14.3.0
+  # A push replaces the whole domain list. List every domain you want to keep.
+  domains:
+    - example.com
+    - www.example.com
+    - app.example.com
+  # What to do with requests and cookies that are not in your inventory yet
+  unknownRequestPolicy: REQUIRE_FULL_CONSENT
+  # Push applies unknownCookiePolicy only when unknownRequestPolicy is also set
+  unknownCookiePolicy: ALLOW
+  telemetryPartitioning: origin
+
+# Manage at: https://app.transcend.io/consent-manager/domains
+consent-sites:
+  - host: www.example.com
+    site: example.com
+    description: Marketing site
+    owners:
+      - privacy@example.com
+    # Team names must already exist in your organization
+    teams:
+      - Marketing
+    attributes:
+      - key: Region
+        values:
+          - Global
+  - host: app.example.com
+    site: example.com
+    description: Logged-in web app
+    owners:
+      - privacy@example.com
+    teams:
+      - Engineering
+
+# Manage at: https://app.transcend.io/consent-manager/data-flows/approved
+data-flows:
+  - value: cdn.example-analytics.com
+    type: HOST
+    description: Loads the analytics script
+    service: googleTagManager
+    trackingPurposes:
+      - Analytics
+    status: LIVE
+  - value: pixel.example-ads.com
+    type: HOST
+    description: Advertising pixel
+    trackingPurposes:
+      - Advertising
+    status: LIVE
+  - value: unknown-tracker.example.net
+    type: HOST
+    # Not reviewed yet. NEEDS_REVIEW flows stay out of the live bundle.
+    status: NEEDS_REVIEW
+
+cookies:
+  - name: _example_session
+    description: Keeps a visitor signed in
+    trackingPurposes:
+      - Essential
+    status: LIVE
+  - name: _example_ab_.*
+    isRegex: true
+    description: A/B test assignment cookies
+    trackingPurposes:
+      - Analytics
+    status: LIVE
+  - name: _example_unreviewed
+    status: NEEDS_REVIEW
+
+# Manage at: https://app.transcend.io/consent-manager/regional-experiences/purposes
+purposes:
+  - trackingType: Analytics
+    name: Analytics
+    title: Analytics
+    description: Helps us learn how our site is used.
+    configurable: true
+    show-in-consent-manager: true
+    is-active: true
+  - trackingType: Advertising
+    name: Advertising
+    title: Advertising
+    description: Helps us show ads that are relevant to you.
+    configurable: true
+    show-in-consent-manager: true
+    is-active: true

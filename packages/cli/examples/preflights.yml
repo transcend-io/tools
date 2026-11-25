@@ -54,7 +54,7 @@ preflights:
     output-identifiers:
       - email
   - title: Request Ingestion
-    type: SOMNRA
+    type: SOMBRA
     output-identifiers:
       - email
       - coreIdentifier

@@ -601,3 +601,55 @@ export const UPDATE_CONSENT_UI_THEME = gql`
     }
   }
 `;
+// ---- Deploy state and rollback ----
+
+/** Deploy status of the consent manager, aligned with BundleDeployStatus in the GraphQL schema */
+export const TranscendConsentManagerDeployState = {
+  /** Deploy completed successfully */
+  Deployed: 'DEPLOYED',
+  /** Deploy in progress */
+  DeployPending: 'DEPLOY_PENDING',
+  /** Preview deploy */
+  Preview: 'PREVIEW',
+  /** Rollback in progress */
+  RollbackPending: 'ROLLBACK_PENDING',
+  /** Deploy failed */
+  Error: 'ERROR',
+  /** Test deploy failed */
+  TestError: 'TEST_ERROR',
+} as const;
+
+/** Values of {@link TranscendConsentManagerDeployState} */
+export type TranscendConsentManagerDeployState =
+  (typeof TranscendConsentManagerDeployState)[keyof typeof TranscendConsentManagerDeployState];
+
+/** Deploy state fields of the consent manager */
+export interface TranscendConsentManagerDeployStateGql {
+  /** Current deploy state */
+  state: TranscendConsentManagerDeployState;
+  /** Error message from the last failed deploy */
+  deployError: string | null;
+  /** When the last deploy finished */
+  lastDeployedAt: string | null;
+}
+
+/** Full response from FETCH_CONSENT_MANAGER_DEPLOY_STATE */
+export interface TranscendCliFetchConsentManagerDeployStateResponse {
+  /** Consent manager wrapper */
+  consentManager: {
+    /** Consent manager object */
+    consentManager: TranscendConsentManagerDeployStateGql;
+  };
+}
+
+export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
+  query TranscendCliFetchConsentManagerDeployState {
+    consentManager {
+      consentManager {
+        state
+        deployError
+        lastDeployedAt
+      }
+    }
+  }
+`;

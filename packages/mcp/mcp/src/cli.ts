@@ -16,23 +16,44 @@ import {
   SimpleLogger,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
+import { parseConfigResourceAllowlistFromEnv } from '@transcend-io/mcp-server-config';
 import { getConsentPrompts } from '@transcend-io/mcp-server-consent';
 import { getDsrPrompts } from '@transcend-io/mcp-server-dsr';
+import { TranscendMcpServer } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { TranscendGraphQLClient } from './graphql-client.js';
-import { UMBRELLA_OAUTH_SCOPES } from './oauth-scopes.js';
+import {
+  allowlistIncludesDocs,
+  allowlistIncludesServer,
+  parseMcpServerAllowlistFromEnv,
+  resolveMcpServerAllowlist,
+  type McpServerAllowlist,
+} from './mcp-server-allowlist.js';
+import { resolveUmbrellaOAuthScopes } from './oauth-scopes.js';
 import { ToolRegistry } from './registry.js';
-import { UMBRELLA_DOCS_SERVER_INSTRUCTIONS } from './server-instructions.js';
+import {
+  UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
+  UMBRELLA_SERVER_INSTRUCTIONS,
+} from './server-instructions.js';
 
 const VERSION = packageJson.version;
 
-const buildServerOptions = {
-  name: 'transcend-mcp',
-  version: VERSION,
-  instructions: UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
-  prompts: [...getConsentPrompts(), ...getDsrPrompts()],
-};
+function buildServerOptions(allowlist: McpServerAllowlist) {
+  const prompts = [
+    ...(allowlistIncludesServer(allowlist, TranscendMcpServer.Consent) ? getConsentPrompts() : []),
+    ...(allowlistIncludesServer(allowlist, TranscendMcpServer.Dsr) ? getDsrPrompts() : []),
+  ];
+
+  return {
+    name: 'transcend-mcp',
+    version: VERSION,
+    instructions: allowlistIncludesDocs(allowlist)
+      ? UMBRELLA_DOCS_SERVER_INSTRUCTIONS
+      : UMBRELLA_SERVER_INSTRUCTIONS,
+    prompts,
+  };
+}
 
 function createToolRegistry(
   auth: AuthCredentials | null,
@@ -40,22 +61,38 @@ function createToolRegistry(
   sombraCustomerKey: string | undefined,
   graphqlUrl: string,
   dashboardUrl: string,
+  allowlist: McpServerAllowlist,
 ): ToolRegistry {
   const graphqlClient = new TranscendGraphQLClient(auth, graphqlUrl);
   const restClient = createTranscendRestClient(auth, graphqlClient, {
     sombraUrl,
     sombraCustomerKey,
   });
-  return new ToolRegistry({
-    rest: restClient,
-    graphql: graphqlClient,
-    dashboardUrl,
-    transcendApiUrl: graphqlUrl,
-    auth,
-  });
+  return new ToolRegistry(
+    {
+      rest: restClient,
+      graphql: graphqlClient,
+      dashboardUrl,
+      transcendApiUrl: graphqlUrl,
+      auth,
+    },
+    allowlist,
+  );
+}
+
+function resolveStartupAllowlist(): McpServerAllowlist {
+  try {
+    return resolveMcpServerAllowlist();
+  } catch (error) {
+    const logger = new SimpleLogger();
+    logger.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 async function main(): Promise<void> {
+  const allowlist = resolveStartupAllowlist();
+  const serverOptions = buildServerOptions(allowlist);
   const config = parseTransportArgs();
   const isHttpTransport = config.transport === McpTransport.Http;
   SimpleLogger.setInfoToStdout(isHttpTransport);
@@ -76,6 +113,7 @@ async function main(): Promise<void> {
             dashboardUrl,
             authType: auth?.type ?? 'none',
             hasSombraCustomerKey: Boolean(sombraCustomerKey),
+            mcpServers: parseMcpServerAllowlistFromEnv() ? [...allowlist].join(',') : '(all)',
           });
           const registry = createToolRegistry(
             auth,
@@ -83,9 +121,10 @@ async function main(): Promise<void> {
             sombraCustomerKey,
             graphqlUrl,
             dashboardUrl,
+            allowlist,
           );
           return buildMcpServer({
-            ...buildServerOptions,
+            ...serverOptions,
             tools: registry.getAllTools(),
             transport: McpTransport.Http,
           });
@@ -97,13 +136,16 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
+  configureOAuthScopes(
+    resolveUmbrellaOAuthScopes(allowlist, parseConfigResourceAllowlistFromEnv()),
+  );
   const auth = resolveStdioStartupAuthOptional();
   logger.info('Initializing Transcend API clients...', {
     sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
     graphqlUrl,
     dashboardUrl,
     authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
+    mcpServers: parseMcpServerAllowlistFromEnv() ? [...allowlist].join(',') : '(all)',
   });
 
   const toolRegistry = createToolRegistry(
@@ -112,6 +154,7 @@ async function main(): Promise<void> {
     sombraCustomerKey,
     graphqlUrl,
     dashboardUrl,
+    allowlist,
   );
 
   logger.info(
@@ -123,7 +166,7 @@ async function main(): Promise<void> {
   );
 
   const server = buildMcpServer({
-    ...buildServerOptions,
+    ...serverOptions,
     tools: toolRegistry.getAllTools(),
     transport: McpTransport.Stdio,
   });
