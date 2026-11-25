@@ -601,3 +601,45 @@ export const UPDATE_CONSENT_UI_THEME = gql`
     }
   }
 `;
+
+// ---- Deploy state and rollback ----
+
+/** Deploy status of the consent manager, see BundleDeployStatus in the GraphQL schema */
+export type TranscendConsentManagerDeployState =
+  | 'DEPLOYED'
+  | 'DEPLOY_PENDING'
+  | 'PREVIEW'
+  | 'ROLLBACK_PENDING'
+  | 'ERROR'
+  | 'TEST_ERROR';
+
+/** Deploy state fields of the consent manager */
+export interface TranscendConsentManagerDeployStateGql {
+  /** Current deploy state */
+  state: TranscendConsentManagerDeployState;
+  /** Error message from the last failed deploy */
+  deployError: string | null;
+  /** When the last deploy finished */
+  lastDeployedAt: string | null;
+}
+
+/** Full response from FETCH_CONSENT_MANAGER_DEPLOY_STATE */
+export interface TranscendCliFetchConsentManagerDeployStateResponse {
+  /** Consent manager wrapper */
+  consentManager: {
+    /** Consent manager object */
+    consentManager: TranscendConsentManagerDeployStateGql;
+  };
+}
+
+export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
+  query TranscendCliFetchConsentManagerDeployState {
+    consentManager {
+      consentManager {
+        state
+        deployError
+        lastDeployedAt
+      }
+    }
+  }
+`;
