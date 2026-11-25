@@ -1,5 +1,18 @@
 # @transcend-io/cli
 
+## 13.5.0
+
+### Minor Changes
+
+- 9b34876: Support consent manager deployment webhook URL and headers in transcend.yml inventory push and pull.
+- 63e5999: Support consent manager `reportOnly` in transcend.yml inventory push and pull.
+
+### Patch Changes
+
+- Updated dependencies [9b34876]
+- Updated dependencies [63e5999]
+  - @transcend-io/sdk@3.5.0
+
 ## 13.4.3
 
 ### Patch Changes
