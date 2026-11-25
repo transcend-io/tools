@@ -142,6 +142,17 @@ export async function syncPurposes(
   const { logger } = options;
   logger?.info(`Syncing "${purposes.length}" purposes...`);
 
+  const withDefaultConsent = purposes
+    .filter((purpose) => purpose['default-consent'] !== undefined)
+    .map((purpose) => purpose.trackingType);
+  if (withDefaultConsent.length > 0) {
+    logger?.warn(
+      `Ignoring "default-consent" on purposes (${withDefaultConsent.join(', ')}). ` +
+        'The API cannot set it. Set it in the Admin Dashboard under Consent Management, ' +
+        'Regional Experiences, Purposes.',
+    );
+  }
+
   const existing = await fetchAllPurposes(client, { logger });
   const existingByTrackingType = keyBy(existing, 'trackingType');
   const purposeIdByTrackingType: Record<string, string> = Object.fromEntries(

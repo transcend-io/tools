@@ -346,7 +346,7 @@ export async function syncConsentManager(
     });
   }
 
-  if (consentManager.unknownRequestPolicy) {
+  if (consentManager.unknownCookiePolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_COOKIE_POLICY, {
       variables: {
         input: {
