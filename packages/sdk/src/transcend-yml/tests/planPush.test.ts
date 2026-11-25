@@ -129,6 +129,29 @@ describe('planPush', () => {
     expect(item.writeOnly).toEqual(['headers']);
   });
 
+  it('treats consent-manager webhookHeaders as write-only in push preview', () => {
+    const secret = 'do-not-log-this-token';
+    const plan = planPush(
+      {
+        'consent-manager': {
+          webhookUrl: 'https://example.com/consent-deploy',
+          webhookHeaders: [{ name: 'x-transcend-token', value: secret, isSecret: true }],
+        },
+      },
+      {
+        'consent-manager': {
+          webhookUrl: 'https://example.com/consent-deploy',
+        },
+      },
+    );
+    const item = plan.resources.find((r) => r.resource === 'consent-manager')?.items[0];
+    expect(item?.writeOnly).toEqual(['webhookHeaders']);
+    expect(JSON.stringify(item)).not.toContain(secret);
+    const text = renderPushPlan(plan);
+    expect(text).toContain('webhookHeaders');
+    expect(text).not.toContain(secret);
+  });
+
   it('treats listing every privacy action the same as omitting them', () => {
     const plan = planPush(
       {

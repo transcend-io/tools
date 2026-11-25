@@ -21,6 +21,12 @@ preflights:
       - email
     privacy-actions:
       - ERASURE
+consent-manager:
+  webhookUrl: https://example.<<parameters.domain>>/consent-deploy
+  webhookHeaders:
+    - name: x-transcend-token
+      value: <<parameters.CONSENT_DEPLOY_TOKEN>>
+      isSecret: true
 data-silos:
   - title: Redshift Data Warehouse
     integrationName: database

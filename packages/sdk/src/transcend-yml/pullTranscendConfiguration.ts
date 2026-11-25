@@ -428,6 +428,7 @@ export async function pullTranscendConfiguration(
       signedIabAgreement: consentManager.configuration.signedIabAgreement || undefined,
       // TODO: https://transcend.height.app/T-23919 - reconsider simpler yml shape
       syncGroups: consentManager.configuration.syncGroups || undefined,
+      webhookUrl: consentManager.webhookUrl || undefined,
       theme: !consentManagerTheme
         ? undefined
         : {
