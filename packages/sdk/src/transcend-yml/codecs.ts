@@ -1329,6 +1329,11 @@ export const ConsentManagerInput = t.partial({
   consentThemes: t.array(ConsentThemeInput),
   /** Prefix modules on the bundle. Pull only, push ignores it (no public API to write them) */
   prefixModules: t.array(ConsentManagerPrefixModuleInput),
+  /**
+   * When true, traffic is report-only (enforcement off).
+   * Deploy the bundle after push for the live /cm bundle to change.
+   */
+  reportOnly: t.boolean,
 });
 
 /** Type override */

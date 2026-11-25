@@ -2550,6 +2550,9 @@
               }
             ]
           }
+        },
+        "reportOnly": {
+          "type": "boolean"
         }
       }
     },
