@@ -10,6 +10,7 @@ export const WriteTeamsSchema = z.object({
   teams: ymlItemsSchema(
     'Teams to create or update, matched by name. Each needs name and description. ' +
       'Optional: users (emails), scopes, parent-team-name, sso-department, sso-group, sso-title.',
+    { codec: TeamInput },
   ),
 });
 export type WriteTeamsInput = z.infer<typeof WriteTeamsSchema>;
