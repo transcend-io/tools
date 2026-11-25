@@ -643,3 +643,197 @@ export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
     }
   }
 `;
+
+/**
+ * Fields of AirgapBundleVersion that RollbackAirgapBundleInput accepts.
+ * Each field holds the version of one bundle module.
+ */
+export const AIRGAP_BUNDLE_ROLLBACK_FIELDS = [
+  'cdn',
+  'core',
+  'xdi',
+  'userscript',
+  'explorer',
+  'metadata',
+  'ui',
+  'uiV2',
+  'uiV2Css',
+  'stylesheet',
+  'En',
+  'He',
+  'Bs',
+  'Dv',
+  'Fa',
+  'ArAe',
+  'FrFr',
+  'DeDe',
+  'ItIt',
+  'AfZz',
+  'BgBg',
+  'ZhCn',
+  'ZhHans',
+  'HrHr',
+  'CsCz',
+  'DaDk',
+  'FiFi',
+  'ElGr',
+  'HiIn',
+  'HuHu',
+  'IdId',
+  'JaJp',
+  'KoKr',
+  'LtLt',
+  'MsMy',
+  'MrIn',
+  'NbNi',
+  'PlPl',
+  'PtBr',
+  'RoRo',
+  'RuRu',
+  'SrLatnRs',
+  'SvSe',
+  'TaIn',
+  'ThTh',
+  'TrTr',
+  'UkUa',
+  'ViVn',
+  'NlNl',
+  'EsEs',
+  'Es419',
+  'ZhHk',
+  'HeIl',
+  'IsIs',
+  'tcfUi',
+  'gpp',
+  'tcfStylesheet',
+  'tcfVendorsList',
+  'tcfGvlAr',
+  'tcfGvlBg',
+  'tcfGvlBs',
+  'tcfGvlCs',
+  'tcfGvlDa',
+  'tcfGvlDe',
+  'tcfGvlEl',
+  'tcfGvlEn',
+  'tcfGvlEs',
+  'tcfGvlFi',
+  'tcfGvlFr',
+  'tcfGvlHe',
+  'tcfGvlHi',
+  'tcfGvlHr',
+  'tcfGvlHu',
+  'tcfGvlId',
+  'tcfGvlIs',
+  'tcfGvlIt',
+  'tcfGvlJa',
+  'tcfGvlKo',
+  'tcfGvlLt',
+  'tcfGvlMs',
+  'tcfGvlNl',
+  'tcfGvlNo',
+  'tcfGvlPl',
+  'tcfGvlPtBr',
+  'tcfGvlRo',
+  'tcfGvlRu',
+  'tcfGvlSrLatn',
+  'tcfGvlSv',
+  'tcfGvlTh',
+  'tcfGvlTr',
+  'tcfGvlUk',
+  'tcfGvlVi',
+  'tcfGvlZh',
+  'tcfEn',
+  'tcfHe',
+  'tcfBs',
+  'tcfDv',
+  'tcfFa',
+  'tcfArAe',
+  'tcfFrFr',
+  'tcfDeDe',
+  'tcfItIt',
+  'tcfAfZz',
+  'tcfBgBg',
+  'tcfZhCn',
+  'tcfZhHans',
+  'tcfHrHr',
+  'tcfCsCz',
+  'tcfDaDk',
+  'tcfFiFi',
+  'tcfElGr',
+  'tcfHiIn',
+  'tcfHuHu',
+  'tcfIdId',
+  'tcfJaJp',
+  'tcfKoKr',
+  'tcfLtLt',
+  'tcfMsMy',
+  'tcfMrIn',
+  'tcfNbNi',
+  'tcfPlPl',
+  'tcfPtBr',
+  'tcfRoRo',
+  'tcfRuRu',
+  'tcfSrLatnRs',
+  'tcfSvSe',
+  'tcfTaIn',
+  'tcfThTh',
+  'tcfTrTr',
+  'tcfUkUa',
+  'tcfViVn',
+  'tcfNlNl',
+  'tcfEsEs',
+  'tcfEs419',
+  'tcfZhHk',
+  'tcfHeIl',
+  'tcfIsIs',
+  'nativeAppConfig',
+  'bridgeJs',
+  'bridgeHtml',
+  'mobileLoadOptions',
+  'mobileUiLoadOptions',
+  'sync',
+  'isTest',
+] as const;
+
+/** One deployed bundle version that can be rolled back to */
+export interface TranscendCliAirgapBundleRollbackVersionNode {
+  /** airgap.js version string */
+  version: string | null;
+  /** When this version was deployed */
+  createdAt: string;
+  /** Module versions, keyed by the names in {@link AIRGAP_BUNDLE_ROLLBACK_FIELDS} */
+  [field: string]: string | boolean | null | undefined;
+}
+
+/** Response from AIRGAP_BUNDLE_ROLLBACK_VERSIONS */
+export interface TranscendCliAirgapBundleRollbackVersionsResponse {
+  /** Version list */
+  airgapBundleVersions: {
+    /** Most recent versions first */
+    nodes: TranscendCliAirgapBundleRollbackVersionNode[];
+  };
+}
+
+export const AIRGAP_BUNDLE_ROLLBACK_VERSIONS = gql`
+  query TranscendCliAirgapBundleRollbackVersions(
+    $id: ID!
+    $first: Int!
+    $input: AirgapBundleVersionsInput!
+  ) {
+    airgapBundleVersions(id: $id, first: $first, input: $input) {
+      nodes {
+        version
+        createdAt
+        ${AIRGAP_BUNDLE_ROLLBACK_FIELDS.join('\n        ')}
+      }
+    }
+  }
+`;
+
+export const ROLLBACK_AIRGAP_BUNDLE = gql`
+  mutation TranscendCliRollbackAirgapBundle($id: ID!, $input: RollbackAirgapBundleInput!) {
+    rollbackAirgapBundle(id: $id, input: $input) {
+      success
+    }
+  }
+`;
