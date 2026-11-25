@@ -22,6 +22,21 @@
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     },
+    "./enums/browserLanguage": {
+      "@transcend-io/source": "./src/enums/browserLanguage.ts",
+      "types": "./dist/enums/browserLanguage.d.mts",
+      "default": "./dist/enums/browserLanguage.mjs"
+    },
+    "./enums/consentExpiry": {
+      "@transcend-io/source": "./src/enums/consentExpiry.ts",
+      "types": "./dist/enums/consentExpiry.d.mts",
+      "default": "./dist/enums/consentExpiry.mjs"
+    },
+    "./enums/viewState": {
+      "@transcend-io/source": "./src/enums/viewState.ts",
+      "types": "./dist/enums/viewState.d.mts",
+      "default": "./dist/enums/viewState.mjs"
+    },
     "./*": {
       "types": "./dist/*.d.mts",
       "default": "./dist/*.mjs"
