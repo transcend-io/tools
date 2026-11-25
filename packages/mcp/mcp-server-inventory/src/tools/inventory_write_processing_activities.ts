@@ -13,6 +13,7 @@ export const WriteProcessingActivitiesSchema = z.object({
   processingActivities: ymlItemsSchema(
     'Processing activities to create or update, matched by `title`. Other fields: purposes, ' +
       'dataSubjectTypes, regions, owners.',
+    { codec: ProcessingActivityInput },
   ),
 });
 export type WriteProcessingActivitiesInput = z.infer<typeof WriteProcessingActivitiesSchema>;

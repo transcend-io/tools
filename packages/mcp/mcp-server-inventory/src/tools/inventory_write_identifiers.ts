@@ -10,6 +10,7 @@ export const WriteIdentifiersSchema = z.object({
   identifiers: ymlItemsSchema(
     'Identifiers to create or update, matched by `name`. Required: name, type. Other fields: ' +
       'regex, selectOptions, dataSubjects, isRequiredInForm, displayTitle.',
+    { codec: IdentifierInput },
   ),
 });
 export type WriteIdentifiersInput = z.infer<typeof WriteIdentifiersSchema>;
