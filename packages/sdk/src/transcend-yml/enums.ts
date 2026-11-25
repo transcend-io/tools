@@ -99,6 +99,14 @@ export type HasPersonalDataStatus =
 /**
  * Resources that can be pulled in
  */
+/** Opt-in rules for offline transcend.yml validation */
+export enum TranscendYamlCheckRule {
+  ConsentSitesHaveOwners = 'consentSitesHaveOwners',
+  ConsentSitesInDomains = 'consentSitesInDomains',
+  UniqueConsentSiteHosts = 'uniqueConsentSiteHosts',
+  UniqueTrackers = 'uniqueTrackers',
+}
+
 export enum TranscendPullResource {
   ApiKeys = 'apiKeys',
   Attributes = 'customFields',

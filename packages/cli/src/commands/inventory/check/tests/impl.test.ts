@@ -1,5 +1,6 @@
 import type fs from 'node:fs';
 
+import { TranscendYamlCheckRule } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
@@ -33,7 +34,7 @@ const flags = (
   overrides: Partial<InventoryCheckCommandFlags> = {},
 ): InventoryCheckCommandFlags => ({
   file: YAML_PATH,
-  rules: '',
+  rules: [],
   variables: '',
   json: false,
   ...overrides,
@@ -66,7 +67,15 @@ describe('inventory check', () => {
 
   it('prints a success line without --json', async () => {
     const context = buildContext(VALID_YAML);
-    await check.call(context, flags({ rules: 'consentSitesHaveOwners,consentSitesInDomains' }));
+    await check.call(
+      context,
+      flags({
+        rules: [
+          TranscendYamlCheckRule.ConsentSitesHaveOwners,
+          TranscendYamlCheckRule.ConsentSitesInDomains,
+        ],
+      }),
+    );
 
     expect(context.stderr).toBe('');
     expect(context.process.exitCode).toBeUndefined();
@@ -77,7 +86,11 @@ describe('inventory check', () => {
     await check.call(
       context,
       flags({
-        rules: 'consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts',
+        rules: [
+          TranscendYamlCheckRule.ConsentSitesHaveOwners,
+          TranscendYamlCheckRule.ConsentSitesInDomains,
+          TranscendYamlCheckRule.UniqueConsentSiteHosts,
+        ],
         json: true,
       }),
     );
@@ -100,7 +113,7 @@ describe('inventory check', () => {
 
   it('prints findings to stderr without --json', async () => {
     const context = buildContext(BAD_SITES_YAML);
-    await check.call(context, flags({ rules: 'consentSitesHaveOwners' }));
+    await check.call(context, flags({ rules: [TranscendYamlCheckRule.ConsentSitesHaveOwners] }));
 
     expect(context.stderr).toContain('consentSitesHaveOwners');
     expect(context.stderr).toContain('consent-sites[0]');
@@ -141,8 +154,19 @@ describe('inventory check', () => {
     expect(result.findings[0]!.message).toContain('Found variable that was not set: domain');
   });
 
-  it('throws for an unknown rule', async () => {
-    const context = buildContext(VALID_YAML);
-    await expect(check.call(context, flags({ rules: 'nope' }))).rejects.toThrow(/Unknown rule/);
+  it('runs every rule when * is passed', async () => {
+    const context = buildContext(BAD_SITES_YAML);
+    await check.call(
+      context,
+      flags({
+        rules: ['*'],
+        json: true,
+      }),
+    );
+
+    const result = JSON.parse(context.stdout);
+    expect(result.rules).toEqual(Object.values(TranscendYamlCheckRule));
+    expect(result.status).toBe('failed');
+    expect(result.findings.length).toBeGreaterThan(0);
   });
 });

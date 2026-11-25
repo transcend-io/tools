@@ -1,8 +1,9 @@
 import {
   checkTranscendInput,
   parseTranscendYaml,
-  parseTranscendYamlCheckRules,
-  type TranscendYamlCheckRule,
+  resolveTranscendYamlCheckRules,
+  TRANSCEND_YAML_CHECK_ALL_RULES,
+  TranscendYamlCheckRule,
   type TranscendYamlFindingSeverity,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -13,6 +14,14 @@ import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFro
 
 /** Version of the JSON output shape */
 export const INVENTORY_CHECK_RESULT_VERSION = 1;
+
+/** Overall result of `transcend inventory check` */
+export enum InventoryCheckStatus {
+  /** No error-level findings */
+  Passed = 'passed',
+  /** At least one error-level finding */
+  Failed = 'failed',
+}
 
 /** A finding in the check output */
 export interface InventoryCheckFinding {
@@ -35,7 +44,7 @@ export interface InventoryCheckResult {
   /** Opt-in rules that ran */
   rules: TranscendYamlCheckRule[];
   /** Failed when any finding has error severity */
-  status: 'passed' | 'failed';
+  status: InventoryCheckStatus;
   /** All findings */
   findings: InventoryCheckFinding[];
 }
@@ -44,8 +53,8 @@ export interface InventoryCheckResult {
 export interface InventoryCheckCommandFlags {
   /** Path to the yml file */
   file: string;
-  /** Comma-separated opt-in rules */
-  rules: string;
+  /** Opt-in rules to run, or `*` for every rule */
+  rules?: (TranscendYamlCheckRule | typeof TRANSCEND_YAML_CHECK_ALL_RULES)[];
   /** Template variables */
   variables: string;
   /** Emit JSON on stdout */
@@ -60,11 +69,11 @@ export interface InventoryCheckCommandFlags {
  */
 export async function check(
   this: LocalContext,
-  { file = './transcend.yml', rules = '', variables = '', json }: InventoryCheckCommandFlags,
+  { file = './transcend.yml', rules = [], variables = '', json }: InventoryCheckCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  const ruleNames = parseTranscendYamlCheckRules(rules);
+  const ruleNames = resolveTranscendYamlCheckRules(rules);
   const vars = parseVariablesFromString(variables);
   const findings: InventoryCheckFinding[] = [];
 
@@ -94,7 +103,9 @@ export async function check(
     version: INVENTORY_CHECK_RESULT_VERSION,
     file,
     rules: ruleNames,
-    status: findings.some(({ severity }) => severity === 'error') ? 'failed' : 'passed',
+    status: findings.some(({ severity }) => severity === 'error')
+      ? InventoryCheckStatus.Failed
+      : InventoryCheckStatus.Passed,
     findings,
   };
 
@@ -109,14 +120,14 @@ export async function check(
         this.logger.error(colors.red(text));
       }
     });
-    if (result.status === 'passed') {
+    if (result.status === InventoryCheckStatus.Passed) {
       this.logger.info(colors.green(`transcend.yml checks passed for "${file}".`));
     } else {
       this.logger.error(colors.red(`transcend.yml checks failed for "${file}".`));
     }
   }
 
-  if (result.status === 'failed') {
+  if (result.status === InventoryCheckStatus.Failed) {
     this.process.exitCode = 1;
   }
 }

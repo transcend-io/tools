@@ -1,15 +1,8 @@
 import type { TranscendInput } from './codecs.js';
+import { TranscendYamlCheckRule } from './enums.js';
 
-/** Names of the opt-in rules that `checkTranscendInput` can run */
-export const TRANSCEND_YAML_CHECK_RULES = [
-  'consentSitesHaveOwners',
-  'consentSitesInDomains',
-  'uniqueConsentSiteHosts',
-  'uniqueTrackers',
-] as const;
-
-/** Name of an opt-in transcend.yml rule */
-export type TranscendYamlCheckRule = (typeof TRANSCEND_YAML_CHECK_RULES)[number];
+/** Sentinel for running every opt-in rule in `parseTranscendYamlCheckRules` */
+export const TRANSCEND_YAML_CHECK_ALL_RULES = '*';
 
 /** Severity of a finding. Only `error` fails the check. */
 export type TranscendYamlFindingSeverity = 'error' | 'warning';
@@ -72,7 +65,7 @@ export function checkConsentSitesHaveOwners(
       (site.owners ?? []).some(isRealOwnerValue) || (site.teams ?? []).some(isRealOwnerValue);
     if (!hasOwner) {
       findings.push({
-        rule: 'consentSitesHaveOwners',
+        rule: TranscendYamlCheckRule.ConsentSitesHaveOwners,
         severity: 'error',
         path: `consent-sites[${index}]`,
         message: `Consent site "${site.host}" has no real owner or team. Add an owner email or a team name.`,
@@ -99,7 +92,7 @@ export function checkConsentSitesInDomains(
   (input['consent-sites'] ?? []).forEach((site, index) => {
     if (!domains.has(normalizeConsentHost(site.host))) {
       findings.push({
-        rule: 'consentSitesInDomains',
+        rule: TranscendYamlCheckRule.ConsentSitesInDomains,
         severity: 'error',
         path: `consent-sites[${index}].host`,
         message: `Consent site host "${site.host}" is not listed in consent-manager.domains.`,
@@ -146,7 +139,7 @@ export function checkUniqueConsentSiteHosts(
   const sites = input['consent-sites'] ?? [];
   return findDuplicates(sites.map((site) => site.host.trim().toLowerCase())).map(
     ({ index, firstIndex }) => ({
-      rule: 'uniqueConsentSiteHosts',
+      rule: TranscendYamlCheckRule.UniqueConsentSiteHosts,
       severity: 'error',
       path: `consent-sites[${index}].host`,
       message: `Consent site host "${sites[index]!.host}" is already defined at consent-sites[${firstIndex}].`,
@@ -168,7 +161,7 @@ export function checkUniqueTrackers(
   findDuplicates(dataFlows.map((flow) => `${flow.type}|${flow.value}`)).forEach(
     ({ index, firstIndex }) => {
       findings.push({
-        rule: 'uniqueTrackers',
+        rule: TranscendYamlCheckRule.UniqueTrackers,
         severity: 'error',
         path: `data-flows[${index}]`,
         message: `Data flow "${dataFlows[index]!.value}" (${dataFlows[index]!.type}) is already defined at data-flows[${firstIndex}].`,
@@ -180,7 +173,7 @@ export function checkUniqueTrackers(
     cookies.map((cookie) => `${cookie.isRegex ? 'regex' : 'literal'}|${cookie.name}`),
   ).forEach(({ index, firstIndex }) => {
     findings.push({
-      rule: 'uniqueTrackers',
+      rule: TranscendYamlCheckRule.UniqueTrackers,
       severity: 'error',
       path: `cookies[${index}]`,
       message: `Cookie "${cookies[index]!.name}" is already defined at cookies[${firstIndex}].`,
@@ -190,10 +183,25 @@ export function checkUniqueTrackers(
 }
 
 /**
+ * Expand selected rules to the list that `checkTranscendInput` should run.
+ *
+ * @param rules - Rule names from the CLI, or `*` for every rule
+ * @returns Rule names to run
+ */
+export function resolveTranscendYamlCheckRules(
+  rules: readonly (TranscendYamlCheckRule | typeof TRANSCEND_YAML_CHECK_ALL_RULES)[],
+): TranscendYamlCheckRule[] {
+  return rules.includes(TRANSCEND_YAML_CHECK_ALL_RULES)
+    ? Object.values(TranscendYamlCheckRule)
+    : (rules as TranscendYamlCheckRule[]);
+}
+
+/**
  * Parse a comma separated list of rule names.
  * Throws when a name is not a known rule.
+ * Pass `*` alone or with other names to run every rule.
  *
- * @param value - Comma separated rule names, such as `consentSitesHaveOwners,uniqueTrackers`
+ * @param value - Comma separated rule names, such as `consentSitesHaveOwners,uniqueTrackers` or `*`
  * @returns Rule names, in the given order without duplicates
  */
 export function parseTranscendYamlCheckRules(value: string): TranscendYamlCheckRule[] {
@@ -201,13 +209,15 @@ export function parseTranscendYamlCheckRules(value: string): TranscendYamlCheckR
     .split(',')
     .map((name) => name.trim())
     .filter(Boolean);
-  const unknown = names.filter(
-    (name) => !(TRANSCEND_YAML_CHECK_RULES as readonly string[]).includes(name),
-  );
+  if (names.includes(TRANSCEND_YAML_CHECK_ALL_RULES)) {
+    return Object.values(TranscendYamlCheckRule);
+  }
+  const valid = new Set(Object.values(TranscendYamlCheckRule));
+  const unknown = names.filter((name) => !valid.has(name as TranscendYamlCheckRule));
   if (unknown.length > 0) {
     throw new Error(
       `Unknown rule${unknown.length === 1 ? '' : 's'}: ${unknown.join(', ')}. ` +
-        `Valid rules: ${TRANSCEND_YAML_CHECK_RULES.join(', ')}.`,
+        `Valid rules: ${TRANSCEND_YAML_CHECK_ALL_RULES}, ${Object.values(TranscendYamlCheckRule).join(', ')}.`,
     );
   }
   return [...new Set(names)] as TranscendYamlCheckRule[];
@@ -226,10 +236,10 @@ export function checkTranscendInput(
 ): TranscendYamlFinding[] {
   const runners: Record<TranscendYamlCheckRule, (value: TranscendInput) => TranscendYamlFinding[]> =
     {
-      consentSitesHaveOwners: checkConsentSitesHaveOwners,
-      consentSitesInDomains: checkConsentSitesInDomains,
-      uniqueConsentSiteHosts: checkUniqueConsentSiteHosts,
-      uniqueTrackers: checkUniqueTrackers,
+      [TranscendYamlCheckRule.ConsentSitesHaveOwners]: checkConsentSitesHaveOwners,
+      [TranscendYamlCheckRule.ConsentSitesInDomains]: checkConsentSitesInDomains,
+      [TranscendYamlCheckRule.UniqueConsentSiteHosts]: checkUniqueConsentSiteHosts,
+      [TranscendYamlCheckRule.UniqueTrackers]: checkUniqueTrackers,
     };
   return rules.flatMap((rule) => runners[rule](input));
 }

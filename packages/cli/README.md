@@ -3392,16 +3392,16 @@ data-silos:
 
 ```txt
 USAGE
-  transcend inventory check [--file value] [--rules value] [--variables value] [--json]
+  transcend inventory check [--file value] [--rules *|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers] [--variables value] [--json]
   transcend inventory check --help
 
 Reads a transcend.yml the same way inventory push does and checks that it matches the schema. Pass --rules to also run opt-in rules. Exits non-zero when any error is found. No Transcend API key and no network access are needed.
 
 FLAGS
-     [--file]       Path to the transcend.yml file to check                                                                                                                            [default = ./transcend.yml]
-     [--rules]      Comma-separated opt-in rules to run: consentSitesHaveOwners, consentSitesInDomains, uniqueConsentSiteHosts, uniqueTrackers. By default only the schema check runs. [default = ""]
-     [--variables]  Variables to template into the YAML file, the same as inventory push. Comma-separated list of key:value pairs.                                                     [default = ""]
-     [--json]       Print the result as JSON on stdout                                                                                                                                 [default = false]
+     [--file]       Path to the transcend.yml file to check                                                                        [default = ./transcend.yml]
+     [--rules]      Comma-separated opt-in rules to run, or * for every rule. By default only the schema check runs.               [*|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers, separator = ,]
+     [--variables]  Variables to template into the YAML file, the same as inventory push. Comma-separated list of key:value pairs. [default = ""]
+     [--json]       Print the result as JSON on stdout                                                                             [default = false]
   -h  --help        Print help information and exit
 ```
 
@@ -3425,12 +3425,10 @@ transcend inventory check --file=./custom/location.yml
 transcend inventory check --rules=consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts
 ```
 
-**Run every rule in CI and read the result as JSON**
+**Run every opt-in rule in CI and read the result as JSON**
 
 ```sh
-transcend inventory check \
-  --rules=consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts,uniqueTrackers \
-  --json
+transcend inventory check --rules=* --json
 ```
 
 **Fill in template variables, the same as inventory push**
@@ -3444,6 +3442,7 @@ include the key path. Pass `--rules` to turn on more checks.
 
 | Rule                     | What it checks                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                      | Runs every rule below. New rules join this set as the SDK gains them.                                                                                               |
 | `consentSitesHaveOwners` | Every `consent-sites` row has a real owner or team. Empty lists and the placeholders UNASSIGNED, TBD, and TODO (any case) do not count.                             |
 | `consentSitesInDomains`  | Every `consent-sites` host is in `consent-manager.domains`. Case and a leading `www.` are ignored. Hosts with a port, such as `localhost:5173`, must match exactly. |
 | `uniqueConsentSiteHosts` | No duplicate hosts in `consent-sites`.                                                                                                                              |

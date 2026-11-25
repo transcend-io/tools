@@ -1,3 +1,5 @@
+import { TranscendYamlCheckRule, TRANSCEND_YAML_CHECK_ALL_RULES } from '@transcend-io/sdk';
+
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
 import type { InventoryCheckCommandFlags } from './impl.js';
 
@@ -17,13 +19,17 @@ const examples = buildExamples<InventoryCheckCommandFlags>(
     {
       description: 'Run opt-in rules on consent sites',
       flags: {
-        rules: 'consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts',
+        rules: [
+          TranscendYamlCheckRule.ConsentSitesHaveOwners,
+          TranscendYamlCheckRule.ConsentSitesInDomains,
+          TranscendYamlCheckRule.UniqueConsentSiteHosts,
+        ],
       },
     },
     {
-      description: 'Run every rule in CI and read the result as JSON',
+      description: 'Run every opt-in rule in CI and read the result as JSON',
       flags: {
-        rules: 'consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts,uniqueTrackers',
+        rules: [TRANSCEND_YAML_CHECK_ALL_RULES],
         json: true,
       },
     },
@@ -45,6 +51,7 @@ include the key path. Pass \`--rules\` to turn on more checks.
 
 | Rule | What it checks |
 | --- | --- |
+| \`*\` | Runs every rule below. New rules join this set as the SDK gains them. |
 | \`consentSitesHaveOwners\` | Every \`consent-sites\` row has a real owner or team. Empty lists and the placeholders UNASSIGNED, TBD, and TODO (any case) do not count. |
 | \`consentSitesInDomains\` | Every \`consent-sites\` host is in \`consent-manager.domains\`. Case and a leading \`www.\` are ignored. Hosts with a port, such as \`localhost:5173\`, must match exactly. |
 | \`uniqueConsentSiteHosts\` | No duplicate hosts in \`consent-sites\`. |

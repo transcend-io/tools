@@ -10,6 +10,7 @@ import {
   normalizeConsentHost,
   parseTranscendYamlCheckRules,
 } from '../checkTranscendYaml.js';
+import { TranscendYamlCheckRule } from '../enums.js';
 
 describe('isRealOwnerValue', () => {
   it.each(['', '  ', 'UNASSIGNED', 'unassigned', 'Tbd', 'TODO', ' todo '])(
@@ -182,6 +183,10 @@ describe('parseTranscendYamlCheckRules', () => {
     expect(parseTranscendYamlCheckRules('')).toEqual([]);
   });
 
+  it('returns every rule for *', () => {
+    expect(parseTranscendYamlCheckRules('*')).toEqual(Object.values(TranscendYamlCheckRule));
+  });
+
   it('throws for unknown rules', () => {
     expect(() => parseTranscendYamlCheckRules('nope')).toThrow(/Unknown rule: nope/);
   });
@@ -191,9 +196,14 @@ describe('checkTranscendInput', () => {
   it('runs only the requested rules', () => {
     const input = { 'consent-sites': [{ host: 'example.com' }] };
     expect(checkTranscendInput(input, [])).toEqual([]);
-    expect(checkTranscendInput(input, ['consentSitesHaveOwners'])).toHaveLength(1);
     expect(
-      checkTranscendInput(input, ['consentSitesHaveOwners', 'consentSitesInDomains']),
+      checkTranscendInput(input, [TranscendYamlCheckRule.ConsentSitesHaveOwners]),
+    ).toHaveLength(1);
+    expect(
+      checkTranscendInput(input, [
+        TranscendYamlCheckRule.ConsentSitesHaveOwners,
+        TranscendYamlCheckRule.ConsentSitesInDomains,
+      ]),
     ).toHaveLength(2);
   });
 });

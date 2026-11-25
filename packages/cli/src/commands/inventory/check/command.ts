@@ -1,4 +1,5 @@
 import { buildCommand } from '@stricli/core';
+import { TRANSCEND_YAML_CHECK_ALL_RULES, TranscendYamlCheckRule } from '@transcend-io/sdk';
 
 import { projectJsonParameter } from '../../../lib/scaffolding/command-parameters.js';
 
@@ -16,11 +17,12 @@ export const checkCommand = buildCommand({
         default: './transcend.yml',
       },
       rules: {
-        kind: 'parsed',
-        parse: String,
+        kind: 'enum',
+        values: [TRANSCEND_YAML_CHECK_ALL_RULES, ...Object.values(TranscendYamlCheckRule)],
         brief:
-          'Comma-separated opt-in rules to run: consentSitesHaveOwners, consentSitesInDomains, uniqueConsentSiteHosts, uniqueTrackers. By default only the schema check runs.',
-        default: '',
+          'Comma-separated opt-in rules to run, or * for every rule. By default only the schema check runs.',
+        variadic: ',',
+        optional: true,
       },
       variables: {
         kind: 'parsed',
