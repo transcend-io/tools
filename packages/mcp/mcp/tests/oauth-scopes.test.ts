@@ -3,11 +3,13 @@ import { ScopeName } from '@transcend-io/privacy-types';
 import {
   MCP_SERVER_OAUTH_SCOPES,
   TranscendMcpServer,
+  TranscendPullResource,
   getMcpServerOAuthScopes,
 } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
-import { UMBRELLA_OAUTH_SCOPES } from '../src/oauth-scopes.js';
+import type { McpServerAllowlist } from '../src/mcp-server-allowlist.js';
+import { resolveUmbrellaOAuthScopes, UMBRELLA_OAUTH_SCOPES } from '../src/oauth-scopes.js';
 
 describe('UMBRELLA_OAUTH_SCOPES', () => {
   it('includes offline_access and every domain scope', () => {
@@ -38,5 +40,24 @@ describe('MCP_SERVER_OAUTH_SCOPES', () => {
     for (const server of Object.values(TranscendMcpServer)) {
       expect(getMcpServerOAuthScopes(server).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('resolveUmbrellaOAuthScopes', () => {
+  it('requests only consent scopes when the allowlist is consent-only', () => {
+    const allowlist: McpServerAllowlist = new Set([TranscendMcpServer.Consent]);
+    const scopes = resolveUmbrellaOAuthScopes(allowlist, undefined);
+    expect(scopes).toContain(OFFLINE_ACCESS_SCOPE);
+    expect(scopes).toContain(ScopeName.ViewConsentManager);
+    expect(scopes).not.toContain(ScopeName.ViewRequests);
+  });
+
+  it('caps config scopes to the listed resources', () => {
+    const allowlist: McpServerAllowlist = new Set([TranscendMcpServer.Config]);
+    const capped = resolveUmbrellaOAuthScopes(allowlist, [TranscendPullResource.ConsentManager]);
+    const full = resolveUmbrellaOAuthScopes(allowlist, undefined);
+    expect(capped).toContain(ScopeName.ViewConsentManager);
+    expect(capped.length).toBeLessThan(full.length);
+    expect(capped).not.toContain(ScopeName.ViewRequests);
   });
 });

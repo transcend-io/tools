@@ -106,21 +106,23 @@ An OAuth client belongs to one organization. For each organization, create its o
   "mcpServers": {
     "transcend-staging": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server-config"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": {
         "TRANSCEND_OAUTH_CLIENT_ID": "staging-client-id",
         "TRANSCEND_OAUTH_CLIENT_SECRET": "staging-client-secret",
         "TRANSCEND_OAUTH_REDIRECT_PORT": "4601",
+        "TRANSCEND_MCP_SERVERS": "config,consent",
         "TRANSCEND_CONFIG_RESOURCES": "consentManager,purposes,dataFlows,cookies,consentSites"
       }
     },
     "transcend-production": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server-config"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": {
         "TRANSCEND_OAUTH_CLIENT_ID": "production-client-id",
         "TRANSCEND_OAUTH_CLIENT_SECRET": "production-client-secret",
         "TRANSCEND_OAUTH_REDIRECT_PORT": "4602",
+        "TRANSCEND_MCP_SERVERS": "config,consent",
         "TRANSCEND_CONFIG_RESOURCES": "consentManager,purposes,dataFlows,cookies,consentSites"
       }
     }
