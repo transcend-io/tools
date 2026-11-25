@@ -3,6 +3,7 @@ import { buildRouteMap } from '@stricli/core';
 import { buildXdiSyncEndpointCommand } from './build-xdi-sync-endpoint/command.js';
 import { deletePreferenceRecordsCommand } from './delete-preference-records/command.js';
 import { generateAccessTokensCommand } from './generate-access-tokens/command.js';
+import { previewDeployCommand } from './preview-deploy/command.js';
 import { pullConsentMetricsCommand } from './pull-consent-metrics/command.js';
 import { pullConsentPreferencesCommand } from './pull-consent-preferences/command.js';
 import { updateConsentManagerCommand } from './update-consent-manager/command.js';
@@ -17,6 +18,7 @@ export const consentRoutes = buildRouteMap({
     'generate-access-tokens': generateAccessTokensCommand,
     'pull-consent-metrics': pullConsentMetricsCommand,
     'pull-consent-preferences': pullConsentPreferencesCommand,
+    'preview-deploy': previewDeployCommand,
     'update-consent-manager': updateConsentManagerCommand,
     'upload-consent-preferences': uploadConsentPreferencesCommand,
     'upload-cookies-from-csv': uploadCookiesFromCsvCommand,

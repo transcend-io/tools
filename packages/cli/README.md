@@ -34,6 +34,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent generate-access-tokens`](#transcend-consent-generate-access-tokens)
   - [`transcend consent pull-consent-metrics`](#transcend-consent-pull-consent-metrics)
   - [`transcend consent pull-consent-preferences`](#transcend-consent-pull-consent-preferences)
+  - [`transcend consent preview-deploy`](#transcend-consent-preview-deploy)
   - [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager)
   - [`transcend consent upload-consent-preferences`](#transcend-consent-upload-consent-preferences)
   - [`transcend consent upload-cookies-from-csv`](#transcend-consent-upload-cookies-from-csv)
@@ -2082,6 +2083,49 @@ If you need to transfer this data, you may want to leverage the following comman
 
 ```
 transcend admin chunk-csv --directory=./working/files --outputDir=./working/chunks
+```
+
+### `transcend consent preview-deploy`
+
+```txt
+USAGE
+  transcend consent preview-deploy (--auth value) [--bundleTypes PRODUCTION|TEST] [--json] [--transcendUrl value]
+  transcend consent preview-deploy --help
+
+Show what deploying the Consent Manager would change, by comparing the saved configuration with the deployed bundle. This command is read-only and exits with code 0 unless an error occurs.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"
+     [--bundleTypes]   The bundle types to preview. Defaults to TEST,PRODUCTION.                                                                                                                                          [PRODUCTION|TEST, separator = ,]
+     [--json]          Print the result as JSON instead of a text summary                                                                                                                                                 [default = false]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Preview the TEST and PRODUCTION deploys**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview only the PRODUCTION deploy**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --bundleTypes=PRODUCTION
+```
+
+**Print the result as JSON**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
 ```
 
 ### `transcend consent update-consent-manager`
