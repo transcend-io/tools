@@ -128,6 +128,44 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api). `consent_list_roc_records` requires the **ViewManagedConsentDatabaseAdminApi** scope. `consent_list_sites` requires **ViewConsentManager** and `consent_write_sites` requires **ManageConsentManager**.
 
+## Triage loop
+
+Use this loop to clear the backlog of new cookies and data flows. Triage saves changes. Visitors see them after you deploy.
+
+1. **Count the backlog.** Call `consent_get_inventory_stats`.
+2. **List what needs review.** Call `consent_list_data_flows` and `consent_list_cookies`. Both require `status: "NEEDS_REVIEW"`. Page with `limit` and `offset`. To sort by traffic, pass both `orderField` and `orderDirection`.
+3. **Check your purposes.** Call `consent_list_purposes`. Use only the slugs it returns.
+4. **Research each tracker.** Use the `consent-research-tracker` prompt. Use `consent-inspect-site` to see a tracker on a live site.
+5. **Apply decisions.** Call `consent_bulk_triage` with one item per tracker:
+   - `type`: `cookie` or `data_flow`
+   - `id`: the data flow ID, or the cookie name
+   - `action`: `APPROVE` or `JUNK`
+   - `trackingPurposes` and `service`: optional. Set `trackingPurposes` when you approve.
+6. **Preview the deploy.** Call `consent_preview_deploy` with `environment` set to `TEST` or `PRODUCTION`. It is read-only.
+7. **Deploy.** Call `consent_deploy_bundle` with the same `environment`. Your client asks you to confirm. `PRODUCTION` is the bundle that site visitors load. Deploy `TEST` first.
+
+For a guided version, use the `consent-triage` prompt.
+
+## Direct tools or `transcend.yml`
+
+Some changes have a direct tool. For the rest, edit a `transcend.yml` file with the [config server](../mcp-server-config/README.md), then push it.
+
+| Change                                                             | How                                                                                                   |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Approve or junk trackers, set purposes and service                 | Direct: `consent_bulk_triage`, `consent_update_cookies`, `consent_update_data_flows`                  |
+| Add consent sites, or change their owners, teams, and attributes   | Direct: `consent_write_sites`                                                                         |
+| Change consent manager settings, experiences, UI variants, themes  | Direct: `consent_write_consent_manager`                                                               |
+| Create or update purposes and preference topics                    | Direct: `consent_write_purposes`                                                                      |
+| Add many data flows, or review changes in git before they go live  | `transcend.yml`: `data-flows` section, via `config_pull`, `config_diff`, `config_push`                |
+| Keep one file in git, or move the same setup between organizations | `transcend.yml`: `consent-manager`, `consent-sites`, `data-flows`, `cookies`, and `purposes` sections |
+| Anything without a direct tool, such as partitions or attributes   | `transcend.yml`                                                                                       |
+
+Neither path deploys. Both write saved settings. Call `consent_deploy_bundle` to publish them.
+
+`consent_write_consent_manager` replaces the whole `domains` list when you pass `domains`, like a push does. Pass every domain you want to keep.
+
+See [Consent as code](../mcp-server-config/README.md#consent-as-code) for the full walkthrough.
+
 ## Prompts
 
 Workflow templates discoverable via MCP `prompts/list` / `prompts/get`:

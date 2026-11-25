@@ -10,11 +10,6 @@ consent-manager:
     - localhost:3000
     - localhost:8084
   consentPrecedence: user
-  partitions:
-    - name: Staging
-      partition: 1dd7cfef9578d0375c8eec63f364ef72c5429f4e6b732cff8ace1e65b23320a2
-    - name: Dev
-      partition: 3ead9290e548883c3f6e3b5899957290a6468310fb1998373bb62230a1c19a0f
   unknownRequestPolicy: BLOCK
   unknownCookiePolicy: ALLOW
   syncEndpoint: >-
@@ -34,15 +29,15 @@ consent-manager:
       displayPriority: 10
       viewState: QuickOptions
       purposes:
-        - name: Advertising
-        - name: Analytics
-        - name: Functional
-        - name: SaleOfInfo
+        - trackingType: Advertising
+        - trackingType: Analytics
+        - trackingType: Functional
+        - trackingType: SaleOfInfo
       optedOutPurposes:
-        - name: Advertising
-        - name: Analytics
-        - name: Functional
-        - name: SaleOfInfo
+        - trackingType: Advertising
+        - trackingType: Analytics
+        - trackingType: Functional
+        - trackingType: SaleOfInfo
       browserLanguages:
         - fr
         - de
@@ -79,7 +74,7 @@ consent-manager:
       displayPriority: 20
       viewState: Hidden
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       optedOutPurposes: []
       browserLanguages: []
       browserTimeZones: []
@@ -92,7 +87,7 @@ consent-manager:
       displayPriority: 20
       viewState: Hidden
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       optedOutPurposes: []
       browserLanguages: []
       browserTimeZones: []
@@ -123,7 +118,7 @@ consent-manager:
       displayPriority: 20
       viewState: NoticeAndDoNotSell
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       optedOutPurposes: []
       browserLanguages: []
       browserTimeZones:
@@ -137,15 +132,15 @@ consent-manager:
       displayPriority: 20
       viewState: QuickOptions
       purposes:
-        - name: Advertising
-        - name: Analytics
-        - name: Functional
-        - name: SaleOfInfo
+        - trackingType: Advertising
+        - trackingType: Analytics
+        - trackingType: Functional
+        - trackingType: SaleOfInfo
       optedOutPurposes:
-        - name: Advertising
-        - name: Analytics
-        - name: Functional
-        - name: SaleOfInfo
+        - trackingType: Advertising
+        - trackingType: Analytics
+        - trackingType: Functional
+        - trackingType: SaleOfInfo
       browserLanguages:
         - pt-BR
       browserTimeZones:
@@ -157,10 +152,16 @@ consent-manager:
       displayPriority: 100
       viewState: Hidden
       purposes:
-        - name: Advertising
-        - name: Analytics
-        - name: Functional
-        - name: SaleOfInfo
+        - trackingType: Advertising
+        - trackingType: Analytics
+        - trackingType: Functional
+        - trackingType: SaleOfInfo
       optedOutPurposes: []
       browserLanguages: []
       browserTimeZones: []
+
+partitions:
+  - name: Staging
+    partition: 1dd7cfef9578d0375c8eec63f364ef72c5429f4e6b732cff8ace1e65b23320a2
+  - name: Dev
+    partition: 3ead9290e548883c3f6e3b5899957290a6468310fb1998373bb62230a1c19a0f

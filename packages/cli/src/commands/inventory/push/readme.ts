@@ -1,9 +1,10 @@
-import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
+import { ConsentBundleType, ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 import { TR_PUSH_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';
 import type { GenerateApiKeysCommandFlags } from '../../admin/generate-api-keys/impl.js';
+import type { UpdateConsentManagerCommandFlags } from '../../consent/update-consent-manager/impl.js';
 import type { PullCommandFlags } from '../pull/impl.js';
 import type { PushCommandFlags } from './impl.js';
 
@@ -57,7 +58,47 @@ const examples = buildExamples<PushCommandFlags>(
   ],
 );
 
-export default `#### Scopes
+export default `#### Consent as code
+
+You can manage your consent manager, purposes, data flows, cookies, and consent sites in git. See [consent-as-code.yml](./examples/consent-as-code.yml) for a starting file.
+
+1. Pull the current state with [\`transcend inventory pull\`](#transcend-inventory-pull).
+2. Edit \`transcend.yml\`.
+3. Preview the change with \`transcend inventory push --dryRun\`. Nothing is changed in Transcend.
+4. Push the change with \`transcend inventory push\`. This saves the settings. It does not publish a new consent manager bundle.
+5. Publish the bundle with \`transcend consent update-consent-manager --deploy\`. See [\`transcend consent update-consent-manager\`](#transcend-consent-update-consent-manager).
+
+\`\`\`sh
+${buildExampleCommand<PullCommandFlags>(['inventory', 'pull'], {
+  auth: '$TRANSCEND_API_KEY',
+  resources: [
+    TranscendPullResource.ConsentManager,
+    TranscendPullResource.Purposes,
+    TranscendPullResource.DataFlows,
+    TranscendPullResource.Cookies,
+    TranscendPullResource.ConsentSites,
+  ],
+})}
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+  dryRun: true,
+})}
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+})}
+${buildExampleCommand<UpdateConsentManagerCommandFlags>(['consent', 'update-consent-manager'], {
+  auth: '$TRANSCEND_API_KEY',
+  bundleTypes: [ConsentBundleType.Test],
+  deploy: true,
+})}
+\`\`\`
+
+Two things to know before you push:
+
+- A push replaces the whole \`consent-manager.domains\` list. Domains missing from your file are removed.
+- \`transcend consent update-consent-manager\` also upgrades airgap.js to the latest version for each bundle type you pass. The default is \`TEST\` and \`PRODUCTION\`. Deploy \`TEST\` first if you want to check the new version.
+
+#### Scopes
 
 The API key permissions for this command vary based on the resources declared as top-level keys in your [\`transcend.yml\`](#transcendyml) file:
 

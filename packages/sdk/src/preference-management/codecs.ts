@@ -1,5 +1,6 @@
 import { UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
 import {
+  DefaultConsentOption,
   PreferenceQueryResponseItem,
   PreferenceStoreAuthLevel,
   PreferenceStoreIdentifier,
@@ -427,6 +428,8 @@ export const PurposeInput = t.intersection([
     'auth-level': valuesOf(PreferenceStoreAuthLevel),
     /** Opt-out signals that instantly opt out of this purpose */
     'opt-out-signals': t.array(valuesOf(UserPrivacySignalEnum)),
+    /** Default consent (not pushed; use consent-manager.experiences[].optedOutPurposes) */
+    'default-consent': valuesOf(DefaultConsentOption),
   }),
 ]);
 
