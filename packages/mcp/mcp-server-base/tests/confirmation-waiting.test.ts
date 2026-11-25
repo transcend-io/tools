@@ -3,6 +3,7 @@
  */
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { ServerNotification } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
@@ -12,6 +13,7 @@ import {
   ConfirmationPolicy,
   withConfirmation,
 } from '../src/tools/confirmation/index.js';
+import { PROGRESS_HEARTBEAT_INTERVAL_MS } from '../src/tools/confirmation/progress-heartbeat.js';
 import { defineTool } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -36,12 +38,14 @@ function gated(describeText?: () => Promise<string>) {
 interface Host {
   session: McpSession;
   elicitInput: ReturnType<typeof vi.fn>;
+  notifications: ServerNotification[];
   /** Answers the open form */
   approve: () => void;
 }
 
 /** A host whose form stays open until `approve` runs. */
-function waitingHost(): Host {
+function waitingHost(progressToken?: string | number): Host {
+  const notifications: ServerNotification[] = [];
   let approve: () => void = () => undefined;
   const elicitInput = vi.fn().mockImplementation(
     () =>
@@ -58,10 +62,13 @@ function waitingHost(): Host {
     request: {
       id: 7,
       signal: new AbortController().signal,
-      sendNotification: async () => undefined,
+      progressToken,
+      sendNotification: async (notification) => {
+        notifications.push(notification);
+      },
     },
   };
-  return { session, elicitInput, approve: () => approve() };
+  return { session, elicitInput, notifications, approve: () => approve() };
 }
 
 function formMessage(host: Host): string {
@@ -118,5 +125,60 @@ describe('the summary step', () => {
     host.approve();
     await run;
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('progress while waiting for approval', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('sends increasing progress notifications with the host token while the form is open', async () => {
+    const host = waitingHost('tok-1');
+    const run = mcpSessionContext.run(host.session, async () =>
+      gated().handler({ requestId: 'r' }),
+    );
+
+    await vi.advanceTimersByTimeAsync(PROGRESS_HEARTBEAT_INTERVAL_MS * 2 + 1);
+    expect(host.notifications.map((n) => n.params)).toEqual([
+      expect.objectContaining({ progressToken: 'tok-1', progress: 1 }),
+      expect.objectContaining({ progressToken: 'tok-1', progress: 2 }),
+    ]);
+    expect(host.notifications.every((n) => n.method === 'notifications/progress')).toBe(true);
+
+    host.approve();
+    await run;
+  });
+
+  it('stops once the form is answered', async () => {
+    const host = waitingHost('tok-1');
+    const run = mcpSessionContext.run(host.session, async () =>
+      gated().handler({ requestId: 'r' }),
+    );
+
+    await vi.advanceTimersByTimeAsync(PROGRESS_HEARTBEAT_INTERVAL_MS + 1);
+    host.approve();
+    await run;
+    const sent = host.notifications.length;
+
+    await vi.advanceTimersByTimeAsync(PROGRESS_HEARTBEAT_INTERVAL_MS * 3);
+    expect(host.notifications).toHaveLength(sent);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('sends nothing when the host did not ask for progress', async () => {
+    const host = waitingHost(undefined);
+    const run = mcpSessionContext.run(host.session, async () =>
+      gated().handler({ requestId: 'r' }),
+    );
+
+    await vi.advanceTimersByTimeAsync(PROGRESS_HEARTBEAT_INTERVAL_MS * 3);
+    expect(host.notifications).toHaveLength(0);
+
+    host.approve();
+    await run;
   });
 });
