@@ -111,6 +111,8 @@ Within your git repositories, you can define a file `transcend.yml`. This file a
 
 You can find various examples for your `transcend.yml` file in the [examples/](./examples/) folder. If you are looking for a starting point to copy and paste, [simple.yml](./examples/simple.yml) is a good place to start. This file is annotated with links and documentations that new members of your team can use if they come across the file.
 
+To manage your consent manager, purposes, data flows, cookies, and consent sites as code, see [Consent as code](#consent-as-code) and [consent-as-code.yml](./examples/consent-as-code.yml).
+
 The API for this YAML file can be found in [./src/codecs.ts](./src/codecs.ts) under the variable named "TranscendInput". The shape of the YAML file will be type-checked every time a command is run.
 
 By default, your editor or IDE should recognize `transcend.yml` and validate it against our latest published [JSON schema](./schema/transcend-yml-schema-latest.json). This is dependent on whether your editor uses [yaml-language-server](https://github.com/redhat-developer/yaml-language-server), such as through the [VS Code YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml).
@@ -2209,7 +2211,11 @@ FLAGS
   -h  --help           Print help information and exit
 ```
 
-This command always updates airgap.js to the latest version before it deploys. To deploy without changing the airgap.js version, use `transcend consent deploy`.
+#### Deploy after a consent as code push
+
+Run this command after [`transcend inventory push`](#transcend-inventory-push) to publish your saved consent manager settings. A push alone does not publish them.
+
+This command always updates airgap.js to the latest version for each bundle type, then deploys when you pass `--deploy`. It runs even if your `transcend.yml` sets a `version`. To deploy without changing the airgap.js version, use `transcend consent deploy`. Use `--bundleTypes=TEST` to check a new version before you touch `PRODUCTION`.
 
 #### Examples
 
@@ -3245,6 +3251,30 @@ FLAGS
      [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
   -h  --help                         Print help information and exit
 ```
+
+#### Consent as code
+
+You can manage your consent manager, purposes, data flows, cookies, and consent sites in git. See [consent-as-code.yml](./examples/consent-as-code.yml) for a starting file.
+
+1. Pull the current state with [`transcend inventory pull`](#transcend-inventory-pull).
+2. Edit `transcend.yml`.
+3. Preview the change with `transcend inventory push --dryRun`. Nothing is changed in Transcend.
+4. Push the change with `transcend inventory push`. This saves the settings. It does not publish a new consent manager bundle.
+5. Publish the bundle with `transcend consent update-consent-manager --deploy`. See [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager).
+
+```sh
+transcend inventory pull \
+  --auth="$TRANSCEND_API_KEY" \
+  --resources=consentManager,purposes,dataFlows,cookies,consentSites
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
+transcend inventory push --auth="$TRANSCEND_API_KEY"
+transcend consent update-consent-manager --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST --deploy
+```
+
+Two things to know before you push:
+
+- A push replaces the whole `consent-manager.domains` list. Domains missing from your file are removed.
+- `transcend consent update-consent-manager` also upgrades airgap.js to the latest version for each bundle type you pass. The default is `TEST` and `PRODUCTION`. Deploy `TEST` first if you want to check the new version.
 
 #### Scopes
 
