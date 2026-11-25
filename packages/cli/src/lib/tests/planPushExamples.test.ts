@@ -8,16 +8,8 @@ import { readTranscendYaml } from '../readTranscendYaml.js';
 
 const EXAMPLE_DIR = join(__dirname, '..', '..', '..', 'examples');
 
-/**
- * Examples that are intentionally invalid, need variables, or already fail codec validation.
- * TODO: fix the last two examples so they decode, then remove them from this list.
- */
-const SKIPPED = new Set([
-  'invalid.yml',
-  'multi-instance.yml',
-  'preflights.yml',
-  'us-state-consent-experience.yml',
-]);
+/** Examples handled in decodeExampleFiles.test.ts (invalid or multi-instance). */
+const SKIPPED = new Set(['invalid.yml', 'multi-instance.yml']);
 
 describe('planPush on example files', () => {
   readdirSync(EXAMPLE_DIR)

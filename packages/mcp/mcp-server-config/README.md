@@ -104,7 +104,7 @@ An OAuth client belongs to one organization. For each organization, create its o
 ```json
 {
   "mcpServers": {
-    "transcend-config-staging": {
+    "transcend-staging": {
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-config"],
       "env": {
@@ -114,7 +114,7 @@ An OAuth client belongs to one organization. For each organization, create its o
         "TRANSCEND_CONFIG_RESOURCES": "consentManager,purposes,dataFlows,cookies,consentSites"
       }
     },
-    "transcend-config-production": {
+    "transcend-production": {
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-config"],
       "env": {
@@ -128,7 +128,7 @@ An OAuth client belongs to one organization. For each organization, create its o
 }
 ```
 
-Add a matching `transcend-consent-*` entry (package `@transcend-io/mcp-server-consent`) for each organization, with its own port. Tell the agent which organization to use by server name. Use a separate `filePath` per organization.
+Give each organization one MCP server entry. Tell the agent which organization to use by server name. Use a separate `filePath` per organization.
 
 ### Rules that prevent damage
 
