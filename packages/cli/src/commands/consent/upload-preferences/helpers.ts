@@ -1,0 +1,87 @@
+import type { UploadPreferencesCommandFlags } from './impl.js';
+
+/** Common options shared by upload tasks */
+export type TaskCommonOpts = Pick<
+  UploadPreferencesCommandFlags,
+  | 'auth'
+  | 'partition'
+  | 'sombraAuth'
+  | 'directory'
+  | 'transcendUrl'
+  | 'skipConflictUpdates'
+  | 'uploadConcurrency'
+  | 'uploadLogInterval'
+  | 'maxChunkSize'
+  | 'downloadIdentifierConcurrency'
+  | 'rateLimitRetryDelay'
+  | 'maxRecordsToReceipt'
+  | 'skipWorkflowTriggers'
+  | 'skipExistingRecordCheck'
+  | 'isSilent'
+  | 'dryRun'
+  | 'attributes'
+  | 'forceTriggerWorkflows'
+> & {
+  /** Path to the column-mapping config file */
+  schemaFile: string;
+  /** Directory where per-file receipts are written */
+  receiptsFolder: string;
+};
+
+/**
+ * Copy the options from the main command over to the spawned tasks
+ *
+ * @param flags - All flags
+ * @param schemaFile - Schema file
+ * @param receiptsFolder - Receipts folder
+ * @returns Common task options
+ */
+export function buildCommonOpts(
+  flags: UploadPreferencesCommandFlags,
+  schemaFile: string,
+  receiptsFolder: string,
+): TaskCommonOpts {
+  const {
+    auth,
+    directory,
+    sombraAuth,
+    partition,
+    transcendUrl,
+    downloadIdentifierConcurrency,
+    skipConflictUpdates,
+    skipWorkflowTriggers,
+    skipExistingRecordCheck,
+    isSilent,
+    dryRun,
+    attributes,
+    forceTriggerWorkflows,
+    uploadConcurrency,
+    maxChunkSize,
+    rateLimitRetryDelay,
+    maxRecordsToReceipt,
+    uploadLogInterval,
+  } = flags;
+
+  return {
+    schemaFile,
+    receiptsFolder,
+    auth,
+    directory,
+    downloadIdentifierConcurrency,
+    sombraAuth,
+    partition,
+    transcendUrl,
+    skipConflictUpdates,
+    skipWorkflowTriggers,
+    skipExistingRecordCheck,
+    isSilent,
+    dryRun,
+    attributes,
+    forceTriggerWorkflows,
+    uploadConcurrency,
+    maxChunkSize,
+    rateLimitRetryDelay,
+    maxRecordsToReceipt,
+    uploadLogInterval,
+  };
+}
