@@ -24,3 +24,8 @@ export {
   type ConfigPreviewPushInput,
 } from './tools/config_preview_push.js';
 export { ConfigPushSchema, type ConfigPushInput } from './tools/config_push.js';
+
+export {
+  oauthScopesForConfigAllowlist,
+  parseConfigResourceAllowlistFromEnv,
+} from './helpers/configResourceAllowlist.js';

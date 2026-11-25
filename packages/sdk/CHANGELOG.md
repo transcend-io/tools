@@ -1,5 +1,16 @@
 # @transcend-io/sdk
 
+## 3.6.0
+
+### Minor Changes
+
+- 39efde0: Add `transcend consent deploy` to deploy the Consent Manager bundle without changing the airgap.js version. Optional `--wait` polls deploy state until completion. The SDK adds `fetchConsentManagerDeployState` and `waitForConsentManagerDeploy`.
+- 3833044: Add `isJunk` to `data-flows` and `cookies` and `includeInMetadata` to `consent-sites` in transcend.yml push and pull.
+
+### Patch Changes
+
+- f132514: Push the consent manager `unknownCookiePolicy` when it is set on its own, and warn when a purpose sets `default-consent` (use `consent-manager.experiences[].optedOutPurposes` in transcend.yml instead).
+
 ## 3.5.0
 
 ### Minor Changes

@@ -1,5 +1,21 @@
 # @transcend-io/cli
 
+## 13.6.0
+
+### Minor Changes
+
+- 39efde0: Add `transcend consent deploy` to deploy the Consent Manager bundle without changing the airgap.js version. Optional `--wait` polls deploy state until completion. The SDK adds `fetchConsentManagerDeployState` and `waitForConsentManagerDeploy`.
+- f252621: Add `transcend consent preview-deploy` to show pending consent manager deploy changes before you deploy.
+- 3833044: Add `isJunk` to `data-flows` and `cookies` and `includeInMetadata` to `consent-sites` in transcend.yml push and pull.
+
+### Patch Changes
+
+- 31d0dfa: Document consent as code in the `inventory push` and `consent update-consent-manager` readmes, and add a consent-as-code example. Fix CLI example YAML (`consent-manager-domains.yml`, `preflights.yml`, `us-state-consent-experience.yml`) so they decode, and add a test that every example decodes.
+- Updated dependencies [39efde0]
+- Updated dependencies [f132514]
+- Updated dependencies [3833044]
+  - @transcend-io/sdk@3.6.0
+
 ## 13.5.0
 
 ### Minor Changes

@@ -6,3 +6,8 @@ export const UMBRELLA_DOCS_SERVER_INSTRUCTIONS =
   '(3) answer from that content. API tools return data from the signed-in organization; ' +
   'they do not replace product documentation. For transcend.yml push previews, call config_diff and ' +
   'paste its diff before config_push.';
+
+/** Instructions when docs tools are omitted via {@link TRANSCEND_MCP_SERVERS}. */
+export const UMBRELLA_SERVER_INSTRUCTIONS =
+  'API tools return data from the signed-in organization. For transcend.yml push previews, call ' +
+  'config_diff and paste its diff before config_push.';
