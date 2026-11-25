@@ -12,6 +12,8 @@ import {
   AIRGAP_BUNDLE_ROLLBACK_FIELDS,
   AIRGAP_BUNDLE_ROLLBACK_VERSIONS,
   ROLLBACK_AIRGAP_BUNDLE,
+  TranscendAirgapBundleRollbackBundleField,
+  TranscendAirgapBundleRollbackMobileField,
 } from '../gqls/consentManager.js';
 import {
   buildRollbackInputFromVersion,
@@ -58,9 +60,11 @@ describe('rollbackConsentManager', () => {
 
   it('queries every field the rollback input accepts', () => {
     const query = String(AIRGAP_BUNDLE_ROLLBACK_VERSIONS);
-    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain('core');
-    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain('cdn');
-    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain('isTest');
+    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain(TranscendAirgapBundleRollbackBundleField.Core);
+    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain(TranscendAirgapBundleRollbackBundleField.Cdn);
+    expect(AIRGAP_BUNDLE_ROLLBACK_FIELDS).toContain(
+      TranscendAirgapBundleRollbackMobileField.IsTest,
+    );
     AIRGAP_BUNDLE_ROLLBACK_FIELDS.forEach((field) => {
       expect(query).toContain(field);
     });

@@ -653,152 +653,331 @@ export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
     }
   }
 `;
+/** Core airgap bundle module fields requested in rollback queries */
+export const TranscendAirgapBundleRollbackBundleField = {
+  /** GraphQL field `cdn` */
+  Cdn: 'cdn',
+  /** GraphQL field `core` */
+  Core: 'core',
+  /** GraphQL field `xdi` */
+  Xdi: 'xdi',
+  /** GraphQL field `userscript` */
+  Userscript: 'userscript',
+  /** GraphQL field `explorer` */
+  Explorer: 'explorer',
+  /** GraphQL field `metadata` */
+  Metadata: 'metadata',
+  /** GraphQL field `ui` */
+  Ui: 'ui',
+  /** GraphQL field `uiV2` */
+  UiV2: 'uiV2',
+  /** GraphQL field `uiV2Css` */
+  UiV2Css: 'uiV2Css',
+  /** GraphQL field `stylesheet` */
+  Stylesheet: 'stylesheet',
+} as const;
+
+/** Locale message module fields */
+export const TranscendAirgapBundleRollbackMessageLocaleField = {
+  /** GraphQL field `En` */
+  En: 'En',
+  /** GraphQL field `He` */
+  He: 'He',
+  /** GraphQL field `Bs` */
+  Bs: 'Bs',
+  /** GraphQL field `Dv` */
+  Dv: 'Dv',
+  /** GraphQL field `Fa` */
+  Fa: 'Fa',
+  /** GraphQL field `ArAe` */
+  ArAe: 'ArAe',
+  /** GraphQL field `FrFr` */
+  FrFr: 'FrFr',
+  /** GraphQL field `DeDe` */
+  DeDe: 'DeDe',
+  /** GraphQL field `ItIt` */
+  ItIt: 'ItIt',
+  /** GraphQL field `AfZz` */
+  AfZz: 'AfZz',
+  /** GraphQL field `BgBg` */
+  BgBg: 'BgBg',
+  /** GraphQL field `ZhCn` */
+  ZhCn: 'ZhCn',
+  /** GraphQL field `ZhHans` */
+  ZhHans: 'ZhHans',
+  /** GraphQL field `HrHr` */
+  HrHr: 'HrHr',
+  /** GraphQL field `CsCz` */
+  CsCz: 'CsCz',
+  /** GraphQL field `DaDk` */
+  DaDk: 'DaDk',
+  /** GraphQL field `FiFi` */
+  FiFi: 'FiFi',
+  /** GraphQL field `ElGr` */
+  ElGr: 'ElGr',
+  /** GraphQL field `HiIn` */
+  HiIn: 'HiIn',
+  /** GraphQL field `HuHu` */
+  HuHu: 'HuHu',
+  /** GraphQL field `IdId` */
+  IdId: 'IdId',
+  /** GraphQL field `JaJp` */
+  JaJp: 'JaJp',
+  /** GraphQL field `KoKr` */
+  KoKr: 'KoKr',
+  /** GraphQL field `LtLt` */
+  LtLt: 'LtLt',
+  /** GraphQL field `MsMy` */
+  MsMy: 'MsMy',
+  /** GraphQL field `MrIn` */
+  MrIn: 'MrIn',
+  /** GraphQL field `NbNi` */
+  NbNi: 'NbNi',
+  /** GraphQL field `PlPl` */
+  PlPl: 'PlPl',
+  /** GraphQL field `PtBr` */
+  PtBr: 'PtBr',
+  /** GraphQL field `RoRo` */
+  RoRo: 'RoRo',
+  /** GraphQL field `RuRu` */
+  RuRu: 'RuRu',
+  /** GraphQL field `SrLatnRs` */
+  SrLatnRs: 'SrLatnRs',
+  /** GraphQL field `SvSe` */
+  SvSe: 'SvSe',
+  /** GraphQL field `TaIn` */
+  TaIn: 'TaIn',
+  /** GraphQL field `ThTh` */
+  ThTh: 'ThTh',
+  /** GraphQL field `TrTr` */
+  TrTr: 'TrTr',
+  /** GraphQL field `UkUa` */
+  UkUa: 'UkUa',
+  /** GraphQL field `ViVn` */
+  ViVn: 'ViVn',
+  /** GraphQL field `NlNl` */
+  NlNl: 'NlNl',
+  /** GraphQL field `EsEs` */
+  EsEs: 'EsEs',
+  /** GraphQL field `Es419` */
+  Es419: 'Es419',
+  /** GraphQL field `ZhHk` */
+  ZhHk: 'ZhHk',
+  /** GraphQL field `HeIl` */
+  HeIl: 'HeIl',
+  /** GraphQL field `IsIs` */
+  IsIs: 'IsIs',
+} as const;
+
+/** TCF infrastructure module fields */
+export const TranscendAirgapBundleRollbackTcfInfraField = {
+  /** GraphQL field `tcfUi` */
+  TcfUi: 'tcfUi',
+  /** GraphQL field `gpp` */
+  Gpp: 'gpp',
+  /** GraphQL field `tcfStylesheet` */
+  TcfStylesheet: 'tcfStylesheet',
+  /** GraphQL field `tcfVendorsList` */
+  TcfVendorsList: 'tcfVendorsList',
+} as const;
+
+/** TCF Global Vendor List locale fields */
+export const TranscendAirgapBundleRollbackTcfGvlField = {
+  /** GraphQL field `tcfGvlAr` */
+  TcfGvlAr: 'tcfGvlAr',
+  /** GraphQL field `tcfGvlBg` */
+  TcfGvlBg: 'tcfGvlBg',
+  /** GraphQL field `tcfGvlBs` */
+  TcfGvlBs: 'tcfGvlBs',
+  /** GraphQL field `tcfGvlCs` */
+  TcfGvlCs: 'tcfGvlCs',
+  /** GraphQL field `tcfGvlDa` */
+  TcfGvlDa: 'tcfGvlDa',
+  /** GraphQL field `tcfGvlDe` */
+  TcfGvlDe: 'tcfGvlDe',
+  /** GraphQL field `tcfGvlEl` */
+  TcfGvlEl: 'tcfGvlEl',
+  /** GraphQL field `tcfGvlEn` */
+  TcfGvlEn: 'tcfGvlEn',
+  /** GraphQL field `tcfGvlEs` */
+  TcfGvlEs: 'tcfGvlEs',
+  /** GraphQL field `tcfGvlFi` */
+  TcfGvlFi: 'tcfGvlFi',
+  /** GraphQL field `tcfGvlFr` */
+  TcfGvlFr: 'tcfGvlFr',
+  /** GraphQL field `tcfGvlHe` */
+  TcfGvlHe: 'tcfGvlHe',
+  /** GraphQL field `tcfGvlHi` */
+  TcfGvlHi: 'tcfGvlHi',
+  /** GraphQL field `tcfGvlHr` */
+  TcfGvlHr: 'tcfGvlHr',
+  /** GraphQL field `tcfGvlHu` */
+  TcfGvlHu: 'tcfGvlHu',
+  /** GraphQL field `tcfGvlId` */
+  TcfGvlId: 'tcfGvlId',
+  /** GraphQL field `tcfGvlIs` */
+  TcfGvlIs: 'tcfGvlIs',
+  /** GraphQL field `tcfGvlIt` */
+  TcfGvlIt: 'tcfGvlIt',
+  /** GraphQL field `tcfGvlJa` */
+  TcfGvlJa: 'tcfGvlJa',
+  /** GraphQL field `tcfGvlKo` */
+  TcfGvlKo: 'tcfGvlKo',
+  /** GraphQL field `tcfGvlLt` */
+  TcfGvlLt: 'tcfGvlLt',
+  /** GraphQL field `tcfGvlMs` */
+  TcfGvlMs: 'tcfGvlMs',
+  /** GraphQL field `tcfGvlNl` */
+  TcfGvlNl: 'tcfGvlNl',
+  /** GraphQL field `tcfGvlNo` */
+  TcfGvlNo: 'tcfGvlNo',
+  /** GraphQL field `tcfGvlPl` */
+  TcfGvlPl: 'tcfGvlPl',
+  /** GraphQL field `tcfGvlPtBr` */
+  TcfGvlPtBr: 'tcfGvlPtBr',
+  /** GraphQL field `tcfGvlRo` */
+  TcfGvlRo: 'tcfGvlRo',
+  /** GraphQL field `tcfGvlRu` */
+  TcfGvlRu: 'tcfGvlRu',
+  /** GraphQL field `tcfGvlSrLatn` */
+  TcfGvlSrLatn: 'tcfGvlSrLatn',
+  /** GraphQL field `tcfGvlSv` */
+  TcfGvlSv: 'tcfGvlSv',
+  /** GraphQL field `tcfGvlTh` */
+  TcfGvlTh: 'tcfGvlTh',
+  /** GraphQL field `tcfGvlTr` */
+  TcfGvlTr: 'tcfGvlTr',
+  /** GraphQL field `tcfGvlUk` */
+  TcfGvlUk: 'tcfGvlUk',
+  /** GraphQL field `tcfGvlVi` */
+  TcfGvlVi: 'tcfGvlVi',
+  /** GraphQL field `tcfGvlZh` */
+  TcfGvlZh: 'tcfGvlZh',
+} as const;
+
+/** TCF locale message module fields */
+export const TranscendAirgapBundleRollbackTcfMessageField = {
+  /** GraphQL field `tcfEn` */
+  TcfEn: 'tcfEn',
+  /** GraphQL field `tcfHe` */
+  TcfHe: 'tcfHe',
+  /** GraphQL field `tcfBs` */
+  TcfBs: 'tcfBs',
+  /** GraphQL field `tcfDv` */
+  TcfDv: 'tcfDv',
+  /** GraphQL field `tcfFa` */
+  TcfFa: 'tcfFa',
+  /** GraphQL field `tcfArAe` */
+  TcfArAe: 'tcfArAe',
+  /** GraphQL field `tcfFrFr` */
+  TcfFrFr: 'tcfFrFr',
+  /** GraphQL field `tcfDeDe` */
+  TcfDeDe: 'tcfDeDe',
+  /** GraphQL field `tcfItIt` */
+  TcfItIt: 'tcfItIt',
+  /** GraphQL field `tcfAfZz` */
+  TcfAfZz: 'tcfAfZz',
+  /** GraphQL field `tcfBgBg` */
+  TcfBgBg: 'tcfBgBg',
+  /** GraphQL field `tcfZhCn` */
+  TcfZhCn: 'tcfZhCn',
+  /** GraphQL field `tcfZhHans` */
+  TcfZhHans: 'tcfZhHans',
+  /** GraphQL field `tcfHrHr` */
+  TcfHrHr: 'tcfHrHr',
+  /** GraphQL field `tcfCsCz` */
+  TcfCsCz: 'tcfCsCz',
+  /** GraphQL field `tcfDaDk` */
+  TcfDaDk: 'tcfDaDk',
+  /** GraphQL field `tcfFiFi` */
+  TcfFiFi: 'tcfFiFi',
+  /** GraphQL field `tcfElGr` */
+  TcfElGr: 'tcfElGr',
+  /** GraphQL field `tcfHiIn` */
+  TcfHiIn: 'tcfHiIn',
+  /** GraphQL field `tcfHuHu` */
+  TcfHuHu: 'tcfHuHu',
+  /** GraphQL field `tcfIdId` */
+  TcfIdId: 'tcfIdId',
+  /** GraphQL field `tcfJaJp` */
+  TcfJaJp: 'tcfJaJp',
+  /** GraphQL field `tcfKoKr` */
+  TcfKoKr: 'tcfKoKr',
+  /** GraphQL field `tcfLtLt` */
+  TcfLtLt: 'tcfLtLt',
+  /** GraphQL field `tcfMsMy` */
+  TcfMsMy: 'tcfMsMy',
+  /** GraphQL field `tcfMrIn` */
+  TcfMrIn: 'tcfMrIn',
+  /** GraphQL field `tcfNbNi` */
+  TcfNbNi: 'tcfNbNi',
+  /** GraphQL field `tcfPlPl` */
+  TcfPlPl: 'tcfPlPl',
+  /** GraphQL field `tcfPtBr` */
+  TcfPtBr: 'tcfPtBr',
+  /** GraphQL field `tcfRoRo` */
+  TcfRoRo: 'tcfRoRo',
+  /** GraphQL field `tcfRuRu` */
+  TcfRuRu: 'tcfRuRu',
+  /** GraphQL field `tcfSrLatnRs` */
+  TcfSrLatnRs: 'tcfSrLatnRs',
+  /** GraphQL field `tcfSvSe` */
+  TcfSvSe: 'tcfSvSe',
+  /** GraphQL field `tcfTaIn` */
+  TcfTaIn: 'tcfTaIn',
+  /** GraphQL field `tcfThTh` */
+  TcfThTh: 'tcfThTh',
+  /** GraphQL field `tcfTrTr` */
+  TcfTrTr: 'tcfTrTr',
+  /** GraphQL field `tcfUkUa` */
+  TcfUkUa: 'tcfUkUa',
+  /** GraphQL field `tcfViVn` */
+  TcfViVn: 'tcfViVn',
+  /** GraphQL field `tcfNlNl` */
+  TcfNlNl: 'tcfNlNl',
+  /** GraphQL field `tcfEsEs` */
+  TcfEsEs: 'tcfEsEs',
+  /** GraphQL field `tcfEs419` */
+  TcfEs419: 'tcfEs419',
+  /** GraphQL field `tcfZhHk` */
+  TcfZhHk: 'tcfZhHk',
+  /** GraphQL field `tcfHeIl` */
+  TcfHeIl: 'tcfHeIl',
+  /** GraphQL field `tcfIsIs` */
+  TcfIsIs: 'tcfIsIs',
+} as const;
+
+/** Mobile and sync module fields */
+export const TranscendAirgapBundleRollbackMobileField = {
+  /** GraphQL field `nativeAppConfig` */
+  NativeAppConfig: 'nativeAppConfig',
+  /** GraphQL field `bridgeJs` */
+  BridgeJs: 'bridgeJs',
+  /** GraphQL field `bridgeHtml` */
+  BridgeHtml: 'bridgeHtml',
+  /** GraphQL field `mobileLoadOptions` */
+  MobileLoadOptions: 'mobileLoadOptions',
+  /** GraphQL field `mobileUiLoadOptions` */
+  MobileUiLoadOptions: 'mobileUiLoadOptions',
+  /** GraphQL field `sync` */
+  Sync: 'sync',
+  /** GraphQL field `isTest` */
+  IsTest: 'isTest',
+} as const;
+
+/** All GraphQL field names on airgap bundle version nodes used for rollback */
 export const AIRGAP_BUNDLE_ROLLBACK_FIELDS = [
-  'cdn',
-  'core',
-  'xdi',
-  'userscript',
-  'explorer',
-  'metadata',
-  'ui',
-  'uiV2',
-  'uiV2Css',
-  'stylesheet',
-  'En',
-  'He',
-  'Bs',
-  'Dv',
-  'Fa',
-  'ArAe',
-  'FrFr',
-  'DeDe',
-  'ItIt',
-  'AfZz',
-  'BgBg',
-  'ZhCn',
-  'ZhHans',
-  'HrHr',
-  'CsCz',
-  'DaDk',
-  'FiFi',
-  'ElGr',
-  'HiIn',
-  'HuHu',
-  'IdId',
-  'JaJp',
-  'KoKr',
-  'LtLt',
-  'MsMy',
-  'MrIn',
-  'NbNi',
-  'PlPl',
-  'PtBr',
-  'RoRo',
-  'RuRu',
-  'SrLatnRs',
-  'SvSe',
-  'TaIn',
-  'ThTh',
-  'TrTr',
-  'UkUa',
-  'ViVn',
-  'NlNl',
-  'EsEs',
-  'Es419',
-  'ZhHk',
-  'HeIl',
-  'IsIs',
-  'tcfUi',
-  'gpp',
-  'tcfStylesheet',
-  'tcfVendorsList',
-  'tcfGvlAr',
-  'tcfGvlBg',
-  'tcfGvlBs',
-  'tcfGvlCs',
-  'tcfGvlDa',
-  'tcfGvlDe',
-  'tcfGvlEl',
-  'tcfGvlEn',
-  'tcfGvlEs',
-  'tcfGvlFi',
-  'tcfGvlFr',
-  'tcfGvlHe',
-  'tcfGvlHi',
-  'tcfGvlHr',
-  'tcfGvlHu',
-  'tcfGvlId',
-  'tcfGvlIs',
-  'tcfGvlIt',
-  'tcfGvlJa',
-  'tcfGvlKo',
-  'tcfGvlLt',
-  'tcfGvlMs',
-  'tcfGvlNl',
-  'tcfGvlNo',
-  'tcfGvlPl',
-  'tcfGvlPtBr',
-  'tcfGvlRo',
-  'tcfGvlRu',
-  'tcfGvlSrLatn',
-  'tcfGvlSv',
-  'tcfGvlTh',
-  'tcfGvlTr',
-  'tcfGvlUk',
-  'tcfGvlVi',
-  'tcfGvlZh',
-  'tcfEn',
-  'tcfHe',
-  'tcfBs',
-  'tcfDv',
-  'tcfFa',
-  'tcfArAe',
-  'tcfFrFr',
-  'tcfDeDe',
-  'tcfItIt',
-  'tcfAfZz',
-  'tcfBgBg',
-  'tcfZhCn',
-  'tcfZhHans',
-  'tcfHrHr',
-  'tcfCsCz',
-  'tcfDaDk',
-  'tcfFiFi',
-  'tcfElGr',
-  'tcfHiIn',
-  'tcfHuHu',
-  'tcfIdId',
-  'tcfJaJp',
-  'tcfKoKr',
-  'tcfLtLt',
-  'tcfMsMy',
-  'tcfMrIn',
-  'tcfNbNi',
-  'tcfPlPl',
-  'tcfPtBr',
-  'tcfRoRo',
-  'tcfRuRu',
-  'tcfSrLatnRs',
-  'tcfSvSe',
-  'tcfTaIn',
-  'tcfThTh',
-  'tcfTrTr',
-  'tcfUkUa',
-  'tcfViVn',
-  'tcfNlNl',
-  'tcfEsEs',
-  'tcfEs419',
-  'tcfZhHk',
-  'tcfHeIl',
-  'tcfIsIs',
-  'nativeAppConfig',
-  'bridgeJs',
-  'bridgeHtml',
-  'mobileLoadOptions',
-  'mobileUiLoadOptions',
-  'sync',
-  'isTest',
+  ...Object.values(TranscendAirgapBundleRollbackBundleField),
+  ...Object.values(TranscendAirgapBundleRollbackMessageLocaleField),
+  ...Object.values(TranscendAirgapBundleRollbackTcfInfraField),
+  ...Object.values(TranscendAirgapBundleRollbackTcfGvlField),
+  ...Object.values(TranscendAirgapBundleRollbackTcfMessageField),
+  ...Object.values(TranscendAirgapBundleRollbackMobileField),
 ] as const;
+
+/** Values of {@link AIRGAP_BUNDLE_ROLLBACK_FIELDS} */
+export type TranscendAirgapBundleRollbackFieldValue =
+  (typeof AIRGAP_BUNDLE_ROLLBACK_FIELDS)[number];
 
 /** One deployed bundle version that can be rolled back to */
 export interface TranscendCliAirgapBundleRollbackVersionNode {
