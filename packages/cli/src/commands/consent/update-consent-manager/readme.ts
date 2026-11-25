@@ -44,7 +44,9 @@ const examples = buildExamples<UpdateConsentManagerCommandFlags>(
   ],
 );
 
-export default `#### Examples
+export default `This command always updates airgap.js to the latest version before it deploys. To deploy without changing the airgap.js version, use \`transcend consent deploy\`.
+
+#### Examples
 
 ${examples}
 
