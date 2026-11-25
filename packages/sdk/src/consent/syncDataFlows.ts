@@ -34,6 +34,8 @@ export interface DataFlowInput {
   service?: string;
   /** Status of the tracker (approved vs triage) */
   status?: ConsentTrackerStatus;
+  /** Whether the data flow is junk. Left unchanged when omitted. */
+  isJunk?: boolean;
   /** Email addresses of owners */
   owners?: string[];
   /** Names of teams responsible for managing this data flow */
@@ -89,6 +91,7 @@ export async function updateDataFlows(
           description: flow.description,
           service: flow.service,
           status: flow.status,
+          isJunk: flow.isJunk,
           attributes: flow.attributes,
           // TODO: https://transcend.height.app/T-23718
           // owners,
@@ -146,6 +149,7 @@ export async function createDataFlows(
           description: flow.description,
           service: flow.service,
           status: flow.status,
+          isJunk: flow.isJunk,
           attributes: flow.attributes,
           // TODO: https://transcend.height.app/T-23718
           // owners,

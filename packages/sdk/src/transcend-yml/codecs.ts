@@ -1104,6 +1104,11 @@ export const DataFlowInput = t.intersection([
      */
     status: ConsentTrackerStatusCodec,
     /**
+     * Whether the data flow is marked as junk. Junk rows are hidden from triage.
+     * Pull only writes this field when it is true.
+     */
+    isJunk: t.boolean,
+    /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo
      */
@@ -1147,6 +1152,11 @@ export const CookieInput = t.intersection([
      */
     status: ConsentTrackerStatusCodec,
     /**
+     * Whether the cookie is marked as junk. Junk rows are hidden from triage.
+     * Pull only writes this field when it is true.
+     */
+    isJunk: t.boolean,
+    /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo
      */
@@ -1184,6 +1194,11 @@ export const ConsentSiteInput = t.intersection([
     site: t.string,
     /** Description of the site */
     description: t.string,
+    /**
+     * Whether the host is included in the Airgap metadata.
+     * Pull only writes this field when it is true.
+     */
+    includeInMetadata: t.boolean,
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this site
