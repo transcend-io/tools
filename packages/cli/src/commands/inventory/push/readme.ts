@@ -32,6 +32,22 @@ const examples = buildExamples<PushCommandFlags>(
       },
     },
     {
+      description:
+        'Push only the vendors and data flows sections of the file. Every other section is ignored',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        resources: [TranscendPullResource.Vendors, TranscendPullResource.DataFlows],
+      },
+    },
+    {
+      description:
+        'Stop unless the organization has this consent manager bundle id, so CI never pushes with the wrong API key',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        expectBundleId: '$EXPECTED_BUNDLE_ID',
+      },
+    },
+    {
       description: 'Apply service classifier to all data flows',
       flags: {
         auth: '$TRANSCEND_API_KEY',
@@ -147,6 +163,10 @@ ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
 \`--dryRun\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add \`--json\` for machine-readable output.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
+
+\`--resources\` limits the push to the named top-level sections, using the same names as \`inventory pull --resources\`. Other sections are removed before a dry run or a push, so both agree. It fails for a name that is not in the file.
+
+\`--expectBundleId\` reads the consent manager bundle id of the organization first. It stops before a dry run or push if the id differs or the organization has no consent manager. It cannot be used with a list of API keys.
 
 \`\`\`sh
 ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
