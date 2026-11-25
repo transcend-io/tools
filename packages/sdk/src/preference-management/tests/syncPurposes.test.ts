@@ -43,8 +43,8 @@ describe('syncPurposes default-consent', () => {
     const message = logger.warn.mock.calls[0]![0] as string;
     expect(message).toContain('default-consent');
     expect(message).toContain('Example, Other');
-    expect(message).toContain('Admin Dashboard');
-    expect(message).toContain('Regional Experiences');
+    expect(message).toContain('optedOutPurposes');
+    expect(message).toContain('consent-manager.experiences');
   });
 
   it('does not warn when default-consent is not set', async () => {

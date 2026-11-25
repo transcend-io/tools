@@ -428,7 +428,7 @@ export const PurposeInput = t.intersection([
     'auth-level': valuesOf(PreferenceStoreAuthLevel),
     /** Opt-out signals that instantly opt out of this purpose */
     'opt-out-signals': t.array(valuesOf(UserPrivacySignalEnum)),
-    /** Default consent value (not pushed: the API has no field for it) */
+    /** Default consent (not pushed; use consent-manager.experiences[].optedOutPurposes) */
     'default-consent': valuesOf(DefaultConsentOption),
   }),
 ]);

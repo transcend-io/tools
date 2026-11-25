@@ -148,8 +148,8 @@ export async function syncPurposes(
   if (withDefaultConsent.length > 0) {
     logger?.warn(
       `Ignoring "default-consent" on purposes (${withDefaultConsent.join(', ')}). ` +
-        'The API cannot set it. Set it in the Admin Dashboard under Consent Management, ' +
-        'Regional Experiences, Purposes.',
+        'Default consent is set per regional experience. List these purposes under ' +
+        '"consent-manager.experiences[].optedOutPurposes" in transcend.yml instead.',
     );
   }
 
