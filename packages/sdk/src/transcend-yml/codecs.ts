@@ -168,7 +168,10 @@ export const WebhookHeader = t.intersection([
     value: t.string,
   }),
   t.partial({
-    /** The header contains a secret */
+    /**
+     * When true, the header value is write-only in inventory pull/preview and
+     * should be supplied via `<<parameters.NAME>>` at push time.
+     */
     isSecret: t.boolean,
   }),
 ]);
@@ -1329,9 +1332,21 @@ export const ConsentManagerInput = t.partial({
   consentThemes: t.array(ConsentThemeInput),
   /** Prefix modules on the bundle. Pull only, push ignores it (no public API to write them) */
   prefixModules: t.array(ConsentManagerPrefixModuleInput),
-  /** Deployment webhook URL */
+  /**
+   * Deployment webhook URL called when consent bundles are published.
+   *
+   * @example `webhookUrl: https://example.<<parameters.domain>>/consent-deploy`
+   */
   webhookUrl: t.string,
-  /** Custom headers for the deployment webhook */
+  /**
+   * Custom headers for the deployment webhook. Use `<<parameters.NAME>>` for
+   * secret values and set `isSecret: true` so push preview does not log them.
+   *
+   * @example
+   * `- name: x-transcend-token`
+   * `  value: <<parameters.CONSENT_DEPLOY_TOKEN>>`
+   * `  isSecret: true`
+   */
   webhookHeaders: t.array(WebhookHeader),
 });
 

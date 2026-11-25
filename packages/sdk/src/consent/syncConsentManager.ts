@@ -124,9 +124,30 @@ export interface ConsentManagerInput {
   consentVariants?: ConsentVariantInput[];
   /** Consent UI theme configurations */
   consentThemes?: ConsentThemeInput[];
-  /** Deployment webhook URL */
+  /**
+   * Deployment webhook URL called when consent bundles are published.
+   *
+   * @example
+   * ```yaml
+   * consent-manager:
+   *   webhookUrl: https://example.<<parameters.domain>>/consent-deploy
+   * ```
+   */
   webhookUrl?: string;
-  /** Custom headers for the deployment webhook */
+  /**
+   * Custom headers sent with the deployment webhook request.
+   * Mark sensitive values with `isSecret: true`; inventory push preview treats
+   * `webhookHeaders` as write-only so resolved values are not logged.
+   *
+   * @example
+   * ```yaml
+   * consent-manager:
+   *   webhookHeaders:
+   *     - name: x-transcend-token
+   *       value: <<parameters.CONSENT_DEPLOY_TOKEN>>
+   *       isSecret: true
+   * ```
+   */
   webhookHeaders?: {
     /** Header name */
     name: string;
