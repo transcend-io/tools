@@ -291,7 +291,7 @@ export const RESOURCE_DEFINITIONS: Record<PushResourceKey, ResourceDefinition> =
     kind: PreviewResourceKind.Singleton,
     // Pull returns these but push does not apply them. `version` is not pulled.
     ignoreFields: ['bundleUrls', 'syncEndpoint', 'syncGroups'],
-    writeOnlyFields: ['version'],
+    writeOnlyFields: ['version', 'webhookHeaders'],
     nested: {
       experiences: { identity: by('name') },
       consentVariants: {

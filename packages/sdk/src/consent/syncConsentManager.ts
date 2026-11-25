@@ -33,6 +33,7 @@ import {
   TOGGLE_CONSENT_PRECEDENCE,
   TOGGLE_UNKNOWN_REQUEST_POLICY,
   UPDATE_CONSENT_MANAGER_THEME,
+  UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK,
 } from './gqls/consentManager.js';
 import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/experiences.js';
 import {
@@ -124,6 +125,38 @@ export interface ConsentManagerInput {
   consentVariants?: ConsentVariantInput[];
   /** Consent UI theme configurations */
   consentThemes?: ConsentThemeInput[];
+  /**
+   * Deployment webhook URL called when consent bundles are published.
+   *
+   * @example
+   * ```yaml
+   * consent-manager:
+   *   webhookUrl: https://example.<<parameters.domain>>/consent-deploy
+   * ```
+   */
+  webhookUrl?: string;
+  /**
+   * Custom headers sent with the deployment webhook request.
+   * Mark sensitive values with `isSecret: true`; inventory push preview treats
+   * `webhookHeaders` as write-only so resolved values are not logged.
+   *
+   * @example
+   * ```yaml
+   * consent-manager:
+   *   webhookHeaders:
+   *     - name: x-transcend-token
+   *       value: <<parameters.CONSENT_DEPLOY_TOKEN>>
+   *       isSecret: true
+   * ```
+   */
+  webhookHeaders?: {
+    /** Header name */
+    name: string;
+    /** Header value */
+    value: string;
+    /** Whether the header value is secret */
+    isSecret?: boolean;
+  }[];
   /**
    * When true, traffic is report-only (enforcement off).
    * Maps to the dashboard "Reporting only" mode. Deploy the bundle after pushing to go live.
@@ -432,6 +465,27 @@ export async function syncConsentManager(
       },
       logger,
     });
+  }
+
+  if (consentManager.webhookUrl !== undefined || consentManager.webhookHeaders !== undefined) {
+    const webhookInput: {
+      webhookUrl?: string;
+      headers?: ConsentManagerInput['webhookHeaders'];
+    } = {};
+    if (consentManager.webhookUrl !== undefined) {
+      webhookInput.webhookUrl = consentManager.webhookUrl;
+    }
+    if (consentManager.webhookHeaders !== undefined) {
+      webhookInput.headers = consentManager.webhookHeaders;
+    }
+    await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK, {
+      variables: {
+        airgapBundleId,
+        input: webhookInput,
+      },
+      logger,
+    });
+    logger.info('Successfully synced consent manager deployment webhook');
   }
 
   // TODO: https://transcend.height.app/T-23875

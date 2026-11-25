@@ -20,6 +20,8 @@ export interface CookieInput {
   service?: string;
   /** Status of the tracker (approved vs triage) */
   status?: ConsentTrackerStatus;
+  /** Whether the cookie is junk. Left unchanged when omitted. */
+  isJunk?: boolean;
   /** Email addresses of owners */
   owners?: string[];
   /** Names of teams responsible for managing this cookie */
@@ -66,6 +68,7 @@ export async function updateOrCreateCookies(
           description: cookie.description,
           service: cookie.service,
           status: cookie.status,
+          isJunk: cookie.isJunk,
           attributes: cookie.attributes,
           isRegex: cookie.isRegex,
         })),

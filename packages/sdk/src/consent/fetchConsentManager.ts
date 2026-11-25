@@ -19,6 +19,8 @@ export interface ConsentManager {
   bundleURL: string;
   /** Test bundle URL */
   testBundleURL: string;
+  /** Deployment webhook URL */
+  webhookUrl: string | null;
   /** Configuration of consent manager */
   configuration: {
     /** Domain list */

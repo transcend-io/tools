@@ -14,6 +14,8 @@ export interface ConsentSiteInput {
   site?: string;
   /** Description of the site */
   description?: string;
+  /** Whether the host is included in the Airgap metadata. Left unchanged when omitted. */
+  includeInMetadata?: boolean;
   /** Email addresses of owners */
   owners?: string[];
   /** Names of teams responsible for managing this site */
@@ -68,6 +70,7 @@ export async function syncConsentSites(
             host: site.host,
             site: site.site,
             description: site.description,
+            includeInMetadata: site.includeInMetadata,
             ownerEmails: site.owners,
             teamNames: site.teams,
             attributes: site.attributes,

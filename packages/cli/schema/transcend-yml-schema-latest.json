@@ -1391,6 +1391,9 @@
                 "type": "string",
                 "enum": ["LIVE", "NEEDS_REVIEW"]
               },
+              "isJunk": {
+                "type": "boolean"
+              },
               "owners": {
                 "type": "array",
                 "items": {
@@ -1449,6 +1452,9 @@
                 "type": "string",
                 "enum": ["LIVE", "NEEDS_REVIEW"]
               },
+              "isJunk": {
+                "type": "boolean"
+              },
               "owners": {
                 "type": "array",
                 "items": {
@@ -1493,6 +1499,9 @@
               },
               "description": {
                 "type": "string"
+              },
+              "includeInMetadata": {
+                "type": "boolean"
               },
               "owners": {
                 "type": "array",
@@ -2549,6 +2558,15 @@
                 }
               }
             ]
+          }
+        },
+        "webhookUrl": {
+          "type": "string"
+        },
+        "webhookHeaders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/intersection-xgvhyu"
           }
         },
         "reportOnly": {
