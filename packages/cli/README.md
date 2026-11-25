@@ -31,9 +31,11 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend request cron pull-identifiers`](#transcend-request-cron-pull-identifiers)
   - [`transcend request cron mark-identifiers-completed`](#transcend-request-cron-mark-identifiers-completed)
   - [`transcend consent build-xdi-sync-endpoint`](#transcend-consent-build-xdi-sync-endpoint)
+  - [`transcend consent deploy`](#transcend-consent-deploy)
   - [`transcend consent generate-access-tokens`](#transcend-consent-generate-access-tokens)
   - [`transcend consent pull-consent-metrics`](#transcend-consent-pull-consent-metrics)
   - [`transcend consent pull-consent-preferences`](#transcend-consent-pull-consent-preferences)
+  - [`transcend consent preview-deploy`](#transcend-consent-preview-deploy)
   - [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager)
   - [`transcend consent upload-consent-preferences`](#transcend-consent-upload-consent-preferences)
   - [`transcend consent upload-cookies-from-csv`](#transcend-consent-upload-cookies-from-csv)
@@ -1794,6 +1796,69 @@ transcend consent build-xdi-sync-endpoint \
   --transcendUrl=https://api.us.transcend.io
 ```
 
+### `transcend consent deploy`
+
+```txt
+USAGE
+  transcend consent deploy (--auth value) [--bundleTypes PRODUCTION|TEST] [--expectBundleId value] [--wait] [--waitTimeoutSeconds value] [--transcendUrl value]
+  transcend consent deploy --help
+
+Deploy the Consent Manager bundle without changing the airgap.js version. Use this when the airgap.js version is pinned. To update airgap.js to the latest version first, use `transcend consent update-consent-manager --deploy`. TEST is deployed before PRODUCTION, one at a time, and the command stops at the first failure.
+
+FLAGS
+      --auth                 The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
+     [--bundleTypes]         The bundle types to deploy. Defaults to TEST,PRODUCTION. TEST is always deployed before PRODUCTION.                                                                                                [PRODUCTION|TEST, separator = ,]
+     [--expectBundleId]      Abort unless the Consent Manager ID of the organization matches this value. Protects against deploying with the wrong API key.
+     [--wait]                Wait for each deploy to finish before continuing. Fails if the deploy ends in an error state.                                                                                                      [default = false]
+     [--waitTimeoutSeconds]  Max seconds to wait for each deploy when --wait is set                                                                                                                                             [default = 600]
+     [--transcendUrl]        URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help                 Print help information and exit
+```
+
+#### Examples
+
+**Deploy the TEST and PRODUCTION bundles without changing the airgap.js version**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY"
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+**Deploy just the TEST bundle**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST
+```
+
+**Abort if the API key belongs to a different Consent Manager than expected**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --expectBundleId="$EXPECTED_CONSENT_MANAGER_ID"
+```
+
+**Wait for each deploy to finish and fail if it ends in an error**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --wait --waitTimeoutSeconds=300
+```
+
+**Deploy multiple organizations at once**
+
+```sh
+transcend admin generate-api-keys \
+  --email=test@example.com \
+  --password="$TRANSCEND_PASSWORD" \
+  --scopes="Manage Consent Manager" \
+  --apiKeyTitle="CLI Usage Cross Instance Sync" \
+  --file=./transcend-api-keys.json
+transcend consent deploy --auth=./transcend-api-keys.json
+```
+
 ### `transcend consent generate-access-tokens`
 
 ```txt
@@ -2086,6 +2151,49 @@ If you need to transfer this data, you may want to leverage the following comman
 transcend admin chunk-csv --directory=./working/files --outputDir=./working/chunks
 ```
 
+### `transcend consent preview-deploy`
+
+```txt
+USAGE
+  transcend consent preview-deploy (--auth value) [--bundleTypes PRODUCTION|TEST] [--json] [--transcendUrl value]
+  transcend consent preview-deploy --help
+
+Show what deploying the Consent Manager would change, by comparing the saved configuration with the deployed bundle. This command is read-only and exits with code 0 unless an error occurs.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"
+     [--bundleTypes]   The bundle types to preview. Defaults to TEST,PRODUCTION.                                                                                                                                          [PRODUCTION|TEST, separator = ,]
+     [--json]          Print the result as JSON instead of a text summary                                                                                                                                                 [default = false]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Preview the TEST and PRODUCTION deploys**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview only the PRODUCTION deploy**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --bundleTypes=PRODUCTION
+```
+
+**Print the result as JSON**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
 ### `transcend consent update-consent-manager`
 
 ```txt
@@ -2093,12 +2201,12 @@ USAGE
   transcend consent update-consent-manager (--auth value) (--bundleTypes PRODUCTION|TEST) [--deploy] [--transcendUrl value]
   transcend consent update-consent-manager --help
 
-This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command.
+This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command, but only after the version is updated. To deploy without changing the airgap.js version, use `transcend consent deploy`.
 
 FLAGS
       --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
       --bundleTypes    The bundle types to deploy. Defaults to PRODUCTION,TEST.                                                                                                                                           [PRODUCTION|TEST, separator = ,]
-     [--deploy]        When true, deploy the Consent Manager after updating the version                                                                                                                                   [default = false]
+     [--deploy]        When true, deploy the Consent Manager after updating the version. This always updates airgap.js to the latest version first. To deploy without a version update, use `transcend consent deploy`.   [default = false]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
   -h  --help           Print help information and exit
 ```
@@ -2107,7 +2215,7 @@ FLAGS
 
 Run this command after [`transcend inventory push`](#transcend-inventory-push) to publish your saved consent manager settings. A push alone does not publish them.
 
-This command also upgrades airgap.js to the latest version for each bundle type, then deploys when you pass `--deploy`. It runs even if your `transcend.yml` sets a `version`. Use `--bundleTypes=TEST` to check a new version before you touch `PRODUCTION`.
+This command always updates airgap.js to the latest version for each bundle type, then deploys when you pass `--deploy`. It runs even if your `transcend.yml` sets a `version`. To deploy without changing the airgap.js version, use `transcend consent deploy`. Use `--bundleTypes=TEST` to check a new version before you touch `PRODUCTION`.
 
 #### Examples
 

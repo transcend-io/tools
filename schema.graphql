@@ -4932,6 +4932,7 @@ enum AuditEventCode {
   CONSENT_SITE_TEAM
   AIRGAP_BUNDLE_TCF_STACK
   AIRGAP_PARTITION
+  CONSENT_PARTITION_PURGE
   AIRGAP_PREFIX_MODULE
   AIRGAP_PREFIX_MODULE_RELEASE
   AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE
@@ -4996,6 +4997,7 @@ enum CONSENT_AUDIT_EVENTS {
   AIRGAP_DATA_FLOW_PURPOSE
   AIRGAP_DATA_FLOW_TEAM
   AIRGAP_PARTITION
+  CONSENT_PARTITION_PURGE
   AIRGAP_PREFIX_MODULE
   AIRGAP_PREFIX_MODULE_RELEASE
   AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE
@@ -5546,7 +5548,6 @@ type Query {
   vendors(first: Int, offset: Int = 0, last: Int, filterBy: VendorsFiltersInput, orderBy: [VendorOrder!], useMaster: Boolean, isExportCsv: Boolean): VendorsPayload!
   workflowCommunicationsSettings(input: WorkflowConfigIdInput!): WorkflowCommunicationsSettingsPayload!
   workflowConfig(input: WorkflowConfigInput!): WorkflowConfigPayload!
-  workflowConfigFormItems(input: WorkflowConfigFormItemsInput!): WorkflowConfigFormItemsPayload!
   workflowEnrichers(first: Int, offset: Int = 0, last: Int, input: WorkflowEnrichersInput!): WorkflowEnrichersPayload!
   workflowIdentifiers(first: Int, offset: Int = 0, last: Int, input: WorkflowConfigIdInput!): WorkflowIdentifiersPayload!
   workflowMigrationRun(filterBy: WorkflowMigrationRunFiltersInput!): WorkflowMigrationRunPayload!
@@ -9642,6 +9643,35 @@ input ConsentPartitionFiltersInput {
   ids: [ID!]
   name: String
   partition: String
+}
+
+type ConsentPartitionPurge {
+  executionName: String!
+  partition: String!
+  status: String!
+  startAt: Date!
+  scheduledAt: Date!
+  stoppedAt: Date
+  maxConcurrency: Int!
+  requestedByEmail: String!
+  estimatedRows: Float!
+  roundRowsTotal: Float
+  roundRowsDeleted: Float
+  roundRowsFailed: Float
+  errorCode: String
+}
+
+type ConsentPartitionPurgeEstimate {
+  rows: Float!
+  profiles: Float!
+  identifiers: Float!
+  canDeletePartitionDefinition: Boolean!
+  bundleCount: Int!
+  hasRunningPurge: Boolean!
+}
+
+input ConsentPartitionPurgesInput {
+  organizationId: ID!
 }
 
 type ConsentPartitionsPayload {
@@ -14334,6 +14364,11 @@ type ErasureRedactionSupport {
   supported: Boolean!
   reason: FieldWriteRestrictionReason
   componentFields: [String!]!
+}
+
+input EstimateConsentPartitionPurgeInput {
+  organizationId: ID!
+  partition: String!
 }
 
 type ExistingDnsRecord {
@@ -19211,6 +19246,14 @@ input ScanPluginConfigInput {
   configuration: String
 }
 
+input ScheduleConsentPartitionPurgeInput {
+  organizationId: ID!
+  partition: String!
+  startAt: Date
+  maxConcurrency: Int
+  deletePartitionDefinition: Boolean
+}
+
 type SchemaDiscoveryPluginConfigurationSchema {
   scanObjectsToFilter: [ScanObject!]
 }
@@ -23561,7 +23604,6 @@ type WorkflowConfig {
   postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   formItems: [WorkflowConfigFormItem!]
-  confirmations: [WorkflowConfigConfirmation!]
   internalName: String!
   allowLegacyApiSubmission: Boolean!
   unresolvedRequiredIdentifierCount: Int
@@ -23579,13 +23621,6 @@ type WorkflowConfigAttributeKey {
   workflowConfigId: ID!
   attributeKeyId: ID!
   attributeKey: AttributeKey!
-}
-
-type WorkflowConfigConfirmation {
-  id: ID!
-  index: Int!
-  isRequired: Boolean!
-  label: LocalizedMessage!
 }
 
 input WorkflowConfigConfirmationInput {
@@ -23639,16 +23674,6 @@ type WorkflowConfigFormItem {
   authenticationMethods: [AuthenticationMethod!]
   jsonSchema: String
   examples: [FormItemJsonExample!]
-}
-
-type WorkflowConfigFormItemsPayload {
-  clientMutationId: String
-  nodes: [WorkflowConfigFormItem!]!
-}
-
-input WorkflowConfigFormItemsInput {
-  workflowConfigId: ID!
-  types: [FormType!]!
 }
 
 type WorkflowConfigIdentifier {

@@ -4,6 +4,7 @@ import { type DocumentNode, print } from 'graphql';
 
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
+import { isMcpDebugLogEnabled, logMcpDebugEvent, mirrorLogToDebugFile } from '../../debug-log.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
 import { ToolError, classifyGraphQLErrors, classifyHttpError } from '../../errors.js';
 import {
@@ -77,6 +78,7 @@ export class SimpleLogger implements Logger {
       logData = data;
     }
 
+    mirrorLogToDebugFile(level, logMessage, logData);
     const line = JSON.stringify({
       level,
       message: logMessage,
@@ -102,6 +104,7 @@ export class SimpleLogger implements Logger {
   error(message: string, data?: unknown): void {
     // Stdio MCP mode: plain-text errors are easier to read in Cursor than JSON blobs.
     if (!SimpleLogger.useStdoutForInfo && data instanceof Error) {
+      mirrorLogToDebugFile('error', formatErrorLogMessage(message, data));
       process.stderr.write(`${formatErrorLogMessage(message, data)}\n`);
       if (process.env.LOG_LEVEL === 'debug' && data.stack) {
         process.stderr.write(`${data.stack}\n`);
@@ -221,6 +224,35 @@ export class TranscendGraphQLBase {
     query: string | TypedDocumentNode<TResult, TVariables>,
     variables?: TVariables,
     options: RequestOptions = {},
+  ): Promise<TResult> {
+    if (!isMcpDebugLogEnabled()) {
+      return this.sendGraphQLRequest(query, variables, options);
+    }
+
+    // Operation name and timing only. Variables can hold customer data.
+    const queryText = typeof query === 'string' ? query : print(query as DocumentNode);
+    const operation = /\b(?:query|mutation)\s+(\w+)/.exec(queryText)?.[1] ?? 'anonymous';
+    const startedAt = Date.now();
+    logMcpDebugEvent('graphql.start', { operation });
+    try {
+      const result = await this.sendGraphQLRequest(query, variables, options);
+      logMcpDebugEvent('graphql.end', { operation, ok: true, elapsedMs: Date.now() - startedAt });
+      return result;
+    } catch (error) {
+      logMcpDebugEvent('graphql.end', {
+        operation,
+        ok: false,
+        elapsedMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  private async sendGraphQLRequest<TResult, TVariables = Record<string, unknown>>(
+    query: string | TypedDocumentNode<TResult, TVariables>,
+    variables: TVariables | undefined,
+    options: RequestOptions,
   ): Promise<TResult> {
     await this.rateLimitWait();
 
