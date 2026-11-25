@@ -7,7 +7,11 @@ import { readTranscendYaml } from '../readTranscendYaml.js';
 
 const EXAMPLE_DIR = join(__dirname, '..', '..', '..', 'examples');
 
-const MULTI_INSTANCE_VARS = { domain: 'acme.com', stage: 'Staging' } as const;
+const MULTI_INSTANCE_VARS = {
+  domain: 'acme.com',
+  stage: 'Staging',
+  CONSENT_DEPLOY_TOKEN: 'token-from-ci',
+} as const;
 
 describe('transcend.yml example files decode', () => {
   readdirSync(EXAMPLE_DIR)
