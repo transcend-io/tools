@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-base
 
+## 3.2.3
+
+### Patch Changes
+
+- 58d7c99: Confirmation debug log records form lifecycle and decision events, and shows a matching reference on the approval form when logging is enabled.
+- 49edd62: Confirmation tools cap the deploy-summary step at eight seconds and show different text for a timed-out summary versus a failed one.
+- de8479c: Confirmation tools send `notifications/progress` every ten seconds while waiting for approval when the host provided a progress token.
+- Updated dependencies [e65594d]
+  - @transcend-io/sdk@3.7.0
+
 ## 3.2.2
 
 ### Patch Changes
