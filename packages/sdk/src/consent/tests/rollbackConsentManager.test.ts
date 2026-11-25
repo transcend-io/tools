@@ -1,3 +1,4 @@
+import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { ConsentBundleType } from '@transcend-io/privacy-types';
 import type { GraphQLClient } from 'graphql-request';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +10,7 @@ vi.mock('../../api/makeGraphQLRequest.js', () => ({
 }));
 
 import {
+  AIRGAP_BUNDLE_MESSAGE_LOCALE_GRAPHQL_KEYS,
   AIRGAP_BUNDLE_ROLLBACK_FIELDS,
   AIRGAP_BUNDLE_ROLLBACK_VERSIONS,
   ROLLBACK_AIRGAP_BUNDLE,
@@ -56,6 +58,12 @@ const versionsResponse = {
 describe('rollbackConsentManager', () => {
   beforeEach(() => {
     makeGraphQLRequest.mockReset();
+  });
+
+  it('uses LOCALE_KEY for message locale GraphQL fields', () => {
+    for (const key of AIRGAP_BUNDLE_MESSAGE_LOCALE_GRAPHQL_KEYS) {
+      expect(key in LOCALE_KEY).toBe(true);
+    }
   });
 
   it('queries every field the rollback input accepts', () => {
