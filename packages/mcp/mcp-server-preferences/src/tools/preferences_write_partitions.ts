@@ -10,6 +10,7 @@ export const WritePartitionsSchema = z.object({
   partitions: ymlItemsSchema(
     'Partitions to create, matched by name. Existing names are left alone, and nothing is ' +
       'deleted. Same as the partitions section of transcend inventory push.',
+    { codec: PartitionInput },
   ),
 });
 export type WritePartitionsInput = z.infer<typeof WritePartitionsSchema>;

@@ -13,7 +13,7 @@ export const WriteWorkflowConfigsSchema = z.object({
   workflowConfigs: ymlItemsSchema(
     'Configs to create or update. Same shape as the transcend.yml preference-workflow-configs ' +
       'section. Use config_get_schema for details.',
-    50,
+    { codec: PreferenceWorkflowConfigInput, max: 50 },
   ),
 });
 export type WriteWorkflowConfigsInput = z.infer<typeof WriteWorkflowConfigsSchema>;
