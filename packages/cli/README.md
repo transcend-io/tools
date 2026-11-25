@@ -36,6 +36,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent pull-consent-metrics`](#transcend-consent-pull-consent-metrics)
   - [`transcend consent pull-consent-preferences`](#transcend-consent-pull-consent-preferences)
   - [`transcend consent preview-deploy`](#transcend-consent-preview-deploy)
+  - [`transcend consent rollback`](#transcend-consent-rollback)
   - [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager)
   - [`transcend consent upload-consent-preferences`](#transcend-consent-upload-consent-preferences)
   - [`transcend consent upload-cookies-from-csv`](#transcend-consent-upload-cookies-from-csv)
@@ -2190,6 +2191,48 @@ transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --json
 
 ```sh
 transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend consent rollback`
+
+```txt
+USAGE
+  transcend consent rollback (--auth value) (--bundleTypes PRODUCTION|TEST) (--version value) [--dryRun] [--transcendUrl value]
+  transcend consent rollback --help
+
+Roll the Consent Manager bundle back to the module versions of an earlier deploy. You must pass the bundle types and the airgap.js version to roll back to. Every target is looked up before anything changes, so a missing version changes nothing.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
+      --bundleTypes    The bundle types to roll back. Required, there is no default.                                                                                                                                      [PRODUCTION|TEST, separator = ,]
+      --version        The airgap.js version to roll back to. It must be an earlier deploy of each bundle type.
+     [--dryRun]        Look up the rollback targets and print them without rolling back                                                                                                                                   [default = false]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Roll the TEST bundle back to an earlier airgap.js version**
+
+```sh
+transcend consent rollback --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST --version=1.2.3
+```
+
+**Check what a PRODUCTION rollback would do without changing anything**
+
+```sh
+transcend consent rollback --auth="$TRANSCEND_API_KEY" --bundleTypes=PRODUCTION --version=1.2.3 --dryRun
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent rollback \
+  --auth="$TRANSCEND_API_KEY" \
+  --bundleTypes=TEST,PRODUCTION \
+  --version=1.2.3 \
+  --transcendUrl=https://api.us.transcend.io
 ```
 
 ### `transcend consent update-consent-manager`
