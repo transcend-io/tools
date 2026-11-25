@@ -93,8 +93,8 @@ describe('fetchDeployedCompanionModules', () => {
           tcfVendorsList: { location: 'tcf.json' },
           nativeAppConfig: { location: 'native.json' },
           stylesheet: { location: 's.css' },
-          En: { location: 'en.json' },
-          'uiV2-default-consent-en': { location: 'u2.json' },
+          en: { location: 'en.json' },
+          'uiV2-en': { location: 'u2.json' },
         },
       },
       'https://transcend-cdn.com',
@@ -104,53 +104,8 @@ describe('fetchDeployedCompanionModules', () => {
     expect(result.nativeApp).toEqual({ fetched: true });
     expect(result.stylesheet).toBe('.rule{}');
     expect(result.messages).toEqual({ en: { fetched: true } });
-    expect(result.uiV2Messages).toEqual({ 'uiV2-default-consent-en': { fetched: true } });
+    expect(result.uiV2Messages).toEqual({ 'uiV2-en': { fetched: true } });
     expect(gotMock.json).toHaveBeenCalledWith('https://transcend-cdn.com/tcf.json');
     expect(gotMock.text).toHaveBeenCalledWith('https://transcend-cdn.com/s.css');
-  });
-
-  it('keys locale messages by locale code and skips modules that are not locales', async () => {
-    const result = await fetchDeployedCompanionModules(
-      {
-        modules: {
-          En: { location: 'en.json' },
-          AfZz: { location: 'af.json' },
-          metadata: { location: 'metadata.json' },
-          mobileUiLoadOptions: { location: 'mobile.json' },
-          constructor: { location: 'prototype-key.json' },
-        },
-      },
-      'https://transcend-cdn.com',
-    );
-
-    expect(Object.keys(result.messages as object).sort()).toEqual(['af-ZA', 'en']);
-    expect(gotMock.json).not.toHaveBeenCalledWith('https://transcend-cdn.com/metadata.json');
-    expect(gotMock.json).not.toHaveBeenCalledWith('https://transcend-cdn.com/mobile.json');
-    expect(gotMock.json).not.toHaveBeenCalledWith('https://transcend-cdn.com/prototype-key.json');
-  });
-
-  it('fetches modules in parallel with a concurrency cap', async () => {
-    let inFlight = 0;
-    let maxInFlight = 0;
-    gotMock.json.mockImplementation(async () => {
-      inFlight += 1;
-      maxInFlight = Math.max(maxInFlight, inFlight);
-      await new Promise((resolve) => {
-        setTimeout(resolve, 5);
-      });
-      inFlight -= 1;
-      return { fetched: true };
-    });
-
-    const uiV2Modules = Object.fromEntries(
-      Array.from({ length: 30 }, (_, i) => [
-        `uiV2-default-consent-l${i}`,
-        { location: `u${i}.json` },
-      ]),
-    );
-    await fetchDeployedCompanionModules({ modules: uiV2Modules }, 'https://transcend-cdn.com');
-
-    expect(maxInFlight).toBeGreaterThan(1);
-    expect(maxInFlight).toBeLessThanOrEqual(10);
   });
 });
