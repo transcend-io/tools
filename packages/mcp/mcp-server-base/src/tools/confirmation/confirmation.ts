@@ -11,6 +11,7 @@ import { describeArgs, type ConfirmationSummary } from '../describe-args.js';
 import { createToolResult } from '../helpers.js';
 import { assertConfirmableSchema, type ToolDefinition } from '../types.js';
 import { declineCameFromUndeliveredPrompt } from './cursor-decline-quirk.js';
+import { withProgressHeartbeat } from './progress-heartbeat.js';
 import {
   ConfirmationCode,
   ConfirmationPolicy,
@@ -191,18 +192,25 @@ export function withConfirmation(
       // the restriction applies to it, which is backwards.
       if (gate.policy === ConfirmationPolicy.Refuse) return refusedByPolicy(tool.name, message);
 
-      const describeText = await resolveConfirmationDescribe(tool.name, describeFn, args);
-      const promptMessage = messageWithDescribe(message, describeText);
-
-      const asked = await askForConfirmation(tool.name, promptMessage, args, {
-        // An unbound prompt lands on the connection's shared stream, where it can
-        // surface in the wrong user's turn or go undelivered and silently expire.
-        // stdio has one stream and a token to fall back on, so neither applies.
-        requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
-        // Without somewhere to fall back to, second-guessing a refusal would only
-        // change which refusal is returned, so the host's answer stands as given.
-        softConfirmationAvailable: tokens !== undefined,
-      });
+      // The host counts the whole wait, summary and open form included, against its
+      // call timeout. Heartbeats tell it the call is alive while a person decides.
+      const { promptMessage, asked } = await withProgressHeartbeat(
+        'Waiting for approval',
+        async () => {
+          const describeText = await resolveConfirmationDescribe(tool.name, describeFn, args);
+          const text = messageWithDescribe(message, describeText);
+          const outcome = await askForConfirmation(tool.name, text, args, {
+            // An unbound prompt lands on the connection's shared stream, where it can
+            // surface in the wrong user's turn or go undelivered and silently expire.
+            // stdio has one stream and a token to fall back on, so neither applies.
+            requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
+            // Without somewhere to fall back to, second-guessing a refusal would only
+            // change which refusal is returned, so the host's answer stands as given.
+            softConfirmationAvailable: tokens !== undefined,
+          });
+          return { promptMessage: text, asked: outcome };
+        },
+      );
       if (asked.outcome === 'confirmed') return await mutate(args);
       if (asked.outcome === 'refused') return asked.result;
 
