@@ -31,6 +31,8 @@ export function createConsentDeployBundleTool(clients: ToolClients) {
     description:
       'Deploy (publish, release) the saved consent manager Airgap bundle. TEST updates /cm-test; ' +
       'PRODUCTION updates the live /cm bundle that site visitors load. Use consent_preview_deploy for a diff. ' +
+      'Shows the user an approval form. If the call times out, the form probably expired before ' +
+      'anyone answered: tell the user, and retry once so they can approve again. ' +
       'Requires Manage Consent Manager scope.',
     category: 'Consent Management',
     readOnly: false,
