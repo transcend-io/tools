@@ -1,13 +1,24 @@
 /**
- * What the confirmation gate does while it waits on the summary step.
+ * What the confirmation gate does while it waits: the summary step, the open form,
+ * and the progress signal to the host. Also what it writes to the debug log.
+ *
+ * The host's call limit counts all of this wait, so the properties under test are
+ * that the summary step cannot eat the budget, that a host which asked for progress
+ * gets it, and that nothing is left running afterwards.
  */
+
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { ServerNotification } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
+import { MCP_LOG_FILE_ENV } from '../src/debug-log.js';
 import { mcpSessionContext, type McpSession } from '../src/mcp-session-context.js';
+import { toolCallContext } from '../src/tool-call-context.js';
 import {
   CONFIRMATION_DESCRIBE_TIMEOUT_MS,
   ConfirmationPolicy,
@@ -180,5 +191,87 @@ describe('progress while waiting for approval', () => {
 
     host.approve();
     await run;
+  });
+});
+
+describe('the debug log', () => {
+  let logFile: string;
+
+  beforeEach(() => {
+    logFile = join(mkdtempSync(join(tmpdir(), 'mcp-debug-')), 'nested', 'mcp.jsonl');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function runLogged() {
+    const host = waitingHost('tok-1');
+    const run = toolCallContext.run(
+      {
+        toolName: 'test_wait',
+        correlationId: 'abcdef12-0000-0000-0000-000000000000',
+        requestId: 7,
+      },
+      () =>
+        mcpSessionContext.run(host.session, async () =>
+          gated(async () => 'TEST changed.').handler({ requestId: 'secret-arg-value' }),
+        ),
+    );
+    await vi.waitFor(() => expect(host.elicitInput).toHaveBeenCalled());
+    host.approve();
+    await run;
+    return host;
+  }
+
+  function events(): Array<{ event: string; ref?: string; data?: Record<string, unknown> }> {
+    return readFileSync(logFile, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+  }
+
+  it('records the wait, the form, and the decision, tied to one reference', async () => {
+    vi.stubEnv(MCP_LOG_FILE_ENV, logFile);
+    await runLogged();
+
+    const logged = events();
+    expect(logged.map((e) => e.event)).toEqual([
+      'progress.heartbeat.start',
+      'confirmation.describe.start',
+      'confirmation.describe.end',
+      'confirmation.form.sent',
+      'confirmation.form.answered',
+      'confirmation.decision',
+    ]);
+    expect(new Set(logged.map((e) => e.ref))).toEqual(new Set(['abcdef12']));
+    expect(logged.find((e) => e.event === 'progress.heartbeat.start')?.data).toEqual({
+      hasProgressToken: true,
+      canNotify: true,
+    });
+    expect(logged.find((e) => e.event === 'confirmation.form.answered')?.data).toMatchObject({
+      action: 'accept',
+    });
+  });
+
+  it('never writes argument values to the log', async () => {
+    vi.stubEnv(MCP_LOG_FILE_ENV, logFile);
+    await runLogged();
+
+    expect(readFileSync(logFile, 'utf8')).not.toContain('secret-arg-value');
+  });
+
+  it('adds the reference to the form so a screenshot finds the events', async () => {
+    vi.stubEnv(MCP_LOG_FILE_ENV, logFile);
+    const host = await runLogged();
+
+    expect(formMessage(host)).toMatch(/\n\nRef: abcdef12$/);
+  });
+
+  it('leaves the form and the disk alone when logging is off', async () => {
+    vi.stubEnv(MCP_LOG_FILE_ENV, '');
+    const host = await runLogged();
+
+    expect(formMessage(host)).not.toContain('Ref:');
+    expect(() => readFileSync(logFile, 'utf8')).toThrow();
   });
 });
