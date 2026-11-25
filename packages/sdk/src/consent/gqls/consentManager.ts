@@ -52,6 +52,8 @@ export interface TranscendConsentManagerConfigGql {
 export interface TranscendConsentManagerGql {
   /** Consent manager / airgap bundle ID */
   id: string;
+  /** When true, the bundle is in reporting-only mode (enforcement off) */
+  off: boolean;
   /** Production bundle URL */
   bundleURL: string;
   /** Test bundle URL */
@@ -79,6 +81,7 @@ export const FETCH_CONSENT_MANAGER = gql`
     consentManager {
       consentManager {
         id
+        off
         bundleURL
         testBundleURL
         configuration {
@@ -300,6 +303,16 @@ export const TOGGLE_TELEMETRY_PARTITION_STRATEGY = gql`
 export const TOGGLE_CONSENT_PRECEDENCE = gql`
   mutation TranscendCliToggleConsentPrecedence($input: ToggleConsentPrecedenceInput!) {
     toggleConsentPrecedence(input: $input) {
+      clientMutationId
+    }
+  }
+`;
+
+export const TOGGLE_CONSENT_MANAGER_ENFORCEMENT = gql`
+  mutation TranscendCliToggleConsentManagerEnforcement(
+    $input: ToggleConsentManagerEnforcementInput!
+  ) {
+    toggleConsentManagerEnforcement(input: $input) {
       clientMutationId
     }
   }
