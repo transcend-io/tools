@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-config",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Transcend MCP Server — transcend.yml pull and push tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-config",
   "license": "Apache-2.0",

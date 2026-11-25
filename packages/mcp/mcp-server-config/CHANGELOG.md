@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-config
 
+## 0.2.2
+
+### Patch Changes
+
+- 63e5999: Support consent manager `reportOnly` in transcend.yml inventory push and pull.
+- Updated dependencies [9b34876]
+- Updated dependencies [63e5999]
+  - @transcend-io/sdk@3.5.0
+
 ## 0.2.1
 
 ### Patch Changes
