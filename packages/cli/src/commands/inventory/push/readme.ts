@@ -96,7 +96,7 @@ ${buildExampleCommand<UpdateConsentManagerCommandFlags>(['consent', 'update-cons
 Two things to know before you push:
 
 - A push replaces the whole \`consent-manager.domains\` list. Domains missing from your file are removed.
-- \`transcend consent update-consent-manager\` also upgrades airgap.js to the latest version for each bundle type you pass. The default is \`TEST\` and \`PRODUCTION\`. Deploy \`TEST\` first if you want to check the new version.
+- \`inventory push\` applies \`consent-manager.version\` from \`transcend.yml\` when you set it. It does not upgrade airgap.js. The separate \`transcend consent update-consent-manager\` command moves each bundle to the latest airgap.js and overrides a pinned version. Its default bundle types are \`TEST\` and \`PRODUCTION\`. Deploy \`TEST\` first if you want to check the new version.
 
 #### Scopes
 
