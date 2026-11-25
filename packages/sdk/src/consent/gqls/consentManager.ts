@@ -603,14 +603,25 @@ export const UPDATE_CONSENT_UI_THEME = gql`
 `;
 // ---- Deploy state and rollback ----
 
-/** Deploy status of the consent manager, see BundleDeployStatus in the GraphQL schema */
+/** Deploy status of the consent manager, aligned with BundleDeployStatus in the GraphQL schema */
+export const TranscendConsentManagerDeployState = {
+  /** Deploy completed successfully */
+  Deployed: 'DEPLOYED',
+  /** Deploy in progress */
+  DeployPending: 'DEPLOY_PENDING',
+  /** Preview deploy */
+  Preview: 'PREVIEW',
+  /** Rollback in progress */
+  RollbackPending: 'ROLLBACK_PENDING',
+  /** Deploy failed */
+  Error: 'ERROR',
+  /** Test deploy failed */
+  TestError: 'TEST_ERROR',
+} as const;
+
+/** Values of {@link TranscendConsentManagerDeployState} */
 export type TranscendConsentManagerDeployState =
-  | 'DEPLOYED'
-  | 'DEPLOY_PENDING'
-  | 'PREVIEW'
-  | 'ROLLBACK_PENDING'
-  | 'ERROR'
-  | 'TEST_ERROR';
+  (typeof TranscendConsentManagerDeployState)[keyof typeof TranscendConsentManagerDeployState];
 
 /** Deploy state fields of the consent manager */
 export interface TranscendConsentManagerDeployStateGql {

@@ -2,13 +2,19 @@ import { sleepPromise, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { fetchConsentManagerDeployState } from './fetchConsentManagerDeployState.js';
-import type { TranscendConsentManagerDeployState } from './gqls/consentManager.js';
+import { TranscendConsentManagerDeployState } from './gqls/consentManager.js';
 
 /** States that mean a deploy or rollback is still running */
-const PENDING_STATES: TranscendConsentManagerDeployState[] = ['DEPLOY_PENDING', 'ROLLBACK_PENDING'];
+const PENDING_STATES: TranscendConsentManagerDeployState[] = [
+  TranscendConsentManagerDeployState.DeployPending,
+  TranscendConsentManagerDeployState.RollbackPending,
+];
 
 /** States that mean the last deploy failed */
-const ERROR_STATES: TranscendConsentManagerDeployState[] = ['ERROR', 'TEST_ERROR'];
+const ERROR_STATES: TranscendConsentManagerDeployState[] = [
+  TranscendConsentManagerDeployState.Error,
+  TranscendConsentManagerDeployState.TestError,
+];
 
 /**
  * Poll the consent manager until the deploy is no longer pending.
