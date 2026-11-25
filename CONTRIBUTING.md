@@ -168,8 +168,9 @@ After a normal install from the repo root, Husky configures local Git hooks auto
 
 Both hooks pass `--affected --concurrency=4` to Turbo. They check the packages your branch changed
 against `origin/main`, plus the packages that depend on them, four tasks at a time. Set
-`TURBO_SCM_BASE` to compare against another ref. Run `pnpm quality:fix` or `pnpm test` to check the
-full workspace.
+`TURBO_SCM_BASE` to compare against another ref. When that ref does not exist locally, the hooks
+check the full workspace. Run `pnpm quality:fix` or `pnpm test` to check the full workspace
+yourself.
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.
