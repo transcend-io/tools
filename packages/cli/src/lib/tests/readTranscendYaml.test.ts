@@ -46,6 +46,7 @@ describe('readTranscendYaml', () => {
     const result = readTranscendYaml(join(EXAMPLE_DIR, 'multi-instance.yml'), {
       domain: 'acme.com',
       stage: 'Staging',
+      CONSENT_DEPLOY_TOKEN: 'token-from-ci',
     });
 
     expect(result!.preflights![0].url).to.equal(
@@ -55,6 +56,10 @@ describe('readTranscendYaml', () => {
     expect(result!['data-silos']![0].description).to.equal(
       'The mega-warehouse that contains a copy over all SQL backed databases - Staging',
     );
+    expect(result!['consent-manager']?.webhookUrl).to.equal(
+      'https://example.acme.com/consent-deploy',
+    );
+    expect(result!['consent-manager']?.webhookHeaders?.[0]?.value).to.equal('token-from-ci');
   });
 
   it('normalizes legacy enrichers key to preflights', () => {
