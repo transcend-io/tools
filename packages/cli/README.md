@@ -50,6 +50,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
+  - [`transcend inventory check`](#transcend-inventory-check)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
   - [`transcend inventory discover-silos`](#transcend-inventory-discover-silos)
   - [`transcend inventory pull-datapoints`](#transcend-inventory-pull-datapoints)
@@ -3526,6 +3527,68 @@ data-silos:
     url: https://example.<<parameters.domain>>/transcend-webhook
     api-key-title: Webhook Key
 ```
+
+### `transcend inventory check`
+
+```txt
+USAGE
+  transcend inventory check [--file value] [--rules *|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers] [--variables value] [--json]
+  transcend inventory check --help
+
+Reads a transcend.yml the same way inventory push does and checks that it matches the schema. Pass --rules to also run opt-in rules. Exits non-zero when any error is found. No Transcend API key and no network access are needed.
+
+FLAGS
+     [--file]       Path to the transcend.yml file to check                                                                        [default = ./transcend.yml]
+     [--rules]      Comma-separated opt-in rules to run, or * for every rule. By default only the schema check runs.               [*|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers, separator = ,]
+     [--variables]  Variables to template into the YAML file, the same as inventory push. Comma-separated list of key:value pairs. [default = ""]
+     [--json]       Print the result as JSON on stdout                                                                             [default = false]
+  -h  --help        Print help information and exit
+```
+
+#### Examples
+
+**Check that ./transcend.yml matches the schema**
+
+```sh
+transcend inventory check
+```
+
+**Check a file at a custom location**
+
+```sh
+transcend inventory check --file=./custom/location.yml
+```
+
+**Run opt-in rules on consent sites**
+
+```sh
+transcend inventory check --rules=consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts
+```
+
+**Run every opt-in rule in CI and read the result as JSON**
+
+```sh
+transcend inventory check --rules=* --json
+```
+
+**Fill in template variables, the same as inventory push**
+
+```sh
+transcend inventory check --variables=domain:example.com
+```
+
+By default `check` only decodes the file with the same codecs as `inventory push`. Decode errors
+include the key path. Pass `--rules` to turn on more checks.
+
+| Rule                     | What it checks                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                      | Runs every rule below. New rules join this set as the SDK gains them.                                                                                               |
+| `consentSitesHaveOwners` | Every `consent-sites` row has a real owner or team. Empty lists and the placeholders UNASSIGNED, TBD, and TODO (any case) do not count.                             |
+| `consentSitesInDomains`  | Every `consent-sites` host is in `consent-manager.domains`. Case and a leading `www.` are ignored. Hosts with a port, such as `localhost:5173`, must match exactly. |
+| `uniqueConsentSiteHosts` | No duplicate hosts in `consent-sites`.                                                                                                                              |
+| `uniqueTrackers`         | No duplicate `data-flows` (value and type) or `cookies` (name and isRegex).                                                                                         |
+
+The command exits with code 1 when any error is found.
 
 ### `transcend inventory scan-packages`
 
