@@ -52,6 +52,8 @@ export interface TranscendConsentManagerConfigGql {
 export interface TranscendConsentManagerGql {
   /** Consent manager / airgap bundle ID */
   id: string;
+  /** When true, the bundle is in reporting-only mode (enforcement off) */
+  off: boolean;
   /** Production bundle URL */
   bundleURL: string;
   /** Test bundle URL */
@@ -79,6 +81,7 @@ export const FETCH_CONSENT_MANAGER = gql`
     consentManager {
       consentManager {
         id
+        off
         bundleURL
         testBundleURL
         configuration {
@@ -184,6 +187,69 @@ export const DEPLOY_CONSENT_MANAGER = gql`
   }
 `;
 
+/** Response from CONSENT_MANAGER_CONFIGURATION_JSON */
+export interface TranscendCliConsentManagerConfigurationJsonResponse {
+  /** Configuration JSON wrapper */
+  consentManagerConfigurationJson: {
+    /** Nested configuration record */
+    consentManagerConfigurationJson: {
+      /** Airgap bundle ID */
+      id: string;
+      /** Pending production configuration JSON */
+      configurationJson: string;
+      /** Pending test configuration JSON */
+      testConfigurationJson: string;
+      /** Whether TCF is enabled */
+      useIabFramework: boolean;
+    };
+  };
+}
+
+export const CONSENT_MANAGER_CONFIGURATION_JSON = gql`
+  query TranscendCliConsentManagerConfigurationJson($id: ID!) {
+    consentManagerConfigurationJson(id: $id) {
+      consentManagerConfigurationJson {
+        id
+        configurationJson
+        testConfigurationJson
+        useIabFramework
+      }
+    }
+  }
+`;
+
+/** One airgap bundle version node */
+export interface TranscendCliAirgapBundleVersionNode {
+  /** Serialized core module config at deploy time */
+  coreConfig: string | null;
+  /** When this version was published */
+  createdAt: string;
+}
+
+/** Response from AIRGAP_BUNDLE_VERSIONS */
+export interface TranscendCliAirgapBundleVersionsResponse {
+  /** Version list */
+  airgapBundleVersions: {
+    /** Most recent versions first */
+    nodes: TranscendCliAirgapBundleVersionNode[];
+  };
+}
+
+export const AIRGAP_BUNDLE_VERSIONS = gql`
+  query TranscendCliAirgapBundleVersions(
+    $id: ID!
+    $first: Int!
+    $input: AirgapBundleVersionsInput!
+  ) {
+    airgapBundleVersions(id: $id, first: $first, input: $input) {
+      nodes {
+        coreConfig
+        createdAt
+      }
+    }
+  }
+`;
+
 export const UPDATE_CONSENT_MANAGER_DOMAINS = gql`
   mutation TranscendCliUpdateConsentManagerDomains($airgapBundleId: ID!, $domains: [String!]!) {
     updateConsentManagerDomains(input: { id: $airgapBundleId, domains: $domains }) {
@@ -237,6 +303,16 @@ export const TOGGLE_TELEMETRY_PARTITION_STRATEGY = gql`
 export const TOGGLE_CONSENT_PRECEDENCE = gql`
   mutation TranscendCliToggleConsentPrecedence($input: ToggleConsentPrecedenceInput!) {
     toggleConsentPrecedence(input: $input) {
+      clientMutationId
+    }
+  }
+`;
+
+export const TOGGLE_CONSENT_MANAGER_ENFORCEMENT = gql`
+  mutation TranscendCliToggleConsentManagerEnforcement(
+    $input: ToggleConsentManagerEnforcementInput!
+  ) {
+    toggleConsentManagerEnforcement(input: $input) {
       clientMutationId
     }
   }

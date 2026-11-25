@@ -1,6 +1,6 @@
+import { TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { AdminMixin } from '../src/graphql.js';
 import { getAdminTools } from '../src/tools.js';
 
 const EXPECTED_TOOL_NAMES = [
@@ -9,8 +9,12 @@ const EXPECTED_TOOL_NAMES = [
   'admin_list_users',
   'admin_list_teams',
   'admin_list_api_keys',
-  'admin_create_api_key',
-  'admin_get_privacy_center',
+  'admin_list_scopes',
+  'admin_list_action_items',
+  'admin_write_action_items',
+  'admin_list_action_item_collections',
+  'admin_write_action_item_collections',
+  'admin_write_teams',
   'admin_test_connection',
 ] as const;
 
@@ -21,8 +25,6 @@ describe('Admin Tools', () => {
     listUsers: ReturnType<typeof vi.fn>;
     listTeams: ReturnType<typeof vi.fn>;
     listApiKeys: ReturnType<typeof vi.fn>;
-    createApiKey: ReturnType<typeof vi.fn>;
-    getPrivacyCenter: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
   };
@@ -39,8 +41,6 @@ describe('Admin Tools', () => {
       listUsers: vi.fn(),
       listTeams: vi.fn(),
       listApiKeys: vi.fn(),
-      createApiKey: vi.fn(),
-      getPrivacyCenter: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
@@ -57,61 +57,90 @@ describe('Admin Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 8 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
-  describe('admin_create_api_key', () => {
-    it('zodSchema rejects when title and scopes are missing', () => {
+  describe('admin_list_scopes', () => {
+    it('returns compact rows for every TRANSCEND_SCOPES key by default', async () => {
       const tools = getTools();
-      const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
 
-      const result = tool.zodSchema.safeParse({});
-      expect(result.success).toBe(false);
-      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
-        expect.arrayContaining(['title', 'scopes']),
-      );
-      expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
+      const result = (await tool.handler({})) as {
+        success: boolean;
+        data: Array<{
+          name: string;
+          title: string;
+          type: string;
+          dependencies: string[];
+          description?: string;
+          products?: string[];
+        }>;
+        totalCount: number;
+      };
+
+      const catalogNames = Object.keys(TRANSCEND_SCOPES);
+      expect(result.success).toBe(true);
+      expect(result.totalCount).toBe(catalogNames.length);
+      expect(result.data.map((row) => row.name)).toEqual(catalogNames);
+      expect(result.data[0]).toEqual({
+        name: result.data[0].name,
+        title: expect.any(String),
+        type: expect.any(String),
+        dependencies: expect.any(Array),
+      });
+      expect(result.data[0]).not.toHaveProperty('description');
+      expect(result.data[0]).not.toHaveProperty('products');
+      expect(mockGraphql.listApiKeys).not.toHaveBeenCalled();
     });
 
-    it('creates API key on success', async () => {
-      // The mixin now returns a flat CreatedApiKey (extends ApiKey) carrying
-      // the plain-text bearer in `token`. There is no longer a nested
-      // `apiKey` wrapper -- that shape was the original schema-drift bug.
-      const created = {
-        id: 'key-1',
-        title: 'Test Key',
-        scopes: [{ id: 'scope-1', name: 'readWrite' }],
-        createdAt: '2024-01-01',
-        token: 'secret-token',
-      };
-      mockGraphql.createApiKey.mockResolvedValue(created);
-
+    it('adds description and products when includeDetails is true', async () => {
       const tools = getTools();
-      const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
 
-      const result = await tool.handler({ title: 'Test Key', scopes: ['readWrite'] });
+      const result = (await tool.handler({ includeDetails: true })) as {
+        data: Array<{ description?: string; products?: string[] }>;
+      };
 
-      expect(result).toMatchObject({
-        success: true,
-        data: {
-          apiKey: { id: 'key-1', title: 'Test Key' },
-          token: 'secret-token',
-        },
-      });
-      expect(mockGraphql.createApiKey).toHaveBeenCalledWith({
-        title: 'Test Key',
-        scopes: ['readWrite'],
-        dataSilos: undefined,
-      });
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          description: expect.any(String),
+          products: expect.any(Array),
+        }),
+      );
+    });
+
+    it('filters by text over name, title, and description', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_scopes')!;
+
+      const result = (await tool.handler({ text: 'consent' })) as {
+        data: Array<{ name: string }>;
+        totalCount: number;
+      };
+
+      expect(result.totalCount).toBeGreaterThan(0);
+      expect(result.totalCount).toBeLessThan(Object.keys(TRANSCEND_SCOPES).length);
+      expect(result.data.some((row) => row.name.toLowerCase().includes('consent'))).toBe(true);
     });
   });
 
   describe('admin_list_users', () => {
     it('returns list on success', async () => {
-      const nodes = [{ id: 'u1', email: 'a@b.com', name: 'Alice' }];
+      const nodes = [
+        {
+          id: 'u1',
+          email: 'a@b.com',
+          name: 'Alice',
+          isAdmin: false,
+          isInvited: false,
+          isLocked: false,
+          teams: [],
+          scopes: [],
+        },
+      ];
       mockGraphql.listUsers.mockResolvedValue({
         nodes,
         totalCount: 1,
@@ -124,6 +153,32 @@ describe('Admin Tools', () => {
       const result = await tool.handler({});
 
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
+      expect(mockGraphql.listUsers).toHaveBeenCalledWith({
+        first: 50,
+        offset: 0,
+        filterBy: {},
+        orderBy: [{ field: 'name', direction: 'ASC' }],
+      });
+    });
+
+    it('maps text and isAdmin into sparse filterBy', async () => {
+      mockGraphql.listUsers.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_users')!;
+
+      await tool.handler({ text: 'ada@', isAdmin: true, limit: 10, offset: 5 });
+
+      expect(mockGraphql.listUsers).toHaveBeenCalledWith({
+        first: 10,
+        offset: 5,
+        filterBy: { text: 'ada@', isAdmin: true },
+        orderBy: [{ field: 'name', direction: 'ASC' }],
+      });
     });
 
     it('throws when client throws', async () => {
@@ -134,89 +189,5 @@ describe('Admin Tools', () => {
 
       await expect(tool.handler({})).rejects.toThrow('Network error');
     });
-  });
-});
-
-describe('AdminMixin.createApiKey', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  const mockFetchOnce = (payload: unknown) =>
-    vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      text: async () => 'OK',
-      json: async () => ({ data: payload }),
-    });
-
-  it('sends a mutation that selects nested scopes { id name } and apiKey.apiKey, with no top-level token field', async () => {
-    const mockFetch = mockFetchOnce({
-      createApiKey: {
-        apiKey: {
-          id: 'key-1',
-          title: 'Test Key',
-          apiKey: 'tok_xxx',
-          scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
-          createdAt: '2024-01-01',
-        },
-      },
-    });
-    vi.stubGlobal('fetch', mockFetch);
-
-    const client = new AdminMixin({ type: 'apiKey', apiKey: 'test-api-key' });
-    await client.createApiKey({ title: 'Test Key', scopes: ['viewDataMap'] });
-
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    const [, init] = mockFetch.mock.calls[0];
-    const body = JSON.parse(init.body as string) as { query: string };
-    const normalized = body.query.replace(/\s+/g, ' ').trim();
-
-    // The graphql() codegen migration renamed the operation to
-    // `AdminCreateApiKey` to keep client-preset doc IDs unique across
-    // packages. The structural guards from #173 still apply: scopes must be
-    // selected with subfields, and there must be no bare top-level token.
-    expect(normalized).toContain('mutation AdminCreateApiKey($input: ApiKeyInput!)');
-    expect(normalized).toContain('scopes { id name }');
-    expect(normalized).toContain('apiKey { id title apiKey');
-    expect(normalized).not.toMatch(/\}\s*token\s*\}/);
-    expect(normalized).not.toMatch(/scopes\s+createdAt/);
-  });
-
-  it('returns a flat shape with token sourced from the nested apiKey.apiKey field', async () => {
-    const mockFetch = mockFetchOnce({
-      createApiKey: {
-        apiKey: {
-          id: 'key-1',
-          title: 'Test Key',
-          apiKey: 'tok_xxx',
-          preview: 'tok_***',
-          scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
-          createdAt: '2024-01-01',
-        },
-      },
-    });
-    vi.stubGlobal('fetch', mockFetch);
-
-    const client = new AdminMixin({ type: 'apiKey', apiKey: 'test-api-key' });
-    const result = await client.createApiKey({
-      title: 'Test Key',
-      scopes: ['viewDataMap'],
-    });
-
-    // After the graphql() migration AdminMixin.createApiKey returns a flat
-    // CreatedApiKey rather than { apiKey, token }; the consuming tool does
-    // the destructure into { apiKey, token } itself. The original #173
-    // invariant — token comes from the nested `apiKey.apiKey` field, never
-    // from a (non-existent) top-level `token` — still holds.
-    expect(result).toEqual({
-      id: 'key-1',
-      title: 'Test Key',
-      scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
-      createdAt: '2024-01-01',
-      token: 'tok_xxx',
-    });
-    expect(result).not.toHaveProperty('apiKey');
   });
 });

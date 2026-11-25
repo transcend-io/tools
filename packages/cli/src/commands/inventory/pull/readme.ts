@@ -1,7 +1,6 @@
 import { ConsentTrackerStatus, ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
+import { TR_PULL_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
-import { TR_PULL_RESOURCE_SCOPE_MAP } from '../../../constants.js';
-import { TranscendPullResource } from '../../../enums.js';
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';
 import type { GenerateApiKeysCommandFlags } from '../../admin/generate-api-keys/impl.js';
@@ -14,6 +13,13 @@ const examples = buildExamples<PullCommandFlags>(
       description: 'Write out file to ./transcend.yml',
       flags: {
         auth: '$TRANSCEND_API_KEY',
+      },
+    },
+    {
+      description: 'Show how ./transcend.yml would change without writing it',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        dryRun: true,
       },
     },
     {
@@ -107,7 +113,8 @@ const examples = buildExamples<PullCommandFlags>(
       },
     },
     {
-      description: 'Pull enrichers and identifiers (see [this example](./examples/enrichers.yml))',
+      description:
+        'Pull preflight checks and identifiers (see [this example](./examples/preflights.yml))',
       flags: {
         auth: '$TRANSCEND_API_KEY',
         resources: [TranscendPullResource.Enrichers, TranscendPullResource.Identifiers],

@@ -31,6 +31,12 @@ export interface IdentifierInput {
   displayOrder?: number;
   /** Whether or not the identifier is unique on the preference store */
   isUniqueOnPreferenceStore?: boolean;
+  /** SQL priority for database-backed identifiers */
+  sqlPriority?: number;
+  /** SQL variable name */
+  'sql-variable'?: string;
+  /** SQL lookup variable name */
+  'sql-lookup-variable'?: string;
 }
 
 /**
@@ -77,6 +83,9 @@ export async function syncIdentifier(
         dataSubjectIds: identifier.dataSubjects
           ? identifier.dataSubjects.map((type) => dataSubjectsByName[type]!.id)
           : undefined,
+        sqlPriority: identifier.sqlPriority,
+        sqlVariable: identifier['sql-variable'],
+        sqlLookupVariable: identifier['sql-lookup-variable'],
         skipPublish,
       },
     },

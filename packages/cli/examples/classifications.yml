@@ -69,7 +69,7 @@ data-subjects:
     actions:
       - ACCESS
       - ERASURE
-enrichers:
+preflights:
   - title: Legal Hold Check - email
     type: LEGAL_HOLD
     input-identifier: email

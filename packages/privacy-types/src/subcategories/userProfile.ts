@@ -1,6 +1,6 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
-export const UserProfileSubCategory = makeEnum({
+export const UserProfileSubCategory = {
   /** A link to an individual's profile picture */
   ProfilePictureURL: 'PROFILE_PICTURE_URL',
   /** An individual's profile picture */
@@ -9,7 +9,7 @@ export const UserProfileSubCategory = makeEnum({
   UserPreferences: 'USER_PREFERENCES',
   /** Fallback subcategory */
   UserProfile: 'USER_PROFILE',
-});
+} as const;
 
 /**
  * Overload with type of integration

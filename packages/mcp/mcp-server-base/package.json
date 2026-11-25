@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-base",
-  "version": "0.6.0",
+  "version": "3.2.1",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-base",
   "license": "Apache-2.0",
@@ -16,11 +16,35 @@
   "type": "module",
   "sideEffects": false,
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "ui": [
+        "./dist/ui/index.d.mts"
+      ],
+      "transcend-yml": [
+        "./dist/transcend-yml/index.d.mts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./ui": {
+      "@transcend-io/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.mts",
+      "default": "./dist/ui/index.mjs"
+    },
+    "./ui/theme.css": {
+      "@transcend-io/source": "./src/ui/theme.css",
+      "default": "./dist/ui/theme.css"
+    },
+    "./transcend-yml": {
+      "@transcend-io/source": "./src/transcend-yml/index.ts",
+      "types": "./dist/transcend-yml/index.d.mts",
+      "default": "./dist/transcend-yml/index.mjs"
     }
   },
   "publishConfig": {
@@ -28,29 +52,61 @@
   },
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@graphql-typed-document-node/core": "catalog:",
-    "@modelcontextprotocol/sdk": "catalog:",
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "@transcend-io/privacy-types": "workspace:^",
+    "@transcend-io/sdk": "workspace:^",
+    "@transcend-io/type-utils": "workspace:^",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "graphql": "catalog:",
-    "open": "^11.0.0",
-    "zod": "catalog:"
+    "graphql": "^16.14.2",
+    "graphql-request": "^5.0.0",
+    "open": "^11.0.0"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "catalog:",
+    "@arethetypeswrong/cli": "0.18.3",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@transcend-io/design-tokens": "workspace:*",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
-    "@types/node": "catalog:",
-    "publint": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "publint": "0.3.21",
+    "react": "19.2.8",
+    "tailwindcss": "4.3.3",
+    "tsdown": "0.21.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "zod": "4.6.6"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@transcend-io/design-tokens": "workspace:^",
+    "react": "^19.2.8",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.6"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/ext-apps": {
+      "optional": true
+    },
+    "@transcend-io/design-tokens": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22.12.0"

@@ -5,6 +5,12 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { parseLimitParam } from '../helpers/index.js';
+import {
+  createPolicyDebugParameter,
+  policyRemoteBundleNameParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const versionsCommand = buildCommand({
   loader: async () => {
@@ -13,25 +19,15 @@ export const versionsCommand = buildCommand({
   },
   parameters: {
     flags: {
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Tenant-unique policy bundle name',
-      },
+      'remote-bundle-name': policyRemoteBundleNameParameter,
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       limit: {
         kind: 'parsed',
-        parse: (value: string) => {
-          const parsed = Number(value);
-          if (!Number.isFinite(parsed) || parsed <= 0) {
-            throw new Error('limit must be a positive number');
-          }
-          return parsed;
-        },
-        brief: 'Maximum number of versions to return',
+        parse: parseLimitParam,
+        brief: 'Maximum number of versions to return (1-100)',
         default: '50',
       },
       after: {
@@ -40,11 +36,8 @@ export const versionsCommand = buildCommand({
         brief: 'Opaque cursor from a previous response pageInfo.endCursor',
         optional: true,
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      json: policyJsonParameter,
+      debug: createPolicyDebugParameter(),
     },
   },
   docs: {

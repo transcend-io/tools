@@ -1,6 +1,10 @@
 import type { ChunkOpts } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import {
+  fakeWorkerProcess,
+  type FakeWorkerProcessHarness,
+} from '../../../../lib/tests/helpers/fakeWorkerProcess.js';
 import { runChild } from '../worker.js';
 
 const h = vi.hoisted(() => ({
@@ -25,89 +29,20 @@ const { mLogger } = h;
 const { mExtractErrorMessage } = h;
 const { mChunkOneCsvFile } = h;
 
-/**
- * Microtask turn helper to allow handlers to run.
- *
- * @returns A promise that resolves on the next tick.
- */
-const nextTick = (): Promise<void> =>
-  new Promise((r) => {
-    setTimeout(r, 0);
-  });
-
-/**
- * Start the worker and capture the exact "message" listener it registers.
- * We diff the "message" listeners before/after `runChild()` to find the one it added.
- *
- * @returns The "message" event handler function registered by runChild.
- */
-function startWorkerAndCaptureHandler(): (msg: unknown) => unknown {
-  const before = new Set<(...a: unknown[]) => unknown>(
-    process.listeners('message') as Array<(...a: unknown[]) => unknown>,
-  );
-
-  // Do NOT await; runChild never resolves by design.
-  runChild();
-
-  const after = new Set<(...a: unknown[]) => unknown>(
-    process.listeners('message') as Array<(...a: unknown[]) => unknown>,
-  );
-
-  // Find the new listener added by runChild
-  for (const listener of after) {
-    if (!before.has(listener)) {
-      return listener as (msg: unknown) => unknown;
-    }
-  }
-
-  // If nothing found, fail loudly (should not happen)
-  throw new Error('Failed to capture worker message handler');
-}
-
 describe('chunk-csv worker runChild()', () => {
-  let origSend: unknown;
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let origWorkerId: string | undefined;
-  let workerMsgHandler: ((msg: unknown) => unknown) | undefined;
+  let workerProcess: FakeWorkerProcessHarness;
 
   beforeEach(() => {
-    origWorkerId = process.env.WORKER_ID;
-    process.env.WORKER_ID = '7';
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    origSend = (process as any).send;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process as any).send = vi.fn();
-
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(
-      (() => undefined as never) as unknown as typeof process.exit,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) as any;
+    workerProcess = fakeWorkerProcess({ workerId: '7' });
 
     mLogger.info.mockClear();
     mLogger.error.mockClear();
     mExtractErrorMessage.mockClear();
     mChunkOneCsvFile.mockReset();
-
-    workerMsgHandler = undefined;
   });
 
   afterEach(() => {
-    // Remove only the worker handler we added, not every 'message' listener.
-    if (workerMsgHandler) {
-      process.removeListener('message', workerMsgHandler as (...a: unknown[]) => void);
-      workerMsgHandler = undefined;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process as any).send = origSend;
-    exitSpy.mockRestore();
-
-    if (origWorkerId === undefined) {
-      delete process.env.WORKER_ID;
-    } else {
-      process.env.WORKER_ID = origWorkerId;
-    }
+    workerProcess.restore();
   });
 
   it('announces ready, forwards progress during chunking, and reports success', async () => {
@@ -120,11 +55,10 @@ describe('chunk-csv worker runChild()', () => {
     }) as any);
 
     // Act
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
     // Assert: "ready" sent immediately
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((process as any).send).toHaveBeenCalledWith({ type: 'ready' });
+    expect(workerProcess.send).toHaveBeenCalledWith({ type: 'ready' });
     expect(mLogger.info).toHaveBeenCalledTimes(1);
     expect(mLogger.info.mock.calls[0][0]).toContain('[w7] ready');
 
@@ -137,8 +71,7 @@ describe('chunk-csv worker runChild()', () => {
       },
     } as const;
 
-    workerMsgHandler(msg);
-    await nextTick();
+    await workerProcess.dispatch(msg);
 
     expect(mChunkOneCsvFile).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -151,8 +84,7 @@ describe('chunk-csv worker runChild()', () => {
     });
     expect(callArgs.onProgress).toEqual(expect.any(Function));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sends = (process as any).send.mock.calls.map((c: any[]) => c[0]);
+    const sends = workerProcess.sentMessages();
     expect(sends).toContainEqual({
       type: 'progress',
       payload: { filePath: '/abs/foo.csv', processed: 5, total: 10 },
@@ -167,7 +99,7 @@ describe('chunk-csv worker runChild()', () => {
     });
 
     expect(mLogger.error).not.toHaveBeenCalled();
-    expect(exitSpy).not.toHaveBeenCalled();
+    expect(workerProcess.exit).not.toHaveBeenCalled();
   });
 
   it('reports failure using extractErrorMessage and logs error locally', async () => {
@@ -178,7 +110,7 @@ describe('chunk-csv worker runChild()', () => {
     });
 
     // Act
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
     const msg = {
       type: 'task',
@@ -188,8 +120,7 @@ describe('chunk-csv worker runChild()', () => {
       },
     } as const;
 
-    workerMsgHandler(msg);
-    await nextTick();
+    await workerProcess.dispatch(msg);
 
     // Assert
     expect(mLogger.error).toHaveBeenCalledTimes(1);
@@ -199,24 +130,22 @@ describe('chunk-csv worker runChild()', () => {
     expect(line).toContain('/abs/bad.csv');
     expect(line).toContain('Boom!');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sends = (process as any).send.mock.calls.map((c: any[]) => c[0]);
+    const sends = workerProcess.sentMessages();
     expect(sends).toContainEqual({
       type: 'result',
       payload: { ok: false, filePath: '/abs/bad.csv', error: 'Boom!' },
     });
 
-    expect(exitSpy).not.toHaveBeenCalled();
+    expect(workerProcess.exit).not.toHaveBeenCalled();
   });
 
   it('exits(0) on shutdown message', async () => {
     // Act
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
-    workerMsgHandler({ type: 'shutdown' });
-    await nextTick();
+    await workerProcess.dispatch({ type: 'shutdown' });
 
     // Assert
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(workerProcess.exit).toHaveBeenCalledWith(0);
   });
 });

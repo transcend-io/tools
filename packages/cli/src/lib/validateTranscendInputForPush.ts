@@ -1,8 +1,10 @@
+import {
+  TR_YML_RESOURCE_TO_FIELD_NAME,
+  TranscendInput,
+  TranscendPullResource,
+} from '@transcend-io/sdk';
 import { decodeCodec, getEntries } from '@transcend-io/type-utils';
 
-import { TranscendInput } from '../codecs.js';
-import { TR_YML_RESOURCE_TO_FIELD_NAME } from '../constants.js';
-import { TranscendPullResource } from '../enums.js';
 import {
   hasTranscendConfigSection,
   stripEmptyTranscendConfigSections,

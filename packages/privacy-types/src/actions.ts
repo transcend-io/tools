@@ -3,7 +3,7 @@ import { invert, makeEnum } from '@transcend-io/type-utils';
 /**
  * The type of requests that allow for opt-out
  */
-export const RequestActionOptOut = makeEnum({
+export const RequestActionOptOut = {
   /** Opt out of automated decision making */
   AutomatedDecisionMakingOptOut: 'AUTOMATED_DECISION_MAKING_OPT_OUT',
   /** Ability to opt out of the use of sensitive information. A requirement under the CPRA and similar laws. */
@@ -16,7 +16,7 @@ export const RequestActionOptOut = makeEnum({
   TrackingOptOut: 'TRACKING_OPT_OUT',
   /** Opt out custom */
   CustomOptOut: 'CUSTOM_OPT_OUT',
-});
+} as const;
 
 /** Type override */
 export type RequestActionOptOut = (typeof RequestActionOptOut)[keyof typeof RequestActionOptOut];
@@ -24,7 +24,7 @@ export type RequestActionOptOut = (typeof RequestActionOptOut)[keyof typeof Requ
 /**
  * The type of requests that allow for opt-in
  */
-export const RequestActionOptIn = makeEnum({
+export const RequestActionOptIn = {
   /** Opt in to automated decision making */
   AutomatedDecisionMakingOptIn: 'AUTOMATED_DECISION_MAKING_OPT_IN',
   /** Ability to opt in to the use of sensitive information. A requirement under the CPRA and similar laws. */
@@ -37,7 +37,7 @@ export const RequestActionOptIn = makeEnum({
   ContactOptIn: 'CONTACT_OPT_IN',
   /** Opt in custom */
   CustomOptIn: 'CUSTOM_OPT_IN',
-});
+} as const;
 
 /** Type override */
 export type RequestActionOptIn = (typeof RequestActionOptIn)[keyof typeof RequestActionOptIn];
@@ -63,7 +63,7 @@ export const REQUEST_ACTION_OPT_IN_TO_OPT_OUT = invert(REQUEST_ACTION_OPT_OUT_TO
 /**
  * An request action resolve types that can be run at the object level
  */
-export const RequestActionObjectResolver = makeEnum({
+export const RequestActionObjectResolver = {
   /** Data Download request */
   Access: 'ACCESS',
   /** Erase the file completely */
@@ -80,7 +80,7 @@ export const RequestActionObjectResolver = makeEnum({
   RemoveFromLegalHold: 'REMOVE_FROM_LEGAL_HOLD',
   ...RequestActionOptOut,
   ...RequestActionOptIn,
-});
+} as const;
 
 /** Type override */
 export type RequestActionObjectResolver =
@@ -94,10 +94,10 @@ export type RequestActionObjectResolver =
  * webhook service to implement. The individual objects can still be
  * labeled for whether they should be included in data access requests.
  */
-export const InternalDataSiloObjectResolver = makeEnum({
+export const InternalDataSiloObjectResolver = {
   /** Data Download request */
   Access: 'ACCESS',
-});
+} as const;
 
 /** Type override */
 export type InternalDataSiloObjectResolver =
@@ -106,7 +106,7 @@ export type InternalDataSiloObjectResolver =
 /**
  * The types of requests that Data Subject can make
  */
-export const RequestAction = makeEnum({
+export const RequestAction = {
   ...RequestActionOptOut,
   ...RequestActionOptIn,
   /** Data Download request */
@@ -123,7 +123,7 @@ export const RequestAction = makeEnum({
   PlaceOnLegalHold: 'PLACE_ON_LEGAL_HOLD',
   /** Remove a user from a legal hold */
   RemoveFromLegalHold: 'REMOVE_FROM_LEGAL_HOLD',
-});
+} as const;
 
 /** Type override */
 export type RequestAction = (typeof RequestAction)[keyof typeof RequestAction];

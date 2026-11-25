@@ -10,6 +10,7 @@ A command line interface that allows you to programatically interact with the Tr
 - [Changelog](#changelog)
 - [Installation](#installation)
 - [transcend.yml](#transcendyml)
+  - [Deletion dependencies](#deletion-dependencies)
 - [Usage](#usage)
   - [`transcend request approve`](#transcend-request-approve)
   - [`transcend request upload`](#transcend-request-upload)
@@ -39,6 +40,12 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent upload-data-flows-from-csv`](#transcend-consent-upload-data-flows-from-csv)
   - [`transcend consent upload-preferences`](#transcend-consent-upload-preferences)
   - [`transcend consent delete-preference-records`](#transcend-consent-delete-preference-records)
+  - [`transcend custom-functions init`](#transcend-custom-functions-init)
+  - [`transcend custom-functions new`](#transcend-custom-functions-new)
+  - [`transcend custom-functions check`](#transcend-custom-functions-check)
+  - [`transcend custom-functions run`](#transcend-custom-functions-run)
+  - [`transcend custom-functions push`](#transcend-custom-functions-push)
+  - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
@@ -55,14 +62,17 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
   - [`transcend policy activate`](#transcend-policy-activate)
+  - [`transcend policy check`](#transcend-policy-check)
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
+  - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
+  - [`transcend policy init`](#transcend-policy-init)
   - [`transcend policy lint`](#transcend-policy-lint)
+  - [`transcend policy new`](#transcend-policy-new)
   - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
   - [`transcend policy test`](#transcend-policy-test)
   - [`transcend policy versions`](#transcend-policy-versions)
-- [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)
 
@@ -124,13 +134,13 @@ api-keys:
 
 # Manage at: https://app.transcend.io/privacy-requests/identifiers
 # See https://docs.transcend.io/docs/identity-enrichment
-# Define enricher or pre-flight check webhooks that will be executed
+# Define preflight check webhooks that will be executed
 # prior to privacy request workflows. Some examples may include:
 #   - identity enrichment: look up additional identifiers for that user.
 #                          i.e. map an email address to a user ID
 #   - fraud check: auto-cancel requests if the user is flagged for fraudulent behavior
 #   - customer check: auto-cancel request for some custom business criteria
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     url: https://example.acme.com/transcend-enrichment-webhook
@@ -168,7 +178,12 @@ data-silos:
       - email
       - userId
     deletion-dependencies:
-      - Identity Service
+      - titles:
+          - Identity Service
+      - workflow: GDPR Erasure
+        titles:
+          - Identity Service
+          - CRM Warehouse
     owners:
       - alice@transcend.io
     datapoints:
@@ -191,6 +206,50 @@ data-silos:
             title: Email
             description: The email address of the user
 ```
+
+### Deletion dependencies
+
+When an erasure request runs, `deletion-dependencies` holds off deleting from a data silo until the data silos it lists have finished deleting.
+
+Use a list of objects: `{ titles }` for the global configuration, and `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for each per-workflow override. Mixing titles and objects in the same list is not allowed:
+
+```yaml
+data-silos:
+  - title: Salesforce
+    integrationName: server
+    deletion-dependencies:
+      # Global configuration
+      - titles:
+          - Identity Service
+      # Overrides the global configuration for the "GDPR Erasure" workflow only
+      - workflow: GDPR Erasure
+        titles:
+          - Identity Service
+          - CRM Warehouse
+      # Runs with no dependencies at all in the "CCPA Delete" workflow
+      - workflow: CCPA Delete
+        titles: []
+      # Removes a previously configured override so the workflow uses the global configuration again
+      - workflow: Legacy Erasure
+        reset-to-global: true
+```
+
+**Legacy:** a bare list of titles is still accepted for global-only configuration:
+
+```yaml
+data-silos:
+  - title: Salesforce
+    integrationName: server
+    deletion-dependencies:
+      - Identity Service
+      - CRM Warehouse
+```
+
+`workflow` is the internal name of an erasure workflow, which you can find under [DSR Automation -> Workflows](https://app.transcend.io/privacy-requests/workflows). Overrides are only supported on erasure workflows, and the data silo and everything it depends on must already be part of that workflow.
+
+A workflow that is not listed keeps whatever configuration it already has, so pushing a config that only lists global dependencies never removes existing overrides. Use `reset-to-global: true` to remove one.
+
+Omitting `deletion-dependencies` entirely clears the global configuration, matching how the rest of `transcend.yml` treats omitted fields.
 
 ## Usage
 
@@ -274,6 +333,8 @@ USAGE
 Upload a set of requests from a CSV.
 
 This command prompts you to map the shape of the CSV to the shape of the Transcend API. There is no requirement for the shape of the incoming CSV, as the script will handle the mapping process.
+
+You can optionally map a `workflowConfigId` column (UUID of a published workflow config). When present on a row, that ID is sent to `POST /v1/data-subject-request` so the request targets that workflow explicitly on orgs with Workflows V2.
 
 The script will also produce a JSON cache file that allows for the mappings to be preserved between runs.
 
@@ -1735,7 +1796,7 @@ transcend consent build-xdi-sync-endpoint \
 
 ```txt
 USAGE
-  transcend consent generate-access-tokens (--auth value) (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--duration value] [--transcendUrl value]
+  transcend consent generate-access-tokens (--auth value) (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--tokenFormat JWT|SHORT] [--duration value] [--transcendUrl value]
   transcend consent generate-access-tokens --help
 
 This command allows for the generation of access tokens for users specified in a CSV file.
@@ -1746,6 +1807,7 @@ FLAGS
       --subjectType                Slug for the data subject that the user will be logged in as on the Privacy Center. e.g. "customer" or "employee"
      [--emailColumnName]           Name of the column in the CSV that contains user email addresses                                                                                                                                                                           [default = email]
      [--coreIdentifierColumnName]  Name of the column in the CSV that contains user core identifiers
+     [--tokenFormat]               Token written into the link. JWT is the signed token. SHORT is a 43-character token for email and SMS tools that limit URL length.                                                                                                         [JWT|SHORT, default = JWT]
      [--duration]                  How long the access tokens should be valid. Accepts human-friendly values like "2 days", "10h", "90 minutes". A bare number is interpreted as seconds (e.g., "300" = 5 minutes). Powered by the `ms` library: https://github.com/vercel/ms [default = 1y]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                         [default = https://api.transcend.io]
   -h  --help                       Print help information and exit
@@ -1782,6 +1844,17 @@ transcend consent generate-access-tokens \
   --emailColumnName=user_email \
   --coreIdentifierColumnName=crm_id \
   --duration="90 days"
+```
+
+**Short tokens for email and SMS tools that limit URL length**
+
+```sh
+transcend consent generate-access-tokens \
+  --auth="$TRANSCEND_API_KEY" \
+  --file=./users.csv \
+  --subjectType=customer \
+  --tokenFormat=SHORT \
+  --duration="1 year"
 ```
 
 **Specifying the backend URL (US-hosted backend infrastructure)**
@@ -2427,11 +2500,396 @@ transcend consent delete-preference-records \
   --timestamp=2025-08-26T00:00:00.000Z
 ```
 
+### `transcend custom-functions init`
+
+```txt
+USAGE
+  transcend custom-functions init [--manifest value] [--deno] [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions init --help
+
+Discovers the surrounding repository, previews one safe transactional plan, and creates only the selected local authoring setup. No Transcend credentials are needed.
+
+FLAGS
+     [--manifest]           Path to transcend-functions.yml; defaults inside the target directory
+     [--deno/--noDeno]      Create or merge target-scoped Deno configuration and check task
+     [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]          Generate credential-free GitHub Actions checks
+     [--noInteractive]      Disable prompts                                                       [default = false]
+     [--dryRun]             Preview changes without applying them                                 [default = false]
+     [--yes]                Skip only the final plan confirmation                                 [default = false]
+     [--json]               Emit stable JSON output and disable prompts                           [default = false]
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Start with the isolated default layout
+
+```sh
+transcend custom-functions init
+```
+
+This creates the manifest under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Selected setup options can add Deno configuration and repository integrations; use `transcend custom-functions new` to create functions and fixtures. Pass a directory explicitly to use another layout.
+
+To give an agent the same Custom Function guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-custom-functions
+```
+
+The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. When Deno setup is selected, `init` warns if local Deno is missing or is not 2.x; it never installs runtimes automatically. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
+
+#### Add support to an existing repository
+
+```sh
+transcend custom-functions init ./packages/transcend-functions \
+  --deno \
+  --editor \
+  --skill \
+  --ci \
+  --noInteractive \
+  --yes
+```
+
+Non-interactive setup enables only the individual flags passed; use the example above for the full setup selected by default in the interactive checklist. Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Existing generated GitHub Actions workflows with repository-specific edits are left unchanged. Use `--dryRun` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
+
+### `transcend custom-functions new`
+
+```txt
+USAGE
+  transcend custom-functions new [--manifest value] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions new --help
+
+Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions triggered by a Workflow step and supporting data point resolvers, preflight checks, or both.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--name]           Customer-visible Custom Function display name
+     [--template]       Function type and generated handler shape                             [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--noInteractive]  Disable prompts                                                       [default = false]
+     [--dryRun]         Preview changes without applying them                                 [default = false]
+     [--yes]            Skip only the final plan confirmation                                 [default = false]
+     [--json]           Emit stable JSON output and disable prompts                           [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Scaffold without prompts
+
+```sh
+transcend custom-functions new ./transcend/custom-functions \
+  --name="Customer CRM access" \
+  --template=dsr-both \
+  --noInteractive \
+  --yes
+```
+
+Run `transcend custom-functions init` once before adding functions. The interactive flow first asks for the Custom Function type: General functions are triggered by Rules Automation, while DSR functions are triggered by a step in a Workflow. General currently has one template, so selecting it continues immediately. Selecting DSR opens a second prompt: choose `dsr-datapoint` for a data point resolver, `dsr-enricher` for a preflight check, or `dsr-both` to support both. The `dsr-enricher` flag retains the API's technical export name, but the user-facing workflow is called preflight. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
+
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source and validation command.
+
+### `transcend custom-functions check`
+
+```txt
+USAGE
+  transcend custom-functions check [--manifest value] [--variables value] [--fix] [--noInteractive] [--json] [<directory>]
+  transcend custom-functions check --help
+
+Checks manifest semantics and published payload schemas, then uses Deno 2 without executing user modules to inspect exports, type-check, lint, and verify formatting.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--variables]      Comma-separated variables to template into the manifest, such as API_KEY:value [default = ""]
+     [--fix]            Apply Deno formatting to manifest-referenced files                             [default = false]
+     [--noInteractive]  Disable prompts                                                                [default = false]
+     [--json]           Emit stable JSON output and disable prompts                                    [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Validate before pushing
+
+```sh
+transcend custom-functions check \
+  --variables=TRANSCEND_API_KEY:placeholder
+```
+
+`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. Every `<<parameters.name>>` placeholder must be provided through `--variables=name:value`; non-secret placeholder values are sufficient for validation. It validates every test fixture against the published authoring schemas, rejects local runtime imports that cannot be deployed, then asks Deno 2 to inspect exports, type-check, lint, and check formatting without executing the modules. A different Deno 2 version produces a non-blocking production-parity warning; other major versions fail with installation or version-switch guidance.
+
+In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
+
+### `transcend custom-functions run`
+
+```txt
+USAGE
+  transcend custom-functions run [--manifest value] [--function value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
+  transcend custom-functions run --help
+
+Executes one self-contained manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required. Native fetch is disabled unless --allowNetwork is passed; module imports follow allow-third-party-imports.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--function]       Exact Custom Function name or ID; prompts when omitted
+     [--variables]      Comma-separated variables to template into the manifest, such as API_KEY:value [default = ""]
+     [--noInteractive]  Disable prompts                                                                [default = false]
+     [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts                       [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Run locally
+
+```sh
+transcend custom-functions run ./transcend/custom-functions \
+  --function="Customer CRM access" \
+  --variables=TRANSCEND_API_KEY:placeholder
+```
+
+The command runs every test payload configured for the selected function and prints its stdout and stderr, including `console.log` output. When `--function` is omitted, a single manifest entry is selected automatically; an interactive terminal prompts when the manifest contains several functions.
+
+This is a credential-free development simulator, not an exact Sombra runtime. Custom Functions must be self-contained because only the entry source file is deployed; local runtime imports are rejected. The simulator mirrors production export selection, payload defaults, environment isolation, network permissions, timeout behavior, and KV limits. Each payload receives a fresh in-memory KV store. Calls to `sdk.fetch` are logged and return a simulated HTTP 200 without sending a request.
+
+Native `fetch` is denied by default. Pass `--allowNetwork` to permit real requests only to the manifest's `allowed-hosts`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
+
+Every `<<parameters.name>>` placeholder used by the selected function must be provided through `--variables=name:value`. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
+
+### `transcend custom-functions push`
+
+```txt
+USAGE
+  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--manifest value] [--variables value] [--dryRun] [--json] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value] [<directory>]
+  transcend custom-functions push --help
+
+Sync custom function source code from your repository to Transcend.
+
+Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
+
+1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
+2. Creates the DSR integration (data silo) for any new DSR function that does not specify a data-silo-id
+3. Test-runs the freshly signed code with each of the entry's test payloads, when defined (unless --skipTests) — DSR functions can cover both their default (DATA_POINT) and enricher (REQUEST_ENRICHER) exports. Any failing payload rolls back any integration created in step 2
+4. Creates any custom functions that do not exist yet (linking new DSR functions to their integration)
+5. Pushes a new code revision for any function whose code or context changed
+6. Promotes new revisions to active (unless --promote=false)
+
+Metadata-only changes (description, or name for entries pinned by id) are updated in place without signing, testing, or pushing a new code revision. Environment variable values are encrypted at sign time and cannot be diffed — pass --force to re-push when only env values changed.
+
+Functions with any failing test run are rejected — every failing payload's reason and execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without test payloads push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
+
+Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.
+
+Function code is invoked with a single argument of shape { payload, environment } — payload is the invocation JSON (free-form for GENERAL functions, the webhook notification shape for DSR functions) and environment is the manifest entry's env block. DSR functions may also export an enricher entry point.
+
+FLAGS
+      --auth                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Map"
+     [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
+     [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                [default = https://api.transcend.io]
+     [--manifest]             Path to transcend-functions.yml; defaults inside the target directory
+     [--variables]            Comma-separated variables to template into the manifest, such as API_KEY:value                                                                                                                                    [default = ""]
+     [--dryRun]               Preview changes without applying them                                                                                                                                                                             [default = false]
+     [--json]                 Emit stable JSON output and disable prompts                                                                                                                                                                       [default = false]
+     [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                                            [default = true]
+     [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                                              [default = false]
+     [--skipTests]            Skip test runs entirely, pushing functions without executing their test-payload files. Tests also do not run on --dryRun (nothing is signed on dry runs).                                                         [default = false]
+     [--updateManifest]       After pushing, write the assigned custom function IDs back into the manifest file so future pushes match by ID instead of by name. Comments and <<parameters.x>> placeholders are preserved.                      [default = false]
+     [--sombraId]             Default Sombra gateway for functions whose manifest entry (or existing function) does not pin one. Each function is signed against the gateway it belongs to. Defaults to the primary Sombra of the organization.
+  -h  --help                  Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Manifest file
+
+By default, `push` reads `transcend-functions.yml` from the `transcend/custom-functions` project directory. Pass another project directory positionally, or use `--manifest` to select a specific manifest file. Use `--json` in automation to emit one structured result containing the manifest path, per-function outcomes, and aggregate counts.
+
+The manifest maps custom function names to source files in your repository:
+
+```yaml
+# transcend-functions.yml
+functions:
+  - name: Score Lead
+    code: ./functions/score-lead.ts
+    description: Scores an inbound lead against the CRM
+    test-payload: ./test-payloads/score-lead.json
+    allowed-hosts:
+      - api.example.com
+    timeout-ms: 30000
+    env:
+      CRM_API_KEY: <<parameters.CRM_API_KEY>>
+  - name: DSR Lookup
+    code: ./functions/dsr-lookup.ts
+    type: DSR
+    data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    # DSR functions have two entry points — test both on every push
+    test-payloads:
+      - payload: ./test-payloads/dsr-lookup-access.json
+        payload-type: DATA_POINT
+      - payload: ./test-payloads/dsr-lookup-enricher.json
+        payload-type: REQUEST_ENRICHER
+```
+
+| Field                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`                      | Yes      | Display name of the function. Used as the sync key when no `id` is set — renaming an id-less entry creates a new function.                                                                                                                                                                                                                                                                                                                 |
+| `code`                      | Yes      | Path to the TypeScript source file. The path is resolved relative to the manifest and must remain within its directory.                                                                                                                                                                                                                                                                                                                    |
+| `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push.                                                                                                                                                                                                                         |
+| `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `type`                      | No       | `GENERAL` (default) or `DSR`.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `data-silo-id`              | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and `--updateManifest` writes the assigned ID back.                                                                                                                                                                                                                         |
+| `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway.                                                                                                                                                                      |
+| `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.                                                                                                                                                                            |
+| `test-payloads`             | No       | List of test payloads to run the function with before pushing. Each item has a `payload` path, resolved relative to the manifest and contained within its directory, plus an optional `payload-type`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: `DATA_POINT` (default) invokes the default export, `REQUEST_ENRICHER` invokes the `enricher` export. |
+| `test-payload`              | No       | Shorthand for a single-item `test-payloads` list. The JSON path is resolved relative to the manifest and must remain within its directory. Pair with `test-payload-type` for DSR functions. Mutually exclusive with `test-payloads`.                                                                                                                                                                                                       |
+| `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                                                                                                                                                                                           |
+| `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                                                       |
+| `env`                       | No       | Environment variables exposed to the function. Use manifest variables to avoid committing secrets.                                                                                                                                                                                                                                                                                                                                         |
+
+#### Manifest variables
+
+Use `<<parameters.ENV_NAME>>` placeholders and supply their values with `--variables=ENV_NAME:value`. Match each placeholder name to its environment key to keep the mapping clear. Values may contain colons. Escape a literal comma as `\,` inside a quoted `--variables` value.
+
+Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
+
+Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. `--sombraAuth` provides the default internal key; when self-hosted gateways use _different_ internal keys, set `sombra-auth-env` per entry to the name of the environment variable holding that gateway's key:
+
+```yaml
+functions:
+  - name: US Function
+    code: ./functions/us.ts
+    # primary gateway, authenticated by --sombraAuth (if self-hosted)
+  - name: EU Function
+    code: ./functions/eu.ts
+    sombra-id: 8c0b1f2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
+```
+
+#### How manifest entries are matched to existing functions
+
+Each entry is resolved against the custom functions in your organization in this order:
+
+1. **By `id`, when set.** The ID is the sync key: the matched function is updated, and `name` may be changed freely (it just renames the function). If no function with that ID exists, the push **fails** for that entry — a stale or mistyped ID never silently creates a duplicate. Remove the `id` to create a new function instead.
+2. **By exact `name`, when no `id` is set.**
+   - Exactly one function with that name → it is updated.
+   - No function with that name → a new one is created.
+   - **More than one** function with that name → the push fails with an error listing the candidate IDs. Add the right `id` to the entry to disambiguate, or grab IDs from `transcend custom-functions list`.
+
+Within the manifest itself, duplicate `id`s are always rejected, and duplicate `name`s are only allowed when every entry sharing the name has an `id`.
+
+Because ID matching is strictly safer, prefer pinning IDs once functions exist: run `transcend custom-functions push --updateManifest` after the first push and the assigned IDs are written back into the manifest automatically (comments and `<<parameters.x>>` placeholders are preserved). For DSR functions, the assigned `data-silo-id` is written back the same way.
+
+#### New DSR functions: the integration is created automatically
+
+A **new** DSR entry (no `id`, no matching function by name) that omits `data-silo-id` gets its DSR integration created as part of the push:
+
+1. A `customFunction`-catalog data silo is created, titled after the function, on the entry's Sombra gateway (`sombra-id`, else `--sombraId`, else the organization's primary Sombra). It starts `NOT_CONFIGURED` with nothing attached.
+2. The signed code is test-run against that silo (when test payloads are set) — DSR test payloads always get `extras.dataSilo` injected from the resolved silo, so payload files never need to hardcode silo IDs.
+3. On a passing test the custom function is created and linked to the silo (which becomes `Connected`). On a failing test the silo is **rolled back** (deleted) and the function is rejected.
+4. With `--updateManifest`, both the custom function `id` and the `data-silo-id` are written back into the manifest.
+
+DSR entries that already pin a `data-silo-id` behave as before — the integration must exist and the function is attached to it.
+
+#### Test-before-promote
+
+Entries with test payloads (`test-payloads`, or the single-payload `test-payload` shorthand) are tested before anything is pushed:
+
+1. The code and context are signed against the function's Sombra gateway.
+2. The signed code is executed as a test run with each payload JSON (via the `runCustomFunction` mutation — nothing is persisted). GENERAL functions run on the function's gateway; DSR functions run on the gateway of the function's data silo — `extras.dataSilo` is injected into every payload automatically from the entry's resolved silo, so payload files never need to hardcode silo IDs.
+3. **All payloads pass** (no error, exit code ≤ 0): the revision is pushed and promoted as usual.
+4. **Any payload fails**: the function is rejected — every failing payload's reason and logs are printed (all payloads run, so one push reports every failing case), nothing is pushed for that function, and the command exits 1.
+
+DSR functions have two entry points — the default export (`DATA_POINT`) and the `enricher` export (`REQUEST_ENRICHER`) — so list one payload per export the function implements; a warning is printed when a DSR entry only covers one. Entries without test payloads push as before, with a warning. `--skipTests` bypasses testing entirely, and `--dryRun` never tests (nothing is signed on dry runs). Test runs require backend support for pre-signed code JWTs on the `runCustomFunction` mutation; on older backends the push fails with an upgrade hint — use `--skipTests` to bypass.
+
+#### Examples
+
+**Push all custom functions defined in transcend/custom-functions/transcend-functions.yml**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview changes without pushing anything**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
+```
+
+**Use a manifest at a custom path with templated secrets**
+
+```sh
+transcend custom-functions push \
+  --auth="$TRANSCEND_API_KEY" \
+  --manifest=./transcend/functions.yml \
+  --variables=CRM_API_KEY:example-secret-value
+```
+
+**Push new revisions as drafts for review instead of promoting them**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --promote=false
+```
+
+**Record the assigned custom function IDs in the manifest so future pushes match by ID**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --updateManifest
+```
+
+**Force a new revision even when no code changes are detected (e.g. env value rotation)**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --force
+```
+
+**Push without running test payloads**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --skipTests
+```
+
+**With Sombra authentication, needed when self-hosting Sombra**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --sombraAuth="$SOMBRA_INTERNAL_KEY"
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend custom-functions list`
+
+```txt
+USAGE
+  transcend custom-functions list (--auth value) [--transcendUrl value] [--json]
+  transcend custom-functions list --help
+
+List all custom functions in the organization along with their lifecycle state, active version, and any pending draft version.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]          Emit stable JSON output and disable prompts                                                                                                                                                        [default = false]
+  -h  --help           Print help information and exit
+```
+
+Use `--json` in automation to emit safe structured metadata for every Custom Function. Signed code and context tokens are never included in the JSON output.
+
 ### `transcend inventory pull`
 
 ```txt
 USAGE
-  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug] [--dryRun]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2445,7 +2903,7 @@ This command can be helpful if you are looking to:
 
 FLAGS
       --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
-     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery, separator = ,]
+     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
      [--file]                      Path to the YAML file to pull into                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--dataSiloIds]...            The UUIDs of the data silos that should be pulled into the YAML file                                                                                                                                                                                        [separator = ,]
@@ -2456,6 +2914,7 @@ FLAGS
      [--skipSubDatapoints]         When true, skip pulling in subDatapoints alongside data silo resource                                                                                                                                                                                       [default = false]
      [--includeGuessedCategories]  When true, included guessed data categories that came from the content classifier                                                                                                                                                                           [default = false]
      [--debug]                     Set to true to include debug logs while pulling the configuration                                                                                                                                                                                           [default = false]
+     [--dryRun]                    Show how the file would change without writing it                                                                                                                                                                                                           [default = false]
   -h  --help                       Print help information and exit
 ```
 
@@ -2463,42 +2922,39 @@ FLAGS
 
 The API key permissions for this command vary based on the `resources` argument:
 
-| Resource                | Key in `transcend.yml`    | Description                                                                                                                                                      | Scopes                                               | Link                                                                                                                                                                                                                                                   |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apiKeys`               | `api-keys`                | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                        | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
-| `customFields`          | `attributes`              | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                       | View Global Attributes                               | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
-| `templates`             | `templates`               | Email templates. Only template titles can be created and mapped to other resources.                                                                              | View Email Templates                                 | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
-| `dataSilos`             | `data-silos`              | The Data System (formerly "Data Silo") definitions.                                                                                                              | View Data Map, View Data Subject Request Settings    | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`             | `enrichers`               | The Privacy Request enricher configurations.                                                                                                                     | View Identity Verification Settings                  | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
-| `dataFlows`             | `data-flows`              | Consent Manager Data Flow definitions.                                                                                                                           | View Data Flows                                      | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
-| `businessEntities`      | `business-entities`       | The business entities in the Data Inventory.                                                                                                                     | View Data Inventory                                  | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
-| `processingActivities`  | `processing-activities`   | The processing activities in the Data Inventory.                                                                                                                 | View Data Inventory                                  | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
-| `actions`               | `actions`                 | The privacy request action settings.                                                                                                                             | View Data Subject Request Settings                   | [DSR Automation -> Request Settings -> Data Actions](https://app.transcend.io/privacy-requests/settings/data-actions)                                                                                                                                  |
-| `dataSubjects`          | `data-subjects`           | The privacy request data subject settings.                                                                                                                       | View Data Subject Request Settings                   | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
-| `identifiers`           | `identifiers`             | The privacy request identifier configurations.                                                                                                                   | View Identity Verification Settings                  | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
-| `cookies`               | `cookies`                 | Consent Manager Cookie definitions.                                                                                                                              | View Data Flows                                      | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
-| `consentManager`        | `consent-manager`         | Consent Manager general settings, including domain list.                                                                                                         | View Consent Manager                                 | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
-| `partitions`            | `partitions`              | The partitions in the account (often representative of separate data controllers).                                                                               | View Consent Manager                                 | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
-| `prompts`               | `prompts`                 | The Transcend AI prompts                                                                                                                                         | View Prompts                                         | [Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)                                                                                                                                                                                    |
-| `promptPartials`        | `prompt-partials`         | The Transcend AI prompt partials                                                                                                                                 | View Prompts                                         | [Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)                                                                                                                                                                                |
-| `promptGroups`          | `prompt-groups`           | The Transcend AI prompt groups                                                                                                                                   | View Prompts                                         | [Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)                                                                                                                                                                                    |
-| `agents`                | `agents`                  | The agents in Pathfinder.                                                                                                                                        | View Pathfinder                                      | [Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)                                                                                                                                                                                     |
-| `agentFunctions`        | `agent-functions`         | The agent functions in Pathfinder.                                                                                                                               | View Pathfinder                                      | [Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)                                                                                                                                                                   |
-| `agentFiles`            | `agent-files`             | The agent files in Pathfinder.                                                                                                                                   | View Pathfinder                                      | [Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)                                                                                                                                                                           |
-| `vendors`               | `vendors`                 | The vendors in the Data Inventory.                                                                                                                               | View Data Inventory                                  | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
-| `dataCategories`        | `data-categories`         | The data categories in the Data Inventory.                                                                                                                       | View Data Inventory                                  | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
-| `processingPurposes`    | `processing-purposes`     | The processing purposes in the Data Inventory.                                                                                                                   | View Data Inventory                                  | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
-| `actionItems`           | `action-items`            | Onboarding-related action items                                                                                                                                  | View All Action Items                                | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
-| `actionItemCollections` | `action-item-collections` | Onboarding-related action item group names                                                                                                                       | View All Action Items                                | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
-| `teams`                 | `teams`                   | Team definitions of users and scope groupings                                                                                                                    | View Scopes                                          | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
-| `privacyCenters`        | `privacy-center`          | The Privacy Center settings.                                                                                                                                     | View Privacy Center Layout                           | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
-| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | View Privacy Center Policies                         | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
-| `messages`              | `messages`                | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | View Internationalization Messages                   | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
-| `assessments`           | `assessments`             | Assessment responses.                                                                                                                                            | View Assessments                                     | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
-| `assessmentTemplates`   | `assessment-templates`    | Assessment template configurations.                                                                                                                              | View Assessments                                     | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
-| `purposes`              | `purposes`                | Consent purposes and related preference management topics.                                                                                                       | View Consent Manager, View Preference Store Settings | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
-| `preferenceOptions`     | `preference-options`      | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                        | View Preference Store Settings                       | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
-| `systemDiscovery`       | `system-discovery`        | System discovery results                                                                                                                                         | View Data Map                                        | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
+| Resource                    | Key in `transcend.yml`        | Description                                                                                                                                                                              | Scopes                                                           | Link                                                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKeys`                   | `api-keys`                    | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems.                         | View API Keys                                                    | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
+| `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | View Global Attributes                                           | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
+| `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | View Email Templates                                             | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
+| `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | View Data Map, View Data Subject Request Settings, View API Keys | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | View Data Flows                                                  | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
+| `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | View Data Inventory                                              | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
+| `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | View Data Inventory                                              | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
+| `actions`                   | `actions`                     | The privacy request action settings.                                                                                                                                                     | View Data Subject Request Settings                               | [DSR Automation -> Request Settings -> Data Actions](https://app.transcend.io/privacy-requests/settings/data-actions)                                                                                                                                  |
+| `dataSubjects`              | `data-subjects`               | The privacy request data subject settings.                                                                                                                                               | View Data Subject Request Settings                               | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
+| `identifiers`               | `identifiers`                 | The privacy request identifier configurations.                                                                                                                                           | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `cookies`                   | `cookies`                     | Consent Manager Cookie definitions.                                                                                                                                                      | View Data Flows                                                  | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
+| `consentSites`              | `consent-sites`               | Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.                                                                                                   | View Consent Manager                                             | [Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)                                                                                                                                                                      |
+| `consentManager`            | `consent-manager`             | Consent Manager general settings, including domain list.                                                                                                                                 | View Consent Manager                                             | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
+| `partitions`                | `partitions`                  | The partitions in the account (often representative of separate data controllers).                                                                                                       | View Consent Manager                                             | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
+| `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | View Data Inventory                                              | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
+| `dataCategories`            | `data-categories`             | The data categories in the Data Inventory.                                                                                                                                               | View Data Inventory                                              | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
+| `processingPurposes`        | `processing-purposes`         | The processing purposes in the Data Inventory.                                                                                                                                           | View Data Inventory                                              | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
+| `actionItems`               | `action-items`                | Onboarding-related action items                                                                                                                                                          | View All Action Items                                            | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
+| `actionItemCollections`     | `action-item-collections`     | Onboarding-related action item group names                                                                                                                                               | View All Action Items                                            | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
+| `teams`                     | `teams`                       | Team definitions of users and scope groupings                                                                                                                                            | View Scopes                                                      | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
+| `privacyCenters`            | `privacy-center`              | The Privacy Center settings.                                                                                                                                                             | View Privacy Center Layout                                       | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
+| `policies`                  | `policies`                    | The Privacy Center policies.                                                                                                                                                             | View Privacy Center Policies                                     | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
+| `messages`                  | `messages`                    | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                                        | View Internationalization Messages                               | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
+| `assessments`               | `assessments`                 | Assessment responses.                                                                                                                                                                    | View Assessments                                                 | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
+| `assessmentTemplates`       | `assessment-templates`        | Assessment template configurations.                                                                                                                                                      | View Assessments                                                 | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
+| `purposes`                  | `purposes`                    | Consent purposes and related preference management topics.                                                                                                                               | View Consent Manager, View Preference Store Settings             | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
+| `preferenceOptions`         | `preference-options`          | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                                                | View Preference Store Settings                                   | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
+| `systemDiscovery`           | `system-discovery`            | System discovery results                                                                                                                                                                 | View Data Map                                                    | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
+| `preferenceWorkflowConfigs` | `preference-workflow-configs` | Preference workflow config definitions (Workflows → Preference Workflows). Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions. | View Preference Store Settings, Manage Workflows                 | [Workflows -> Preference Workflows](https://app.transcend.io/preference-store/consent-workflows)                                                                                                                                                       |
+| `workflowConfigs`           | `workflow-configs`            | DSR workflow config settings.                                                                                                                                                            | View Workflows                                                   | [Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)                                                                                                                                                                      |
 
 #### Examples
 
@@ -2506,6 +2962,12 @@ The API key permissions for this command vary based on the `resources` argument:
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY"
+```
+
+**Show how ./transcend.yml would change without writing it**
+
+```sh
+transcend inventory pull --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Write out file to custom location**
@@ -2577,7 +3039,7 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=businessEntitie
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 ```
 
-**Pull enrichers and identifiers (see [this example](./examples/enrichers.yml))**
+**Pull preflight checks and identifiers (see [this example](./examples/preflights.yml))**
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=enrichers,identifiers
@@ -2655,7 +3117,7 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json]
   transcend inventory push --help
 
 Given a transcend.yml file, sync the contents up to your Transcend instance.
@@ -2665,10 +3127,12 @@ FLAGS
      [--file]                        Path to the YAML file to push from                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]                URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--pageSize]                    The page size to use when paginating over the API                                                                                                                                                                                                           [default = 50]
-     [--variables]                   The variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                           [default = ""]
+     [--variables]                   Variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                               [default = ""]
      [--publishToPrivacyCenter]      When true, publish the configuration to the Privacy Center                                                                                                                                                                                                  [default = false]
      [--classifyService]             When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                                                                           [default = false]
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
+     [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
+     [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
   -h  --help                         Print help information and exit
 ```
 
@@ -2676,42 +3140,39 @@ FLAGS
 
 The API key permissions for this command vary based on the resources declared as top-level keys in your [`transcend.yml`](#transcendyml) file:
 
-| Resource                | Key in `transcend.yml`    | Description                                                                                                                                                      | Scopes                                                   | Link                                                                                                                                                                                                                                                   |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apiKeys`               | `api-keys`                | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                            | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
-| `customFields`          | `attributes`              | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                       | Manage Global Attributes                                 | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
-| `templates`             | `templates`               | Email templates. Only template titles can be created and mapped to other resources.                                                                              | Manage Email Templates                                   | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
-| `dataSilos`             | `data-silos`              | The Data System (formerly "Data Silo") definitions.                                                                                                              | Manage Data Map, Connect Data Silos                      | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`             | `enrichers`               | The Privacy Request enricher configurations.                                                                                                                     | Manage Request Identity Verification                     | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
-| `dataFlows`             | `data-flows`              | Consent Manager Data Flow definitions.                                                                                                                           | Manage Data Flows                                        | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
-| `businessEntities`      | `business-entities`       | The business entities in the Data Inventory.                                                                                                                     | Manage Data Inventory                                    | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
-| `processingActivities`  | `processing-activities`   | The processing activities in the Data Inventory.                                                                                                                 | Manage Data Map                                          | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
-| `actions`               | `actions`                 | The privacy request action settings.                                                                                                                             | Manage Data Subject Request Settings                     | [DSR Automation -> Request Settings -> Data Actions](https://app.transcend.io/privacy-requests/settings/data-actions)                                                                                                                                  |
-| `dataSubjects`          | `data-subjects`           | The privacy request data subject settings.                                                                                                                       | Manage Data Subject Request Settings                     | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
-| `identifiers`           | `identifiers`             | The privacy request identifier configurations.                                                                                                                   | Manage Request Identity Verification                     | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
-| `cookies`               | `cookies`                 | Consent Manager Cookie definitions.                                                                                                                              | Manage Data Flows                                        | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
-| `consentManager`        | `consent-manager`         | Consent Manager general settings, including domain list.                                                                                                         | Manage Consent Manager Developer Settings                | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
-| `partitions`            | `partitions`              | The partitions in the account (often representative of separate data controllers).                                                                               | Manage Consent Manager Developer Settings                | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
-| `prompts`               | `prompts`                 | The Transcend AI prompts                                                                                                                                         | Manage Prompts                                           | [Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)                                                                                                                                                                                    |
-| `promptPartials`        | `prompt-partials`         | The Transcend AI prompt partials                                                                                                                                 | Manage Prompts                                           | [Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)                                                                                                                                                                                |
-| `promptGroups`          | `prompt-groups`           | The Transcend AI prompt groups                                                                                                                                   | Manage Prompts                                           | [Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)                                                                                                                                                                                    |
-| `agents`                | `agents`                  | The agents in Pathfinder.                                                                                                                                        | Manage Pathfinder                                        | [Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)                                                                                                                                                                                     |
-| `agentFunctions`        | `agent-functions`         | The agent functions in Pathfinder.                                                                                                                               | Manage Pathfinder                                        | [Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)                                                                                                                                                                   |
-| `agentFiles`            | `agent-files`             | The agent files in Pathfinder.                                                                                                                                   | Manage Pathfinder                                        | [Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)                                                                                                                                                                           |
-| `vendors`               | `vendors`                 | The vendors in the Data Inventory.                                                                                                                               | Manage Data Inventory                                    | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
-| `dataCategories`        | `data-categories`         | The data categories in the Data Inventory.                                                                                                                       | Manage Data Inventory                                    | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
-| `processingPurposes`    | `processing-purposes`     | The processing purposes in the Data Inventory.                                                                                                                   | Manage Data Inventory                                    | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
-| `actionItems`           | `action-items`            | Onboarding-related action items                                                                                                                                  | Manage All Action Items, View Global Attributes          | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
-| `actionItemCollections` | `action-item-collections` | Onboarding-related action item group names                                                                                                                       | Manage Action Item Collections                           | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
-| `teams`                 | `teams`                   | Team definitions of users and scope groupings                                                                                                                    | Manage Access Controls                                   | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
-| `privacyCenters`        | `privacy-center`          | The Privacy Center settings.                                                                                                                                     | Manage Privacy Center Layout                             | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
-| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | Manage Privacy Center Policies                           | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
-| `messages`              | `messages`                | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | Manage Internationalization Messages                     | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
-| `assessments`           | `assessments`             | Assessment responses.                                                                                                                                            | Manage Assessments                                       | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
-| `assessmentTemplates`   | `assessment-templates`    | Assessment template configurations.                                                                                                                              | Manage Assessments                                       | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
-| `purposes`              | `purposes`                | Consent purposes and related preference management topics.                                                                                                       | Manage Consent Manager, Manage Preference Store Settings | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
-| `preferenceOptions`     | `preference-options`      | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                        | Manage Preference Store Settings                         | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
-| `systemDiscovery`       | `system-discovery`        | System discovery results                                                                                                                                         | Manage Data Map                                          | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
+| Resource                    | Key in `transcend.yml`        | Description                                                                                                                                                                              | Scopes                                                                                                                      | Link                                                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKeys`                   | `api-keys`                    | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems.                         | View API Keys                                                                                                               | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
+| `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | Manage Global Attributes                                                                                                    | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
+| `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | Manage Email Templates                                                                                                      | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
+| `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | Manage Data Map, Connect Data Silos, View API Keys, View Data Subject Request Settings                                      | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | Manage Request Identity Verification, View Data Subject Request Settings                                                    | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | Manage Data Flows                                                                                                           | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
+| `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | Manage Data Inventory                                                                                                       | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
+| `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | Manage Data Map, View Data Subject Request Settings                                                                         | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
+| `actions`                   | `actions`                     | The privacy request action settings.                                                                                                                                                     | Manage Data Subject Request Settings                                                                                        | [DSR Automation -> Request Settings -> Data Actions](https://app.transcend.io/privacy-requests/settings/data-actions)                                                                                                                                  |
+| `dataSubjects`              | `data-subjects`               | The privacy request data subject settings.                                                                                                                                               | Manage Data Subject Request Settings                                                                                        | [DSR Automation -> Request Settings -> Data Subjects](https://app.transcend.io/privacy-requests/settings/data-subjects)                                                                                                                                |
+| `identifiers`               | `identifiers`                 | The privacy request identifier configurations.                                                                                                                                           | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `cookies`                   | `cookies`                     | Consent Manager Cookie definitions.                                                                                                                                                      | Manage Data Flows                                                                                                           | [Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)                                                                                                                                                             |
+| `consentSites`              | `consent-sites`               | Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.                                                                                                   | Manage Consent Manager                                                                                                      | [Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)                                                                                                                                                                      |
+| `consentManager`            | `consent-manager`             | Consent Manager general settings, including domain list.                                                                                                                                 | Manage Consent Manager Developer Settings                                                                                   | [Consent Management -> Developer Settings](https://app.transcend.io/consent-manager/developer-settings)                                                                                                                                                |
+| `partitions`                | `partitions`                  | The partitions in the account (often representative of separate data controllers).                                                                                                       | Manage Consent Manager Developer Settings                                                                                   | [Consent Management -> Developer Settings -> Advanced Settings](https://app.transcend.io/consent-manager/developer-settings/advanced-settings)                                                                                                         |
+| `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | Manage Data Inventory                                                                                                       | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
+| `dataCategories`            | `data-categories`             | The data categories in the Data Inventory.                                                                                                                                               | Manage Data Inventory                                                                                                       | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
+| `processingPurposes`        | `processing-purposes`         | The processing purposes in the Data Inventory.                                                                                                                                           | Manage Data Inventory                                                                                                       | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
+| `actionItems`               | `action-items`                | Onboarding-related action items                                                                                                                                                          | Manage All Action Items, View Global Attributes                                                                             | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
+| `actionItemCollections`     | `action-item-collections`     | Onboarding-related action item group names                                                                                                                                               | Manage Action Item Collections                                                                                              | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
+| `teams`                     | `teams`                       | Team definitions of users and scope groupings                                                                                                                                            | Manage Access Controls                                                                                                      | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
+| `privacyCenters`            | `privacy-center`              | The Privacy Center settings.                                                                                                                                                             | Manage Privacy Center Layout                                                                                                | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
+| `policies`                  | `policies`                    | The Privacy Center policies.                                                                                                                                                             | Manage Privacy Center Policies                                                                                              | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
+| `messages`                  | `messages`                    | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                                        | Manage Internationalization Messages                                                                                        | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
+| `assessments`               | `assessments`                 | Assessment responses.                                                                                                                                                                    | Manage Assessments                                                                                                          | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
+| `assessmentTemplates`       | `assessment-templates`        | Assessment template configurations.                                                                                                                                                      | Manage Assessments                                                                                                          | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
+| `purposes`                  | `purposes`                    | Consent purposes and related preference management topics.                                                                                                                               | Manage Consent Manager, Manage Preference Store Settings                                                                    | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
+| `preferenceOptions`         | `preference-options`          | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                                                | Manage Preference Store Settings                                                                                            | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
+| `systemDiscovery`           | `system-discovery`            | System discovery results                                                                                                                                                                 | Manage Data Map                                                                                                             | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
+| `preferenceWorkflowConfigs` | `preference-workflow-configs` | Preference workflow config definitions (Workflows → Preference Workflows). Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions. | Manage Preference Store Settings, View Data Subject Request Settings, View Consent Manager, View Data Map, Manage Workflows | [Workflows -> Preference Workflows](https://app.transcend.io/preference-store/consent-workflows)                                                                                                                                                       |
+| `workflowConfigs`           | `workflow-configs`            | DSR workflow config settings.                                                                                                                                                            | Manage Workflows                                                                                                            | [Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)                                                                                                                                                                      |
 
 #### Examples
 
@@ -2719,6 +3180,12 @@ The API key permissions for this command vary based on the resources declared as
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview what the push would create, update, or delete. Nothing is changed in Transcend**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Looks for file at custom location ./custom/location.yml**
@@ -2739,7 +3206,7 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --classifyService
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
-**Use dynamic variables to fill out parameters in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
+**Use dynamic variables in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --variables=domain:acme.com,stage:staging
@@ -2790,6 +3257,16 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=customFields
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
+**Preview a push before applying it**
+
+`--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
+
+The preview needs view access to every resource in your file, because it reads the current values first.
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
+```
+
 Some things to note about this sync process:
 
 1. Any field that is defined in your .yml file will be synced up to app.transcend.io. If any change was made on the Admin Dashboard, it will be overwritten.
@@ -2801,6 +3278,21 @@ Some things to note about this sync process:
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
 
+#### Workflow configs push notes
+
+`workflow-configs` are matched using a cascading key:
+
+1. `internal-name` (when provided; zero matches create a new workflow instead of falling through)
+2. `title`
+3. `action-type`
+4. `data-subject-type` (when provided in YAML)
+5. `region-list` (order-independent set match)
+
+- **Create:** If no workflow matches after the cascade, the CLI creates a DSR workflow via `createWorkflow` (starts as Draft with default associations), then applies the remaining YAML fields via `updateWorkflowConfig`.
+- **Update:** If a unique match exists, fields from YAML are updated in place. When `internal-name` is provided on update, it is written back via `updateWorkflowConfig`.
+- Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
+- Publishing (`visibility: PUBLISHED`) requires a `data-subject-type`.
+
 #### Preference management push notes
 
 When pushing `purposes`, `preference-options`, or nested `preference-topics`:
@@ -2809,6 +3301,16 @@ When pushing `purposes`, `preference-options`, or nested `preference-topics`:
 - **Built-in purposes:** Default purposes (Advertising, Analytics, Essential, Functional, SaleOfInfo) can be updated via API key for most fields (`description`, `title`, `display-order`, `show-in-privacy-center`, `auth-level`, etc.). The CLI omits `configurable` and `show-in-consent-manager` from updates for built-in purposes and logs a warning if your YAML differs on those fields — change them in the [Admin Dashboard](https://app.transcend.io/consent-manager/regional-experiences/purposes) instead.
 - **BOOLEAN topics:** Do not define `options` for `BOOLEAN` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
 - **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change `type` in YAML is rejected by the CLI.
+
+#### Preference workflow configs push notes
+
+When pushing `preference-workflow-configs`:
+
+- **Purposes required:** Each config needs a non-empty `purposes` list. The CLI derives `triggerCondition` from purposes on push (same shape as the Admin Dashboard).
+- **Exactly one mode:** Use either legacy fields (`action-type`, optional `data-silo-titles`) **or** Workflows V2 (`workflow-title`). Do not mix them on the same config.
+- **Legacy:** `action-type` and `data-subject-type` are required when creating a new config. `data-silo-titles` must match existing data silo titles exactly.
+- **Workflows V2:** `workflow-title` must match a DSR workflow's `internalName` (when set) or external title. On create, `actionId` / `dataSubjectId` are taken from that workflow. Requires the Manage Workflows scope to list workflows.
+- **Example:** See [preference-workflow-configs.yml](../../../../examples/preference-workflow-configs.yml).
 
 #### CI Integration
 
@@ -2847,18 +3349,18 @@ jobs:
         run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
 ```
 
-#### Dynamic Variables
+#### Dynamic variables
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The `transcend inventory push` command takes in a parameter `variables`. This is a CSV of `key:value` pairs.
+The `transcend inventory push` command accepts `--variables` as a comma-separated list of `key:value` pairs. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value.
 
-This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
+This command can fill out multiple variables in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 
 ```yml
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,
@@ -3325,7 +3827,7 @@ transcend inventory consent-managers-to-business-entities \
 
 ```txt
 USAGE
-  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
+  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|Approve Requests for Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules|View Custom Functions|Manage Custom Functions|View Usage|Execute LLM Classification) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
   transcend admin generate-api-keys --help
 
 This command allows for creating API keys across multiple Transcend instances. This is useful for customers that are managing many Transcend instances and need to regularly create, cycle or delete API keys across all of their instances.
@@ -3339,7 +3841,7 @@ FLAGS
       --password                                        The password for your account login
       --apiKeyTitle                                     The title of the API key being generated or destroyed
       --file                                            The file where API keys should be written to
-      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
+      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|Approve Requests for Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules|View Custom Functions|Manage Custom Functions|View Usage|Execute LLM Classification, separator = ,]
      [--deleteExistingApiKey/--noDeleteExistingApiKey]  When true, if an API key exists with the specified apiKeyTitle, the existing API key is deleted                                                                                                    [default = true]
      [--createNewApiKey/--noCreateNewApiKey]            When true, new API keys will be created. Set to false if you simply want to delete all API keys with a title                                                                                       [default = true]
      [--parentOrganizationId]                           Filter for only a specific organization by ID, returning all child accounts associated with that organization
@@ -3682,19 +4184,20 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate (--bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json]
+  transcend policy activate (--remote-bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json] [--debug]
   transcend policy activate --help
 
 Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
-     [--version]        Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
-      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--dry-run]        Validate activation without flipping the active version                                                                                                                                            [default = false]
-     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help            Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+     [--version]            Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--dry-run]            Validate activation without flipping the active version                                                                                                                                             [default = false]
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -3702,44 +4205,94 @@ FLAGS
 **Activate the latest uploaded version for a bundle**
 
 ```sh
-transcend policy activate --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy activate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Activate a specific version label by bundle name**
 
 ```sh
-transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy activate --version=abc123 --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Validate activation without flipping the active version**
 
 ```sh
-transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY" --dry-run
+transcend policy activate --version=abc123 --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --dry-run
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy activate --bundle-name=main
+transcend policy activate --remote-bundle-name=main
 ```
 
 Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy check`
+
+```txt
+USAGE
+  transcend policy check [--fix] [--noInteractive] [--json] [<workspace|bundle>]
+  transcend policy check --help
+
+Defaults to the policy workspace (`transcend/policy`) and verifies every publishable child directory that contains a `.manifest`. Pass one bundle path to verify a single unit. Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
+
+FLAGS
+     [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation           [default = false]
+     [--json]           Emit stable JSON output and disable prompts            [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [workspace|bundle]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
+```
+
+#### Examples
+
+**Verify every bundle under the default workspace**
+
+```sh
+transcend policy check
+```
+
+**Verify and format every bundle under the default workspace**
+
+```sh
+transcend policy check --fix
+```
+
+**Run the verification gate in CI or an editor**
+
+```sh
+transcend policy check --noInteractive --json
+```
+
+**Verify a single local publish directory**
+
+```sh
+transcend policy check transcend/policy/example-bundle --fix
+```
+
+With no directory argument, `policy check` verifies every immediate child under the default
+workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to verify a
+single unit.
 
 ### `transcend policy deactivate`
 
 ```txt
 USAGE
-  transcend policy deactivate (--bundle-name value) (--auth value) [--transcend-url value] [--json]
+  transcend policy deactivate (--remote-bundle-name value) (--auth value) [--transcend-url value] [--json] [--debug]
   transcend policy deactivate --help
 
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
-      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help            Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -3747,85 +4300,313 @@ FLAGS
 **Deactivate the active version of a bundle by name**
 
 ```sh
-transcend policy deactivate --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy deactivate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Print the raw JSON response**
 
 ```sh
-transcend policy deactivate --bundle-name=main --auth="$TRANSCEND_API_KEY" --json
+transcend policy deactivate --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --json
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy deactivate --bundle-name=main
+transcend policy deactivate --remote-bundle-name=main
 ```
 
 Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy download`
+
+```txt
+USAGE
+  transcend policy download (--remote-bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json] [--debug]
+  transcend policy download --help
+
+Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+     [--version]            Caller-supplied version label to download; defaults to the bundle's currently active version
+     [--output]             Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]               Print version metadata and the presigned download URL as JSON without writing a file                                                                                                                [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
+```
+
+#### Examples
+
+**Download the currently active version of a policy bundle**
+
+```sh
+transcend policy download --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Download a specific compiled policy bundle version to the default path**
+
+```sh
+transcend policy download --remote-bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
+```
+
+**Download to an explicit output path**
+
+```sh
+transcend policy download \
+  --remote-bundle-name=main \
+  --version=2026-06-25 \
+  --auth="$TRANSCEND_API_KEY" \
+  --output=./bundles/main-2026-06-25.tar.gz
+```
+
+**Print version metadata and the presigned URL as JSON without writing a file**
+
+```sh
+transcend policy download --remote-bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Omit --auth by exporting TRANSCEND_API_KEY in the environment**
+
+```sh
+transcend policy download --remote-bundle-name=main
+```
+
+Requires the **View Policy** scope on your API key.
+
+The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zip`.
 
 ### `transcend policy eval`
 
 ```txt
 USAGE
-  transcend policy eval (--pkg value) (--input value) [--bundle value]
+  transcend policy eval (--package value) [--input value] [--stdin-input] [--format pretty|json|values|bindings|source|raw|discard] [--schema value] [--explain off|notes|fails|full|debug] [--metrics] [--instrument] [--profile] [--timeout value] [--var-values] [--show-builtin-errors] <bundle>
   transcend policy eval --help
 
-Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Wraps `opa eval` for local policy debugging against one bundle directory. Always loads the directory as a bundle (`-b`) and ignores local `*_test.rego` files (same as check/publish — tests are not shipped to Evaluate). Provide input via `--input` or `--stdin-input` (exactly one). Pass-through flags cover format, schema, explain, metrics, instrument, profile, timeout, var-values, and show-builtin-errors. `-b` and `--ignore` stay owned by the CLI. Exit-on-result flags like OPA `--fail` are omitted: production Evaluate uses the Data API (policy deny is a successful evaluation; missing result is an engine failure), so process exit-on-result is not Evaluate parity. Requires an explicit directory containing a `.manifest`, and the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
-      --input    Path to a JSON envelope input file
-     [--bundle]  Optional local policy bundle directory
-  -h  --help     Print help information and exit
+      --package               OPA query path to evaluate (e.g. data.example.result)
+     [--input]                Path to a JSON envelope input file (mutually exclusive with --stdin-input)
+     [--stdin-input]          Read the input document from stdin (opa eval --stdin-input)                [default = false]
+     [--format]               Output format (opa eval --format)                                          [pretty|json|values|bindings|source|raw|discard, default = pretty]
+     [--schema]               JSON Schema file or directory for input type-checking (opa eval --schema)
+     [--explain]              Explanation mode (opa eval --explain)                                      [off|notes|fails|full|debug]
+     [--metrics]              Report evaluation metrics (opa eval --metrics)                             [default = false]
+     [--instrument]           Enable instrumentation; implies --metrics (opa eval --instrument)          [default = false]
+     [--profile]              Enable performance profiling (opa eval --profile)                          [default = false]
+     [--timeout]              Evaluation timeout duration, e.g. 5s (opa eval --timeout)
+     [--var-values]           Show variable values with --explain (opa eval --var-values)                [default = false]
+     [--show-builtin-errors]  Collect and report built-in errors (opa eval --show-builtin-errors)        [default = false]
+  -h  --help                  Print help information and exit
+
+ARGUMENTS
+  bundle  Local policy bundle directory containing a .manifest
 ```
 
 #### Examples
 
-**Evaluate a decision query with a local envelope**
+**Evaluate a generic decision query with a local envelope**
 
 ```sh
-transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
+transcend policy eval transcend/policy/example-bundle \
+  --package=data.example.result \
+  --input=transcend/policy/example-bundle/input.json
 ```
+
+**Simulate the Permissions API (query + envelope + input schema)**
+
+```sh
+transcend policy eval transcend/policy/permissions-bundle \
+  --package=data.permissions.purposes \
+  --input=transcend/policy/permissions-bundle/input.json \
+  --schema=transcend/policy/permissions-bundle/input.schema.json
+```
+
+**Pipe an envelope on stdin**
+
+```sh
+cat transcend/policy/example-bundle/input.json | transcend policy eval transcend/policy/example-bundle --package=data.example.result --stdin-input
+```
+
+The `<bundle>` positional is required (one local publish directory with a `.manifest` per
+invocation). Pass `--schema` with the bundle's `input.schema.json` when you want OPA to
+type-check `input` (e.g. `transcend/policy/permissions-bundle/input.schema.json`).
+
+### `transcend policy init`
+
+```txt
+USAGE
+  transcend policy init [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<workspace>]
+  transcend policy init --help
+
+Probes OPA and Regal, previews one safe transactional plan, and creates an empty multi-bundle workspace with shared Regal config and README. Add bundles with `transcend policy new`. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
+
+FLAGS
+     [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and check task
+     [--skill/--noSkill]    Install the canonical Policy Engine coding-agent skill
+     [--ci/--noCi]          Generate credential-free validation-only GitHub Actions
+     [--noInteractive]      Disable prompts and enable optional setup only through explicit flags   [default = false]
+     [--dryRun]             Preview changes without applying them                                   [default = false]
+     [--yes]                Skip only the final plan confirmation                                   [default = false]
+     [--json]               Emit stable JSON output and disable prompts                             [default = false]
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  [workspace]  Policy workspace directory [default = transcend/policy]
+```
+
+#### Create an empty multi-bundle workspace
+
+```sh
+transcend policy init
+```
+
+This creates a multi-bundle Policy Engine workspace under `transcend/policy` with shared Regal config (`project.roots: []`) and a README. No bundles or Rego are created — add them with `transcend policy new`.
+
+The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension and configures strict Rego v1 formatting.
+
+To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-policy-engine
+```
+
+#### Preview or choose another directory
+
+```sh
+transcend policy init ./policies --dryRun --json
+transcend policy init ./policies --editor --skill --ci --noInteractive --yes
+```
+
+Non-interactive setup enables only the individual `--editor`, `--skill`, and `--ci` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings.
+
+Generated CI pins OPA 1.18.2, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. After initialization, the next step is `transcend policy new` to add a bundle from a template.
 
 ### `transcend policy lint`
 
 ```txt
 USAGE
-  transcend policy lint (--dir value)
+  transcend policy lint [--fix] [--noInteractive] [--json] [<workspace|bundle>]
   transcend policy lint --help
 
-Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and lints every publishable child directory that contains a `.manifest`. Pass one bundle path to lint a single unit. Verifies OPA 1.x and Regal, checks or repairs OPA formatting, and treats Regal warnings as failures. For the full verification gate (manifest, strict OPA check, and tests), use `transcend policy check`. No Transcend API key is needed.
 
 FLAGS
-     --dir   Directory containing Rego policy files
-  -h --help  Print help information and exit
+     [--fix]            Apply OPA formatting without running broad Regal fixes [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation           [default = false]
+     [--json]           Emit stable JSON output and disable prompts            [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [workspace|bundle]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples
 
-**Lint a local policy directory and optionally format Rego files**
+**Lint every bundle under the default workspace**
 
 ```sh
-transcend policy lint --dir=./policies
+transcend policy lint
 ```
+
+**Lint and format every bundle under the default workspace**
+
+```sh
+transcend policy lint --fix
+```
+
+**Run lint in CI or an editor**
+
+```sh
+transcend policy lint --noInteractive --json
+```
+
+**Lint a single local publish directory**
+
+```sh
+transcend policy lint transcend/policy/example-bundle --fix
+```
+
+With no directory argument, `policy lint` lints every immediate child under the default
+workspace (`transcend/policy`) that contains a `.manifest`. Pass one bundle path to lint a
+single unit. Use `policy check` for the full verification gate.
+
+### `transcend policy new`
+
+```txt
+USAGE
+  transcend policy new [--name value] [--bundle-dir value] [--template generic|permissions] [--noInteractive] [--dryRun] [--yes] [--json] [<workspace>]
+  transcend policy new --help
+
+Adds a publishable bundle directory to an initialized policy workspace. `--name` is the Rego package root; `--bundle-dir` is the local folder basename under the workspace (defaults to `{name}-bundle`). This is not the remote Policy Engine `--remote-bundle-name` used at publish time. Requires `.regal/config.yaml` (run `transcend policy init` first). Creates bundle files, merges the root into Regal config, and updates editor setup when present.
+
+FLAGS
+     [--name]           Rego / .manifest package root (not the remote --remote-bundle-name); default folder is {name}-bundle/
+     [--bundle-dir]     Local publish folder basename under the workspace (default: {name}-bundle; not --remote-bundle-name)
+     [--template]       Bundle template                                                                                       [generic|permissions]
+     [--noInteractive]  Disable prompts and require explicit --name and --template                                            [default = false]
+     [--dryRun]         Preview changes without applying them                                                                 [default = false]
+     [--yes]            Skip only the final plan confirmation                                                                 [default = false]
+     [--json]           Emit stable JSON output and disable prompts                                                           [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [workspace]  Policy workspace directory [default = transcend/policy]
+```
+
+#### Examples
+
+**Add a generic example bundle**
+
+```sh
+transcend policy new --template=generic --name=example --yes
+```
+
+**Add a permissions bundle**
+
+```sh
+transcend policy new --template=permissions --name=permissions --yes
+```
+
+**Custom local folder, same package root**
+
+```sh
+transcend policy new --template=permissions --name=permissions --bundle-dir=my-bundle --yes
+```
+
+**Preview without writing**
+
+```sh
+transcend policy new --template=generic --name=myapp --dryRun --json
+```
+
+Requires an initialized workspace (`transcend policy init` first). Naming triad:
+
+- `--name` — Rego / `.manifest` package root (default local folder: `{name}-bundle/`)
+- `--bundle-dir` — local publish directory basename under the workspace only
+- `--remote-bundle-name` (on `policy publish`) — remote Policy Engine name; unrelated to the local folder
+
+The positional argument is the **workspace** (default `transcend/policy`).
 
 ### `transcend policy bundles`
 
 ```txt
 USAGE
-  transcend policy bundles (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
+  transcend policy bundles (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json] [--debug]
   transcend policy bundles --help
 
 Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]          Maximum number of bundles to return                                                                                                                                                                [default = 50]
-     [--offset]         Number of records to skip before returning results                                                                                                                                                 [default = 0]
-     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help            Print help information and exit
+      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--limit]            Maximum number of bundles to return (1-100)                                                                                                                                                         [default = 50]
+     [--offset]           Number of records to skip before returning results                                                                                                                                                  [default = 0]
+     [--json]             Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help              Print help information and exit
 ```
 
 #### Examples
@@ -3854,37 +4635,39 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes]
+  transcend policy publish (--remote-bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes] [--debug] <bundle>
   transcend policy publish --help
 
-Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
+Packages `.manifest` and `.rego` policy files from one local bundle directory into a tarball and uploads it to Transcend. Requires an explicit directory containing a `.manifest`. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
 
 FLAGS
-      --dir             Directory containing manifest.json and Rego policy files
-      --bundle-name     Tenant-unique policy bundle name
-      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
-     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--version]        Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
-     [--description]    Optional description for the uploaded version
-     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
-     [--yes]            Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                             [default = false]
-  -h  --help            Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--version]            Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
+     [--description]        Optional description for the uploaded version
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--yes]                Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                              [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  bundle  Local policy bundle directory containing a .manifest
 ```
 
 #### Examples
 
-**Publish a local policy directory as the main bundle**
+**Publish a local policy bundle as the main bundle**
 
 ```sh
-transcend policy publish --dir=./policies --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy publish transcend/policy/example-bundle --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Publish with an explicit version label and description**
 
 ```sh
-transcend policy publish \
-  --dir=./policies \
-  --bundle-name=main \
+transcend policy publish transcend/policy/example-bundle \
+  --remote-bundle-name=main \
   --auth="$TRANSCEND_API_KEY" \
   --version=2026-06-25 \
   --description="Quarterly policy update"
@@ -3893,18 +4676,28 @@ transcend policy publish \
 **Publish to the US-hosted Transcend API**
 
 ```sh
-transcend policy publish \
-  --dir=./policies \
-  --bundle-name=common \
+transcend policy publish transcend/policy/example-bundle \
+  --remote-bundle-name=common \
   --auth="$TRANSCEND_API_KEY" \
   --transcend-url=https://api.us.transcend.io
+```
+
+**Publish the Permissions API bundle (fixed remote name)**
+
+```sh
+transcend policy publish transcend/policy/permissions-bundle \
+  --remote-bundle-name=permissions \
+  --auth="$TRANSCEND_API_KEY"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy publish --dir=./policies --bundle-name=main
+transcend policy publish transcend/policy/example-bundle --remote-bundle-name=main
 ```
+
+`--remote-bundle-name` is the remote Policy Engine name (not the local folder). The `<bundle>`
+positional is the local publish directory containing a `.manifest`.
 
 Requires the **Manage Policy** scope on your API key.
 
@@ -3912,41 +4705,75 @@ Requires the **Manage Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy test (--dir value)
+  transcend policy test [--format pretty|json|gobench] [--verbose] [--run value] [--coverage] [--threshold value] [--timeout value] [--var-values] [--explain notes|fails|full|debug] [--schema value] [--exit-zero-on-skipped] [<workspace|bundle>]
   transcend policy test --help
 
-Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Defaults to the policy workspace (`transcend/policy`) and runs `opa test -b --fail-on-empty` for every child directory that contains a `.manifest`. Pass one bundle path to test a single unit. Pass-through flags cover format, verbose, run, coverage, threshold, timeout, var-values, explain, schema, and exit-zero-on-skipped; `-b` and `--fail-on-empty` stay owned by the CLI. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
-     --dir   Directory containing Rego policy files and tests
-  -h --help  Print help information and exit
+     [--format]                Output format (opa test --format)                                            [pretty|json|gobench, default = pretty]
+     [--verbose]               Show detailed test results (opa test --verbose)                              [default = false]
+     [--run]                   Regex filter for test names (opa test --run)
+     [--coverage]              Report coverage (opa test --coverage)                                        [default = false]
+     [--threshold]             Fail when coverage is below this % (requires --coverage)
+     [--timeout]               Test timeout duration, e.g. 5s (opa test --timeout)
+     [--var-values]            Show variable values in failures (opa test --var-values)                     [default = false]
+     [--explain]               Explanation mode (opa test --explain)                                        [notes|fails|full|debug]
+     [--schema]                JSON Schema file or directory for input type-checking (opa test --schema)
+     [--exit-zero-on-skipped]  Exit 0 when all matching tests are skipped (opa test --exit-zero-on-skipped) [default = false]
+  -h  --help                   Print help information and exit
+
+ARGUMENTS
+  [workspace|bundle]  Policy workspace or bundle directory (workspace runs every .manifest child) [default = transcend/policy]
 ```
 
 #### Examples
 
-**Run tests in a local policy directory**
+**Run tests for every bundle under the default workspace**
 
 ```sh
-transcend policy test --dir=./policies
+transcend policy test
 ```
+
+**Filter tests and emit JSON**
+
+```sh
+transcend policy test --format=json --run=test_allows --verbose
+```
+
+**Fail CI when coverage is below a threshold**
+
+```sh
+transcend policy test --coverage --threshold=80
+```
+
+**Test a single local publish directory**
+
+```sh
+transcend policy test transcend/policy/example-bundle
+```
+
+With no directory argument, `policy test` runs every immediate child under the default workspace
+(`transcend/policy`) that contains a `.manifest`. Pass one bundle path to test a single unit.
 
 ### `transcend policy versions`
 
 ```txt
 USAGE
-  transcend policy versions (--bundle-name value) (--auth value) [--transcend-url value] [--limit value] [--after value] [--json]
+  transcend policy versions (--remote-bundle-name value) (--auth value) [--transcend-url value] [--limit value] [--after value] [--json] [--debug]
   transcend policy versions --help
 
 Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-      --bundle-name     Tenant-unique policy bundle name
-      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
-     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]          Maximum number of versions to return                                                                                                                                                               [default = 50]
-     [--after]          Opaque cursor from a previous response pageInfo.endCursor
-     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help            Print help information and exit
+      --remote-bundle-name  Remote Policy Engine bundle name (not the local folder or --name root)
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]      URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcend-url may be omitted if it is exported. [default = https://api.transcend.io]
+     [--limit]              Maximum number of versions to return (1-100)                                                                                                                                                        [default = 50]
+     [--after]              Opaque cursor from a previous response pageInfo.endCursor
+     [--json]               Print the raw JSON API response                                                                                                                                                                     [default = false]
+     [--debug/--noDebug]    Include technical error details (underlying API message and stack trace) when a command fails
+  -h  --help                Print help information and exit
 ```
 
 #### Examples
@@ -3954,162 +4781,24 @@ FLAGS
 **List versions for a policy bundle**
 
 ```sh
-transcend policy versions --bundle-name=main --auth="$TRANSCEND_API_KEY"
+transcend policy versions --remote-bundle-name=main --auth="$TRANSCEND_API_KEY"
 ```
 
 **Fetch the next page of versions using an after cursor**
 
 ```sh
-transcend policy versions --bundle-name=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
+transcend policy versions --remote-bundle-name=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy versions --bundle-name=main
+transcend policy versions --remote-bundle-name=main
 ```
 
 Requires the **View Policy** scope on your API key.
 
 <!-- COMMANDS_END -->
-
-## Prompt Manager
-
-If you are integrating Transcend's Prompt Manager into your code, it may look like:
-
-```ts
-import * as t from 'io-ts';
-import { TranscendPromptManager } from '@transcend-io/cli';
-import { ChatCompletionMessage, PromptRunProductArea } from '@transcend-io/privacy-types';
-
-/**
- * Example prompt integration
- */
-export async function main(): Promise<void> {
-  // Instantiate the Transcend Prompt Manager instance
-  const promptManager = new TranscendPromptManager({
-    // API key
-    transcendApiKey: process.env.TRANSCEND_API_KEY,
-    // Define the prompts that are stored in Transcend
-    prompts: {
-      test: {
-        // identify by ID
-        id: '30bcaa79-889a-4af3-842d-2e8ba443d36d',
-        // no runtime variables
-        paramCodec: t.type({}),
-        // response is list of strings
-        outputCodec: t.array(t.string),
-      },
-      json: {
-        // identify by title
-        title: 'test',
-        // one runtime variable "test"
-        paramCodec: t.type({ test: t.string }),
-        // runtime is json object
-        outputCodec: t.record(t.string, t.string),
-        // response is stored in <json></json> atg
-        extractFromTag: 'json',
-      },
-      predictProductLine: {
-        // identify by title
-        title: 'Predict Product Line',
-        // runtime parameter for slack channel name
-        paramCodec: t.type({
-          slackChannelName: t.string,
-        }),
-        // response is specific JSON shape
-        outputCodec: t.type({
-          product: t.union([t.string, t.null]),
-          clarification: t.union([t.string, t.null]),
-        }),
-        // response is stored in <json></json> atg
-        extractFromTag: 'json',
-      },
-    },
-    // Optional arguments
-    //  transcendUrl: 'https://api.us.transcend.io', // defaults to 'https://api.transcend.io'
-    //  requireApproval: false, // defaults to true
-    //  cacheDuration: 1000 * 60 * 60, // defaults to undefined, no cache
-    //  defaultVariables: { myVariable: 'this is custom', other: [{ name: 'custom' }] }, // defaults to {}
-    //  handlebarsOptions: { helpers, templates }, // defaults to {}
-  });
-
-  // Fetch the prompt from Transcend and template any variables
-  // in this case, we template the slack channel name in the LLM prompt
-  const systemPrompt = await promptManager.compilePrompt('predictProductLine', {
-    slackChannelName: channelName,
-  });
-
-  // Parameters to pass to the LLM
-  const input: ChatCompletionMessage[] = [
-    {
-      role: 'system',
-      content: systemPrompt,
-    },
-    {
-      role: 'user',
-      content: input,
-    },
-  ];
-  const largeLanguageModel = {
-    name: 'gpt-4',
-    client: 'openai' as const,
-  };
-  const temperature = 1;
-  const topP = 1;
-  const maxTokensToSample = 1000;
-
-  // Run prompt against LLM
-  let response: string;
-  const t0 = new Date().getTime();
-  try {
-    response = await openai.createCompletion(input, {
-      temperature,
-      top_p: topP,
-      max_tokens: maxTokensToSample,
-    });
-  } catch (err) {
-    // report error upon failure
-    await promptManager.reportPromptRunError('predictProductLine', {
-      promptRunMessages: input,
-      duration: new Date().getTime() - t0,
-      temperature,
-      topP,
-      error: err.message,
-      maxTokensToSample,
-      largeLanguageModel,
-    });
-  }
-  const t1 = new Date().getTime();
-
-  // Parsed response as JSON and do not report to Transcend
-  //   const parsedResponse = promptManager.parseAiResponse(
-  //     'predictProductLine',
-  //     response,
-  //   );
-
-  // Parsed response as JSON and report output to Transcend
-  const parsedResponse = await promptManager.reportAndParsePromptRun('predictProductLine', {
-    promptRunMessages: [
-      ...input,
-      {
-        role: 'assistant',
-        content: response,
-      },
-    ],
-    duration: t1 - t0,
-    temperature,
-    topP,
-    maxTokensToSample,
-    largeLanguageModel,
-    // Optional parameters
-    // name, // unique identifier for this run
-    // productArea, // Transcend product area that the prompt relates to
-    // runByEmployeeEmail, // Employee email that is executing the request
-    // promptGroupId, // The prompt group being reported
-  });
-}
-```
 
 ## Proxy usage
 
@@ -4120,3 +4809,5 @@ If you are trying to use the CLI inside a corporate firewall and need to send tr
 By default, if a CLI command has to call a Sombra endpoint, the primary Sombra gateway on the account will be used. If the primary Sombra is self hosted, you will need to provide the --sombraAuth variable.
 
 If you want to use a non-primary Sombra, you can specify the environment variable `SOMBRA_URL` e.g. `SOMBRA_URL="https://multi-tenant.sombra.us.transcend.io"` and that Sombra will be used instead.
+
+To associate a data silo with a specific configured Sombra instance in `transcend.yml`, set optional `sombra-id` on the data silo (the configured Sombra UUID). `transcend inventory pull --resources=dataSilos` writes this field when present; `transcend inventory push` updates it when set. Omitting `sombra-id` on push leaves the existing association unchanged.

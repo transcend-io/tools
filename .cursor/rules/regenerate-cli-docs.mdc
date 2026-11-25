@@ -1,0 +1,26 @@
+---
+description: Regenerate CLI docs when Stricli commands or parameters change
+globs: "packages/cli/src/commands/**/{command,readme}.ts,packages/cli/src/**/*parameters*.ts,packages/cli/src/lib/cli/common-parameters.ts,packages/cli/src/lib/scaffolding/command-parameters.ts"
+alwaysApply: false
+---
+
+# Regenerate CLI docs when commands change
+
+Whenever you change Stricli surfaces that feed generated docs, regenerate and commit the
+artifacts in the same change. Do not leave README or schema stale.
+
+## Triggers
+
+- Command definitions in `packages/cli/src/commands/**/command.ts` (flags, positionals,
+  `docs.brief` / `docs.fullDescription`)
+- Shared parameter objects typed as `TypedFlagParameter` / `TypedPositionalParameter`
+  (and factories that return them)
+- `readme.ts` files and other docgen inputs described in `packages/cli/DEVELOPERS.md`
+
+## Action
+
+- README only: `pnpm -F cli docgen`
+- README + `transcend.yml` schema: `pnpm -F cli genfiles`
+
+See **Generated files** in `packages/cli/DEVELOPERS.md`. Commit regenerated files with the
+command/parameter change.

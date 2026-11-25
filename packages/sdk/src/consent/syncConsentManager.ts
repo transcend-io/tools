@@ -29,6 +29,7 @@ import {
   UPDATE_CONSENT_MANAGER_VERSION,
   TOGGLE_TELEMETRY_PARTITION_STRATEGY,
   TOGGLE_UNKNOWN_COOKIE_POLICY,
+  TOGGLE_CONSENT_MANAGER_ENFORCEMENT,
   TOGGLE_CONSENT_PRECEDENCE,
   TOGGLE_UNKNOWN_REQUEST_POLICY,
   UPDATE_CONSENT_MANAGER_THEME,
@@ -123,6 +124,11 @@ export interface ConsentManagerInput {
   consentVariants?: ConsentVariantInput[];
   /** Consent UI theme configurations */
   consentThemes?: ConsentThemeInput[];
+  /**
+   * When true, traffic is report-only (enforcement off).
+   * Maps to the dashboard "Reporting only" mode. Deploy the bundle after pushing to go live.
+   */
+  reportOnly?: boolean;
 }
 
 /**
@@ -370,6 +376,18 @@ export async function syncConsentManager(
         input: {
           id: airgapBundleId,
           consentPrecedence: consentManager.consentPrecedence,
+        },
+      },
+      logger,
+    });
+  }
+
+  if (consentManager.reportOnly !== undefined) {
+    await makeGraphQLRequest(client, TOGGLE_CONSENT_MANAGER_ENFORCEMENT, {
+      variables: {
+        input: {
+          id: airgapBundleId,
+          off: consentManager.reportOnly,
         },
       },
       logger,

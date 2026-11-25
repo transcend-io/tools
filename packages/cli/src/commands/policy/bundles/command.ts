@@ -5,6 +5,11 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { parseLimitParam, parseOffsetParam } from '../helpers/index.js';
+import {
+  createPolicyDebugParameter,
+  policyJsonParameter,
+} from '../helpers/policyCommandParameters.js';
 
 export const bundlesCommand = buildCommand({
   loader: async () => {
@@ -16,36 +21,21 @@ export const bundlesCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      'transcend-url': createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(undefined, 'transcend-url'),
       limit: {
         kind: 'parsed',
-        parse: (value: string) => {
-          const parsed = Number(value);
-          if (!Number.isFinite(parsed) || parsed <= 0) {
-            throw new Error('limit must be a positive number');
-          }
-          return parsed;
-        },
-        brief: 'Maximum number of bundles to return',
+        parse: parseLimitParam,
+        brief: 'Maximum number of bundles to return (1-100)',
         default: '50',
       },
       offset: {
         kind: 'parsed',
-        parse: (value: string) => {
-          const parsed = Number(value);
-          if (!Number.isFinite(parsed) || parsed < 0) {
-            throw new Error('offset must be a non-negative number');
-          }
-          return parsed;
-        },
+        parse: parseOffsetParam,
         brief: 'Number of records to skip before returning results',
         default: '0',
       },
-      json: {
-        kind: 'boolean',
-        brief: 'Print the raw JSON API response',
-        default: false,
-      },
+      json: policyJsonParameter,
+      debug: createPolicyDebugParameter(),
     },
   },
   docs: {

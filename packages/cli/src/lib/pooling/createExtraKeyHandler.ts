@@ -1,6 +1,10 @@
 import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 
-import { showCombinedLogs, type LogLocation } from './showCombinedLogs.js';
+import {
+  showCombinedLogs,
+  type LogLocation,
+  type ShowCombinedLogsPorts,
+} from './showCombinedLogs.js';
 
 /** Severity filter applied by the viewer. */
 type ViewLevel = 'error' | 'warn' | 'all';
@@ -49,6 +53,12 @@ export type CreateExtraKeyHandlerOpts = {
    * when exports are written so your dashboard panel can reflect “last saved” times.
    */
   exportStatus?: ExportStatusMap;
+
+  /** Standard output used for viewer and export messages. */
+  stdout?: ShowCombinedLogsPorts['stdout'];
+
+  /** Return the current Unix timestamp in milliseconds. */
+  now?: () => number;
 
   /**
    * Optional custom key bindings for command-specific actions.
@@ -109,10 +119,19 @@ export type CreateExtraKeyHandlerOpts = {
  * @returns A `(buf: Buffer) => void` handler suitable for `process.stdin.on('data', ...)`.
  */
 export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Buffer) => void {
-  const { logsBySlot, repaint, setPaused, exportMgr, exportStatus, custom } = opts;
+  const {
+    logsBySlot,
+    repaint,
+    setPaused,
+    exportMgr,
+    exportStatus,
+    stdout = process.stdout,
+    now = Date.now,
+    custom,
+  } = opts;
 
   const say = (s: string): void => {
-    process.stdout.write(`${s}\n`);
+    stdout.write(`${s}\n`);
   };
 
   /**
@@ -123,13 +142,13 @@ export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Bu
    * @param p - Absolute path to the exported file.
    */
   const noteExport = (slot: keyof ExportStatusMap, p: string): void => {
-    const now = Date.now();
+    const savedAt = now();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cur: any = exportStatus?.[slot] ?? { path: p };
     if (exportStatus) {
       exportStatus[slot] = {
         path: p || cur.path,
-        savedAt: now,
+        savedAt,
         exported: true,
       };
       repaint();
@@ -151,12 +170,12 @@ export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Bu
     setPaused(true);
 
     // optional UX: clear screen and show a hint
-    process.stdout.write('\x1b[2J\x1b[H'); // clear+home
-    process.stdout.write('Combined logs viewer (press Esc or Ctrl+] to return)\n\n');
+    stdout.write('\x1b[2J\x1b[H'); // clear+home
+    stdout.write('Combined logs viewer (press Esc or Ctrl+] to return)\n\n');
 
     (async () => {
       try {
-        await showCombinedLogs(logsBySlot, sources, level);
+        await showCombinedLogs(logsBySlot, sources, level, { stdout });
         // NOTE: do NOT unpause here; ESC will handle it.
       } catch {
         // If showCombinedLogs throws, recover and unpause

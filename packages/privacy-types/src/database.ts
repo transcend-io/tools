@@ -3,7 +3,7 @@ import { makeEnum } from '@transcend-io/type-utils';
 /**
  * The database integrations
  */
-export const DatabaseIntegration = makeEnum({
+export const DatabaseIntegration = {
   postgresql: 'postgresql',
   redshift: 'amazonredshift',
   snowflake: 'snowflake',
@@ -25,12 +25,12 @@ export const DatabaseIntegration = makeEnum({
   azuresynapse: 'azuresynapse',
   azurecosmosdbnosql: 'azurecosmosdbnosql',
   trino: 'trino',
-});
+} as const;
 
 /**
  * The possible drivers for a database integration
  */
-export const SQLDriverWithDataMapping = makeEnum({
+export const SQLDriverWithDataMapping = {
   [DatabaseIntegration.redshift]: 'Amazon Redshift',
   [DatabaseIntegration.postgresql]: 'PostgreSQL Unicode',
   [DatabaseIntegration.snowflake]: 'SnowflakeDSIIDriver',
@@ -43,7 +43,7 @@ export const SQLDriverWithDataMapping = makeEnum({
   [DatabaseIntegration.oracle]: 'Oracle DB',
   [DatabaseIntegration.azuresynapse]: 'Azure Synapse',
   [DatabaseIntegration.trino]: 'Trino',
-});
+} as const;
 
 /** Overrides type */
 export type SQLDriverWithDataMapping =
@@ -53,7 +53,7 @@ export type SQLDriverWithDataMapping =
  * All possible drivers for a database integration, regardless
  * or not they support data mapping
  */
-export const DatabaseDriver = makeEnum({
+export const DatabaseDriver = {
   ...SQLDriverWithDataMapping,
   [DatabaseIntegration.mongodb]: 'MongoDB',
   [DatabaseIntegration.amazondynamodb]: 'AmazonDynamoDB',
@@ -65,7 +65,7 @@ export const DatabaseDriver = makeEnum({
   [DatabaseIntegration.saps4hana]: 'SapS4Hana',
   [DatabaseIntegration.googlebigtable]: 'Google Bigtable',
   [DatabaseIntegration.azurecosmosdbnosql]: 'Azure Cosmos DB NoSQL',
-});
+} as const;
 
 /** Overrides type */
 export type DatabaseDriver = (typeof DatabaseDriver)[keyof typeof DatabaseDriver];

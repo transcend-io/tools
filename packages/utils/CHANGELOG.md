@@ -1,5 +1,46 @@
 # @transcend-io/utils
 
+## 0.3.3
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+
+## 0.3.0
+
+### Minor Changes
+
+- 4726631: Scaffold `@transcend-io/mcp-server-policy` and share Policy Engine bundle size limits from `@transcend-io/utils`.
+
+  The new MCP package provides the Policy Engine server shell (OAuth scopes, client helpers, and error formatting). Bundle upload limits (`MAX_BUNDLE_COMPRESSED_BYTES` / `MAX_BUNDLE_DECOMPRESSED_BYTES`) now live in `@transcend-io/utils` so the CLI and MCP server share one source of truth.
+
+## 0.2.2
+
+### Patch Changes
+
+- c4f1a55: Upgrade csv-parse to patch CVE
+
+## 0.2.1
+
+### Patch Changes
+
+- 48a41a5: Bump `fast-csv` from `^4.3.6` to `^5.0.0`.
+
 ## 0.2.0
 
 ### Minor Changes

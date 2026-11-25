@@ -16,7 +16,7 @@ import { ConsentPreferenceResponse } from './types.js';
  * @returns Plaintext context information
  */
 export async function getPreferencesForIdentifiers(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     identifiers,
     partitionKey,

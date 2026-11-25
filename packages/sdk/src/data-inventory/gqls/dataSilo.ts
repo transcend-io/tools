@@ -82,6 +82,13 @@ export const DATA_SILOS_ENRICHED = gql`
         dependentDataSilos {
           title
         }
+        dependedOnDataSilosPerWorkflow {
+          workflowConfigId
+          workflowInternalName
+          dependedOnDataSilos {
+            title
+          }
+        }
         owners {
           email
         }
@@ -104,6 +111,29 @@ export const DATA_SILOS_ENRICHED = gql`
         businessEntities {
           title
         }
+        sombra {
+          id
+        }
+        vendor {
+          title
+        }
+        contactName
+        contactEmail
+        websiteUrl
+        notes
+        dataRetentionNote
+        dsrProcessingDocumentation
+        dataProcessingAgreementLink
+        dataProcessingAgreementStatus
+        notifyWebhookUrl
+        isPausedForDsrs
+        skipSecondaryIfNoFiles
+        allowDsrProcessingStartTime
+        allowDsrProcessingEndTime
+        customSiloConnectionStrategy
+        recommendedForConsent
+        recommendedForPrivacy
+        hasPersonalData
       }
     }
   }

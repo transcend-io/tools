@@ -5,7 +5,9 @@ import {
   type AuthCredentials,
   type Logger,
 } from '@transcend-io/mcp-server-base';
+import { CustomFunctionsMixin } from '@transcend-io/mcp-server-custom-functions';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
+import { DocsCatalogMixin } from '@transcend-io/mcp-server-docs';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';
 import { WorkflowsMixin } from '@transcend-io/mcp-server-workflows';
@@ -33,27 +35,37 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listUsers: InstanceType<typeof AdminMixin>['listUsers'];
   declare listTeams: InstanceType<typeof AdminMixin>['listTeams'];
   declare listApiKeys: InstanceType<typeof AdminMixin>['listApiKeys'];
-  declare createApiKey: InstanceType<typeof AdminMixin>['createApiKey'];
-  declare getPrivacyCenter: InstanceType<typeof AdminMixin>['getPrivacyCenter'];
 
   // DSR
   declare listRequests: InstanceType<typeof DSRMixin>['listRequests'];
   declare getRequest: InstanceType<typeof DSRMixin>['getRequest'];
-  declare employeeMakeDataSubjectRequest: InstanceType<
-    typeof DSRMixin
-  >['employeeMakeDataSubjectRequest'];
   declare cancelRequest: InstanceType<typeof DSRMixin>['cancelRequest'];
 
   // Inventory
   declare listDataSilos: InstanceType<typeof InventoryMixin>['listDataSilos'];
   declare getDataSilo: InstanceType<typeof InventoryMixin>['getDataSilo'];
+  declare listCatalogs: InstanceType<typeof InventoryMixin>['listCatalogs'];
+  declare getCatalogIntegrationDetail: InstanceType<
+    typeof DocsCatalogMixin
+  >['getCatalogIntegrationDetail'];
+  declare searchCatalogIntegrations: InstanceType<
+    typeof DocsCatalogMixin
+  >['searchCatalogIntegrations'];
   declare createDataSilo: InstanceType<typeof InventoryMixin>['createDataSilo'];
   declare updateDataSilo: InstanceType<typeof InventoryMixin>['updateDataSilo'];
+  declare writeDataSilo: InstanceType<typeof InventoryMixin>['writeDataSilo'];
   declare listVendors: InstanceType<typeof InventoryMixin>['listVendors'];
+  declare writeVendor: InstanceType<typeof InventoryMixin>['writeVendor'];
   declare listDataPoints: InstanceType<typeof InventoryMixin>['listDataPoints'];
+  declare updateOrCreateDataPoint: InstanceType<typeof InventoryMixin>['updateOrCreateDataPoint'];
   declare listSubDataPoints: InstanceType<typeof InventoryMixin>['listSubDataPoints'];
   declare listIdentifiers: InstanceType<typeof InventoryMixin>['listIdentifiers'];
   declare listDataCategories: InstanceType<typeof InventoryMixin>['listDataCategories'];
+  declare listProcessingPurposes: InstanceType<typeof InventoryMixin>['listProcessingPurposes'];
+  declare writeProcessingPurpose: InstanceType<typeof InventoryMixin>['writeProcessingPurpose'];
+  declare writeDataCategory: InstanceType<typeof InventoryMixin>['writeDataCategory'];
+  declare listBusinessEntities: InstanceType<typeof InventoryMixin>['listBusinessEntities'];
+  declare listDataSubjects: InstanceType<typeof InventoryMixin>['listDataSubjects'];
 
   // Consent tools now call makeRequest directly (no mixin needed)
 
@@ -93,11 +105,26 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listWorkflows: InstanceType<typeof WorkflowsMixin>['listWorkflows'];
   declare updateWorkflowConfig: InstanceType<typeof WorkflowsMixin>['updateWorkflowConfig'];
   declare listEmailTemplates: InstanceType<typeof WorkflowsMixin>['listEmailTemplates'];
+
+  // Custom Functions
+  declare listCustomFunctions: InstanceType<typeof CustomFunctionsMixin>['listCustomFunctions'];
+  declare getSignedCustomFunctionVersion: InstanceType<
+    typeof CustomFunctionsMixin
+  >['getSignedCustomFunctionVersion'];
+  declare createCustomFunction: InstanceType<typeof CustomFunctionsMixin>['createCustomFunction'];
+  declare updateCustomFunction: InstanceType<typeof CustomFunctionsMixin>['updateCustomFunction'];
+  declare promoteCustomFunctionVersion: InstanceType<
+    typeof CustomFunctionsMixin
+  >['promoteCustomFunctionVersion'];
+  declare testRunCustomFunction: InstanceType<typeof CustomFunctionsMixin>['testRunCustomFunction'];
+  declare listSombras: InstanceType<typeof CustomFunctionsMixin>['listSombras'];
 }
 
 applyMixin(TranscendGraphQLClient, AdminMixin);
 applyMixin(TranscendGraphQLClient, DSRMixin);
 applyMixin(TranscendGraphQLClient, InventoryMixin);
+applyMixin(TranscendGraphQLClient, DocsCatalogMixin);
 applyMixin(TranscendGraphQLClient, DiscoveryMixin);
 applyMixin(TranscendGraphQLClient, AssessmentsMixin);
 applyMixin(TranscendGraphQLClient, WorkflowsMixin);
+applyMixin(TranscendGraphQLClient, CustomFunctionsMixin);

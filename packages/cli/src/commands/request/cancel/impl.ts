@@ -36,7 +36,7 @@ export async function cancel(
     concurrency,
   }: CancelCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await cancelPrivacyRequests({
     transcendUrl,

@@ -2,6 +2,43 @@ import { applyEnum, makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 /**
+ * Layout used for privacy center footer links
+ */
+export const PrivacyCenterFooterLayout = {
+  /** Default footer layout */
+  Default: 'DEFAULT',
+  /** Grid footer layout */
+  Grid: 'GRID',
+} as const;
+
+/** Type override */
+export type PrivacyCenterFooterLayout =
+  (typeof PrivacyCenterFooterLayout)[keyof typeof PrivacyCenterFooterLayout];
+
+/**
+ * Privacy center branding asset slots on `UpdatePrivacyCenterInput.assets`
+ * (`PrivacyCenterAssetName` in GraphQL).
+ */
+export const PrivacyCenterAssetName = {
+  /** Primary logo */
+  Logo: 'logo',
+  /** Favicon */
+  Favicon: 'favicon',
+  /** Logo on solid backgrounds */
+  LogoOnSolid: 'logoOnSolid',
+  /** Logo in the footer */
+  LogoOnFooter: 'logoOnFooter',
+  /** Hero image */
+  Hero: 'hero',
+  /** Widget background image */
+  WidgetBg: 'widgetBg',
+} as const;
+
+/** Type override */
+export type PrivacyCenterAssetName =
+  (typeof PrivacyCenterAssetName)[keyof typeof PrivacyCenterAssetName];
+
+/**
  * The names of the components that can be provided css overrides
  */
 export enum CustomizableComponent {
@@ -50,7 +87,7 @@ export enum CustomizableText {
 /**
  * The color palette that must be defined
  */
-export const RequiredConfigurableColorPaletteColor = makeEnum({
+export const RequiredConfigurableColorPaletteColor = {
   /**
    * Used everywhere...
    *
@@ -69,7 +106,7 @@ export const RequiredConfigurableColorPaletteColor = makeEnum({
    *   2. **Secondary links**
    */
   Secondary: 'secondary',
-});
+} as const;
 
 /** Type override */
 export type RequiredConfigurableColorPaletteColor =
@@ -78,7 +115,7 @@ export type RequiredConfigurableColorPaletteColor =
 /**
  * The optional color pallette colors
  */
-export const OptionalConfigurableColorPaletteColor = makeEnum({
+export const OptionalConfigurableColorPaletteColor = {
   /**
    * The background color will be set by the primary color by default with the ability to change it to secondary color, black or white.
    */
@@ -132,7 +169,7 @@ export const OptionalConfigurableColorPaletteColor = makeEnum({
   Gray1: 'gray1',
   /** Medium gray color */
   Gray4: 'gray4',
-});
+} as const;
 
 /** Type override */
 export type OptionalConfigurableColorPaletteColor =
@@ -141,10 +178,10 @@ export type OptionalConfigurableColorPaletteColor =
 /**
  * The color palette that an organization can customize on their privacy center exposed in the default GUI.
  */
-export const ConfigurableColorPaletteColor = makeEnum({
+export const ConfigurableColorPaletteColor = {
   ...RequiredConfigurableColorPaletteColor,
   ...OptionalConfigurableColorPaletteColor,
-});
+} as const;
 
 /** Type override */
 export type ConfigurableColorPaletteColor =

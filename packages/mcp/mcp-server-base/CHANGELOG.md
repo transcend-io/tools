@@ -1,5 +1,815 @@
 # @transcend-io/mcp-server-base
 
+## 3.2.1
+
+### Patch Changes
+
+- 87ce10b: Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages import it from privacy-types directly (not re-exported through mcp-server-base). The former `ErrorCode` enum on mcp-server-base is removed.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+
+## 3.2.0
+
+### Minor Changes
+
+- 0c71caf: Section write tools now use the same push pipeline as `transcend inventory push` and share one result shape (`success`, `count`, `errors`, optional `warnings` and `logs`). Helpers live on `@transcend-io/mcp-server-base/transcend-yml`.
+
+  **Breaking for direct tool callers**
+  - Inventory write tools renamed `items` to section-specific args (for example `businessEntities`, `identifiers`, `attributes`).
+  - `privacy_center_write` renamed `publish` to `publishToPrivacyCenter`.
+  - DSR write results no longer use `synced` or per-item `{ item, message }` errors; they match other section writes.
+  - `consent_write_sites` uses the yaml codec for each site instead of a custom zod shape.
+
+  `privacy_center_write` now asks for confirmation before applying changes that can delete footer links.
+
+### Patch Changes
+
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+- Updated dependencies [2ec345c]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [8bd784e]
+- Updated dependencies [faada80]
+- Updated dependencies [3214d5b]
+- Updated dependencies [ef4a7ba]
+  - @transcend-io/sdk@3.4.0
+
+## 3.1.2
+
+### Patch Changes
+
+- 69b40d1: Add `dsr_list_enrichers`, `dsr_write_enrichers`, `dsr_list_actions` and `dsr_write_actions`. They read and write the `preflights` and `actions` sections of transcend.yml without a file on disk.
+
+  Export shared `createCollectedLogger` from the MCP base package so DSR, config, inventory, and workflows tools reuse one implementation.
+
+- 8e2bf2f: Add `admin_write_teams` and a new Privacy Center MCP server for privacy center config, intl messages, and privacy-center policies (same SDK paths as `transcend inventory` push/pull). Teams writes ask for confirmation. Privacy-center tools use the `privacy_center_*` prefix.
+
+  **Breaking:** `admin_get_privacy_center` is removed from `@transcend-io/mcp-server-admin` and from the unified server. Use `privacy_center_get` on `@transcend-io/mcp-server-privacy-center` (or the umbrella server) instead.
+
+- 64d13d6: Add `consent_write_consent_manager` and `consent_write_purposes`. They push the consent-manager and purposes sections of `transcend.yml` without a file on disk. The consent server now also requests the developer settings and preference store scopes. Shared `decodeYmlItems` helper is exported from the base package for yml codec validation.
+
+## 3.1.1
+
+### Patch Changes
+
+- 3b92b89: Resolve optional stdio startup credentials for MCP servers that mix public and signed-in tools (fixes `docs_integration_lookup` in the standalone docs server), and verify OAuth client setup at startup when OAuth env vars are set without blocking public tools on verification failure.
+- c466144: Add stateless `createWebMcpHandler` for Web Standard Streamable HTTP on docs.transcend.io/mcp.
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+
+## 3.1.0
+
+### Minor Changes
+
+- 581b1a9: Add `requireLocalFilesystem` to tool definitions. The server omits these tools over HTTP. Add `createGraphqlRequestClient` and `TranscendGraphQLBase.requestHeaders()` so SDK functions can reuse the MCP client's auth. Add the `McpTransport` enum. `buildMcpServer` now takes `McpTransport.Stdio` or `McpTransport.Http` instead of a string.
+
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [dc352f1]
+  - @transcend-io/design-tokens@1.3.0
+
+## 2.5.7
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+
+## 2.5.6
+
+### Patch Changes
+
+- 32695c0: Fix `tools/list` failing when a host installs a different Zod copy than the MCP SDK (common with pnpm). Tool input schemas are now converted with the server’s own Zod and handed to the SDK as plain JSON Schema.
+
+  Domain `mcp-server-*` packages now declare `zod` and `@modelcontextprotocol/sdk` as peer dependencies; `@transcend-io/mcp` still installs them for you. If you depend on a domain package alone, ensure those peers are present (npm/pnpm usually install them automatically).
+
+  Prefer the published `transcend-mcp` binary over pointing clients at `dist/cli.mjs`.
+
+## 2.5.5
+
+### Patch Changes
+
+- 510f6e4: Inventory and custom-function MCP tool descriptions are clearer for finding CUSTOM_FUNCTION silos and planning DSR integrations.
+
+  The custom functions server now requests `ConnectDataSilos` during OAuth consent (re-authorize when prompted). Signing helpers and GraphQL support for draft/active versions are in place for upcoming tool updates.
+
+- 8c88bad: Custom Function MCP tools now follow a clearer save → test → promote flow. `custom_functions_upsert` saves code and runtime settings as a draft; run `custom_functions_test_run` with `{ id }`, then `custom_functions_promote_version` to go live.
+
+  Environment variables use `environmentVariables` with `key`, `isSecret`, and optional `value` for **plain** variables only. Never pass secret values through MCP — users set secrets in the Admin Dashboard. `custom_functions_get_code` returns `settings` and `environmentVariables` (with `isSet`) and never echoes secret values.
+
+  **Migration**
+  - **`custom_functions_upsert`:** Replace `userDefinedEnv` with `environmentVariables`. Remove `testPayloads`, `promote`, and `setActive`; use `custom_functions_test_run` and `custom_functions_promote_version` instead.
+  - **`custom_functions_test_run`:** `userDefinedEnv` was removed. Unsaved trials run without env vars; stored runs use the saved environment.
+  - **`custom_functions_get_code`:** Returns `settings` and `environmentVariables` instead of `context`.
+  - **On update:** Omit `code` or `allowedHosts` to keep saved values. `[]` means localhost only.
+  - **Permissions:** The custom functions server now requests `ConnectDataSilos`. Re-authorize MCP when prompted.
+
+## 2.5.4
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+
+## 2.5.3
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/type-utils@3.2.0
+
+## 2.5.2
+
+### Patch Changes
+
+- e819811: Replace internal makeEnum usage with const
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+
+## 2.5.1
+
+### Patch Changes
+
+- f3a7dc8: Hide the permanent-delete control in the consent triage UI on Cursor, where that action cannot run. Mark items as Junk instead.
+
+## 2.5.0
+
+### Minor Changes
+
+- fcbc71b: Add Sombra customer-ingress sign/unwrap for custom function source.
+
+### Patch Changes
+
+- f5294d8: Adds read tools for custom functions
+- c052029: `assessments_prefill` no longer loses select answers when a value matches none of the question's answer options.
+
+  A select question holds at most one written-in answer, so sending each unmatched value as its own was rejected outright. Because the matched options and the written-in values travelled in a single write, that rejection discarded the matched options too, leaving the question blank on a form that reported itself filled. Unmatched values are now joined into a single written-in answer, separated by semicolons since the values themselves often contain commas.
+
+  Where a question takes no written-in answer, such values cannot be stored at all, so they come back under `missedOptionValues` with the form's `questionId` and the options the question does accept, including their IDs, ready to hand to `assessments_answer_question`. Whether a question takes one is read from `allowSelectOther`, which the form query now selects; `subType` does not imply it, as a `CUSTOM` select with the flag off refuses a written value.
+
+  Joining changes what the form says, so it is now reported rather than left to be discovered: the response carries `answersJoined` beside the counts, the message says so in words, and each detailed row reports the options a select actually holds and its written-in value instead of replaying the request. Rows also carry `questionId`, which is what `assessments_answer_question` needs and what answers keyed by `referenceId` do not give you.
+
+  The failure message no longer mentions answer keys unless a key actually failed to match, and `ASSESSMENT_PREFILL_INCOMPLETE` is no longer marked retryable: the form already exists, so retrying the call creates a second one.
+
+- 8f8a9a0: adds custom function upsert and promote tools
+
+## 2.4.0
+
+### Minor Changes
+
+- 13092af: Added consent_list_roc_records tool
+
+## 2.3.1
+
+### Patch Changes
+
+- 9bc5cb7: Adds mergeRecordsOnConflict for preference upsert
+
+## 2.3.0
+
+### Minor Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+## 2.2.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+## 2.2.1
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+## 2.2.0
+
+### Minor Changes
+
+- aefe248: Bound what `assessments_get` returns.
+
+  It returned every section, question, answer option and answer at once — a six-section,
+  twenty-question DPIA already ran to roughly 30,000 characters, and real forms have hundreds of
+  questions. Neither `sections` nor `questions` takes pagination arguments, so the only way to
+  bound the response is not to ask for the parts you do not want.
+
+  `assessmentId` alone now returns the section list with a question count each. `sectionIds`
+  expands the sections you name, and fails naming any ID the form does not have rather than
+  returning the rest in a response shaped like a complete one.
+
+  Free-text answers no longer come back twice. The API models a typed response as an answer
+  option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
+  Options are now dropped only when every one was selected, so select questions are unaffected.
+
+  Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+  a status, so confirming an assignment took previously meant querying the list index for a single
+  form whose ID the caller was already holding.
+
+  Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
+  of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
+
+  Breaking: pass `sectionIds` to get full section contents.
+
+- aefe248: Add `questionText` to `assessments_get`, so finding what a form asks does not mean guessing
+  which section holds it.
+
+  Reading a form meant naming sections and trusting their titles. One staging form has a section
+  titled "Data Storage and Security" whose questions are all legal basis and compliance, so the
+  guess-expand-repeat loop is the over-fetching the section list exists to prevent.
+
+  `questionText` returns only the questions whose text matches, with their answers and the
+  section each sits in. Pass `sectionIds` alongside it to search within those sections rather
+  than expanding them. Matches are drained rather than paged, since they cannot outnumber the
+  form's questions.
+
+  Answers cannot be searched — the API matches question and form titles only — and an empty
+  result says so, phrased as an answer rather than a failed lookup.
+
+- 76e5a82: Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
+
+  Reviewer feedback on an assessment had no tool of its own. Nothing in the catalog carried
+  "comment" or "feedback" in its name, so "what did the reviewer ask us to change" retrieved
+  nothing.
+
+  The new tool returns form, section and question comments in one call, each row naming what it
+  sits on: section rows carry `sectionTitle`, and question rows carry `questionTitle` plus the
+  `sectionId` and `sectionTitle` of the section holding them, so grouping feedback by section
+  costs no second read. Filter by `authorIds`, by `levels`, and by `resolution`, which defaults
+  to `OPEN` so the common "what is still being asked of us" read costs nothing extra.
+
+  `assessments_get` now reports only a `commentSummary`: a `totalCount` and a `totalByLevel`
+  split, counted at every level whether or not sections were expanded, so the number does not
+  change meaning with the arguments.
+
+  Comments got their own tool rather than a flag on `assessments_get` because they need their own
+  paging — `limit` and `offset` there page sections, not comments. Paging here is over the merged
+  list, ordered by creation time then id, since bulk review passes produce comments sharing a
+  timestamp that would otherwise let one offset name a different comment on each call.
+
+  An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+  `assessments_list`, rather than returning an empty page that reads as "this form has no
+  feedback".
+
+### Patch Changes
+
+- 74f2734: Emit the `VALIDATION_ERROR` code from `ErrorCode` rather than a string literal.
+
+  Both sites already produced that exact string, so the wire format is unchanged. Naming it keeps the
+  two in step if the code is ever renamed.
+
+## 2.1.0
+
+### Minor Changes
+
+- 60d1ea0: Add an `experimental` flag on tools and gate registration behind `TRANSCEND_MCP_EXPERIMENTAL=1`.
+
+  Tools marked `experimental: true` are omitted from server and umbrella registry registration unless
+  the env var is exactly `1`, so unfinished surfaces stay out of the default catalog.
+
+## 2.0.0
+
+### Major Changes
+
+- 2e8558d: Give `assessments_list` the filters, sorting and paging the API already supports.
+
+  It previously accepted a single `status` and nothing else, so every other question — who owns
+  this, what is overdue, which forms belong to this group — meant paging the whole index and
+  matching in-model. It now forwards `text`, `ids`, `statuses`, `assigneeIds`, `reviewerIds`,
+  `externalAssigneeEmails`, `assessmentGroupIds` and four date bounds to
+  `AssessmentFormFiltersInput`, sorts by `title`, `status` or `submittedAt`, and pages with
+  `offset`.
+
+  Rows carry the group title alongside its ID, and an opt-in `includeDetails` fetches assignees,
+  reviewers, external assignees, dates and lock state — roughly triple the bytes per row, so a
+  caller who only wants titles and statuses does not pay for them.
+
+  There is deliberately no `templateIds` filter. `AssessmentFormFiltersInput` declares one and the
+  server rejects it: a form reaches its template only through its group. Resolve the group with
+  `assessments_list_groups` and filter on its ID.
+
+  Two things read as bugs rather than results, and no longer do: an empty page from an `offset`
+  past the end is now a validation error naming `totalCount`, and an array filter must hold at
+  least one value, so a caller that resolved a lookup to nothing gets an error instead of the
+  whole organization.
+
+  Breaking: `status` is replaced by `statuses`, and `Assessment` replaces the single `assignee`
+  and `reviewer` with the `assignees`, `reviewers` and `externalAssignees` lists the API returns.
+  `dueDate` is now explicitly `null` when unset rather than absent, since a dropped key reads as
+  broken plumbing behind `dueBefore`.
+
+- 2730f0d: Let `assessments_list_templates` filter, and stop inventing the fields it returns.
+
+  The tool took nothing but `limit`, so finding a template by name meant paging the catalog. It now
+  forwards `text`, `ids` and `statuses` to `AssessmentFormTemplateFiltersInput`, and pages with
+  `offset`.
+
+  Rows carry the real `status`, `source`, `isArchived`, `createdAt` and `updatedAt`. The mapper
+  previously hardcoded `version: '1.0.0'`, `isActive: true` and `createdAt: new Date()`, which
+  reported every template in the organization as created today and active — three fields that were
+  never anything but fiction.
+
+  The description said templates are what you build assessments from, without saying that only
+  `PUBLISHED` ones can be, so a caller could pick a draft and fail at create time.
+
+  Breaking: `AssessmentTemplate` drops `version` and `isActive`, and `createdAt` is now optional
+  since it comes from the API rather than the clock.
+
+### Minor Changes
+
+- 6dccc24: Let `assessments_list_groups` filter instead of paging.
+
+  The tool took nothing but `limit`, so resolving a group by name meant walking the whole catalog.
+  It now forwards `text`, `ids` and `templateIds` to `AssessmentGroupFiltersInput`, and pages with
+  `offset` rather than the `cursor` it advertised and never honored.
+
+  `text` matches a group's description as well as its title, so `AssessmentGroup` now carries
+  `description`. Without it a caller cannot see why a group it does not recognize came back, and
+  has no way to audit its own search.
+
+  Group rows are also the only route from a form to its template — `AssessmentFormRaw` reaches its
+  group but not its template — which is what makes `templateIds` worth having here and not on
+  `assessments_list`.
+
+- 746e2da: Add two helpers for the two ways an empty list page misleads a cold-read agent.
+
+  `describeNoMatches(subject, appliedFilters)` builds the `paginationNote` for a genuinely empty
+  result. A bare `[]` reads like a failed lookup, so agents re-derive the answer with a second
+  unfiltered call, or report the zero as a tool failure. The note says the query succeeded and
+  names the filters that produced the zero.
+
+  `assertOffsetInRange({ subject, offset, totalCount, appliedFilters })` throws a validation error
+  when a caller pages past the end. That page is byte-identical to "nothing matched", so an agent
+  that overshoots concludes the records do not exist instead of correcting the offset. Offset zero
+  is left alone — an empty first page is a real no-match and belongs to `describeNoMatches`.
+
+  List tools adopt these separately; nothing changes for existing callers.
+
+## 1.9.0
+
+### Minor Changes
+
+- 7e7d797: Consolidate every paginated tool onto two schemas, fix a `hasNextPage` bug that made
+  agents page forever, and give eight tools the paging they never had.
+
+  Pagination had drifted into three shared schemas and fourteen inline copies across 27
+  tools, producing four caller-facing conventions. `PaginationSchema` was marked deprecated
+  yet had eight users; `CursorPaginationSchema`, marked preferred, had none — not even
+  `dsr_list`, the one tool that genuinely pages by cursor.
+
+  Checking the GraphQL schema settled what shapes are actually needed. Of the list fields
+  the MCP servers query, 24 accept `first`/`offset` and return `nodes` plus `totalCount`
+  with no `pageInfo`; exactly one, `requests`, accepts `after` and returns a real
+  `pageInfo.endCursor`. So there are two shapes, and `CursorPaginationSchema` is for the
+  rare case rather than the default. Both now expose `limit` — 22 of 27 tools already used
+  that name, and `first` is the GraphQL wire name, which mixins map internally so Relay
+  vocabulary never reaches callers. `PaginationSchema` is deleted.
+
+  Because almost no payload carries a `pageInfo`, every mixin synthesized one, and they
+  disagreed. Eight wrote `nodeCount < totalCount`, which ignores where the page starts: on
+  the last page 20 rows against a total of 120 still compares true, so `hasNextPage` never
+  went false. An agent told to page until it did would loop until it exhausted its context.
+  That affected `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `workflows_list`, `workflows_list_email_templates`, `admin_list_teams`,
+  `admin_list_api_keys` and `discovery_list_scans`. A shared `derivePageInfo` helper in
+  `mcp-server-base` now owns the comparison, and every offset-paginated mixin routes
+  through it.
+
+  Eight tools returned `hasNextPage: true` with no continuation parameter at all, because
+  their query documents never declared the `$offset` the schema has always accepted —
+  `ListApiKeysDoc` twelve lines below `ListTeamsDoc` declares it correctly. `admin_list_teams`,
+  `workflows_list`, `consent_list_purposes`, `discovery_list_scans`, `discovery_list_plugins`,
+  `assessments_list`, `assessments_list_groups` and `assessments_list_templates` now page.
+  This adds `$offset` to the shared `TranscendCliPurposes` query in the SDK, which is
+  backward compatible: the argument is optional and existing CLI callers are unaffected.
+
+  Tools renamed from `first` to `limit`: `dsr_list_identifiers`,
+  `dsr_list_request_data_silos`, `consent_list_cookies`, `consent_list_data_flows` and
+  `inventory_list_categories`. Nine tools drop a `cursor` parameter that was never wired to
+  anything. `preferences_query` keeps `limit`/`cursor` but not the shared bound, since its
+  REST endpoint caps a page at 50 rather than 100.
+
+  Descriptions no longer explain how to paginate — "Paginate with `offset` until
+  `hasNextPage` is false", "max 100", "Note: cursor pagination is not supported". The schema
+  already carries the bounds, defaults and parameter names, so that prose was spending
+  `tools/list` budget on every call to restate machine-readable facts. Removing it more than
+  paid for the eight tools that gained `offset`: the paginated surface costs 1,473 characters
+  less than on main, and the payload as a whole drops from 82,531 to 76,794 characters once
+  the per-schema `$schema` pointer goes too.
+
+  A new contract test asserts across the whole registry that no tool exposes `first` or
+  `after`, that no tool caps with `limit` without offering a continuation parameter, that
+  `limit` is bounded identically everywhere, and that descriptions do not restate paging
+  mechanics — plus unit coverage pinning the `derivePageInfo` termination cases.
+
+  Every paginated tool was also driven against a real org by hand while developing this
+  change, checking that each page is no larger than `limit`, that the continuation parameter
+  advances, that the last page reports `hasNextPage: false`, and that an offset past the end
+  does not promise another page. Of the 27 paginated tools, 25 pass every check,
+  `dsr_list_identifiers` has no rows in that org, and `preferences_query` needs a partition
+  no list call can supply. That probe was a throwaway harness rather than a committed test,
+  so nothing in the suite points at a live environment.
+
+  It caught something the mocked tests could not: `consent_list_regimes` returned four
+  rows for `limit: 3`. Probing the API directly showed `experiences` answers `first: n` with
+  `n + 1` rows at every size, and the tool forwarded that verbatim, so `limit` was a lie and
+  offset paging double-counted the seam. It now trims to `limit`, which keeps paging gapless
+  because the extra row is the one the next offset starts on.
+
+  The two `discovery_*` tools remain built on `dataSilos` and synthesize their rows, so
+  `discovery_list_scans` reports a hardcoded `COMPLETED` status and `discovery_list_plugins`
+  derives integration types per page. Their descriptions now say so rather than overclaiming;
+  repointing them at the real `discoClassScans` and `plugins` fields is follow-up work.
+
+- 7e7d797: Remove the `cursor` parameter from the nine list tools whose API never paged by cursor,
+  and stop emitting a `$schema` pointer on every tool's input schema.
+
+  `PaginationSchema` pairs `limit` with `cursor`, so every tool that merged it advertised
+  cursor pagination whether or not its query supported one. Only `dsr_list` declares `$after`
+  and returns a real `endCursor`; `preferences_query` threads a cursor through the preference
+  store REST endpoint. In the other nine the value was passed to the client as `after`,
+  dropped before the request was built, and `hasNextPage` came back from a `pageInfo` that
+  never advanced. An agent handed `hasNextPage: true` would page forever on page one.
+
+  Dropped from `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `discovery_list_plugins`, `discovery_list_scans`, `workflows_list`,
+  `workflows_list_email_templates`, `admin_list_teams` and `admin_list_api_keys`. Passing
+  `cursor` to any of these now fails schema validation rather than being silently ignored.
+
+  Descriptions were corrected to match. Several said "API does not support cursor pagination"
+  — true but unhelpful once the parameter is gone, and wrong for `admin_list_api_keys` and
+  `workflows_list_email_templates`, which have working `offset` pagination the text told
+  callers not to expect. Those two now say to page with `offset`; the rest state the `limit`
+  ceiling. The duplicated dashboard-URL sentence across the assessment tools was condensed to
+  one short form.
+
+  A registry test now pins the set of tools exposing `cursor` to `dsr_list` and
+  `preferences_query`, so a dead one cannot be reintroduced by merging `PaginationSchema`.
+
+  Separately, `toJsonSchemaCompat` stamps `"$schema": "http://json-schema.org/draft-07/schema#"`
+  onto every schema it produces, and both the umbrella registry and `buildMcpServer` were
+  forwarding it to clients verbatim. MCP already fixes the dialect for `inputSchema`, so those
+  50 characters told clients nothing, 82 times over. A new `toolInputSchema` helper in
+  `mcp-server-base` strips it at the two places descriptors are built, cutting about 4 KB from
+  every `tools/list` response.
+
+## 1.8.1
+
+### Patch Changes
+
+- bccab7e: Recover the confirmation gate on Cursor, which declines prompts it never showed anybody.
+
+  Cursor runs every window's MCP servers in one shared process and routes a server-initiated
+  request to the window that owns the connection. When the caller is in a different window,
+  delivery fails and Cursor answers `elicitation/create` with `{ action: "decline" }` — logging
+  `Cannot route MCP lease elicitation request for window 1 in window 3` — so the gate reported
+  `CONFIRMATION_DECLINED` for a refusal nobody made, and every gated tool was unusable for as
+  long as a second window was open.
+
+  On stdio a decline is now reinterpreted as "nobody was asked", handing back an approval token
+  to replay, but only when all three hold: the host is one whose declines are known to be
+  unprompted (Cursor, the first entry in `HOST_QUIRKS`), the answer arrived in under 250ms, and a
+  token can actually be minted. Undelivered prompts came back in 1-4ms against roughly a minute
+  for a real approval, so the floor sits far from both. `cancel` and `accept` are untouched, since
+  a dismissal is how Cursor reports the user closing the prompt and a fast accept is what an
+  always-allowed call looks like.
+
+  HTTP is unchanged: with no token store behind it, a fast decline there would only swap one
+  refusal for a less accurate one, so it stays `CONFIRMATION_DECLINED`.
+
+  The token still requires the agent to put the action to the user and be told yes, so the
+  protection is the same one form-less hosts have always had. What is given up is narrower: a
+  Cursor user whose genuine "decline" lands within 250ms has it read as a dropped prompt instead,
+  and is asked again in chat.
+
+## 1.8.0
+
+### Minor Changes
+
+- 557a80b: Reject arguments a tool never declared, instead of silently dropping them.
+
+  Zod strips unknown keys by default, so a misspelled argument name parsed cleanly and the tool
+  ran whatever it does with no arguments — while reporting success. An agent calling `docs_list`
+  with `{ query: … }` instead of `{ keyword: … }` received the entire 417-article catalog as a
+  successful result, and on a destructive tool the same slip performs the write without the
+  fields the caller meant to send.
+
+  `tools/call` now validates against a strict schema and refuses unrecognized arguments with a
+  `VALIDATION_ERROR` that names both the rejected argument and the accepted ones, so an agent can
+  correct itself in one retry.
+
+  Confirmation-gated tools still accept `approvalToken` even on transports whose gate does not
+  advertise it, so a replayed token reaches the gate and gets its own explanation rather than a
+  bare unknown-argument error. The advertised input schema is unchanged.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+
+## 1.7.4
+
+### Patch Changes
+
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+
+## 1.7.3
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+## 1.7.2
+
+### Patch Changes
+
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+
+## 1.7.1
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+
+## 1.7.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+
+## 1.6.0
+
+### Minor Changes
+
+- 2b82ee8: Add `inventory_write_category` to create or update Data Inventory data subcategories (ZEL-8169). Enrich `inventory_list_categories` to query `dataSubCategories` with ids, owners, teams, and optional text search.
+- bd397d4: Add `inventory_write_data_silo` to create or update data systems in one MCP call (ZEL-8221). Create-by-integrationName always creates a new silo; update-by-id applies metadata without title upsert. Replaces `inventory_create_data_silo` and `inventory_update_data_silo`.
+
+### Patch Changes
+
+- d00bd92: **@transcend-io/mcp-server-base:** Ask for the confirmation decision with no form fields at all, and read it from the host's accept and decline buttons. This replaces the checkbox described in 1.3.1, which itself replaced a titled select.
+
+  Both earlier shapes asked the user for a second gesture after the button they had already pressed, and both could be answered wrongly. `elicitInput` validates the host's answer against the schema it sent, so a rejected answer reaches the gate as "nobody was asked" — a rendered, approved form reported as a refusal, with every gated tool then falling through to the token fallback. Cursor hit that with the select by answering with a value matching neither option's `const`; a host answering the checkbox's `true` as a string would have fared no better. Requesting nothing leaves no shape to get wrong: the SDK only validates a non-empty `content`, and a schema with no properties and no required fields has nothing to reject.
+
+  `ElicitResult.action` already carried the decision, and the gate already read `decline` and `cancel` from it, so only the redundant field is gone. An `accept` is now the approval outright, whatever the host puts in `content`. That does mean a host returning `accept` without putting the question to anybody has approved on the user's behalf, which is the same trust the HTTP policy in 1.5.0 already documents — a client could equally have ticked the checkbox itself. What the gate still enforces is that the host was asked, and that no token is ever issued for a model to relay.
+
+  Verified in Cursor: the prompt renders as the tool's hint plus Accept and Cancel, accepting runs the action, and dismissing returns `CONFIRMATION_CANCELLED` without running it. Note that Cursor maps its Cancel to the protocol's `cancel`, so `CONFIRMATION_DECLINED` is reachable only from hosts that offer a distinct decline.
+
+## 1.5.0
+
+### Minor Changes
+
+- 9032822: **@transcend-io/mcp-server-base:** Renames a `ConfirmationPolicy` member shipped in 1.3.0. `ASK_OR_TOKEN` is now `ELICIT_OR_TOKEN`, and the new `ELICIT_ONLY` joins it. The enum names the mechanism that carries the question everywhere else in the package — `McpClientCapability.Elicitation`, `requestElicitation`, `elicitInput` — and was the one place calling it asking. Nothing in the product needs migrating, since the policy is how a transport tells the gate what it may do rather than anything a caller passes in, but an embedder that referenced `ConfirmationPolicy.AskOrToken` directly must update the name.
+
+  Ask for confirmation over HTTP too, bound to the call that triggered it. This replaces the behavior described in 1.3.0, where the HTTP policy was `REFUSE` and every gated call refused: that made an agent platform read-only for gated tools. `ELICIT_ONLY` asks the user with no approval-token fallback and is what `transport: 'http'` now selects. Under it a form that cannot be bound to a call is not sent at all, and a host that cannot render one gets `CONFIRMATION_UNAVAILABLE` rather than a token, because the agent there sits on the far side of the transport and would be the one relaying it.
+
+  `McpSession` now carries the `tools/call` a handler is serving, its JSON-RPC id and abort signal, and `requestElicitation` passes both to the host. Two things follow. Streamable HTTP routes an outbound message by `relatedRequestId` onto that call's own SSE stream, so the form reaches whoever made the call instead of the connection's shared stream, where it could surface in another user's turn; and if nothing is listening on the shared stream the SDK stores the event for replay and returns, so an undelivered form used to sit until the 10-minute timeout with no error logged anywhere. Binding also means abandoning the call tears the form down, which closes a real hazard: a client that gave up at its own tool timeout left the form on screen, and a yes clicked afterwards still resolved and ran the mutation into a call nobody was listening to.
+
+  `canObtainApproval(gate, client)` reports whether a gated tool could actually be approved on a connection, and `tools/list` now withholds gated tools where it cannot: over HTTP from a client that did not declare form elicitation, and always from the in-process `ToolRegistry`. An agent shown a tool that refuses every call plans around it, calls it, and spends the turn on a refusal it can do nothing about. Withholding is for the model's benefit only — nothing in the protocol stops a client calling a tool it was never shown, so the gate still runs on every `tools/call` and remains the actual boundary.
+
+  The trust assumption is worth stating plainly, since it changed. Over HTTP, whether a person is asked now rests on a capability the caller declared about itself. A client that declares form elicitation and then answers its own prompt has approved on the user's behalf, and nothing server-side can tell that apart from a person clicking yes. What the gate does enforce is that such a client asked at all, that the prompt went to the stream of the call it belongs to, and that no token is ever issued for the model to relay. Deployments fronting MCP with an agent platform should declare `elicitation: { form: {} }` only on paths where a person is actually present for the call, and never synthesize an answer on an unattended one.
+
+  **@transcend-io/mcp:** `ToolRegistry.getToolList` no longer describes gated tools, since `executeTool` on that path can never confirm one.
+
+## 1.4.0
+
+### Minor Changes
+
+- c8df618: Add MCP prompts support to mcp-server-base (`prompts/list` and `prompts/get`), and ship three consent workflow prompts (`consent-triage`, `consent-research-tracker`, `consent-inspect-site`) on the consent and umbrella servers.
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [99a0110]
+  - @transcend-io/design-tokens@1.2.1
+
+## 1.3.0
+
+### Minor Changes
+
+- c787e9d: **@transcend-io/mcp-server-base:** Add a server-enforced confirmation gate. A tool declaring `confirmation: { hint }` on its `ToolDefinition` no longer reaches its handler until a human agrees. On a host that renders forms the gate asks through `elicitation/create`; on one that cannot it issues a single-use approval token bound to the tool, a hash of the arguments, and the caller's auth subject, which the agent replays after getting the user's agreement.
+
+  How approval may be obtained is decided by the transport, not by the caller. `buildMcpServer` now requires `transport`, and over HTTP the policy is `REFUSE`: the caller there is another service rather than a person at a keyboard, so gated tools refuse every call with `CONFIRMATION_UNAVAILABLE` and point the user at the admin dashboard. The check happens before anything the client declared is consulted, because a declared elicitation capability is a claim by the party being gated — a client that says it renders forms and then answers its own prompt has approved on the user's behalf.
+
+  Declaring the capability is also not a promise to honor the request. A host that errors, never answers within the timeout, or replies with a shape the SDK validates and rejects now falls through to the approval-token fallback rather than surfacing an opaque `MCP error`, and confirmation forms are given 10 minutes rather than the SDK's 60-second default, which used to cancel the request while the dialog was still on the user's screen.
+
+  `expandToolsForClient` requires its gate argument for the same reason `transport` is required: a default would let a new serving path pick a confirmation policy it never considered.
+
+  **@transcend-io/mcp:** `ToolRegistry.executeTool` now applies the gate rather than calling the registered handler directly, so an embedder driving the registry in-process refuses gated tools instead of running them unconfirmed.
+
+### Patch Changes
+
+- 5819bc1: **@transcend-io/mcp-server-base:** Ask for the confirmation decision as a boolean rather than a titled single-select. Cursor answered a select with a value matching neither option's `const`, and because `elicitInput` validates the host's response against the schema it sent, a rendered and answered form was rejected before the gate could read it — an approval became "nobody was asked", and every gated tool fell through to the token fallback or reported a refusal no one made. A checkbox is the narrowest shape a host can get wrong. The warning logged when a host fails to show the form now names the host and client, so the next such failure is attributable.
+
+## 1.2.0
+
+### Minor Changes
+
+- 4404c48: **@transcend-io/mcp-server-base:** Add an in-memory `ApprovalTokenStore` for the confirmation-gate fallback path. A token is bound to a tool name, a hash of the arguments the caller was asked to approve, and the caller's auth subject; it is single-use, has a short TTL, and is claimed on the second `tools/call` that supplies it. The store is not yet wired into a gate — that arrives with the confirmation-gate PR — so this change ships an internal primitive with no user-visible behavior change.
+
+### Patch Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
+## 1.1.1
+
+### Patch Changes
+
+- 26fadc4: Remove the `confirmationHint` field and its remaining call-site strings. #407 removed it from 25 tools; nine occurrences have re-appeared since (three in the platform interfaces and six in inventory / consent / dsr feature PRs). No code reads the field, so this is dead metadata. The upcoming confirmation-gate work introduces a separate `confirmation: { hint }` field with a semantic contract — deleting the old one first keeps that landing focused on adding the new API.
+
+## 1.1.0
+
+### Minor Changes
+
+- 97fa941: Send `@transcend-io/mcp-server-base`'s own package version on outbound Transcend requests as `x-transcend-mcp-version`, so rollout dashboards can tell which clients have upgraded rather than inferring age from missing attribution headers.
+
+### Patch Changes
+
+- 2faaff6: Add `inventory_update_or_create_data_point` for field-level purpose of processing assignments (ZEL-8168).
+- 5b239dc: Improve inventory MCP DX: split data-silo create into catalog `integrationName` + optional display `title`/`description`, add `text` (and silo `titles`) list filters, and stop fabricating datapoint timestamps.
+- 5b239dc: Add `inventory_list_catalog_integrations` so agents can search the Transcend catalog for valid `integrationName` values before creating a data silo.
+- 6293072: Add processing purpose list/write MCP tools and expand `inventory_update_data_silo` for Data Systems fields (ZEL-8168 stack).
+- daffc18: Enrich inventory MCP read tools with silo vendor/purposes/owners metadata, datapoint filtering, vendor field detail, and subcategory normalization; add `inventory_list_business_entities` and `inventory_list_data_subjects` (ZEL-8168 stack PR1).
+- dc9ab41: Add `inventory_write_vendor` MCP tool to create/update vendors in Data Inventory (ZEL-8168 stack).
+- 5b239dc: Tool copy changes
+- 5b239dc: Small type adjustment to Datapoint
+
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [77ef86f]
+  - @transcend-io/design-tokens@1.2.0
+
+## 0.14.0
+
+### Minor Changes
+
+- f6ca084: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 66e641e: Address MCP app configuration review follow-ups: hoist the client capability report in `buildMcpServer`, and name the HTML doctype check used by UI resources.
+
+## 0.13.0
+
+### Minor Changes
+
+- e127dfc: Split MCP usage attribution into two outbound headers: `x-transcend-mcp-caller` stays an `McpHostClient` value (including `unknown` when unrecognized), and `x-transcend-mcp-client-name` carries a sanitized `clientInfo.name` for discovering hosts not yet in the enum.
+
+  An explicitly forwarded caller header still wins, since a caller proxying on a user's behalf knows its own identity best. The discovery header is sent whenever a usable name exists, independent of caller. Sanitization uses an ASCII allowlist so client-controlled names cannot break outbound `fetch`.
+
+- f3ce7dc: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 4bc21f7: Gate test-only URL overrides behind `ALLOW_TEST_OVERRIDES=1` instead of `NODE_ENV=test` / Vitest detection. Unset or any other value disables the overrides. The Vitest suite sets the flag via `vitest.config.ts`.
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+## 0.12.0
+
+### Minor Changes
+
+- 1b93859: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+- 1b93859: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- c166809: Publish `@transcend-io/mcp-server-base/ui/theme.css`, the Tailwind theme MCP App views are styled with.
+
+  Stock Tailwind is deliberately absent — the default theme is never imported, so `bg-red-500` does not exist and every utility resolves to a host value, a Transcend design token, or a literal fallback. Surfaces, typography, radii, and shadows follow the style variables the host sends at handshake time, so a view looks native in light or dark Claude; brand and status colors come from `@transcend-io/design-tokens` so it still reads as ours; spacing stays on Tailwind's scale, which the MCP Apps spec omits on purpose because layouts break when it shifts underneath them.
+
+  The theme also replaces Tailwind's Preflight, because a view lives in an iframe the host measures: the body has to stay transparent and nothing may trap content in its own scroller. `tailwindcss` and `@transcend-io/design-tokens` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- 1b93859: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 1b93859: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
+## 0.11.0
+
+### Minor Changes
+
+- 6932df1: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+## 0.10.0
+
+### Minor Changes
+
+- c00f3c5: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 8034d59: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
+## 0.9.0
+
+### Minor Changes
+
+- c65d41e: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+## 0.8.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+
+## 0.7.0
+
+### Minor Changes
+
+- e410109: Map GraphQL `extensions.code: "ACCESS_DENIED"` to MCP `PERMISSION_ERROR`, and serialize optional `details` (`route`, `requiredScopes`) on tool error results so Agentic Assist can classify scope denials without parsing the English message.
+
+## 0.6.2
+
+### Patch Changes
+
+- 3f41944: Includes the mcp user agent in the client verify request
+
+## 0.6.1
+
+### Patch Changes
+
+- cbe9d3a: Update links in the readmes
+
 ## 0.6.0
 
 ### Minor Changes

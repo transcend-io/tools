@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  global:
+  global_checks:
+    name: Global checks
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -29,9 +30,12 @@ jobs:
 
       - if: github.event_name == 'pull_request'
         name: Check changeset
-        env:
-          CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm check:changeset
+
+      # Same guard as publish.yml, surfaced before the Version Packages PR merges.
+      - if: github.event_name == 'pull_request' && github.head_ref == 'changeset-release/main'
+        name: Check every package already exists on npm
+        run: pnpm check:new-packages
 
       - name: Check package consistency
         run: pnpm check:packages
@@ -63,6 +67,54 @@ jobs:
       - name: Check publish compatibility
         run: pnpm check:publint
 
+  integration:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Install Deno for Custom Function integration tests
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.4.5
+
+      - name: Install OPA for Policy Engine integration tests
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: 1.18.2
+
+      - name: Install Regal for Policy Engine integration tests
+        uses: open-policy-agent/setup-regal@761188c3b435761fa254beca508a44875619648f # v2.0.0
+        with:
+          version: 0.42.0
+
+      - name: Test external runtime integrations
+        run: pnpm test:integration
+
+  global:
+    if: always()
+    needs:
+      - global_checks
+      - integration
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Verify required checks
+        env:
+          GLOBAL_CHECKS_RESULT: ${{ needs.global_checks.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: |
+          test "$GLOBAL_CHECKS_RESULT" = "success"
+          test "$INTEGRATION_RESULT" = "success"
+
   cli:
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -82,4 +134,11 @@ jobs:
       - name: Verify generated CLI files are up to date
         run: |
           pnpm --dir packages/cli genfiles
-          git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)
+          # Use porcelain status (not `git diff`) so new untracked major-version
+          # schema files like transcend-yml-schema-vN.json are detected too.
+          if [ -n "$(git status --porcelain -- packages/cli)" ]; then
+            git status --porcelain -- packages/cli
+            git diff -- packages/cli
+            echo "Detected git changes after regenerating CLI files"
+            exit 1
+          fi

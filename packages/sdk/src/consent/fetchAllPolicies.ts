@@ -1,4 +1,5 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import type { PolicyType } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -14,6 +15,8 @@ export interface Policy {
     /** Default message */
     defaultMessage: string;
   };
+  /** Policy type */
+  type: PolicyType;
   /** Disabled locales */
   disabledLocales: LocaleValue[];
   /** Versions */

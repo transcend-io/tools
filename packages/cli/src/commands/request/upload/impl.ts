@@ -44,7 +44,7 @@ export async function upload(
     defaultPhoneCountryCode,
   }: UploadCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await uploadPrivacyRequestsFromCsv({
     cacheFilepath,

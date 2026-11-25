@@ -12,6 +12,7 @@ import {
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
+import { McpTransport } from '../src/server/transport.js';
 import type { ToolDefinition } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -34,7 +35,7 @@ const echoTool: ToolDefinition = {
 
 function testConfig(port: number): TransportConfig {
   return {
-    transport: 'http',
+    transport: McpTransport.Http,
     port,
     host: '127.0.0.1',
     mcpPath: '/mcp',
@@ -63,7 +64,12 @@ describe('HTTP Transport', () => {
         name: 'test-server',
         version: '0.0.1',
         createServer: (_auth) =>
-          buildMcpServer({ name: 'test-server', version: '0.0.1', tools: [echoTool] }),
+          buildMcpServer({
+            name: 'test-server',
+            version: '0.0.1',
+            tools: [echoTool],
+            transport: McpTransport.Http,
+          }),
       },
       testConfig(0),
     );
@@ -428,6 +434,7 @@ describe('HTTP Transport', () => {
               name: 'sidecar-test',
               version: '0.0.1',
               tools: [authCaptureTool],
+              transport: McpTransport.Http,
             }),
         },
         testConfig(0),

@@ -1,21 +1,14 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  derivePageInfo,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
 
-export const ListRegimesSchema = z.object({
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Maximum number of regimes to return per page (1-100, default 50).'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default 0).'),
-});
+export const ListRegimesSchema = OffsetPaginationSchema;
 export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
 
 export function createConsentListRegimesTool(clients: ToolClients) {
@@ -33,10 +26,14 @@ export function createConsentListRegimesTool(clients: ToolClients) {
         first: limit,
         offset,
       });
-      const { totalCount, nodes } = data.experiences;
+      const { totalCount } = data.experiences;
+      // `experiences` returns `first + 1` rows, so honour `limit` here rather
+      // than handing callers a page one row longer than they asked for. Paging
+      // stays gapless because the extra row is the one the next offset starts on.
+      const nodes = data.experiences.nodes.slice(0, limit);
       return createListResult(nodes, {
         totalCount,
-        hasNextPage: offset + nodes.length < totalCount,
+        hasNextPage: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }).hasNextPage,
       });
     },
   });

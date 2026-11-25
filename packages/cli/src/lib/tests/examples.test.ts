@@ -8,9 +8,8 @@ import { fdir } from 'fdir';
 import { describe, expect, test, vi } from 'vitest';
 
 import { app } from '../../app.js';
-import { buildContext } from '../../context.js';
 import { getFlagList, type Example } from '../docgen/buildExamples.js';
-import { captureLogs } from './helpers/captureLogs.js';
+import { buildContextForTest } from './helpers/buildContextForTest.js';
 
 /**
  * Gets the example commands. Uses a mock to intercept `buildExampleCommand` from readme.ts files to populate the command lists.
@@ -38,30 +37,37 @@ async function getExampleCommands(): Promise<{
     const actual = await importOriginal();
     const mockBuildExampleCommand = vi
       .fn()
-      .mockImplementation((commandPath: string[], flags: Record<string, string>) => {
-        const command = commandPath.join(' ');
-        const flagList = actual.getFlagList(flags);
+      .mockImplementation(
+        (
+          commandPath: string[],
+          flags: Record<string, string>,
+          options?: { positionals?: string[] },
+        ) => {
+          const command = [...commandPath, ...(options?.positionals ?? [])].join(' ');
+          const flagList = actual.getFlagList(flags);
 
-        // Replace bash variables
-        const flagListWithReplacedVariables = flagList.map((flag) =>
-          flag.replace(
-            // Replace bash variables with "TEST_VALUE"
-            /\$\{?\w+}?/g,
-            'TEST_VALUE',
-          ),
-        );
+          // Replace bash variables
+          const flagListWithReplacedVariables = flagList.map((flag) =>
+            flag.replace(
+              // Replace bash variables with "TEST_VALUE"
+              /\$\{?\w+}?/g,
+              'TEST_VALUE',
+            ),
+          );
 
-        // Add the command to `commandsToTest` list
-        const commandWithoutName = `${command} ${flagListWithReplacedVariables.join(' ')}`;
-        commandsToTest.push(commandWithoutName);
+          // Add the command to `commandsToTest` list
+          const commandWithoutName = `${command} ${flagListWithReplacedVariables.join(' ')}`.trim();
+          commandsToTest.push(commandWithoutName);
 
-        const unalteredCommand = actual.buildExampleCommand<Record<string, string>>(
-          commandPath,
-          flags,
-        );
-        unalteredCommands.push(unalteredCommand);
-        return unalteredCommand;
-      });
+          const unalteredCommand = actual.buildExampleCommand<Record<string, string>>(
+            commandPath,
+            flags,
+            options,
+          );
+          unalteredCommands.push(unalteredCommand);
+          return unalteredCommand;
+        },
+      );
 
     return {
       ...actual,
@@ -70,7 +76,9 @@ async function getExampleCommands(): Promise<{
         .mockImplementation((commandPath: string[], examples: Example<unknown>[]) =>
           examples
             .map((example) => {
-              const exampleCommand = mockBuildExampleCommand(commandPath, example.flags);
+              const exampleCommand = mockBuildExampleCommand(commandPath, example.flags, {
+                positionals: example.positionals,
+              });
               return `**${example.description}**\n\n\`\`\`sh\n${exampleCommand}\n\`\`\``;
             })
             .join('\n\n'),
@@ -282,37 +290,25 @@ async function getShellcheckFailures(commands: string[]): Promise<string[]> {
 describe('Example commands', async () => {
   const { commandsToTest, unalteredCommands } = await getExampleCommands();
 
-  // Enable validation only mode, so that commands exit early after input validation.
-  vi.stubEnv('DEVELOPMENT_MODE_VALIDATE_ONLY', 'true');
+  test.each(commandsToTest)(
+    'Command %j passes input validation',
+    { timeout: 15_000 },
+    async (commandToTest) => {
+      const context = buildContextForTest({
+        env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+      });
 
-  test.each(commandsToTest)('Command %j passes input validation', async (commandToTest) => {
-    let exitCode: number | undefined;
+      try {
+        await run(app, commandToTest.split(' '), context);
+      } catch {
+        // empty
+      }
 
-    const logCapturer = captureLogs();
-
-    try {
-      await run(
-        app,
-        commandToTest.split(' '),
-        buildContext({
-          ...globalThis.process,
-          exit: (code?: number) => {
-            exitCode = code;
-            throw new Error(`Process exited with code ${code}`);
-          },
-        }),
-      );
-    } catch {
-      // empty
-    }
-
-    const { stderr } = logCapturer.getLogs();
-    logCapturer.restore();
-
-    if (exitCode === 1) {
-      throw new Error(`Failed to run command: ${commandToTest}\n${stderr}`);
-    }
-  });
+      if (context.exit.mock.calls.some(([code]) => code === 1)) {
+        throw new Error(`Failed to run command: ${commandToTest}\n${context.stderr}`);
+      }
+    },
+  );
 
   test('Example commands pass shellcheck', { timeout: 30_000 }, async () => {
     const shellcheckFailures = await getShellcheckFailures(unalteredCommands);

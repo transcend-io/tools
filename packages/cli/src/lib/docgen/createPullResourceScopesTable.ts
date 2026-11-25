@@ -1,9 +1,7 @@
 /* eslint-disable no-multi-str -- Break long strings into multiple lines. This syntax is required for the TS compiler to check against MarkdownLink */
 
 import { TRANSCEND_SCOPES, type ScopeName } from '@transcend-io/privacy-types';
-
-import { TR_YML_RESOURCE_TO_FIELD_NAME } from '../../constants.js';
-import { TranscendPullResource } from '../../enums.js';
+import { TR_YML_RESOURCE_TO_FIELD_NAME, TranscendPullResource } from '@transcend-io/sdk';
 
 /** A markdown link */
 type MarkdownLink = `[${string}](https://${string})`;
@@ -46,7 +44,7 @@ const RESOURCE_DOCUMENTATION: Record<
     ],
   },
   [TranscendPullResource.Enrichers]: {
-    description: 'The Privacy Request enricher configurations.',
+    description: 'The Privacy Request preflight check configurations (formerly "enrichers").',
     markdownLinks: [
       '[DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)',
     ],
@@ -95,6 +93,13 @@ const RESOURCE_DOCUMENTATION: Record<
       '[Consent Management -> Cookies](https://app.transcend.io/consent-manager/cookies/approved)',
     ],
   },
+  [TranscendPullResource.ConsentSites]: {
+    description:
+      'Consent Manager Site definitions (hosts that Airgap discovers), with owners and teams.',
+    markdownLinks: [
+      '[Consent Management -> Domains](https://app.transcend.io/consent-manager/domains)',
+    ],
+  },
   [TranscendPullResource.ConsentManager]: {
     description: 'Consent Manager general settings, including domain list.',
     markdownLinks: [
@@ -108,32 +113,6 @@ const RESOURCE_DOCUMENTATION: Record<
       '[Consent Management -> Developer Settings -> Advanced Settings]\
 (https://app.transcend.io/consent-manager/developer-settings/advanced-settings)',
     ],
-  },
-  [TranscendPullResource.Prompts]: {
-    description: 'The Transcend AI prompts',
-    markdownLinks: ['[Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)'],
-  },
-  [TranscendPullResource.PromptPartials]: {
-    description: 'The Transcend AI prompt partials',
-    markdownLinks: ['[Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)'],
-  },
-  [TranscendPullResource.PromptGroups]: {
-    description: 'The Transcend AI prompt groups',
-    markdownLinks: ['[Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)'],
-  },
-  [TranscendPullResource.Agents]: {
-    description: 'The agents in Pathfinder.',
-    markdownLinks: ['[Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)'],
-  },
-  [TranscendPullResource.AgentFunctions]: {
-    description: 'The agent functions in Pathfinder.',
-    markdownLinks: [
-      '[Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)',
-    ],
-  },
-  [TranscendPullResource.AgentFiles]: {
-    description: 'The agent files in Pathfinder.',
-    markdownLinks: ['[Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)'],
   },
   [TranscendPullResource.Vendors]: {
     description: 'The vendors in the Data Inventory.',
@@ -215,6 +194,21 @@ const RESOURCE_DOCUMENTATION: Record<
     markdownLinks: [
       '[System Discovery]\
 (https://app.transcend.io/data-map/data-inventory/silo-discovery)',
+    ],
+  },
+  [TranscendPullResource.PreferenceWorkflowConfigs]: {
+    description:
+      'Preference workflow config definitions (Workflows → Preference Workflows). ' +
+      'Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions.',
+    markdownLinks: [
+      '[Workflows -> Preference Workflows]\
+(https://app.transcend.io/preference-store/consent-workflows)',
+    ],
+  },
+  [TranscendPullResource.WorkflowConfigs]: {
+    description: 'DSR workflow config settings.',
+    markdownLinks: [
+      '[Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)',
     ],
   },
 };

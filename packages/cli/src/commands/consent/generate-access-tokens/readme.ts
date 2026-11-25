@@ -1,3 +1,5 @@
+import { PrivacyCenterAccessTokenFormat } from '@transcend-io/privacy-types';
+
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
 import type { GenerateAccessTokenCommandFlags } from './impl.js';
 
@@ -32,6 +34,17 @@ const examples = buildExamples<GenerateAccessTokenCommandFlags>(
         coreIdentifierColumnName: 'crm_id',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         duration: '90 days' as any,
+      },
+    },
+    {
+      description: 'Short tokens for email and SMS tools that limit URL length',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        file: './users.csv',
+        subjectType: 'customer',
+        tokenFormat: PrivacyCenterAccessTokenFormat.Short,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        duration: '1 year' as any,
       },
     },
     {

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-import { OPA_INSTALL_HINT } from '../constants.js';
+import { OPA_CLI_MISSING_MESSAGE } from '../../../lib/policy/policy-runtime.js';
 
 /** Result of an OPA CLI invocation with captured output. */
 export interface RunOpaCaptureResult {
@@ -28,7 +28,7 @@ export function runOpa(args: string[], options: { cwd?: string } = {}): Promise<
 
     child.on('error', (err) => {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        reject(new Error(OPA_INSTALL_HINT));
+        reject(new Error(OPA_CLI_MISSING_MESSAGE));
         return;
       }
       reject(err);
@@ -66,7 +66,7 @@ export function runOPACapture(
 
     child.on('error', (err) => {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        reject(new Error(OPA_INSTALL_HINT));
+        reject(new Error(OPA_CLI_MISSING_MESSAGE));
         return;
       }
       reject(err);

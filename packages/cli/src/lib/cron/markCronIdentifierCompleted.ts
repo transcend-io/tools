@@ -21,7 +21,7 @@ export type CronIdentifierPush = t.TypeOf<typeof CronIdentifierPush>;
  * @returns Successfully submitted request, false if not in a state to update
  */
 export async function markCronIdentifierCompleted(
-  sombra: Got,
+  sombra: Pick<Got, 'put'>,
   { nonce, identifier }: CronIdentifierPush,
 ): Promise<boolean> {
   try {

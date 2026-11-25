@@ -14,7 +14,7 @@ export async function markIdentifiersCompleted(
   this: LocalContext,
   { file, transcendUrl, auth, sombraAuth, dataSiloId }: MarkIdentifiersCompletedCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await pushCronIdentifiersFromCsv({
     file,

@@ -57,8 +57,9 @@ export async function fetchActiveSiloDiscoPlugin(
 
   const { plugins, totalCount } = response.plugins;
   if (totalCount === 0) {
-    logger.error('No active data silo plugins found for this data silo.');
-    process.exit(1);
+    const message = 'No active data silo plugins found for this data silo.';
+    logger.error(message);
+    throw new Error(message);
   }
 
   return plugins[0]!;

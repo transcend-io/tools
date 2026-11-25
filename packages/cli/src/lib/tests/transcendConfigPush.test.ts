@@ -1,7 +1,7 @@
 import { ScopeName } from '@transcend-io/privacy-types';
+import type { TranscendInput } from '@transcend-io/sdk';
 import { describe, expect, it } from 'vitest';
 
-import type { TranscendInput } from '../../codecs.js';
 import {
   derivePushScopesFromTranscendInput,
   hasTranscendConfigSection,

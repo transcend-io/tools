@@ -1,0 +1,1749 @@
+import type { LocaleValue } from '@transcend-io/internationalization';
+import {
+  RequestAction,
+  ConsentTrackerStatus,
+  ActionItemCode,
+  RetentionType,
+  PreferenceTopicType,
+  WorkflowConfigType,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
+} from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
+import { GraphQLClient } from 'graphql-request';
+import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
+
+import {
+  NOOP_LOGGER,
+  fetchAllAssessmentTemplates,
+  fetchAllActionItemCollections,
+  fetchAllActionItems,
+  fetchAllActions,
+  fetchAllAssessments,
+  fetchAllAttributes,
+  fetchAllBusinessEntities,
+  fetchAllConsentSites,
+  fetchAllCookies,
+  fetchAllDataCategories,
+  fetchAllDataFlows,
+  fetchAllPolicies,
+  fetchAllPrivacyCenters,
+  fetchAllProcessingPurposes,
+  fetchAllSiloDiscoveryResults,
+  fetchAllTemplates,
+  fetchConsentManager,
+  fetchConsentManagerExperiences,
+  fetchConsentManagerPrefixModules,
+  fetchConsentVariants,
+  fetchConsentThemes,
+  fetchConsentManagerTheme,
+  fetchAllEnrichers,
+  fetchAllIdentifiers,
+  fetchAllMessages,
+  fetchAllProcessingActivities,
+  fetchAllPurposesAndPreferences,
+  fetchAllConsentWorkflowTriggers,
+  fetchAllPreferenceOptionValues,
+  fetchAllWorkflowConfigs,
+  fetchPartitions,
+  fetchAllTeams,
+  fetchAllVendors,
+  fetchApiKeys,
+  formatAttributeValues,
+  formatRegions,
+  parseAssessmentDisplayLogic,
+  parseAssessmentRiskLogic,
+  parsePurposesFromTriggerCondition,
+  resolveWorkflowTitleFromId,
+  convertToDataSubjectAllowlist,
+  fetchAllDataSubjects,
+  fetchEnrichedDataSilos,
+  workflowConfigMatchKey,
+  pullWorkflowConfigAssociationFields,
+  type AssessmentRule,
+} from '../index.js';
+import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
+/* eslint-disable max-lines */
+import {
+  TranscendInput,
+  ApiKeyInput,
+  DataSiloInput,
+  AttributeInput,
+  ActionInput,
+  IdentifierInput,
+  BusinessEntityInput,
+  EnricherInput,
+  DataFlowInput,
+  DataSubjectInput,
+  CookieInput,
+  ConsentSiteInput,
+  DatapointInput,
+  FieldInput,
+  ProcessingPurposeInput,
+  ProcessingActivityInput,
+  DataCategoryInput,
+  VendorInput,
+  PolicyInput,
+  TemplateInput,
+  IntlMessageInput,
+  ActionItemInput,
+  TeamInput,
+  ActionItemCollectionInput,
+  AssessmentInput,
+  AssessmentTemplateInput,
+  AssessmentSectionInput,
+  AssessmentSectionQuestionInput,
+  RiskLogicInput,
+  ConsentPurpose,
+  PreferenceWorkflowConfigInput,
+  WorkflowConfigInput,
+  ConsentPreferenceTopic,
+  ConsentPreferenceTopicOptionValue,
+  type SiloDiscoveryResultInput,
+} from './codecs.js';
+import { pullDataSiloInventoryFields } from './dataSiloInventoryFields.js';
+import { TranscendPullResource } from './enums.js';
+
+export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
+  TranscendPullResource.DataSilos,
+  TranscendPullResource.Enrichers,
+  TranscendPullResource.Templates,
+  TranscendPullResource.ApiKeys,
+];
+
+export interface TranscendPullConfigurationInput {
+  /** Page size */
+  pageSize: number;
+  /** Enable debug logs */
+  debug: boolean;
+  /** The data silo IDs to sync. If empty list, pull all. */
+  dataSiloIds: string[];
+  /** Resources to pull in */
+  resources?: TranscendPullResource[];
+  /** The data silo types to sync.If empty list, pull all.  */
+  integrationNames: string[];
+  /** The tracker statuses to pull */
+  trackerStatuses?: ConsentTrackerStatus[];
+  /** Skip fetching of datapoints */
+  skipDatapoints?: boolean;
+  /** Skip fetching of subdatapoints */
+  skipSubDatapoints?: boolean;
+  /** When true, metadata around guessed data categories should be included */
+  includeGuessedCategories?: boolean;
+  /** Only fetch data silos with these titles. Used to keep a push preview cheap. */
+  dataSiloTitles?: string[];
+  /** Action item types to fetch. Defaults to onboarding items only. */
+  actionItemTypes?: ActionItemCode[];
+  /** Logger for progress and request messages. Defaults to discarding them. */
+  logger?: Logger;
+}
+
+/**
+ * Pull a yaml configuration from Transcend
+ *
+ * @param client - GraphQL client
+ * @param dataSiloIds - The data silos to sync. If empty list, pull all.
+ * @returns The configuration
+ */
+export async function pullTranscendConfiguration(
+  client: GraphQLClient,
+  {
+    dataSiloIds,
+    integrationNames,
+    dataSiloTitles,
+    actionItemTypes = [ActionItemCode.Onboarding],
+    debug,
+    resources = DEFAULT_TRANSCEND_PULL_RESOURCES,
+    pageSize,
+    skipDatapoints,
+    includeGuessedCategories,
+    skipSubDatapoints,
+    trackerStatuses = Object.values(ConsentTrackerStatus),
+    logger = NOOP_LOGGER,
+  }: TranscendPullConfigurationInput,
+): Promise<TranscendInput> {
+  if (dataSiloIds.length > 0 && integrationNames.length > 0) {
+    throw new Error('Only 1 of integrationNames OR dataSiloIds can be provided');
+  }
+
+  logger.info(`Fetching data with page size ${pageSize}...`);
+
+  // Fetch all data, but only conditional fetch data that is requested
+  const [
+    dataSubjects,
+    apiKeyTitleMap,
+    dataSilos,
+    enrichers,
+    dataFlows,
+    cookies,
+    attributes,
+    templates,
+    identifiers,
+    actions,
+    businessEntities,
+    processingActivities,
+    consentManager,
+    consentManagerExperiences,
+    consentVariants,
+    consentThemes,
+    vendors,
+    dataCategories,
+    processingPurposes,
+    actionItems,
+    actionItemCollections,
+    teams,
+    policies,
+    privacyCenters,
+    messages,
+    partitions,
+    assessments,
+    assessmentTemplates,
+    purposes,
+    preferenceWorkflowConfigs,
+    workflowConfigs,
+    preferenceOptionValues,
+    siloDiscoveryResults,
+    consentSites,
+  ] = await Promise.all([
+    // Grab all data subjects in the organization
+    resources.includes(TranscendPullResource.DataSilos) ||
+    resources.includes(TranscendPullResource.DataSubjects)
+      ? fetchAllDataSubjects(client, { logger })
+      : [],
+    // Grab API keys
+    resources.includes(TranscendPullResource.ApiKeys)
+      ? fetchApiKeys(client, { fetchAll: true, logger })
+      : [],
+    // Fetch the data silos
+    resources.includes(TranscendPullResource.DataSilos)
+      ? fetchEnrichedDataSilos(client, {
+          ids: dataSiloIds,
+          titles: dataSiloTitles,
+          integrationNames,
+          pageSize,
+          debug,
+          includeGuessedCategories,
+          skipDatapoints,
+          skipSubDatapoints,
+          logger,
+        })
+      : [],
+    // Fetch enrichers
+    resources.includes(TranscendPullResource.Enrichers)
+      ? fetchAllEnrichers(client, { logger })
+      : [],
+    // Fetch data flows
+    resources.includes(TranscendPullResource.DataFlows)
+      ? [
+          ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
+            : []),
+          ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
+            : []),
+        ]
+      : [],
+    // Fetch data flows
+    resources.includes(TranscendPullResource.Cookies)
+      ? [
+          ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
+            : []),
+          ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
+            : []),
+        ]
+      : [],
+    // Fetch attributes
+    resources.includes(TranscendPullResource.Attributes)
+      ? fetchAllAttributes(client, { logger })
+      : [],
+    // Fetch email templates
+    resources.includes(TranscendPullResource.Templates)
+      ? fetchAllTemplates(client, { logger })
+      : [],
+    // Fetch identifiers
+    resources.includes(TranscendPullResource.Identifiers)
+      ? fetchAllIdentifiers(client, { logger })
+      : [],
+    // Fetch actions
+    resources.includes(TranscendPullResource.Actions) ? fetchAllActions(client, { logger }) : [],
+    // Fetch business entities
+    resources.includes(TranscendPullResource.BusinessEntities)
+      ? fetchAllBusinessEntities(client, { logger })
+      : [],
+    // Fetch processing activities
+    resources.includes(TranscendPullResource.ProcessingActivities)
+      ? fetchAllProcessingActivities(client, { logger })
+      : [],
+    // Fetch consent manager
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentManager(client, { logger })
+      : undefined,
+    // Fetch consent manager experiences
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentManagerExperiences(client, { logger })
+      : [],
+    // Fetch consent manager consent variants
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentVariants(client, { logger })
+      : [],
+    // Fetch consent manager consent themes
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentThemes(client, { logger })
+      : [],
+    // Fetch vendors
+    resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
+    // Fetch dataCategories
+    resources.includes(TranscendPullResource.DataCategories)
+      ? fetchAllDataCategories(client, { logger })
+      : [],
+    // Fetch dataCategories
+    resources.includes(TranscendPullResource.ProcessingPurposes)
+      ? fetchAllProcessingPurposes(client, { logger })
+      : [],
+    // Fetch actionItems
+    resources.includes(TranscendPullResource.ActionItems)
+      ? fetchAllActionItems(client, {
+          logger,
+          filterBy: { type: actionItemTypes },
+        })
+      : [],
+    // Fetch actionItemCollections
+    resources.includes(TranscendPullResource.ActionItemCollections)
+      ? fetchAllActionItemCollections(client, { logger })
+      : [],
+    // Fetch teams
+    resources.includes(TranscendPullResource.Teams) ? fetchAllTeams(client, { logger }) : [],
+    // Fetch policies
+    resources.includes(TranscendPullResource.Policies) ? fetchAllPolicies(client, { logger }) : [],
+    // Fetch privacy centers
+    resources.includes(TranscendPullResource.PrivacyCenters)
+      ? fetchAllPrivacyCenters(client, { logger })
+      : [],
+    // Fetch messages
+    resources.includes(TranscendPullResource.Messages) ? fetchAllMessages(client, { logger }) : [],
+    // Fetch partitions
+    resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client, { logger }) : [],
+    // Fetch assessments
+    resources.includes(TranscendPullResource.Assessments)
+      ? fetchAllAssessments(client, { logger })
+      : [],
+    // Fetch assessmentTemplates
+    resources.includes(TranscendPullResource.AssessmentTemplates)
+      ? fetchAllAssessmentTemplates(client, { logger })
+      : [],
+    // Fetch purpose and preferences
+    resources.includes(TranscendPullResource.Purposes)
+      ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
+      ? fetchAllConsentWorkflowTriggers(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.WorkflowConfigs)
+      ? fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceOptions)
+      ? fetchAllPreferenceOptionValues(client, { logger })
+      : [],
+    // Fetch silo discovery results
+    resources.includes(TranscendPullResource.SystemDiscovery)
+      ? fetchAllSiloDiscoveryResults(client, { logger })
+      : [],
+    // Fetch consent sites
+    resources.includes(TranscendPullResource.ConsentSites)
+      ? fetchAllConsentSites(client, { logger })
+      : [],
+  ]);
+
+  const consentManagerTheme =
+    resources.includes(TranscendPullResource.ConsentManager) && consentManager
+      ? await fetchConsentManagerTheme(client, {
+          logger,
+          filterBy: { airgapBundleId: consentManager.id },
+        })
+      : undefined;
+
+  const consentManagerPrefixModules =
+    resources.includes(TranscendPullResource.ConsentManager) && consentManager
+      ? await fetchConsentManagerPrefixModules(client, {
+          logger,
+          airgapBundleId: consentManager.id,
+        })
+      : [];
+
+  const result: TranscendInput = {};
+
+  // Save API keys
+  const apiKeyTitles = flatten(dataSilos.map(([{ apiKeys }]) => apiKeys.map(({ title }) => title)));
+  const relevantApiKeys = Object.values(apiKeyTitleMap).filter(({ title }) =>
+    resources.includes(TranscendPullResource.ApiKeys) ? true : apiKeyTitles.includes(title),
+  );
+  if (relevantApiKeys.length > 0 && resources.includes(TranscendPullResource.ApiKeys)) {
+    result['api-keys'] = relevantApiKeys.map(
+      ({ title }): ApiKeyInput => ({
+        title,
+      }),
+    );
+  }
+
+  // Save Partitions
+  if (partitions.length > 0 && resources.includes(TranscendPullResource.Partitions)) {
+    result.partitions = partitions.map(({ name, partition }) => ({
+      name,
+      partition,
+    }));
+  }
+
+  // Save Consent Manager
+  if (consentManager && resources.includes(TranscendPullResource.ConsentManager)) {
+    result['consent-manager'] = {
+      bundleUrls: {
+        TEST: consentManager.testBundleURL,
+        PRODUCTION: consentManager.bundleURL,
+      },
+      reportOnly: consentManager.off,
+      domains: consentManager.configuration.domains || undefined,
+      partition: consentManager.configuration.partition || undefined,
+      consentPrecedence: consentManager.configuration.consentPrecedence || undefined,
+      unknownRequestPolicy: consentManager.configuration.unknownRequestPolicy || undefined,
+      unknownCookiePolicy: consentManager.configuration.unknownCookiePolicy || undefined,
+      syncEndpoint: consentManager.configuration.syncEndpoint || undefined,
+      telemetryPartitioning: consentManager.configuration.telemetryPartitioning || undefined,
+      signedIabAgreement: consentManager.configuration.signedIabAgreement || undefined,
+      // TODO: https://transcend.height.app/T-23919 - reconsider simpler yml shape
+      syncGroups: consentManager.configuration.syncGroups || undefined,
+      theme: !consentManagerTheme
+        ? undefined
+        : {
+            primaryColor: consentManagerTheme.primaryColor || undefined,
+            fontColor: consentManagerTheme.fontColor || undefined,
+            privacyPolicy: consentManagerTheme.privacyPolicy || undefined,
+            prompt: consentManagerTheme.prompt,
+          },
+      experiences: consentManagerExperiences.map((experience) => ({
+        name: experience.name,
+        displayName: experience.displayName || undefined,
+        regions: experience.regions.map((region) => ({
+          countrySubDivision: region.countrySubDivision || undefined,
+          country: region.country || undefined,
+        })),
+        onConsentExpiry: experience.onConsentExpiry,
+        consentExpiry: experience.consentExpiry,
+        operator: experience.operator,
+        displayPriority: experience.displayPriority,
+        viewState: experience.viewState,
+        purposes: experience.purposes.map((purpose) => ({
+          trackingType: purpose.trackingType,
+        })),
+        optedOutPurposes: experience.optedOutPurposes.map((purpose) => ({
+          trackingType: purpose.trackingType,
+        })),
+        browserLanguages: experience.browserLanguages,
+        browserTimeZones: experience.browserTimeZones,
+        consentUiVariantSlug: experience.consentUiVariant?.slug,
+      })),
+      consentVariants: consentVariants.map(
+        (variant): ConsentVariantInput => ({
+          id: variant.id,
+          name: variant.name,
+          slug: variant.slug,
+          // Backend returns null when unset; omit from yaml rather than writing null
+          description: variant.description || undefined,
+          configuration: JSON.stringify(variant.configuration),
+          locales: variant.locales as LocaleValue[],
+          status: variant.status,
+          userFlow: variant.userFlow || undefined,
+          themeSlug: variant.theme?.slug || undefined,
+        }),
+      ),
+      consentThemes: consentThemes.map(
+        (theme): ConsentThemeInput => ({
+          id: theme.id,
+          name: theme.name,
+          slug: theme.slug,
+          configuration: JSON.stringify(theme.configuration),
+        }),
+      ),
+      prefixModules:
+        consentManagerPrefixModules.length > 0 ? consentManagerPrefixModules : undefined,
+    };
+  }
+
+  // Save assessments
+  if (assessments.length > 0 && resources.includes(TranscendPullResource.Assessments)) {
+    result.assessments = assessments.map(
+      ({
+        title,
+        assessmentGroup,
+        sections,
+        creator,
+        description,
+        status,
+        assignees,
+        externalAssignees,
+        reviewers,
+        isLocked,
+        isArchived,
+        isExternallyCreated,
+        dueDate,
+        createdAt,
+        assignedAt,
+        submittedAt,
+        approvedAt,
+        rejectedAt,
+        titleIsInternal,
+        retentionSchedule,
+        attributeValues,
+        resources,
+        syncedRows,
+      }): AssessmentInput => ({
+        title,
+        group: assessmentGroup.title,
+        sections: sections.map(
+          ({
+            title,
+            status,
+            questions,
+            assignees,
+            isReviewed,
+            externalAssignees,
+          }): AssessmentSectionInput => ({
+            title,
+            status,
+            questions: questions.map(
+              ({
+                title,
+                type,
+                subType,
+                placeholder,
+                description,
+                isRequired,
+                referenceId,
+                displayLogic,
+                riskLogic,
+                riskCategories,
+                riskFramework,
+                answerOptions,
+                selectedAnswers,
+                allowedMimeTypes,
+                allowSelectOther,
+                syncModel,
+                syncColumn,
+                attributeKey,
+                requireRiskEvaluation,
+                requireRiskMatrixEvaluation,
+              }): AssessmentSectionQuestionInput => {
+                const displayLogicParsed = displayLogic
+                  ? parseAssessmentDisplayLogic(displayLogic)
+                  : undefined;
+                return {
+                  title,
+                  type,
+                  'sub-type': subType,
+                  placeholder,
+                  description,
+                  'is-required': isRequired,
+                  'reference-id': referenceId,
+                  'display-logic':
+                    displayLogicParsed && Object.keys(displayLogicParsed).length > 0
+                      ? {
+                          action: displayLogicParsed.action!,
+                          rule: displayLogicParsed.rule
+                            ? {
+                                'depends-on-question-reference-id':
+                                  displayLogicParsed.rule.dependsOnQuestionReferenceId,
+                                'comparison-operator': displayLogicParsed.rule.comparisonOperator,
+                                'comparison-operands':
+                                  // Safely access property with a check
+                                  'comparisonOperands' in displayLogicParsed.rule
+                                    ? displayLogicParsed.rule.comparisonOperands
+                                    : undefined,
+                              }
+                            : undefined,
+                          'nested-rule': displayLogicParsed.nestedRule
+                            ? {
+                                'logic-operator': displayLogicParsed.nestedRule.logicOperator,
+                                rules: (displayLogicParsed.nestedRule.rules || []).map(
+                                  (rule: AssessmentRule) => ({
+                                    'depends-on-question-reference-id':
+                                      rule.dependsOnQuestionReferenceId,
+                                    'comparison-operator': rule.comparisonOperator,
+                                    'comparison-operands':
+                                      // Safely access property on the nested rule
+                                      'comparisonOperands' in rule
+                                        ? rule.comparisonOperands
+                                        : undefined,
+                                  }),
+                                ),
+                              }
+                            : undefined,
+                        }
+                      : undefined,
+                  'risk-logic': riskLogic.map((logic): RiskLogicInput => {
+                    const parsed = parseAssessmentRiskLogic(logic);
+                    return {
+                      'risk-level': parsed.riskAssignment?.riskLevelId,
+                      'comparison-operands': parsed.comparisonOperands,
+                      'comparison-operator': parsed.comparisonOperator,
+                    };
+                  }),
+                  'risk-categories': riskCategories.map(({ title }) => title),
+                  'risk-framework': riskFramework?.title,
+                  'answer-options': answerOptions.map(({ value }) => ({
+                    value,
+                  })),
+                  'selected-answers': selectedAnswers.map(({ value }) => value),
+                  'allowed-mime-types': allowedMimeTypes,
+                  'allow-select-other': allowSelectOther,
+                  'sync-model': syncModel || undefined,
+                  'sync-column': syncColumn || undefined,
+                  'attribute-key': attributeKey?.name,
+                  'require-risk-evaluation': requireRiskEvaluation,
+                  'require-risk-matrix-evaluation': requireRiskMatrixEvaluation,
+                };
+              },
+            ),
+            assignees: assignees.map(({ email }) => email),
+            'external-assignees': externalAssignees.map(({ email }) => email),
+            'is-reviewed': isReviewed,
+          }),
+        ),
+        creator: creator?.email,
+        description,
+        status,
+        assignees: assignees.map(({ email }) => email),
+        'external-assignees': externalAssignees.map(({ email }) => email),
+        reviewers: reviewers.map(({ email }) => email),
+        locked: isLocked,
+        archived: isArchived,
+        external: isExternallyCreated,
+        'title-is-internal': titleIsInternal,
+        'due-date': dueDate || undefined,
+        'created-at': createdAt || undefined,
+        'assigned-at': assignedAt || undefined,
+        'submitted-at': submittedAt || undefined,
+        'approved-at': approvedAt || undefined,
+        'rejected-at': rejectedAt || undefined,
+        'retention-schedule': retentionSchedule
+          ? {
+              type: retentionSchedule.type,
+              'duration-days': retentionSchedule.durationDays,
+              operand: retentionSchedule.operation,
+            }
+          : undefined,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+        resources: resources.map(({ resourceType, title, name, category, type, purpose }) => ({
+          type: resourceType,
+          title: category
+            ? `${category} - ${name}`
+            : purpose
+              ? `${purpose} - ${name}`
+              : title || name || type || '',
+        })),
+        rows: syncedRows.map(({ resourceType, title, name, category, type, purpose }) => ({
+          type: resourceType,
+          title: category
+            ? `${category} - ${name}`
+            : purpose
+              ? `${purpose} - ${name}`
+              : title || name || type || '',
+        })),
+      }),
+    );
+  }
+
+  // Save assessmentTemplates
+  if (
+    assessmentTemplates.length > 0 &&
+    resources.includes(TranscendPullResource.AssessmentTemplates)
+  ) {
+    result['assessment-templates'] = assessmentTemplates.map(
+      ({
+        title,
+        description,
+        sections,
+        status,
+        source,
+        creator,
+        isLocked,
+        isArchived,
+        createdAt,
+        retentionSchedule,
+      }): AssessmentTemplateInput => ({
+        title,
+        description,
+        sections: sections.map(
+          ({ title, questions }): AssessmentSectionInput => ({
+            title,
+            questions: questions.map(
+              ({
+                title,
+                type,
+                subType,
+                placeholder,
+                description,
+                isRequired,
+                referenceId,
+                displayLogic,
+                riskLogic,
+                riskCategories,
+                riskFramework,
+                answerOptions,
+                allowedMimeTypes,
+                allowSelectOther,
+                syncModel,
+                syncColumn,
+                attributeKey,
+                requireRiskEvaluation,
+                requireRiskMatrixEvaluation,
+              }): AssessmentSectionQuestionInput => {
+                const displayLogicParsed = displayLogic
+                  ? parseAssessmentDisplayLogic(displayLogic)
+                  : undefined;
+                return {
+                  title,
+                  type,
+                  'sub-type': subType,
+                  placeholder,
+                  description,
+                  'is-required': isRequired,
+                  'reference-id': referenceId,
+                  'display-logic':
+                    displayLogicParsed && Object.keys(displayLogicParsed).length > 0
+                      ? {
+                          action: displayLogicParsed.action!,
+                          rule: displayLogicParsed.rule
+                            ? {
+                                'depends-on-question-reference-id':
+                                  displayLogicParsed.rule.dependsOnQuestionReferenceId,
+                                'comparison-operator': displayLogicParsed.rule.comparisonOperator,
+                                'comparison-operands':
+                                  // Safely access property with a check
+                                  'comparisonOperands' in displayLogicParsed.rule
+                                    ? displayLogicParsed.rule.comparisonOperands
+                                    : undefined,
+                              }
+                            : undefined,
+                          'nested-rule': displayLogicParsed.nestedRule
+                            ? {
+                                'logic-operator': displayLogicParsed.nestedRule.logicOperator,
+                                rules: (displayLogicParsed.nestedRule.rules || []).map(
+                                  (rule: AssessmentRule) => ({
+                                    'depends-on-question-reference-id':
+                                      rule.dependsOnQuestionReferenceId,
+                                    'comparison-operator': rule.comparisonOperator,
+                                    'comparison-operands':
+                                      // Safely access property on the nested rule
+                                      'comparisonOperands' in rule
+                                        ? rule.comparisonOperands
+                                        : undefined,
+                                  }),
+                                ),
+                              }
+                            : undefined,
+                        }
+                      : undefined,
+                  'risk-logic': riskLogic.map((logic): RiskLogicInput => {
+                    const parsed = parseAssessmentRiskLogic(logic);
+                    return {
+                      'risk-level': parsed.riskAssignment?.riskLevelId,
+                      'risk-matrix-row': parsed.riskAssignment?.riskMatrixRowId,
+                      'risk-matrix-column': parsed.riskAssignment?.riskMatrixColumnId,
+                      'comparison-operands': parsed.comparisonOperands,
+                      'comparison-operator': parsed.comparisonOperator,
+                    };
+                  }),
+                  'risk-categories': riskCategories.map(({ title }) => title),
+                  'risk-framework': riskFramework?.title,
+                  'answer-options': answerOptions.map(({ value }) => ({
+                    value,
+                  })),
+                  'allowed-mime-types': allowedMimeTypes,
+                  'allow-select-other': allowSelectOther,
+                  'sync-model': syncModel || undefined,
+                  'sync-column': syncColumn || undefined,
+                  'attribute-key': attributeKey?.name,
+                  'require-risk-evaluation': requireRiskEvaluation,
+                  'require-risk-matrix-evaluation': requireRiskMatrixEvaluation,
+                };
+              },
+            ),
+          }),
+        ),
+        status,
+        source,
+        creator: creator?.email,
+        locked: isLocked,
+        archived: isArchived,
+        'created-at': createdAt || undefined,
+        'retention-schedule': retentionSchedule
+          ? {
+              type: retentionSchedule.type,
+              'duration-days': retentionSchedule.durationDays,
+              operand: retentionSchedule.operation,
+            }
+          : undefined,
+      }),
+    );
+  }
+
+  // Save Silo Discovery Results
+  if (
+    siloDiscoveryResults.length > 0 &&
+    resources.includes(TranscendPullResource.SystemDiscovery)
+  ) {
+    result['system-discovery'] = siloDiscoveryResults.map(
+      ({
+        title,
+        resourceId,
+        suggestedCatalog: { title: suggestedCatalogTitle },
+        plugin: {
+          dataSilo: { title: dataSiloTitle },
+        },
+        country,
+        countrySubDivision,
+        plaintextContext,
+        containsSensitiveData,
+        status,
+      }): SiloDiscoveryResultInput => ({
+        title,
+        resourceId,
+        suggestedCatalog: suggestedCatalogTitle,
+        plugin: dataSiloTitle,
+        country: country || undefined,
+        countrySubDivision: countrySubDivision || undefined,
+        plaintextContext,
+        containsSensitiveData,
+        status,
+      }),
+    );
+  }
+
+  // Save teams
+  if (teams.length > 0 && resources.includes(TranscendPullResource.Teams)) {
+    result.teams = teams.map(
+      ({
+        name,
+        description,
+        ssoDepartment,
+        ssoGroup,
+        ssoTitle,
+        users,
+        scopes,
+        parentTeam,
+      }): TeamInput => ({
+        name,
+        description,
+        'sso-department': ssoDepartment || undefined,
+        'sso-group': ssoGroup || undefined,
+        'sso-title': ssoTitle || undefined,
+        'parent-team-name': parentTeam?.name,
+        users: users.map(({ email }) => email),
+        scopes: scopes.map(({ name }) => name),
+      }),
+    );
+  }
+
+  // Save Data Subjects
+  if (dataSubjects.length > 0 && resources.includes(TranscendPullResource.DataSubjects)) {
+    result['data-subjects'] = dataSubjects.map(
+      ({
+        type,
+        title,
+        active,
+        subjectClass,
+        adminDashboardDefaultSilentMode,
+        supportsAuthorizedAgent,
+        actions,
+      }): DataSubjectInput => ({
+        type,
+        title: title?.defaultMessage,
+        active,
+        subjectClass,
+        adminDashboardDefaultSilentMode,
+        supportsAuthorizedAgent,
+        actions: actions.map(({ type }) => type),
+      }),
+    );
+  }
+
+  // Save privacy policies
+  if (policies.length > 0) {
+    result.policies = policies.map(
+      ({ title, type, versions, disabledLocales }): PolicyInput => ({
+        title: title?.defaultMessage,
+        type,
+        content: versions?.[0]?.content?.defaultMessage,
+        disabledLocales,
+      }),
+    );
+  }
+
+  // Save messages
+  if (messages.length > 0) {
+    result.messages = messages.map(
+      ({ id, defaultMessage, targetReactIntlId, description, translations }): IntlMessageInput => ({
+        id: targetReactIntlId ?? id,
+        defaultMessage,
+        description,
+        targetReactIntlId: targetReactIntlId || undefined,
+        translations: translations.reduce(
+          (acc, { locale, value }) => Object.assign(acc, { [locale]: value }),
+          {} as Record<LocaleValue, string>,
+        ),
+      }),
+    );
+  }
+
+  // Save privacy center
+  if (privacyCenters.length > 0) {
+    const privacyCenter = privacyCenters[0]!;
+    result['privacy-center'] = {
+      isDisabled: privacyCenter.isDisabled,
+      showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
+      showPolicies: privacyCenter.showPolicies,
+      showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
+      showCookies: privacyCenter.showCookies,
+      showDataFlows: privacyCenter.showDataFlows,
+      showConsentManager: privacyCenter.showConsentManager,
+      showManageYourPrivacy: privacyCenter.showManageYourPrivacy,
+      showMarketingPreferences: privacyCenter.showMarketingPreferences,
+      locales: privacyCenter.locales,
+      defaultLocale: privacyCenter.defaultLocale,
+      preferBrowserDefaultLocale: privacyCenter.preferBrowserDefaultLocale,
+      supportEmail: privacyCenter.supportEmail || undefined,
+      replyToEmail: privacyCenter.replyToEmail || undefined,
+      useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
+      useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
+      transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      emailPrefix: privacyCenter.emailPrefix || undefined,
+      showCookieMaxAge: privacyCenter.showCookieMaxAge,
+      allowTrackingTechnologiesSiteFilter: privacyCenter.allowTrackingTechnologiesSiteFilter,
+      allowPartitionChange: privacyCenter.allowPartitionChange,
+      showPartition: privacyCenter.showPartition,
+      ...(Object.keys(privacyCenter.assets).length > 0 ? { assets: privacyCenter.assets } : {}),
+      home: privacyCenter.home || undefined,
+      expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
+      workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+      footerLayout: privacyCenter.footerLayout,
+      ...(privacyCenter.childOrganizations.length > 0
+        ? {
+            displayedChildOrganizationUris: privacyCenter.childOrganizations.map(
+              (child) => child.uri,
+            ),
+          }
+        : {}),
+      ...(privacyCenter.footerLinks.length > 0
+        ? {
+            footerLinks: [...privacyCenter.footerLinks]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((link) => ({
+                title: link.title.defaultMessage,
+                ...(link.url ? { url: link.url } : {}),
+                ...(link.iconOnly ? { iconOnly: link.iconOnly } : {}),
+              })),
+          }
+        : {}),
+      theme: privacyCenter.theme,
+    };
+  }
+
+  // Save business entities
+  if (businessEntities.length > 0 && resources.includes(TranscendPullResource.BusinessEntities)) {
+    result['business-entities'] = businessEntities.map(
+      ({
+        title,
+        description,
+        address,
+        headquarterCountry,
+        headquarterSubDivision,
+        dataProtectionOfficerName,
+        dataProtectionOfficerEmail,
+        attributeValues,
+      }): BusinessEntityInput => ({
+        title,
+        description: description || undefined,
+        address: address || undefined,
+        headquarterCountry: headquarterCountry || undefined,
+        headquarterSubDivision: headquarterSubDivision || undefined,
+        dataProtectionOfficerName: dataProtectionOfficerName || undefined,
+        dataProtectionOfficerEmail: dataProtectionOfficerEmail || undefined,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save processing activities
+  if (
+    processingActivities.length > 0 &&
+    resources.includes(TranscendPullResource.ProcessingActivities)
+  ) {
+    result['processing-activities'] = processingActivities.map(
+      ({
+        title,
+        description,
+        securityMeasureDetails,
+        controllerships,
+        storageRegions,
+        transferRegions,
+        retentionType,
+        retentionPeriod,
+        dataProtectionImpactAssessmentLink,
+        dataProtectionImpactAssessmentStatus,
+        attributeValues,
+        dataSilos,
+        dataSubjects,
+        teams,
+        owners,
+        processingPurposeSubCategories,
+        dataSubCategories,
+        saaSCategories,
+      }): ProcessingActivityInput => ({
+        title,
+        description,
+        securityMeasureDetails: securityMeasureDetails ?? undefined,
+        controllerships: controllerships.length > 0 ? controllerships : undefined,
+        storageRegions: storageRegions.length > 0 ? formatRegions(storageRegions) : undefined,
+        transferRegions: transferRegions.length > 0 ? formatRegions(transferRegions) : undefined,
+        retentionType,
+        retentionPeriod: retentionType === RetentionType.StatedPeriod ? retentionPeriod : undefined,
+        dataProtectionImpactAssessmentLink: dataProtectionImpactAssessmentLink ?? undefined,
+        dataProtectionImpactAssessmentStatus,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+        dataSiloTitles: dataSilos.length > 0 ? dataSilos.map(({ title }) => title) : undefined,
+        dataSubjectTypes:
+          dataSubjects.length > 0 ? dataSubjects.map(({ type }) => type) : undefined,
+        teamNames: teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        ownerEmails: owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        processingSubPurposes:
+          processingPurposeSubCategories.length > 0
+            ? processingPurposeSubCategories.map(({ name, purpose }) => ({
+                purpose,
+                ...(name ? { name } : {}),
+              }))
+            : undefined,
+        dataSubCategories:
+          dataSubCategories.length > 0
+            ? dataSubCategories.map(({ name, category }) => ({
+                category,
+                ...(name ? { name } : {}),
+              }))
+            : undefined,
+        saaSCategories:
+          saaSCategories.length > 0 ? saaSCategories.map(({ title }) => title) : undefined,
+      }),
+    );
+  }
+
+  // Save Actions
+  if (actions.length > 0 && resources.includes(TranscendPullResource.Actions)) {
+    result.actions = actions.map(
+      ({
+        type,
+        title,
+        description,
+        formItems,
+        skipSecondaryIfNoFiles,
+        skipDownloadableStep,
+        requiresReview,
+        regionList,
+        regionDetectionMethod,
+        waitingPeriod,
+      }): ActionInput => ({
+        type,
+        ...(title?.defaultMessage ? { title: title.defaultMessage } : {}),
+        ...(description?.defaultMessage ? { description: description.defaultMessage } : {}),
+        ...(formItems && formItems.length > 0
+          ? {
+              fileFormItems: formItems
+                .filter((item) => item.type === 'file')
+                .map((item) => ({
+                  internalName: item.name,
+                  label: item.label?.defaultMessage ?? item.name,
+                  ...(item.info?.defaultMessage ? { info: item.info.defaultMessage } : {}),
+                  isRequired: item.isRequired,
+                  index: item.index ?? 0,
+                  ...(item.acceptedMimeTypes && item.acceptedMimeTypes.length > 0
+                    ? { acceptedMimeTypes: item.acceptedMimeTypes }
+                    : {}),
+                  ...(item.maxFileSize ? { maxFileSize: item.maxFileSize } : {}),
+                  ...(item.maxFiles !== null && item.maxFiles !== undefined
+                    ? { maxFiles: item.maxFiles }
+                    : {}),
+                })),
+            }
+          : {}),
+        ...(type === RequestAction.Erasure
+          ? {
+              skipSecondaryIfNoFiles,
+              skipDownloadableStep,
+            }
+          : {}),
+        requiresReview,
+        waitingPeriod,
+        regionDetectionMethod,
+        regionList: regionList.length > 0 ? regionList : undefined,
+      }),
+    );
+  }
+
+  // Save identifiers
+  if (identifiers.length > 0 && resources.includes(TranscendPullResource.Identifiers)) {
+    result.identifiers = identifiers.map(
+      ({
+        name,
+        type,
+        regex,
+        selectOptions,
+        privacyCenterVisibility,
+        isRequiredInForm,
+        placeholder,
+        displayTitle,
+        dataSubjects,
+        displayDescription,
+        displayOrder,
+        isUniqueOnPreferenceStore,
+        sqlPriority,
+        sqlVariable,
+        sqlLookupVariable,
+      }): IdentifierInput => ({
+        name,
+        type,
+        regex,
+        selectOptions: selectOptions.length > 0 ? selectOptions : undefined,
+        privacyCenterVisibility:
+          privacyCenterVisibility.length > 0 ? privacyCenterVisibility : undefined,
+        isRequiredInForm,
+        placeholder: placeholder || undefined,
+        dataSubjects: dataSubjects.length > 0 ? dataSubjects.map(({ type }) => type) : undefined,
+        displayTitle: displayTitle?.defaultMessage,
+        displayDescription: displayDescription?.defaultMessage,
+        displayOrder,
+        isUniqueOnPreferenceStore,
+        ...(sqlPriority !== null && sqlPriority !== undefined ? { sqlPriority } : {}),
+        ...(sqlVariable ? { 'sql-variable': sqlVariable } : {}),
+        ...(sqlLookupVariable ? { 'sql-lookup-variable': sqlLookupVariable } : {}),
+      }),
+    );
+  }
+
+  // Save action items
+  if (actionItems.length > 0 && resources.includes(TranscendPullResource.ActionItems)) {
+    result['action-items'] = actionItems.map(
+      ({
+        teams,
+        users,
+        customerExperienceActionItemIds: [customerExperienceActionItemId],
+        dueDate,
+        priority,
+        resolved,
+        collections,
+        notes,
+        link,
+        title,
+        type,
+        attributeValues,
+      }): ActionItemInput => ({
+        teams: teams.map(({ name }) => name),
+        users: users.map(({ email }) => email),
+        dueDate: dueDate || undefined,
+        title,
+        notes,
+        customerExperienceActionItemId,
+        collections: collections.map(({ title }) => title),
+        link,
+        priority: priority || undefined,
+        resolved,
+        type,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save action item collections
+  if (
+    actionItemCollections.length > 0 &&
+    resources.includes(TranscendPullResource.ActionItemCollections)
+  ) {
+    result['action-item-collections'] = actionItemCollections.map(
+      ({ title, description, hidden, productLine }): ActionItemCollectionInput => ({
+        title,
+        description: description || undefined,
+        hidden,
+        productLine,
+      }),
+    );
+  }
+
+  // Save vendors
+  if (vendors.length > 0 && resources.includes(TranscendPullResource.Vendors)) {
+    result.vendors = vendors.map(
+      ({
+        title,
+        description,
+        dataProcessingAgreementLink,
+        contactName,
+        contactPhone,
+        address,
+        headquarterCountry,
+        headquarterSubDivision,
+        websiteUrl,
+        businessEntity,
+        teams,
+        owners,
+        attributeValues,
+      }): VendorInput => ({
+        title,
+        description: description || undefined,
+        dataProcessingAgreementLink: dataProcessingAgreementLink || undefined,
+        contactName: contactName || undefined,
+        contactPhone: contactPhone || undefined,
+        address: address || undefined,
+        headquarterCountry: headquarterCountry || undefined,
+        headquarterSubDivision: headquarterSubDivision || undefined,
+        websiteUrl: websiteUrl || undefined,
+        businessEntity: businessEntity?.title,
+        teams: teams && teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        owners: owners && owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save data categories
+  if (dataCategories.length > 0 && resources.includes(TranscendPullResource.DataCategories)) {
+    result['data-categories'] = dataCategories.map(
+      ({
+        name,
+        category,
+        description,
+        regex,
+        owners,
+        teams,
+        attributeValues,
+      }): DataCategoryInput => ({
+        name,
+        category,
+        description: description || undefined,
+        regex: regex || undefined,
+        owners: owners && owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        teams: teams && teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save processing purposes
+  if (
+    processingPurposes.length > 0 &&
+    resources.includes(TranscendPullResource.ProcessingPurposes)
+  ) {
+    result['processing-purposes'] = processingPurposes.map(
+      ({ name, purpose, description, owners, teams, attributeValues }): ProcessingPurposeInput => ({
+        name,
+        purpose,
+        description: description || undefined,
+        owners: owners && owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        teams: teams && teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save data flows
+  if (dataFlows.length > 0 && resources.includes(TranscendPullResource.DataFlows)) {
+    result['data-flows'] = dataFlows.map(
+      ({
+        value,
+        type,
+        description,
+        trackingType,
+        service,
+        status,
+        owners,
+        teams,
+        attributeValues,
+      }): DataFlowInput => ({
+        value,
+        type,
+        description: description || undefined,
+        trackingPurposes: trackingType,
+        status,
+        service: service?.integrationName,
+        owners: owners.map(({ email }) => email),
+        teams: teams.map(({ name }) => name),
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save cookies
+  if (cookies.length > 0 && resources.includes(TranscendPullResource.Cookies)) {
+    result.cookies = cookies.map(
+      ({
+        name,
+        isRegex,
+        description,
+        trackingPurposes,
+        service,
+        status,
+        owners,
+        teams,
+        attributeValues,
+      }): CookieInput => ({
+        name,
+        isRegex,
+        description: description || undefined,
+        trackingPurposes,
+        status,
+        service: service?.integrationName,
+        owners: owners.map(({ email }) => email),
+        teams: teams.map(({ name }) => name),
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save consent sites
+  if (consentSites.length > 0 && resources.includes(TranscendPullResource.ConsentSites)) {
+    result['consent-sites'] = consentSites.map(
+      ({ host, site, description, owners, teams, attributeValues }): ConsentSiteInput => ({
+        host,
+        site,
+        description: description || undefined,
+        owners: owners.map(({ email }) => email),
+        teams: teams.map(({ name }) => name),
+        attributes:
+          attributeValues !== undefined && attributeValues.length > 0
+            ? formatAttributeValues(attributeValues)
+            : undefined,
+      }),
+    );
+  }
+
+  // Save attributes
+  if (attributes.length > 0 && resources.includes(TranscendPullResource.Attributes)) {
+    result.attributes = attributes.map(
+      ({ description, name, type, values, enabledOn = [] }): AttributeInput => ({
+        description: description || undefined,
+        resources: enabledOn,
+        name,
+        type,
+        values: values.map(({ name, color, description }) => ({
+          name,
+          color: color || undefined,
+          description,
+        })),
+      }),
+    );
+  }
+
+  // save purposes
+  if (purposes.length > 0) {
+    result.purposes = purposes.map(
+      ({
+        name,
+        description,
+        trackingType,
+        defaultConsent,
+        configurable,
+        showInConsentManager,
+        isActive,
+        displayOrder,
+        optOutSignals,
+        authLevel,
+        topics,
+        showInPrivacyCenter,
+        title,
+      }): ConsentPurpose => ({
+        name,
+        title,
+        description: description || undefined,
+        trackingType,
+        'default-consent': defaultConsent,
+        configurable,
+        'show-in-consent-manager': showInConsentManager,
+        'show-in-privacy-center': showInPrivacyCenter,
+        'is-active': isActive,
+        'display-order': displayOrder,
+        'opt-out-signals': optOutSignals.length > 0 ? optOutSignals : undefined,
+        'auth-level': authLevel || undefined,
+        'preference-topics': topics.map(
+          ({
+            slug,
+            title,
+            type,
+            color,
+            displayDescription,
+            defaultConfiguration,
+            showInPrivacyCenter,
+            preferenceOptionValues,
+          }): ConsentPreferenceTopic => ({
+            slug,
+            title: title.defaultMessage,
+            type,
+            color,
+            description: displayDescription.defaultMessage,
+            'default-configuration': defaultConfiguration,
+            'show-in-privacy-center': showInPrivacyCenter,
+            options:
+              type === PreferenceTopicType.Boolean
+                ? []
+                : preferenceOptionValues.map(({ title, slug }) => ({
+                    title: title.defaultMessage,
+                    slug,
+                  })),
+          }),
+        ),
+      }),
+    );
+  }
+
+  if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
+    const pulledWorkflowConfigs = await mapSeries(workflowConfigs, async (config) => {
+      const associationFields = await pullWorkflowConfigAssociationFields(client, config.id, {
+        pageSize,
+        logger,
+      });
+      return {
+        title: config.title.defaultMessage,
+        'action-type': config.action.type,
+        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
+        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+        ...(config.description ? { description: config.description.defaultMessage } : {}),
+        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+        visibility: config.workflowConfigVisibility,
+        type: config.workflowConfigType,
+        ...(config.collectDataSubjectRegions
+          ? {
+              'collect-data-subject-regions': config.collectDataSubjectRegions,
+            }
+          : {}),
+        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+        ...(config.expiryTime && config.expiryTime.length > 0
+          ? { 'expiry-time': config.expiryTime }
+          : {}),
+        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+          ? {
+              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                ({ attributeKey }) => attributeKey.name,
+              ),
+            }
+          : {}),
+        ...associationFields,
+      } satisfies WorkflowConfigInput;
+    });
+    // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
+    const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
+    for (const configs of Object.values(configsByMatchKey)) {
+      if (configs.length > 1) {
+        const sample = configs[0]!;
+        logger.warn(
+          `Found "${configs.length}" workflow configs with the same title, action-type, ` +
+            `data-subject-type, and region-list for "${sample.title.defaultMessage}" ` +
+            `(${sample.action.type}). Push will fail until they are disambiguated ` +
+            '(for example with unique internal names).',
+        );
+      }
+    }
+    if (pulledWorkflowConfigs.length > 0) {
+      result['workflow-configs'] = pulledWorkflowConfigs;
+    }
+  }
+
+  if (
+    preferenceWorkflowConfigs.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
+  ) {
+    const needsWorkflowTitles = preferenceWorkflowConfigs.some(
+      (trigger) => trigger.workflowConfigId,
+    );
+    const dsrWorkflows = needsWorkflowTitles
+      ? await fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
+      : [];
+
+    result['preference-workflow-configs'] = preferenceWorkflowConfigs.map(
+      (trigger): PreferenceWorkflowConfigInput => {
+        const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
+        const shared = {
+          name: trigger.name,
+          'data-subject-type': trigger.subject.type,
+          'is-silent': trigger.isSilent,
+          'allow-unauthenticated': trigger.allowUnauthenticated,
+          'is-active': trigger.isActive,
+          purposes,
+        };
+
+        if (trigger.workflowConfigId) {
+          const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
+          if (workflowTitle) {
+            return {
+              ...shared,
+              'workflow-title': workflowTitle,
+            };
+          }
+          // Workflow deleted or unreadable — fall back to legacy fields so YAML stays usable
+        }
+
+        return {
+          ...shared,
+          'action-type': trigger.action.type,
+          'data-silo-titles':
+            trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+        };
+      },
+    );
+  }
+
+  if (
+    preferenceOptionValues.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceOptions)
+  ) {
+    result['preference-options'] = preferenceOptionValues.map(
+      ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
+        slug,
+        title: title.defaultMessage,
+      }),
+    );
+  }
+
+  // save email templates
+  if (
+    dataSiloIds.length === 0 &&
+    templates.length > 0 &&
+    resources.includes(TranscendPullResource.Templates)
+  ) {
+    result.templates = templates.map(
+      ({ title, subject, template, type }): TemplateInput => ({
+        title,
+        subject: subject.defaultMessage,
+        body: template.defaultMessage,
+        type,
+      }),
+    );
+  }
+
+  // Save preflight checks (API still returns them as enrichers)
+  if (enrichers.length > 0 && resources.includes(TranscendPullResource.Enrichers)) {
+    result.preflights = enrichers.map(
+      ({
+        title,
+        description,
+        url,
+        type,
+        inputIdentifier,
+        identifiers,
+        actions,
+        testRegex,
+        dataSubjects,
+        expirationDuration,
+        lookerQueryTitle,
+        transitionRequestStatus,
+        phoneNumbers,
+        regionList,
+        databaseName,
+        sqlQuery,
+        dataSilo,
+      }): EnricherInput => ({
+        title,
+        description: description || undefined,
+        url: url || undefined,
+        type,
+        'input-identifier': inputIdentifier?.name,
+        'output-identifiers': identifiers.map(({ name }) => name),
+        'privacy-actions':
+          Object.values(RequestAction).length === actions.length ? undefined : actions,
+        testRegex: testRegex || undefined,
+        lookerQueryTitle: lookerQueryTitle || undefined,
+        expirationDuration: parseInt(expirationDuration, 10),
+        transitionRequestStatus: transitionRequestStatus || undefined,
+        phoneNumbers: phoneNumbers && phoneNumbers.length > 0 ? phoneNumbers : undefined,
+        regionList: regionList && regionList.length > 0 ? regionList : undefined,
+        'data-subjects': dataSubjects.map(({ type }) => type),
+        ...(dataSilo?.title ? { 'data-silo-title': dataSilo.title } : {}),
+        ...(sqlQuery ? { 'sql-query': sqlQuery } : {}),
+        ...(databaseName ? { 'database-name': databaseName } : {}),
+      }),
+    );
+  }
+
+  // Save data silos
+  if (dataSilos.length > 0 && resources.includes(TranscendPullResource.DataSilos)) {
+    const indexedDataSubjects = keyBy(dataSubjects, 'type');
+    result['data-silos'] = dataSilos.map(
+      ([silo, dataPoints]): DataSiloInput => ({
+        title: silo.title,
+        description: silo.description,
+        integrationName: silo.type,
+        'outer-type': silo.outerType || undefined,
+        url: silo.url || undefined,
+        'api-key-title': silo.apiKeys[0]?.title,
+        'sombra-id': silo.sombra?.id || undefined,
+        'identity-keys': silo.identifiers
+          .filter(({ isConnected }) => isConnected)
+          .map(({ name }) => name),
+        ...buildDeletionDependenciesInput({
+          dependentDataSilos: silo.dependentDataSilos,
+          dependedOnDataSilosPerWorkflow: silo.dependedOnDataSilosPerWorkflow,
+        }),
+        ...(silo.owners.length > 0 ? { owners: silo.owners.map(({ email }) => email) } : {}),
+        ...(silo.teams.length > 0 ? { teams: silo.teams.map(({ name }) => name) } : {}),
+        ...(silo.discoveredBy.length > 0
+          ? { discoveredBy: silo.discoveredBy.map(({ title }) => title) }
+          : {}),
+        ...(silo.businessEntities.length > 0
+          ? {
+              businessEntityTitles: silo.businessEntities.map(({ title }) => title),
+            }
+          : {}),
+        country: silo.country || undefined,
+        countrySubDivision: silo.countrySubDivision || undefined,
+        disabled: !silo.isLive,
+        'data-subjects':
+          silo.subjectBlocklist.length > 0
+            ? convertToDataSubjectAllowlist(
+                silo.subjectBlocklist.map(({ type }) => type),
+                indexedDataSubjects,
+              )
+            : undefined,
+        ...(silo.catalog.hasAvcFunctionality
+          ? {
+              'email-settings': {
+                'notify-email-address': silo.notifyEmailAddress || undefined,
+                'send-frequency': silo.promptAVendorEmailSendFrequency,
+                'send-type': silo.promptAVendorEmailSendType,
+                'include-identifiers-attachment':
+                  silo.promptAVendorEmailIncludeIdentifiersAttachment,
+                'completion-link-type': silo.promptAVendorEmailCompletionLinkType,
+                'manual-work-retry-frequency': silo.manualWorkRetryFrequency,
+              },
+            }
+          : {}),
+        attributes:
+          silo.attributeValues !== undefined && silo.attributeValues.length > 0
+            ? formatAttributeValues(silo.attributeValues)
+            : undefined,
+        ...pullDataSiloInventoryFields(silo),
+
+        datapoints: dataPoints
+          .map(
+            (dataPoint): DatapointInput => ({
+              key: dataPoint.name,
+              title: dataPoint.title?.defaultMessage,
+              description: dataPoint.description?.defaultMessage,
+              owners: dataPoint.owners.map(({ email }) => email),
+              teams: dataPoint.teams.map(({ name }) => name),
+              ...(dataPoint.path.length > 0 ? { path: dataPoint.path } : {}),
+              ...(dataPoint.dataCollection?.title
+                ? {
+                    'data-collection-tag': dataPoint.dataCollection.title.defaultMessage,
+                  }
+                : {}),
+              ...(dataPoint.dbIntegrationQueries.length > 0
+                ? {
+                    'privacy-action-queries': mapValues(
+                      keyBy(dataPoint.dbIntegrationQueries, 'requestType'),
+                      (databaseIntegrationQuery) =>
+                        databaseIntegrationQuery.suggestedQuery ||
+                        databaseIntegrationQuery.query ||
+                        undefined,
+                    ),
+                  }
+                : {}),
+              ...(dataPoint.subDataPoints.length > 0
+                ? {
+                    fields: dataPoint.subDataPoints
+                      .map(
+                        (field): FieldInput => ({
+                          key: field.name,
+                          description: field.description,
+                          purposes: field.purposes,
+                          categories: field.categories,
+                          ...(includeGuessedCategories && field.pendingCategoryGuesses
+                            ? {
+                                'guessed-categories': field.pendingCategoryGuesses
+                                  .filter((guess) => guess.status === 'PENDING')
+                                  .map((guess) => ({
+                                    category: {
+                                      name: guess.category.name,
+                                      category: guess.category.category,
+                                    },
+                                    status: guess.status,
+                                    confidence: guess.confidence,
+                                    classifierVersion: guess.classifierVersion || undefined,
+                                  })),
+                              }
+                            : {}),
+                          'access-request-visibility-enabled': field.accessRequestVisibilityEnabled,
+                          'erasure-request-redaction-enabled': field.erasureRequestRedactionEnabled,
+                          attributes:
+                            field.attributeValues !== undefined && field.attributeValues.length > 0
+                              ? formatAttributeValues(field.attributeValues)
+                              : undefined,
+                        }),
+                      )
+                      .sort((a, b) => a.key.localeCompare(b.key)),
+                  }
+                : {}),
+              'privacy-actions': dataPoint.actionSettings
+                .filter(({ active }) => active)
+                .map(({ type }) => type),
+            }),
+          )
+          .sort((a, b) =>
+            [...(a.path ?? []), a.key]
+              .join('.')
+              .localeCompare([...(b.path ?? []), b.key].join('.')),
+          ),
+      }),
+    );
+  }
+  return result;
+}
+/* eslint-enable max-lines */

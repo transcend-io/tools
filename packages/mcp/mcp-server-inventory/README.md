@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Transcend MCP Server for data inventory management. Provides tools for managing data silos (integrations), data points, vendors, categories, and identifiers.
+Transcend MCP Server for data inventory management. Provides tools for managing data silos (integrations), data points, vendors, categories, identifiers, business entities, data subjects, processing activities, and custom fields.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -102,15 +102,29 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `inventory_list_data_silos` — List data silos (integrations)
-- `inventory_get_data_silo` — Get data silo details
-- `inventory_create_data_silo` — Create a data silo
-- `inventory_update_data_silo` — Update a data silo
-- `inventory_list_data_points` — List data points
-- `inventory_list_sub_data_points` — List sub-data points
-- `inventory_list_categories` — List data categories
+- `inventory_list_data_silos` — List data silos (optional `text` / `titles` / `customSiloConnectionStrategy` filters)
+- `inventory_get_data_silo` — Get data silo details (vendor, purposes, owners, subjects, metadata, `sombraId`, `customSiloConnectionStrategy`)
+- `inventory_list_catalog_integrations` — Search the integration catalog for valid `integrationName` values (optional `text` filter)
+- `inventory_write_data_silo` — Create or update a data silo (`integrationName` to create, `dataSiloId` to update; owners/vendor/purposes in the same call; pass `sombraId` when creating `customFunction`)
+- `inventory_list_data_points` — List data points (optional `dataSiloId` and `text` filters)
+- `inventory_update_or_create_data_point` — Create/update a datapoint and field-level purpose assignments
+- `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
+- `inventory_list_categories` — List data category subcategories (optional `text` filter; includes ids)
+- `inventory_write_category` — Create or update a data category subcategory (upsert by name+category or id)
+- `inventory_list_processing_purposes` — List processing purpose subcategories (optional `text` filter)
+- `inventory_write_processing_purpose` — Create or update a processing purpose subcategory
 - `inventory_list_identifiers` — List identifiers
-- `inventory_list_vendors` — List vendors
+- `inventory_write_identifiers` — Create or update identifiers in bulk (matched by name; `identifiers` section of `transcend.yml`)
+- `inventory_list_vendors` — List vendors (contact / DPA / website fields; optional `text` filter)
+- `inventory_write_vendor` — Create or update a vendor (upsert by title or id)
+- `inventory_list_business_entities` — List business entities
+- `inventory_write_business_entities` — Create or update business entities in bulk (matched by title)
+- `inventory_list_data_subjects` — List data subject types
+- `inventory_write_data_subjects` — Create or update data subject types in bulk (matched by type)
+- `inventory_list_processing_activities` — List processing activities in `transcend.yml` shape
+- `inventory_write_processing_activities` — Create or update processing activities in bulk (matched by title)
+- `inventory_list_custom_fields` — List custom fields (attribute keys and values) in `transcend.yml` shape
+- `inventory_write_custom_fields` — Create or update custom fields in bulk (matched by name)
 - `inventory_analyze` — Analyze inventory data
 
 ## Related packages

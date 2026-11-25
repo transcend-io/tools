@@ -54,7 +54,7 @@ export async function restart(
     transcendUrl,
   }: RestartCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await bulkRestartRequests({
     requestReceiptFolder,

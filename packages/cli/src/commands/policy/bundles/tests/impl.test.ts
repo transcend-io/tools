@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { bundles } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
@@ -14,15 +14,13 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
 });
 
 describe('bundles', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
+    context.reset();
   });
 
   it('fetches bundles and renders a table by default', async () => {
@@ -55,6 +53,48 @@ describe('bundles', () => {
     expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
       searchParams: { limit: 50, offset: 0 },
     });
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundle-id'));
+    expect(context.stdout).toContain('bundle-id');
+  });
+
+  it('prints parseable JSON without progress messages', async () => {
+    const body = { nodes: [], totalCount: 0 };
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue(body),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+
+    await bundles.call(context, {
+      auth: 'test-key',
+      'transcend-url': 'https://api.transcend.io',
+      limit: 50,
+      offset: 0,
+      json: true,
+    });
+
+    expect(JSON.parse(context.stdout)).toEqual(body);
+    expect(context.stdout).not.toContain('Listing policy bundles');
+  });
+
+  it('surfaces auth failures with a user-readable message', async () => {
+    const httpError = {
+      response: {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      },
+    };
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockRejectedValue(httpError),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+
+    await expect(
+      bundles.call(context, {
+        auth: 'invalid-key',
+        'transcend-url': 'https://api.transcend.io',
+        limit: 50,
+        offset: 0,
+        json: false,
+      }),
+    ).rejects.toThrow(/Authentication failed \(401 Unauthorized\)/);
   });
 });

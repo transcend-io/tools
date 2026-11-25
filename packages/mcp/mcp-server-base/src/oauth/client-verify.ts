@@ -1,3 +1,4 @@
+import { TRANSCEND_MCP_USER_AGENT } from '../clients/mcp-user-agent.js';
 import { formatOAuthClientConfigError, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from './constants.js';
 import { normalizeIssuer } from './normalize-issuer.js';
 
@@ -19,7 +20,11 @@ export async function verifyOAuthClientCredentials(
   try {
     response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      },
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,

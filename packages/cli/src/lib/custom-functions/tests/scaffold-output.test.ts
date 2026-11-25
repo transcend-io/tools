@@ -1,0 +1,109 @@
+import { describe, expect, it } from 'vitest';
+
+import { displayProjectPath, renderProjectPlan } from '../../scaffolding/project-plan-output.js';
+import type { CustomFunctionProjectPlan } from '../scaffold-model.js';
+import { buildPlanResult } from '../scaffold-output.js';
+
+const PLAN: CustomFunctionProjectPlan = {
+  version: 1,
+  command: 'new',
+  rootDirectory: '/repo/custom-functions',
+  targetDirectory: '/repo/custom-functions',
+  manifestPath: '/repo/custom-functions/transcend-functions.yml',
+  changes: [
+    {
+      kind: 'file',
+      path: '/repo/custom-functions/functions/score-lead.ts',
+      before: null,
+      after: 'private source contents\n',
+      description: 'Create Score Lead source',
+      createOnly: true,
+    },
+    {
+      kind: 'link',
+      path: '/repo/.claude/skills/transcend-custom-functions',
+      target: '../../.agents/skills/transcend-custom-functions',
+      fallbackFiles: [{ path: 'SKILL.md', contents: 'private skill contents\n' }],
+      description: 'Expose the canonical skill to Claude Code',
+    },
+  ],
+  unchanged: [],
+  warnings: ['Commit generated files before deploying.'],
+  nextSteps: ['transcend custom-functions check custom-functions'],
+};
+
+describe('buildPlanResult', () => {
+  it('emits stable JSON without internal file contents and leaves the plan unchanged', () => {
+    const before = structuredClone(PLAN);
+    const first = buildPlanResult(PLAN, {
+      applied: false,
+      dryRun: true,
+      cwd: '/repo',
+      aiHandoff: 'Continue with the generated scaffold.',
+    });
+    const second = buildPlanResult(PLAN, {
+      applied: false,
+      dryRun: true,
+      cwd: '/repo',
+      aiHandoff: 'Continue with the generated scaffold.',
+    });
+
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+    expect(first).toEqual({
+      version: 1,
+      command: 'new',
+      applied: false,
+      dryRun: true,
+      targetDirectory: '/repo/custom-functions',
+      manifestPath: '/repo/custom-functions/transcend-functions.yml',
+      changes: [
+        {
+          kind: 'create',
+          target: 'custom-functions/functions/score-lead.ts',
+          description: 'Create Score Lead source',
+        },
+        {
+          kind: 'link',
+          target:
+            '.claude/skills/transcend-custom-functions -> ../../.agents/skills/transcend-custom-functions',
+          description: 'Expose the canonical skill to Claude Code',
+        },
+      ],
+      warnings: ['Commit generated files before deploying.'],
+      nextSteps: ['transcend custom-functions check custom-functions'],
+      aiHandoff: 'Continue with the generated scaffold.',
+    });
+    expect(JSON.stringify(first)).not.toContain('private source contents');
+    expect(JSON.stringify(first)).not.toContain('private skill contents');
+    expect(PLAN).toEqual(before);
+  });
+});
+
+describe('renderProjectPlan', () => {
+  it('renders an explicit no-op result', () => {
+    const noOpPlan: CustomFunctionProjectPlan = {
+      ...PLAN,
+      command: 'init',
+      changes: [],
+      warnings: [],
+      nextSteps: [],
+    };
+
+    expect(
+      renderProjectPlan(noOpPlan, {
+        cwd: '/repo',
+        title: 'Custom Function plan',
+        details: [
+          { label: 'Target', path: noOpPlan.targetDirectory },
+          { label: 'Manifest', path: noOpPlan.manifestPath },
+        ],
+      }),
+    ).toContain('No changes needed.');
+  });
+});
+
+describe('displayProjectPath', () => {
+  it('uses an absolute path instead of an ambiguous parent-relative path', () => {
+    expect(displayProjectPath('/repo', '/outside/functions')).toBe('/outside/functions');
+  });
+});

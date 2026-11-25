@@ -25,7 +25,7 @@ export type EnrichPrivacyRequest = t.TypeOf<typeof EnrichPrivacyRequest>;
  * @returns True if enriched successfully, false if skipped, throws error if failed
  */
 export async function enrichPrivacyRequest(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   { id: rawId, ...rest }: EnrichPrivacyRequest,
   enricherId: string,
   index?: number,

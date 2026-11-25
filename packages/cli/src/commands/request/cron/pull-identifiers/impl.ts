@@ -9,7 +9,6 @@ import {
   pullChunkedCustomSiloOutstandingIdentifiers,
 } from '../../../../lib/cron/index.js';
 import { parseFilePath, writeLargeCsv } from '../../../../lib/helpers/index.js';
-import { logger } from '../../../../logger.js';
 
 export interface PullIdentifiersCommandFlags {
   file: string;
@@ -38,13 +37,13 @@ export async function pullIdentifiers(
   }: PullIdentifiersCommandFlags,
 ): Promise<void> {
   if (skipRequestCount) {
-    logger.info(
+    this.logger.info(
       colors.yellow('Skipping request count as requested. This may help speed up the call.'),
     );
   }
 
   if (Number.isNaN(chunkSize) || chunkSize <= 0 || chunkSize % pageLimit !== 0) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `Invalid chunk size: "${chunkSize}". Must be a positive integer that is a multiple of ${pageLimit}.`,
       ),
@@ -52,18 +51,20 @@ export async function pullIdentifiers(
     this.process.exit(1);
   }
 
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { baseName, extension } = parseFilePath(file);
   let fileCount = 0;
 
   const onSave = async (chunk: CsvFormattedIdentifier[]): Promise<void> => {
     const numberedFileName = `${baseName}-${fileCount}${extension}`;
-    logger.info(colors.blue(`Saving ${chunk.length} identifiers to file "${numberedFileName}"`));
+    this.logger.info(
+      colors.blue(`Saving ${chunk.length} identifiers to file "${numberedFileName}"`),
+    );
 
     const headers = uniq(chunk.map((d) => Object.keys(d)).flat());
     await writeLargeCsv(numberedFileName, chunk, headers);
-    logger.info(
+    this.logger.info(
       colors.green(`Successfully wrote ${chunk.length} identifiers to file "${numberedFileName}"`),
     );
     fileCount += 1;

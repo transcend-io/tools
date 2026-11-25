@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import {
+  fakeWorkerProcess,
+  type FakeWorkerProcessHarness,
+} from '../../../../lib/tests/helpers/fakeWorkerProcess.js';
 import { runChild } from '../worker.js';
 
 const h = vi.hoisted(() => ({
@@ -27,85 +31,20 @@ vi.mock('@duckdb/node-api', () => ({ DuckDBInstance: {} }));
 // Aliases
 const { mLogger, mExtractErrorMessage, mParquetToCsvOneFile } = h;
 
-/**
- * Tick helper to allow async handlers to run
- *
- * @returns A promise that resolves on next tick
- */
-const nextTick = (): Promise<void> =>
-  new Promise((r) => {
-    setTimeout(r, 0);
-  });
-
-/**
- * Start worker and capture the specific 'message' handler it registers.
- * We diff the 'message' listeners before/after runChild() to find the one it added.
- *
- * @returns The 'message' event handler function registered by runChild.
- */
-function startWorkerAndCaptureHandler(): (msg: unknown) => unknown {
-  const before = new Set<(...a: unknown[]) => unknown>(
-    process.listeners('message') as Array<(...a: unknown[]) => unknown>,
-  );
-
-  // runChild never resolves; don't await
-  runChild();
-
-  const after = new Set<(...a: unknown[]) => unknown>(
-    process.listeners('message') as Array<(...a: unknown[]) => unknown>,
-  );
-
-  for (const listener of after) {
-    if (!before.has(listener)) return listener as (msg: unknown) => unknown;
-  }
-  throw new Error('Failed to capture worker message handler');
-}
-
 describe('parquet-to-csv worker runChild()', () => {
-  let origSend: unknown;
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let origWorkerId: string | undefined;
-  let workerMsgHandler: ((msg: unknown) => unknown) | undefined;
+  let workerProcess: FakeWorkerProcessHarness;
 
   beforeEach(() => {
-    origWorkerId = process.env.WORKER_ID;
-    process.env.WORKER_ID = '7';
-
-    // Stub process.send
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    origSend = (process as any).send;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process as any).send = vi.fn();
-
-    // Spy process.exit
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(
-      (() => undefined as never) as unknown as typeof process.exit,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) as any;
+    workerProcess = fakeWorkerProcess({ workerId: '7' });
 
     mLogger.info.mockClear();
     mLogger.error.mockClear();
     mExtractErrorMessage.mockClear();
     mParquetToCsvOneFile.mockReset();
-
-    workerMsgHandler = undefined;
   });
 
   afterEach(() => {
-    if (workerMsgHandler) {
-      process.removeListener('message', workerMsgHandler as (...a: unknown[]) => void);
-      workerMsgHandler = undefined;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process as any).send = origSend;
-    exitSpy.mockRestore();
-
-    if (origWorkerId === undefined) {
-      delete process.env.WORKER_ID;
-    } else {
-      process.env.WORKER_ID = origWorkerId;
-    }
+    workerProcess.restore();
   });
 
   it('announces ready, forwards progress from parquetToCsvOneFile, and reports success', async () => {
@@ -118,11 +57,10 @@ describe('parquet-to-csv worker runChild()', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any);
 
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
     // 'ready' should be sent immediately
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((process as any).send).toHaveBeenCalledWith({ type: 'ready' });
+    expect(workerProcess.send).toHaveBeenCalledWith({ type: 'ready' });
     expect(mLogger.info).toHaveBeenCalledTimes(1);
     expect(mLogger.info.mock.calls[0][0]).toContain('[w7] ready');
 
@@ -134,7 +72,7 @@ describe('parquet-to-csv worker runChild()', () => {
       },
     } as const;
 
-    await workerMsgHandler(msg);
+    await workerProcess.dispatch(msg);
 
     expect(mParquetToCsvOneFile).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,8 +84,7 @@ describe('parquet-to-csv worker runChild()', () => {
     });
     expect(callArgs.onProgress).toEqual(expect.any(Function));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sends = (process as any).send.mock.calls.map((c: any[]) => c[0]);
+    const sends = workerProcess.sentMessages();
     expect(sends).toContainEqual({ type: 'ready' });
     expect(sends).toContainEqual({
       type: 'progress',
@@ -174,7 +111,7 @@ describe('parquet-to-csv worker runChild()', () => {
     expect(mLogger.error).not.toHaveBeenCalled();
     expect(mLogger.info.mock.calls.some((c) => String(c[0]).includes('processing'))).toBe(true);
 
-    expect(exitSpy).not.toHaveBeenCalled();
+    expect(workerProcess.exit).not.toHaveBeenCalled();
   });
 
   it('reports failure using extractErrorMessage and logs error', async () => {
@@ -183,7 +120,7 @@ describe('parquet-to-csv worker runChild()', () => {
       throw new Error('nope');
     });
 
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
     const msg = {
       type: 'task',
@@ -193,7 +130,7 @@ describe('parquet-to-csv worker runChild()', () => {
       },
     } as const;
 
-    await workerMsgHandler(msg);
+    await workerProcess.dispatch(msg);
 
     expect(mLogger.error).toHaveBeenCalledTimes(1);
     const errLine = mLogger.error.mock.calls[0][0] as string;
@@ -206,22 +143,20 @@ describe('parquet-to-csv worker runChild()', () => {
     expect(mExtractErrorMessage).toHaveBeenCalledTimes(1);
     expect(mExtractErrorMessage.mock.calls[0][0]).toBeInstanceOf(Error);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sends = (process as any).send.mock.calls.map((c: any[]) => c[0]);
+    const sends = workerProcess.sentMessages();
     expect(sends).toContainEqual({
       type: 'result',
       payload: { ok: false, filePath: '/abs/bad.parquet', error: 'Boom!' },
     });
 
-    expect(exitSpy).not.toHaveBeenCalled();
+    expect(workerProcess.exit).not.toHaveBeenCalled();
   });
 
   it('exits(0) on shutdown message', async () => {
-    workerMsgHandler = startWorkerAndCaptureHandler();
+    workerProcess.start(runChild);
 
-    workerMsgHandler({ type: 'shutdown' });
-    await nextTick();
+    await workerProcess.dispatch({ type: 'shutdown' });
 
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(workerProcess.exit).toHaveBeenCalledWith(0);
   });
 });

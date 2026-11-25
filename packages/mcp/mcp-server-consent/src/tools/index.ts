@@ -1,6 +1,9 @@
 import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createConsentBulkTriageTool } from './consent_bulk_triage.js';
+import { createConsentDeleteCookiesTool } from './consent_delete_cookies.js';
+import { createConsentDeleteDataFlowsTool } from './consent_delete_data_flows.js';
+import { createConsentDeployBundleTool } from './consent_deploy_bundle.js';
 import { createConsentGetAggregateAnalyticsTool } from './consent_get_aggregate_analytics.js';
 import { createConsentGetAnalyticsDataTool } from './consent_get_analytics_data.js';
 import { createConsentGetInventoryStatsTool } from './consent_get_inventory_stats.js';
@@ -11,25 +14,40 @@ import { createConsentListCookiesTool } from './consent_list_cookies.js';
 import { createConsentListDataFlowsTool } from './consent_list_data_flows.js';
 import { createConsentListPurposesTool } from './consent_list_purposes.js';
 import { createConsentListRegimesTool } from './consent_list_regimes.js';
-import { createConsentSetPreferencesTool } from './consent_set_preferences.js';
+import { createConsentListRocRecordsTool } from './consent_list_roc_records.js';
+import { createConsentListSitesTool } from './consent_list_sites.js';
+import { createConsentPreviewDeployTool } from './consent_preview_deploy.js';
 import { createConsentUpdateCookiesTool } from './consent_update_cookies.js';
 import { createConsentUpdateDataFlowsTool } from './consent_update_data_flows.js';
+import { createConsentWriteConsentManagerTool } from './consent_write_consent_manager.js';
+import { createConsentWritePurposesTool } from './consent_write_purposes.js';
+import { createConsentWriteSitesTool } from './consent_write_sites.js';
+import { createConsentCookieTriageAppTool } from './cookie_triage_app.js';
 
 export function getConsentTools(clients: ToolClients): ToolDefinition[] {
   return [
     createConsentGetPreferencesTool(clients),
-    createConsentSetPreferencesTool(clients),
     createConsentListPurposesTool(clients),
     createConsentListDataFlowsTool(clients),
     createConsentListCookiesTool(clients),
     createConsentListAirgapBundlesTool(clients),
     createConsentListRegimesTool(clients),
     createConsentGetInventoryStatsTool(clients),
+    createConsentCookieTriageAppTool(clients),
     createConsentGetAggregateAnalyticsTool(clients),
     createConsentGetTimeseriesAnalyticsTool(clients),
     createConsentGetAnalyticsDataTool(clients),
     createConsentUpdateCookiesTool(clients),
+    createConsentDeleteCookiesTool(clients),
     createConsentUpdateDataFlowsTool(clients),
+    createConsentDeleteDataFlowsTool(clients),
     createConsentBulkTriageTool(clients),
+    createConsentListRocRecordsTool(clients),
+    createConsentPreviewDeployTool(clients),
+    createConsentDeployBundleTool(clients),
+    createConsentListSitesTool(clients),
+    createConsentWriteSitesTool(clients),
+    createConsentWriteConsentManagerTool(clients),
+    createConsentWritePurposesTool(clients),
   ];
 }

@@ -8,6 +8,40 @@ import type { SlotPaths, WorkerLogPaths } from '@transcend-io/utils';
 /** Which combined log to export */
 export type LogKind = 'error' | 'warn' | 'info' | 'all';
 
+/** File metadata needed while exporting combined logs. */
+export interface ExportLogFileStat {
+  /** File size in bytes */
+  readonly size: number;
+}
+
+/** Dependencies used to export combined logs. */
+export interface ExportCombinedLogsDependencies {
+  /** Return the final component of a path. */
+  basename: typeof basename;
+  /** Create a readable file stream. */
+  createReadStream: typeof createReadStream;
+  /** Create a writable file stream. */
+  createWriteStream: typeof createWriteStream;
+  /** Join path segments. */
+  join: typeof join;
+  /** Create a directory synchronously. */
+  mkdirSync: typeof mkdirSync;
+  /** Wait for one event from an emitter. */
+  once: typeof once;
+  /** Read file metadata synchronously. */
+  statSync: (path: string) => ExportLogFileStat;
+}
+
+const defaultDependencies: ExportCombinedLogsDependencies = {
+  basename,
+  createReadStream,
+  createWriteStream,
+  join,
+  mkdirSync,
+  once,
+  statSync,
+};
+
 /**
  * Choose the best source file for a given kind, with safe fallbacks:
  *  - error: prefer errorPath → fallback to errPath
@@ -33,6 +67,7 @@ function pickSourcePath(kind: Exclude<LogKind, 'all'>, p: WorkerLogPaths): strin
  * @param kind - 'error' | 'warn' | 'info' | 'all'
  * @param outDir - directory to write the combined file
  * @param filename - optional override (default: combined-{kind}.log)
+ * @param dependencies - File, path, and event operations used by the export.
  * @returns absolute path to the combined log file
  */
 export async function exportCombinedLogs(
@@ -40,11 +75,12 @@ export async function exportCombinedLogs(
   kind: LogKind,
   outDir: string,
   filename?: string,
+  dependencies: ExportCombinedLogsDependencies = defaultDependencies,
 ): Promise<string> {
-  mkdirSync(outDir, { recursive: true });
+  dependencies.mkdirSync(outDir, { recursive: true });
 
-  const outPath = join(outDir, filename ?? `combined-${kind}.log`);
-  const out = createWriteStream(outPath, { flags: 'w' });
+  const outPath = dependencies.join(outDir, filename ?? `combined-${kind}.log`);
+  const out = dependencies.createWriteStream(outPath, { flags: 'w' });
 
   for (const [id, pathsMaybe] of [...slotLogPaths.entries()].sort((a, b) => a[0] - b[0])) {
     if (!pathsMaybe) continue;
@@ -67,20 +103,20 @@ export async function exportCombinedLogs(
       ];
 
       for (const { label, path } of sources) {
-        out.write(`\n---- ${label}${path ? ` (${basename(path)})` : ''} ----\n`);
+        out.write(`\n---- ${label}${path ? ` (${dependencies.basename(path)})` : ''} ----\n`);
         if (!path) {
           out.write('[unavailable]\n');
           continue;
         }
         try {
-          const st = statSync(path);
+          const st = dependencies.statSync(path);
           if (st.size === 0) {
             out.write('[empty]\n');
             continue;
           }
-          const rs = createReadStream(path, { encoding: 'utf8' });
+          const rs = dependencies.createReadStream(path, { encoding: 'utf8' });
           rs.pipe(out, { end: false });
-          await once(rs, 'end');
+          await dependencies.once(rs, 'end');
         } catch {
           out.write(`[unavailable: ${path}]\n`);
         }
@@ -90,7 +126,7 @@ export async function exportCombinedLogs(
 
     // error / warn / info (single best source with fallback)
     const srcPath = pickSourcePath(kind, p);
-    out.write(`(${srcPath ? basename(srcPath) : 'unavailable'})\n`);
+    out.write(`(${srcPath ? dependencies.basename(srcPath) : 'unavailable'})\n`);
 
     if (!srcPath) {
       out.write('[unavailable]\n');
@@ -98,14 +134,14 @@ export async function exportCombinedLogs(
     }
 
     try {
-      const st = statSync(srcPath);
+      const st = dependencies.statSync(srcPath);
       if (st.size === 0) {
         out.write('[empty]\n');
         continue;
       }
-      const rs = createReadStream(srcPath, { encoding: 'utf8' });
+      const rs = dependencies.createReadStream(srcPath, { encoding: 'utf8' });
       rs.pipe(out, { end: false });
-      await once(rs, 'end');
+      await dependencies.once(rs, 'end');
     } catch {
       // skip unreadable files
       out.write(`[unavailable: ${srcPath}]\n`);

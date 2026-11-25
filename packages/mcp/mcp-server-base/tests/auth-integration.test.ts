@@ -11,12 +11,15 @@ import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import {
   MCP_CALLER_HEADER,
   MCP_SESSION_ID_HEADER,
+  MCP_VERSION_HEADER,
   TOOLCALL_ID_HEADER,
   TRANSCEND_ACTIVE_ORG_ID_HEADER,
 } from '../src/http-header-names.js';
+import { resolveMcpPackageVersion } from '../src/mcp-package-version.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
+import { McpTransport } from '../src/server/transport.js';
 import type { ToolDefinition } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 
@@ -29,7 +32,7 @@ const MCP_HEADERS = {
 
 function testConfig(port: number): TransportConfig {
   return {
-    transport: 'http',
+    transport: McpTransport.Http,
     port,
     host: '127.0.0.1',
     mcpPath: '/mcp',
@@ -194,6 +197,7 @@ function mcpServerFactory(mockBackendUrl: string): McpHttpServerOptions['createS
       name: 'auth-integration-test',
       version: '0.0.1',
       tools: [makeGraphqlPingTool(graphql)],
+      transport: McpTransport.Http,
     });
   };
 }
@@ -289,6 +293,19 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
       expect(gqlReq).toBeDefined();
       expect(gqlReq!.headers[MCP_CALLER_HEADER]).toBe('cursor-desktop');
+    });
+
+    it(`sends ${MCP_VERSION_HEADER} with the package version on GraphQL tool calls`, async () => {
+      const sessionId = await initSession(mcpUrl);
+      capturedRequests = [];
+
+      const { isError } = await callTool(mcpUrl, sessionId, 'graphql_ping', {});
+
+      expect(isError).toBe(false);
+
+      const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
+      expect(gqlReq).toBeDefined();
+      expect(gqlReq!.headers[MCP_VERSION_HEADER]).toBe(resolveMcpPackageVersion());
     });
 
     it('per-request API key overrides the env var key', async () => {

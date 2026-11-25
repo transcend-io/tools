@@ -1,7 +1,7 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 // adapted from https://gist.github.com/Josantonius/b455e315bc7f790d14b136d61d9ae469
-export const BrowserLanguage = makeEnum({
+export const BrowserLanguage = {
   '(Afan)/Oromoor/Oriya': 'om',
   Abkhazian: 'ab',
   Afar: 'aa',
@@ -308,7 +308,7 @@ export const BrowserLanguage = makeEnum({
   Yoruba: 'yo',
   Zhuang: 'za',
   Zulu: 'zu',
-});
+} as const;
 
 /** Overrides type */
 export type BrowserLanguage = (typeof BrowserLanguage)[keyof typeof BrowserLanguage];

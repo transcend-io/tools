@@ -38,7 +38,85 @@ export const PRIVACY_CENTER = gql`
       useNoReplyEmailAddress
       useCustomEmailDomain
       transformAccessReportJsonToCsv
+      emailPrefix
+      showCookieMaxAge
+      allowTrackingTechnologiesSiteFilter
+      allowPartitionChange
+      showPartition
+      home {
+        defaultMessage
+      }
+      expandSideMenuByDefault
+      workflowsCustomFieldsRequired
+      footerLayout
+      assets {
+        logo {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        favicon {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        logoOnSolid {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        logoOnFooter {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        hero {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+        widgetBg {
+          id
+          src
+          alt {
+            defaultMessage
+          }
+        }
+      }
       themeStr
+      childOrganizations {
+        id
+        uri
+        name
+      }
+      footerLinks {
+        id
+        displayOrder
+        title {
+          defaultMessage
+        }
+        url {
+          defaultMessage
+        }
+        icon {
+          id
+          src
+          key
+          size
+          mimetype
+        }
+        iconOnly
+      }
     }
   }
 `;
@@ -47,6 +125,27 @@ export const UPDATE_PRIVACY_CENTER = gql`
   mutation TranscendCliUpdatePrivacyCenter($input: UpdatePrivacyCenterInput!) {
     updatePrivacyCenter(input: $input) {
       clientMutationId
+    }
+  }
+`;
+
+export const UPDATE_PRIVACY_CENTER_FOOTER_LINKS = gql`
+  mutation TranscendCliUpdatePrivacyCenterFooterLinks(
+    $input: UpdatePrivacyCenterFooterLinksInput!
+  ) {
+    updatePrivacyCenterFooterLinks(input: $input) {
+      clientMutationId
+    }
+  }
+`;
+
+export const DELETE_PRIVACY_CENTER_FOOTER_LINKS = gql`
+  mutation TranscendCliDeletePrivacyCenterFooterLinks(
+    $input: DeletePrivacyCenterFooterLinksInput!
+  ) {
+    deletePrivacyCenterFooterLinks(input: $input) {
+      clientMutationId
+      success
     }
   }
 `;

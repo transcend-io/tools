@@ -1,35 +1,26 @@
 packages:
   - packages/*
   - packages/mcp/*
-
-catalog:
-  '@arethetypeswrong/cli': ^0.18.2
-  '@changesets/cli': ^2.30.0
-  '@graphql-codegen/cli': ^7.1.0
-  '@graphql-codegen/client-preset': ^6.0.1
-  '@graphql-typed-document-node/core': ^3.2.0
-  '@modelcontextprotocol/sdk': ^1.29.0
-  '@types/json-schema': ^7.0.15
-  '@types/node': ^22.19.15
-  '@types/semver': ^7.7.1
-  graphql: ^16.14.0
-  husky: ^9.1.7
-  lru-cache: ^11.5.1
-  oxfmt: ^0.54.0
-  oxlint: ^1.53.0
-  publint: ^0.3.18
-  semver: ^7.7.4
-  syncpack: ^14.2.0
-  tsdown: ^0.21.2
-  turbo: ^2.9.14
-  typescript: ^6.0.0
-  vitest: ^4.0.18
-  zod: ^4.3.6
+  # Private local tooling, never published. Kept out of `packages/` so it is not
+  # subject to the publishable-package conventions.
+  - dev/*
 
 # Only install npm packages that are at least 3 days old
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: csv-parse@7.0.2
+  - csv-parse@7.0.2
+  # Renovate security update: pnpm@10.34.5
+  - pnpm@10.34.5
+  # Renovate security update: vitest@4.1.11
+  - vitest@4.1.11
+  # Renovate security update: vite@8.1.6
+  - vite@8.1.6
+  # Renovate security update: undici@6.29.1
+  - undici@6.29.1
+  # Renovate security update: zod@4.6.6
+  - zod@4.6.6
 
 onlyBuiltDependencies:
   - esbuild

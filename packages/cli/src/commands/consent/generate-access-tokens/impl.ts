@@ -1,6 +1,4 @@
-import { existsSync } from 'node:fs';
-
-import { SombraStandardScope } from '@transcend-io/privacy-types';
+import { PrivacyCenterAccessTokenFormat, SombraStandardScope } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createPreferenceAccessTokens,
@@ -13,8 +11,7 @@ import * as t from 'io-ts';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
-import { readCsv } from '../../../lib/requests/index.js';
-import { logger } from '../../../logger.js';
+import { parseCsv } from '../../../lib/requests/readCsv.js';
 
 /**
  * CLI flags accepted by the `generate-access-tokens` command.
@@ -29,6 +26,8 @@ export type GenerateAccessTokenCommandFlags = {
   subjectType: string;
   emailColumnName: string;
   coreIdentifierColumnName?: string;
+  /** JWT is the default. SHORT is a 43-character token. */
+  tokenFormat: PrivacyCenterAccessTokenFormat;
 };
 
 /**
@@ -51,11 +50,12 @@ export async function generateAccessTokens(
     subjectType,
     emailColumnName,
     coreIdentifierColumnName,
+    tokenFormat,
   }: GenerateAccessTokenCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
-  if (!existsSync(file)) {
-    logger.error(
+  doneInputValidation(this.process);
+  if (!this.fs.existsSync(file)) {
+    this.logger.error(
       colors.red(`File does not exist: "${file}". Please provide a valid path to a CSV file.`),
     );
     this.process.exit(1);
@@ -70,7 +70,7 @@ export async function generateAccessTokens(
       [emailColumnName]: t.string,
       ...(coreIdentifierColumnName ? { [coreIdentifierColumnName]: t.string } : {}),
     });
-    const rows: Array<Record<string, string>> = readCsv(file, codec);
+    const rows: Array<Record<string, string>> = parseCsv(this.fs.readFileSync(file, 'utf8'), codec);
     if (!rows.length) {
       throw new Error('Input CSV is empty.');
     }
@@ -129,7 +129,8 @@ export async function generateAccessTokens(
     const t0 = Date.now();
     const results = await createPreferenceAccessTokens(client, {
       records: inputs,
-      logger,
+      tokenFormat,
+      logger: this.logger,
       emitProgress: (progress) => {
         progressBar.update(progress);
       },
@@ -148,18 +149,18 @@ export async function generateAccessTokens(
       };
     });
 
-    logger.info(colors.magenta(`Writing access tokens to file "${file}"...`));
+    this.logger.info(colors.magenta(`Writing access tokens to file "${file}"...`));
     await writeCsv(file, outputRows, true);
 
     const totalTimeSec = Math.round((Date.now() - t0) / 1000);
-    logger.info(
+    this.logger.info(
       colors.green(
         `Successfully generated ${results.length} access tokens to "${file}" in ${totalTimeSec}s!`,
       ),
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `An error occurred while generating access tokens: ${err?.message || String(err)}`,
       ),

@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 73 Transcend tools at once.
+Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 121 Transcend tools at once.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -58,25 +58,26 @@ Full setup, troubleshooting, and multi-server guidance: [MCP root README](../REA
 
 ### Environment variables
 
-| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
-| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
-| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
-| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
-| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
-| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                                     | HTTP listen port                                                                                                                                  |
-| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                  |
-| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                              |
-| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
+| Variable                        | Required (stdio OAuth) | Default                    | Description                                                                                                                                       |
+| ------------------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                          | Client secret from the same OAuth clients page                                                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
+| `TRANSCEND_API_KEY`             | No                     | —                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
+| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io` | GraphQL backend API URL (org lookup, non-create tools)                                                                                            |
+| `SOMBRA_URL`                    | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`           |
+| `SOMBRA_CUSTOMER_KEY`           | No                     | —                          | Optional self-hosted customer-ingress key. Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra         |
+| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io` | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
+| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                     | HTTP listen port                                                                                                                                  |
+| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                | HTTP listen host                                                                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                          | Comma-separated allowed CORS origins                                                                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                         |
 
 ### MCP client configuration (stdio)
 
-`npx` runs the package’s `transcend-mcp` binary (see `bin` in `package.json`). Add to your MCP client config (for example Claude Desktop or Cursor):
+Always launch via the package’s **`transcend-mcp`** binary (`bin` in `package.json`) — for example `npx -y @transcend-io/mcp` or a global `transcend-mcp` after `npm install -g @transcend-io/mcp`. Do not point clients at an internal path such as `node_modules/@transcend-io/mcp/dist/cli.mjs`; that file can move between releases and will break deployments.
 
 ```json
 {
@@ -117,19 +118,21 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 This package composes all domain MCP packages via `ToolRegistry`, which aggregates tools from each domain (`getConsentTools`, `getDSRTools`, etc.) into a single tool namespace. A composed `TranscendGraphQLClient` mixes in all domain GraphQL capabilities so each tool has access to the API surface it needs.
 
-If 73 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
+If 96 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
 
 ## Related packages
 
-| Package                                | Binary                      | Domain                            |
-| -------------------------------------- | --------------------------- | --------------------------------- |
-| `@transcend-io/mcp-server-admin`       | `transcend-mcp-admin`       | Organization, users, API keys     |
-| `@transcend-io/mcp-server-assessment`  | `transcend-mcp-assessment`  | Privacy assessments               |
-| `@transcend-io/mcp-server-consent`     | `transcend-mcp-consent`     | Consent management, cookie triage |
-| `@transcend-io/mcp-server-base`        | —                           | Shared infrastructure             |
-| `@transcend-io/mcp-server-discovery`   | `transcend-mcp-discovery`   | Data discovery, classification    |
-| `@transcend-io/mcp-server-docs`        | `transcend-mcp-docs`        | Documentation lookup              |
-| `@transcend-io/mcp-server-dsr`         | `transcend-mcp-dsr`         | Data subject requests             |
-| `@transcend-io/mcp-server-inventory`   | `transcend-mcp-inventory`   | Data inventory, silos, vendors    |
-| `@transcend-io/mcp-server-preferences` | `transcend-mcp-preferences` | Privacy preferences               |
-| `@transcend-io/mcp-server-workflows`   | `transcend-mcp-workflows`   | Workflow configuration            |
+| Package                                     | Binary                           | Domain                            |
+| ------------------------------------------- | -------------------------------- | --------------------------------- |
+| `@transcend-io/mcp-server-admin`            | `transcend-mcp-admin`            | Organization, users, API keys     |
+| `@transcend-io/mcp-server-assessment`       | `transcend-mcp-assessment`       | Privacy assessments               |
+| `@transcend-io/mcp-server-consent`          | `transcend-mcp-consent`          | Consent management, cookie triage |
+| `@transcend-io/mcp-server-base`             | —                                | Shared infrastructure             |
+| `@transcend-io/mcp-server-custom-functions` | `transcend-mcp-custom-functions` | Custom Function authoring         |
+| `@transcend-io/mcp-server-discovery`        | `transcend-mcp-discovery`        | Data discovery, classification    |
+| `@transcend-io/mcp-server-docs`             | `transcend-mcp-docs`             | Documentation lookup              |
+| `@transcend-io/mcp-server-dsr`              | `transcend-mcp-dsr`              | Data subject requests             |
+| `@transcend-io/mcp-server-inventory`        | `transcend-mcp-inventory`        | Data inventory, silos, vendors    |
+| `@transcend-io/mcp-server-preferences`      | `transcend-mcp-preferences`      | Privacy preferences               |
+| `@transcend-io/mcp-server-policy`           | `transcend-mcp-policy`           | Policy Engine (Rego bundles)      |
+| `@transcend-io/mcp-server-workflows`        | `transcend-mcp-workflows`        | Workflow configuration            |

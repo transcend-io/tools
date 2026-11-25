@@ -11,7 +11,32 @@ const ALL_COUNTRIES_AND_SUBDIVISIONS = [
   ...Object.values(IsoCountrySubdivisionCode),
 ];
 
+export interface ActionFileFormItemYamlInput {
+  /** Internal name */
+  internalName: string;
+  /** Visible label */
+  label: string;
+  /** Help text */
+  info?: string;
+  /** Whether the field is required */
+  isRequired: boolean;
+  /** Accepted MIME types */
+  acceptedMimeTypes?: string[];
+  /** Max file size */
+  maxFileSize?: string;
+  /** Max files */
+  maxFiles?: number;
+  /** Display order */
+  index: number;
+}
+
 export interface SyncActionInput {
+  /** Default locale title */
+  title?: string;
+  /** Default locale description */
+  description?: string;
+  /** File upload form fields for the privacy center */
+  fileFormItems?: ActionFileFormItemYamlInput[];
   /** Whether to skip secondary when no files exist */
   skipSecondaryIfNoFiles?: boolean;
   /** Whether to skip downloadable step */
@@ -60,6 +85,22 @@ export async function syncAction(
         skipDownloadableStep: action.skipDownloadableStep,
         requiresReview: action.requiresReview,
         waitingPeriod: action.waitingPeriod,
+        ...(action.title !== undefined ? { title: action.title } : {}),
+        ...(action.description !== undefined ? { description: action.description } : {}),
+        ...(action.fileFormItems !== undefined
+          ? {
+              fileFormItems: action.fileFormItems.map((item) => ({
+                internalName: item.internalName,
+                label: item.label,
+                info: item.info,
+                isRequired: item.isRequired,
+                acceptedMimeTypes: item.acceptedMimeTypes,
+                maxFileSize: item.maxFileSize,
+                maxFiles: item.maxFiles,
+                index: item.index,
+              })),
+            }
+          : {}),
         skipPublish,
         regionList: action.regionBlockList
           ? difference(ALL_COUNTRIES_AND_SUBDIVISIONS, action.regionBlockList)

@@ -6,6 +6,8 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { SILO_DISCOVERY_RESULTS } from './gqls/siloDiscoveryResult.js';
 
 export interface SiloDiscoveryResult {
+  /** Result ID */
+  id: string;
   /** Title of silo discovery result */
   title?: string;
   /** Resource ID of silo discovery result */

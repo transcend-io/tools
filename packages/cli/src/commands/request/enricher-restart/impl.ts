@@ -34,7 +34,7 @@ export async function enricherRestart(
     transcendUrl,
   }: EnricherRestartCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await bulkRetryEnrichers({
     auth,

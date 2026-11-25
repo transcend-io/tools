@@ -1,5 +1,4 @@
 export { getAssessmentTools } from './tools/index.js';
-export { ASSESSMENT_OAUTH_SCOPES } from './scopes.js';
 export { AssessmentsMixin } from './graphql.js';
 export {
   buildAssessmentLinks,
@@ -26,6 +25,14 @@ export {
   type ExportTemplateInput,
 } from './tools/assessments_export_template.js';
 export { GetAssessmentSchema, type GetAssessmentInput } from './tools/assessments_get.js';
+export {
+  ListAssessmentCommentsSchema,
+  type ListAssessmentCommentsInput,
+} from './tools/assessments_list_comments.js';
+export {
+  WriteAssessmentCommentSchema,
+  type WriteAssessmentCommentInput,
+} from './tools/assessments_write_comment.js';
 export {
   AssessmentStatusEnum,
   ListAssessmentsSchema,

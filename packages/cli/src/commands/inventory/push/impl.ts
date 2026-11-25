@@ -1,26 +1,31 @@
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  mergeTranscendInputs,
+  normalizeTranscendInput,
+  previewPush,
+  renderPushPlan,
+  replaceVariablesInYaml,
+  syncConfigurationToTranscend,
+  TranscendInput,
+  type PushPlan,
+} from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { mapSeries } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 import yaml from 'js-yaml';
 
-import { TranscendInput } from '../../../codecs.js';
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
-import { validateTranscendAuth, listFiles } from '../../../lib/api-keys/index.js';
+import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
-import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
-import { replaceVariablesInYaml } from '../../../lib/readTranscendYaml.js';
 import {
   formatPushValidationErrors,
   validateTranscendInputForPush,
 } from '../../../lib/validateTranscendInputForPush.js';
-import { logger } from '../../../logger.js';
 
 /**
  * Sync configuration to Transcend
@@ -36,6 +41,7 @@ async function syncConfiguration({
   contents,
   deleteExtraAttributeValues = false,
   classifyService = false,
+  logger,
   warnings = [],
 }: {
   /** Transcend YAML */
@@ -52,6 +58,8 @@ async function syncConfiguration({
   classifyService?: boolean;
   /** Delete attributes when syncing */
   deleteExtraAttributeValues?: boolean;
+  /** Logger for reporting sync progress and errors */
+  logger: LocalContext['logger'];
   /** Non-fatal validation warnings */
   warnings?: string[];
 }): Promise<boolean> {
@@ -65,6 +73,7 @@ async function syncConfiguration({
       classifyService,
       deleteExtraAttributeValues,
       logger,
+      progressReporter: new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic),
       warnings,
     });
     if (result.warnings?.length) {
@@ -86,6 +95,35 @@ async function syncConfiguration({
   }
 }
 
+/**
+ * Work out what a push would change by pulling the current state of the organization
+ * and comparing it with the file. Nothing is written.
+ *
+ * @param options - Options
+ * @returns The plan
+ */
+async function previewConfiguration({
+  transcendUrl,
+  auth,
+  pageSize,
+  contents,
+  deleteExtraAttributeValues,
+}: {
+  /** Transcend YAML */
+  contents: TranscendInput;
+  /** Transcend URL */
+  transcendUrl: string;
+  /** API key */
+  auth: string;
+  /** Page size */
+  pageSize: number;
+  /** Delete attribute values missing from the file */
+  deleteExtraAttributeValues: boolean;
+}): Promise<PushPlan> {
+  const client = buildTranscendGraphQLClient(transcendUrl, auth);
+  return previewPush(client, contents, { pageSize, deleteExtraAttributeValues });
+}
+
 export interface PushCommandFlags {
   auth: string;
   file: string;
@@ -95,6 +133,8 @@ export interface PushCommandFlags {
   publishToPrivacyCenter: boolean;
   classifyService: boolean;
   deleteExtraAttributeValues: boolean;
+  dryRun: boolean;
+  json: boolean;
 }
 
 export async function push(
@@ -108,20 +148,23 @@ export async function push(
     publishToPrivacyCenter,
     classifyService,
     deleteExtraAttributeValues,
+    dryRun,
+    json,
   }: PushCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
-  const apiKeyOrList = await validateTranscendAuth(auth);
+  const apiKeyOrList = await validateTranscendAuth(auth, this);
 
-  // Parse out the variables
   const vars = parseVariablesFromString(variables);
 
   // check if we are being passed a list of API keys and a list of files
   let fileList: string[];
-  if (Array.isArray(apiKeyOrList) && lstatSync(file).isDirectory()) {
-    fileList = listFiles(file).map((filePath) => join(file, filePath));
+  if (Array.isArray(apiKeyOrList) && this.fs.lstatSync(file).isDirectory()) {
+    fileList = filterFileNames(this.fs.readdirSync(file)).map((filePath) =>
+      path.join(file, filePath),
+    );
   } else {
     fileList = file.split(',');
   }
@@ -134,19 +177,19 @@ export async function push(
   // eslint-disable-next-line array-callback-return,consistent-return
   const transcendInputs = fileList.map((filePath) => {
     // Ensure yaml file exists on disk
-    if (!existsSync(filePath)) {
-      logger.error(
+    if (!this.fs.existsSync(filePath)) {
+      this.logger.error(
         colors.red(
           `The file path does not exist on disk: ${filePath}. You can specify the filepath using --file=./examples/transcend.yml`,
         ),
       );
       this.process.exit(1);
-    } else {
-      logger.info(colors.magenta(`Reading file "${filePath}"...`));
+    } else if (!json) {
+      this.logger.info(colors.magenta(`Reading file "${filePath}"...`));
     }
 
     try {
-      const fileContents = readFileSync(filePath, 'utf-8');
+      const fileContents = this.fs.readFileSync(filePath, 'utf8');
       const replacedVariables = replaceVariablesInYaml(
         fileContents,
         vars,
@@ -156,18 +199,24 @@ export async function push(
       if (!validation.valid) {
         throw new Error(formatPushValidationErrors(validation));
       }
-      validation.warnings.forEach((warning) => {
-        logger.warn(colors.yellow(warning));
-      });
-      const newContents = decodeCodec(TranscendInput, validation.normalizedConfig ?? {});
-      logger.info(colors.green(`Successfully read in "${filePath}"`));
+      if (!json) {
+        validation.warnings.forEach((warning) => {
+          this.logger.warn(colors.yellow(warning));
+        });
+      }
+      const newContents = normalizeTranscendInput(
+        decodeCodec(TranscendInput, validation.normalizedConfig ?? {}),
+      );
+      if (!json) {
+        this.logger.info(colors.green(`Successfully read in "${filePath}"`));
+      }
       return {
         content: newContents,
         name: filePath.split('/').pop()!.replace('.yml', ''),
         warnings: validation.warnings,
       };
     } catch (err) {
-      logger.error(
+      this.logger.error(
         colors.red(
           `The shape of your yaml file is invalid with the following errors: ${err.message}`,
         ),
@@ -183,6 +232,28 @@ export async function push(
     const contents = mergeTranscendInputs(base, ...rest);
     const warnings = transcendInputs.flatMap((input) => input.warnings);
 
+    // preview only: show what would change and stop
+    if (dryRun) {
+      try {
+        const plan = await previewConfiguration({
+          transcendUrl,
+          auth: apiKeyOrList,
+          contents,
+          pageSize,
+          deleteExtraAttributeValues,
+        });
+        if (json) {
+          this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: [{ plan }] })}\n`);
+        } else {
+          this.logger.info(renderPushPlan(plan, { title: 'Push preview (nothing was changed)' }));
+        }
+      } catch (err) {
+        this.logger.error(colors.red(`Failed to preview the push: ${err.message}`));
+        this.process.exit(1);
+      }
+      return;
+    }
+
     // sync the configuration
     const success = await syncConfiguration({
       transcendUrl,
@@ -192,12 +263,13 @@ export async function push(
       deleteExtraAttributeValues,
       pageSize,
       classifyService: !!classifyService,
+      logger: this.logger,
       warnings,
     });
 
     // exist with error code
     if (!success) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors. View output above for more information, or check out ${ADMIN_DASH_INTEGRATIONS}`,
         ),
@@ -217,9 +289,19 @@ export async function push(
     }
 
     const encounteredErrors: string[] = [];
+    const previews: {
+      /** Organization the plan is for */
+      organization: string;
+      /** What push would do */
+      plan: PushPlan;
+    }[] = [];
     await mapSeries(apiKeyOrList, async (apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      logger.info(colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`));
+      if (!dryRun) {
+        this.logger.info(
+          colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`),
+        );
+      }
 
       // use the merged contents if 1 yml passed, else use the contents that map to that organization
       const useContents =
@@ -229,12 +311,36 @@ export async function push(
 
       // Throw error if cannot find a yml file matching that organization name
       if (!useContents) {
-        logger.error(
+        this.logger.error(
           colors.red(
             `${prefix}Failed to find transcend.yml file for organization: "${apiKey.organizationName}".`,
           ),
         );
         encounteredErrors.push(apiKey.organizationName);
+        return;
+      }
+
+      if (dryRun) {
+        try {
+          const plan = await previewConfiguration({
+            transcendUrl,
+            auth: apiKey.apiKey,
+            contents: useContents,
+            pageSize,
+            deleteExtraAttributeValues,
+          });
+          previews.push({ organization: apiKey.organizationName, plan });
+          if (!json) {
+            this.logger.info(
+              renderPushPlan(plan, {
+                title: `${prefix}Push preview (nothing was changed)`,
+              }),
+            );
+          }
+        } catch (err) {
+          this.logger.error(colors.red(`${prefix}Failed to preview the push: ${err.message}`));
+          encounteredErrors.push(apiKey.organizationName);
+        }
         return;
       }
 
@@ -246,18 +352,23 @@ export async function push(
         publishToPrivacyCenter,
         deleteExtraAttributeValues,
         classifyService,
+        logger: this.logger,
       });
 
       if (success) {
-        logger.info(colors.green(`${prefix}Successfully pushed configuration!`));
+        this.logger.info(colors.green(`${prefix}Successfully pushed configuration!`));
       } else {
-        logger.error(colors.red(`${prefix}Failed to sync configuration.`));
+        this.logger.error(colors.red(`${prefix}Failed to sync configuration.`));
         encounteredErrors.push(apiKey.organizationName);
       }
     });
 
+    if (json && dryRun) {
+      this.process.stdout.write(`${JSON.stringify({ dryRun: true, targets: previews })}\n`);
+    }
+
     if (encounteredErrors.length > 0) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors for "${encounteredErrors.join(
             ',',
@@ -267,10 +378,14 @@ export async function push(
 
       this.process.exit(1);
     }
+
+    if (dryRun) {
+      return;
+    }
   }
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(`Successfully synced yaml file to Transcend! View at ${ADMIN_DASH_INTEGRATIONS}`),
   );
 }

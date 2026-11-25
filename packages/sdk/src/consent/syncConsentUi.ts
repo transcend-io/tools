@@ -146,6 +146,10 @@ export async function syncConsentUiVariants(
         : undefined;
       const remoteVariant = remoteVariantBySlug[yamlVariant.slug];
 
+      // Missing/null description means leave unset — do not clear on sync
+      const descriptionInput =
+        yamlVariant.description != null ? { description: yamlVariant.description } : {};
+
       if (remoteVariant) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_VARIANT, {
           variables: {
@@ -153,7 +157,7 @@ export async function syncConsentUiVariants(
               id: remoteVariant.id,
               airgapBundleId,
               name: yamlVariant.name,
-              description: yamlVariant.description,
+              ...descriptionInput,
               locales: yamlVariant.locales,
               configuration,
               status: yamlVariant.status,
@@ -175,7 +179,7 @@ export async function syncConsentUiVariants(
               airgapBundleId,
               name: yamlVariant.name,
               slug: yamlVariant.slug,
-              description: yamlVariant.description,
+              ...descriptionInput,
               locales: yamlVariant.locales,
               configuration,
               status: yamlVariant.status,

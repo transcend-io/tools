@@ -11,12 +11,7 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
-import {
-  createExtraKeyHandler,
-  dashboardPlugin,
-  installInteractiveSwitcher,
-} from '../../../lib/pooling/index.js';
-import { logger } from '../../../logger.js';
+import { createPoolingCommandUi } from '../../../lib/pooling/index.js';
 import { chunkCsvPlugin } from './ui/index.js';
 import type { ChunkProgress, ChunkResult, ChunkTask } from './worker.js';
 
@@ -55,9 +50,10 @@ export type ChunkCsvCommandFlags = {
  * @param flags - CLI options for the run.
  */
 export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { directory, outputDir, clearOutputDir, chunkSizeMB, concurrency, viewerMode } = flags;
+  const poolingUi = createPoolingCommandUi(this, chunkCsvPlugin, viewerMode);
 
   /* 1) Discover CSV inputs */
   const files = collectCsvFilesOrExit(directory, this);
@@ -65,7 +61,7 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);
 
-  logger.info(
+  this.logger.info(
     colors.green(
       `Chunking ${files.length} CSV file(s) with pool size ${poolSize} (CPU=${cpuCount})`,
     ),
@@ -94,7 +90,7 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
   /* 5) Launch the pool runner with our hooks and custom dashboard plugin. */
   await runPool({
     title: `Chunk CSV - ${directory}`,
-    baseDir: directory || outputDir || process.cwd(),
+    baseDir: directory || outputDir || this.process.cwd(),
     childFlag: CHILD_FLAG,
     childModulePath: resolveWorkerPath(import.meta.url, 'commands/admin/chunk-csv/worker.mjs'),
     poolSize,
@@ -102,46 +98,10 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
     filesTotal: files.length,
     hooks,
     viewerMode,
-    render: (input) => dashboardPlugin(input, chunkCsvPlugin, viewerMode),
-    installInteractiveSwitcher: viewerMode
-      ? undefined
-      : ({
-          workers,
-          onCtrlC,
-          getLogPaths,
-          replayBytes: rb,
-          replayWhich: rw,
-          setPaused,
-          repaint: rp,
-        }) =>
-          installInteractiveSwitcher({
-            workers,
-            onCtrlC,
-            getLogPaths,
-            replayBytes: rb,
-            replayWhich: rw,
-            onAttach: () => setPaused(true),
-            onDetach: () => {
-              setPaused(false);
-              rp();
-            },
-            onEnterAttachScreen: (id) => {
-              setPaused(true);
-              process.stdout.write('\x1b[2J\x1b[H');
-              process.stdout.write(
-                `Attached to worker ${id}. (Esc/Ctrl+] detach \u2022 Ctrl+D EOF \u2022 Ctrl+C SIGINT)\n`,
-              );
-            },
-          }),
-    extraKeyHandler: ({ logsBySlot, repaint, setPaused }) =>
-      createExtraKeyHandler({
-        logsBySlot,
-        repaint,
-        setPaused,
-      }),
+    ...poolingUi,
   }).catch((err) => {
     if (err instanceof PoolCancelledError) {
-      process.exit(130);
+      this.process.exit(130);
     }
     throw err;
   });

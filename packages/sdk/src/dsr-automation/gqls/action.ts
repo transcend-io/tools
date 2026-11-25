@@ -20,6 +20,27 @@ export const ACTIONS = gql`
         regionList
         regionDetectionMethod
         waitingPeriod
+        title {
+          defaultMessage
+        }
+        description {
+          defaultMessage
+        }
+        formItems {
+          name
+          index
+          type
+          isRequired
+          acceptedMimeTypes
+          maxFileSize
+          maxFiles
+          label {
+            defaultMessage
+          }
+          info {
+            defaultMessage
+          }
+        }
       }
     }
   }

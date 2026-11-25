@@ -85,6 +85,16 @@ export enum ActionItemCode {
    */
   RequestDataSiloError = 'REQUEST_DATA_SILO_ERROR',
   /**
+   * - A privacy request is waiting on approval before an integration processes it,
+   *   and the integration has no assigned owners
+   */
+  RequestDataSiloNeedsApproval = 'REQUEST_DATA_SILO_NEEDS_APPROVAL',
+  /**
+   * - A privacy request is waiting on approval before an integration processes it,
+   *   and the integration has one or more assigned owners (users or teams)
+   */
+  RequestDataSiloNeedsApprovalAssigned = 'REQUEST_DATA_SILO_NEEDS_APPROVAL_ASSIGNED',
+  /**
    * - enricher that has an error
    */
   RequestEnricherError = 'REQUEST_ENRICHER_ERROR',
@@ -121,6 +131,10 @@ export enum ActionItemCode {
    */
   SombraNeedsKeyRotation = 'SOMBRA_NEEDS_KEY_ROTATION',
   /**
+   * - A server webhook integration accepted jobs but never called back to complete them
+   */
+  ServerWebhookAwaitingCallback = 'SERVER_WEBHOOK_AWAITING_CALLBACK',
+  /**
    * - Data Flows that need review
    */
   DataFlowNeedsReview = 'DATA_FLOW_NEEDS_REVIEW',
@@ -141,6 +155,10 @@ export enum ActionItemCode {
    */
   ConsentManagerVersionUpgrade = 'CONSENT_MANAGER_VERSION_UPGRADE',
   /**
+   * - A Consent Manager site has not reported telemetry recently
+   */
+  ConsentSiteTelemetryStale = 'CONSENT_SITE_TELEMETRY_STALE',
+  /**
    * - Lookup processes have errored out and are no longer indexing
    */
   PluginsWithErrors = 'PLUGINS_WITH_ERRORS',
@@ -152,10 +170,6 @@ export enum ActionItemCode {
    * request that has been assigned to a user
    */
   RequestAssignedToUser = 'REQUEST_ASSIGNED_TO_USER',
-  /**
-   * business entity needing documentation
-   */
-  BusinessEntityNeedsDocumentation = 'BUSINESS_ENTITY_NEEDS_DOCUMENTATION',
   /**
    * A database datapoint has queries that need approval
    */

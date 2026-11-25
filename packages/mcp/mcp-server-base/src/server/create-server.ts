@@ -1,18 +1,21 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import type { AuthCredentials } from '../auth.js';
-import { SimpleLogger } from '../clients/graphql/base.js';
-import { TranscendRestClient } from '../clients/rest-client.js';
-import { DEFAULT_SOMBRA_URL } from '../defaults.js';
-import { isOAuthModeEnabled } from '../oauth/config.js';
-import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
+import { SimpleLogger, TranscendGraphQLBase } from '../clients/graphql/base.js';
+import {
+  resolveStdioStartupAuth,
+  resolveStdioStartupAuthOptional,
+} from '../oauth/resolve-stdio-auth.js';
 import { configureOAuthScopes } from '../oauth/scopes.js';
+import type { PromptDefinition } from '../prompts/types.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
 import { resolveMcpDashboardUrl } from './resolve-dashboard-url.js';
 import { resolveMcpGraphqlUrl } from './resolve-graphql-url.js';
+import { createTranscendRestClient, readSombraEnvConfig } from './resolve-sombra-url.js';
 import { runMcpHttp } from './run-http.js';
+import { McpTransport } from './transport.js';
 
 /**
  * Arguments for a custom client factory.
@@ -23,8 +26,16 @@ import { runMcpHttp } from './run-http.js';
 export interface CreateClientsArgs {
   /** Authenticated user credentials, or `null` for unauthenticated stdio sessions */
   auth: AuthCredentials | null;
-  /** Sombra REST API URL */
-  sombraUrl: string;
+  /**
+   * Sticky Sombra host override from `SOMBRA_URL`.
+   * When unset, the REST client lazy-resolves `organization.sombra.customerUrl`.
+   */
+  sombraUrl?: string;
+  /**
+   * Optional Sombra customer-ingress API key from `SOMBRA_CUSTOMER_KEY`.
+   * Sent as `X-Sombra-Authorization` when present.
+   */
+  sombraCustomerKey?: string;
   /** Transcend GraphQL API URL */
   graphqlUrl: string;
   /** Resolved admin-dashboard URL for deep links */
@@ -37,7 +48,8 @@ export interface MCPServerOptions {
   /** Server version */
   version: string;
   /**
-   * When false, starts without API key or OAuth and skips OAuth client verification at startup.
+   * When false, startup does not require credentials, but optional env auth is still resolved
+   * for signed-in tools. OAuth client verification still runs when OAuth env vars are set.
    * Per-call auth is controlled per tool via {@link ToolDefinition.requireAuth}. Default true.
    */
   requireStartupAuth?: boolean;
@@ -45,6 +57,8 @@ export interface MCPServerOptions {
   oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
+  /** Optional factory that returns prompt definitions (workflow templates) */
+  getPrompts?: (clients: ToolClients) => PromptDefinition[];
   /**
    * Optional custom client factory. Receives a {@link CreateClientsArgs}
    * object so new fields can be added without breaking call sites.
@@ -54,17 +68,18 @@ export interface MCPServerOptions {
   instructions?: string;
 }
 
-async function buildClients(
+function buildClients(
   args: CreateClientsArgs,
   factory?: MCPServerOptions['createClients'],
-): Promise<ToolClients> {
+): ToolClients {
   if (factory) return factory(args);
+  const graphql = new TranscendGraphQLBase(args.auth, args.graphqlUrl);
   return {
-    rest: new TranscendRestClient(args.auth, args.sombraUrl),
-    graphql: new (await import('../clients/graphql/base.js')).TranscendGraphQLBase(
-      args.auth,
-      args.graphqlUrl,
-    ),
+    rest: createTranscendRestClient(args.auth, graphql, {
+      sombraUrl: args.sombraUrl,
+      sombraCustomerKey: args.sombraCustomerKey,
+    }),
+    graphql,
     dashboardUrl: args.dashboardUrl,
   };
 }
@@ -81,10 +96,10 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   configureOAuthScopes(options.oauthScopes);
 
   const config = parseTransportArgs();
-  const isHttpTransport = config.transport === 'http';
+  const isHttpTransport = config.transport === McpTransport.Http;
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
-  const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
+  const { sombraUrl, sombraCustomerKey } = readSombraEnvConfig();
   const dashboardUrl = resolveMcpDashboardUrl();
   const graphqlUrl = await resolveMcpGraphqlUrl(logger, { requireStartupAuth });
 
@@ -95,21 +110,25 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
         version: options.version,
         createServer: async (auth) => {
           logger.info('Creating MCP server for new HTTP session...', {
-            sombraUrl,
+            sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
             graphqlUrl,
             dashboardUrl,
             authType: auth?.type ?? 'none',
+            hasSombraCustomerKey: Boolean(sombraCustomerKey),
           });
-          const clients = await buildClients(
-            { auth, sombraUrl, graphqlUrl, dashboardUrl },
+          const clients = buildClients(
+            { auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl },
             options.createClients,
           );
           const tools = options.getTools(clients);
+          const prompts = options.getPrompts?.(clients) ?? [];
           return buildMcpServer({
             name: options.name,
             version: options.version,
             tools,
+            prompts,
             instructions: options.instructions,
+            transport: McpTransport.Http,
           });
         },
       },
@@ -119,26 +138,32 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = requireStartupAuth ? resolveStdioStartupAuth() : null;
-  const clients = await buildClients(
-    { auth, sombraUrl, graphqlUrl, dashboardUrl },
+  const auth = requireStartupAuth ? resolveStdioStartupAuth() : resolveStdioStartupAuthOptional();
+  const clients = buildClients(
+    { auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl },
     options.createClients,
   );
   const tools = options.getTools(clients);
+  const prompts = options.getPrompts?.(clients) ?? [];
   const server = buildMcpServer({
     name: options.name,
     version: options.version,
     tools,
+    prompts,
     instructions: options.instructions,
+    transport: McpTransport.Stdio,
   });
 
-  logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });
+  logger.info(`Starting ${options.name} v${options.version}...`, {
+    toolCount: tools.length,
+    promptCount: prompts.length,
+  });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
   logger.info(`${options.name} started successfully`, {
-    sombraUrl,
+    sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
     graphqlUrl,
     dashboardUrl,
     tools: tools.length,

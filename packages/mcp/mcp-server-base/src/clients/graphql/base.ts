@@ -1,12 +1,22 @@
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { type DocumentNode, print } from 'graphql';
 
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
-import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
-import { MCP_CALLER_HEADER, TOOLCALL_ID_HEADER } from '../../http-header-names.js';
-import { getRequestMcpCaller } from '../../mcp-caller-context.js';
+import { ToolError, classifyGraphQLErrors, classifyHttpError } from '../../errors.js';
+import {
+  MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
+  TOOLCALL_ID_HEADER,
+} from '../../http-header-names.js';
+import {
+  resolveMcpCallerAttribution,
+  resolveMcpClientName,
+  resolveMcpPackageVersion,
+} from '../../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../../tool-call-context.js';
 import type { PaginatedResponse, RequestOptions } from '../../types/transcend.js';
 import { TRANSCEND_MCP_USER_AGENT } from '../mcp-user-agent.js';
@@ -147,6 +157,47 @@ export class TranscendGraphQLBase {
     this.defaultRetries = 3;
   }
 
+  /**
+   * Auth for the current call: per-request AsyncLocalStorage credentials when
+   * present (HTTP), otherwise the constructor credentials (stdio).
+   */
+  effectiveAuth(): AuthCredentials | null {
+    return getRequestAuth() ?? this.auth;
+  }
+
+  /**
+   * Headers for an outbound request: auth for the current call plus the MCP
+   * attribution headers. Re-read on every call because HTTP auth is per-request.
+   *
+   * The result holds live credentials (bearer token or session cookie). Never
+   * log it or put it in a tool result.
+   *
+   * @throws ToolError when no authentication is configured
+   */
+  requestHeaders(): Record<string, string> {
+    const effectiveAuth = this.effectiveAuth();
+    if (!effectiveAuth) {
+      throw new ToolError(
+        McpToolErrorCode.AuthError,
+        'No authentication configured. Provide an API key or session cookie.',
+        false,
+      );
+    }
+
+    const toolCallId = getToolCallIdHeader();
+    const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
+    return {
+      ...authHeaders(effectiveAuth),
+      'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
+      ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+      ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+      ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
+    };
+  }
+
   private async rateLimitWait(): Promise<void> {
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
@@ -191,26 +242,12 @@ export class TranscendGraphQLBase {
           attempt,
         });
 
-        const effectiveAuth = getRequestAuth() ?? this.auth;
-        if (!effectiveAuth) {
-          throw new ToolError(
-            ErrorCode.AUTH_ERROR,
-            'No authentication configured. Provide an API key or session cookie.',
-            false,
-          );
-        }
-
-        const toolCallId = getToolCallIdHeader();
-        const mcpCaller = getRequestMcpCaller();
         const response = await fetch(url, {
           method: 'POST',
           headers: {
-            ...authHeaders(effectiveAuth),
+            ...this.requestHeaders(),
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'User-Agent': TRANSCEND_MCP_USER_AGENT,
-            ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
-            ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
           },
           body: JSON.stringify({ query: queryString, variables: variables ?? {} }),
           signal: controller.signal,
@@ -241,12 +278,11 @@ export class TranscendGraphQLBase {
           (await response.json()) as GraphQLResponse<TResult>;
 
         if (result.errors && result.errors.length > 0) {
-          const errorMessages = result.errors.map((e) => e.message).join('; ');
-          throw new ToolError(ErrorCode.API_ERROR, `GraphQL errors: ${errorMessages}`, false);
+          throw classifyGraphQLErrors(result.errors);
         }
 
         if (!result.data) {
-          throw new ToolError(ErrorCode.API_ERROR, 'GraphQL response missing data', false);
+          throw new ToolError(McpToolErrorCode.ApiError, 'GraphQL response missing data', false);
         }
 
         return result.data;
@@ -255,7 +291,7 @@ export class TranscendGraphQLBase {
 
         if (error instanceof Error && error.name === 'AbortError') {
           throw new ToolError(
-            ErrorCode.TIMEOUT,
+            McpToolErrorCode.Timeout,
             `GraphQL request timeout after ${timeout}ms`,
             true,
           );

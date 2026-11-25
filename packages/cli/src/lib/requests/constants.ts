@@ -1,9 +1,9 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import {
   CompletedRequestStatus,
   RequestAction,
   IsoCountryCode,
   IsoCountrySubdivisionCode,
+  LocaleCodec,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
@@ -39,6 +39,8 @@ export enum ColumnName {
   CreatedAt = 'createdAt',
   /** The title of the dataSiloIds column */
   DataSiloIds = 'dataSiloIds',
+  /** The title of the workflowConfigId column */
+  WorkflowConfigId = 'workflowConfigId',
 }
 
 /** These parameters are required in the Transcend DSR API */
@@ -53,6 +55,7 @@ export const IS_REQUIRED: { [k in ColumnName]: boolean } = {
   [ColumnName.Locale]: false,
   [ColumnName.Country]: false,
   [ColumnName.CountrySubDivision]: false,
+  [ColumnName.WorkflowConfigId]: false,
 };
 
 /** These parameters can be specified for the entire CSV set if needed */
@@ -74,7 +77,7 @@ export const CachedFileState = t.type({
   /** Mapping between CSV data subject type and the name of the data subject in Transcend */
   subjectTypeToSubjectName: t.record(t.string, t.string),
   /** Mapping between language imported and Transcend locale code */
-  languageToLocale: t.record(t.string, valuesOf(LOCALE_KEY)),
+  languageToLocale: t.record(t.string, LocaleCodec),
   /** Mapping between region and country code */
   regionToCountry: t.record(t.string, valuesOf({ ...IsoCountryCode, [NONE]: NONE })),
   /** Mapping between region and country sub division code */

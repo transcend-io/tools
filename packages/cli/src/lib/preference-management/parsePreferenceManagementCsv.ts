@@ -45,7 +45,7 @@ export async function parsePreferenceManagementCsvWithCache(
     /** The preference topics */
     preferenceTopics: PreferenceTopic[];
     /** Sombra got instance */
-    sombra: Got;
+    sombra: Pick<Got, 'post'>;
     /** Partition key */
     partitionKey: string;
     /** Whether to skip the check for existing records. SHOULD ONLY BE USED FOR INITIAL UPLOAD */

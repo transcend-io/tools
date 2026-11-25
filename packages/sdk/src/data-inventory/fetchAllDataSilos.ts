@@ -43,6 +43,8 @@ export async function fetchAllDataSilos<TDataSilo extends DataSilo>(
     titles?: string[];
     /** Filter by IDs */
     ids?: string[];
+    /** Filter by workflow config associations */
+    workflowConfigId?: string;
     /** Set of integration names to fetch */
     integrationNames?: string[];
     /** GQL query override for data silos */
@@ -55,6 +57,7 @@ export async function fetchAllDataSilos<TDataSilo extends DataSilo>(
     titles,
     pageSize,
     ids = [],
+    workflowConfigId,
     gql = DATA_SILOS,
     integrationNames = [],
     logger = NOOP_LOGGER,
@@ -81,6 +84,7 @@ export async function fetchAllDataSilos<TDataSilo extends DataSilo>(
           ids: ids.length > 0 ? ids : undefined,
           type: integrationNames.length > 0 ? integrationNames : undefined,
           titles,
+          workflowConfigId,
         },
         first: pageSize,
         offset,

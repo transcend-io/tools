@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 import { createMCPServer } from '@transcend-io/mcp-server-base';
+import { TranscendMcpServer, getMcpServerOAuthScopes } from '@transcend-io/sdk';
 
 import packageJson from '../package.json' with { type: 'json' };
-import { CONSENT_OAUTH_SCOPES } from './scopes.js';
+import { getConsentPrompts } from './prompts/index.js';
 import { getConsentTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-consent',
   version: packageJson.version,
-  oauthScopes: CONSENT_OAUTH_SCOPES,
+  oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.Consent),
   getTools: getConsentTools,
+  getPrompts: getConsentPrompts,
 });

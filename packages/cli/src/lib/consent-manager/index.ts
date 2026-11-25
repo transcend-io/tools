@@ -1,6 +1,7 @@
 export * from './updateConsentManagerVersionToLatest.js';
 export * from './uploadDataFlowsFromCsv.js';
 export * from './uploadCookiesFromCsv.js';
+export * from './mapConsentCsvRowsToInputs.js';
 export * from './pullConsentManagerMetrics.js';
 export * from './buildXdiSyncEndpoint.js';
 export * from './consentManagersToBusinessEntities.js';

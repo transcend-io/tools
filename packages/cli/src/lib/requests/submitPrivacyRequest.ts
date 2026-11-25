@@ -44,7 +44,7 @@ export type PrivacyRequestResponse = t.TypeOf<typeof PrivacyRequestResponse>;
  * @returns Successfully submitted request
  */
 export async function submitPrivacyRequest(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   input: PrivacyRequestInput,
   {
     details = '',
@@ -119,6 +119,7 @@ export async function submitPrivacyRequest(
             : {}),
           ...(input.createdAt ? { createdAt: input.createdAt } : {}),
           ...(input.dataSiloIds ? { dataSiloIds: input.dataSiloIds } : {}),
+          ...(input.workflowConfigId ? { workflowConfigId: input.workflowConfigId } : {}),
           ...(input.status ? { completedRequestStatus: input.status } : {}),
         },
       })

@@ -41,7 +41,6 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
       'For data flows, same behavior. Optionally assign tracking purposes and service when approving.',
     category: 'Consent Management',
     readOnly: false,
-    confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: BulkTriageSchema,
     handler: async ({ items }) => {
@@ -62,7 +61,9 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.trackingPurposes ? { trackingPurposes: item.trackingPurposes } : {}),
+          ...(item.trackingPurposes !== undefined
+            ? { trackingPurposes: item.trackingPurposes }
+            : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
@@ -85,7 +86,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.trackingPurposes ? { purposeIds: item.trackingPurposes } : {}),
+          ...(item.trackingPurposes !== undefined ? { trackingType: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         const dfResult = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(

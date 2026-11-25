@@ -12,14 +12,14 @@ import { AbsoluteUrlString } from './consentUiConfiguration.js';
 /**
  * Vertical alignment options for the consent UI content
  */
-export const VerticalAlign = makeEnum({
+export const VerticalAlign = {
   /** Aligns the UI content at the top */
   Top: 'top',
   /** Aligns the UI content at the bottom */
   Bottom: 'bottom',
   /** Aligns the UI content in the center */
   Center: 'center',
-});
+} as const;
 
 /** Override type */
 export type VerticalAlign = (typeof VerticalAlign)[keyof typeof VerticalAlign];
@@ -27,14 +27,14 @@ export type VerticalAlign = (typeof VerticalAlign)[keyof typeof VerticalAlign];
 /**
  * Horizontal alignment options for the consent UI content
  */
-export const HorizontalAlign = makeEnum({
+export const HorizontalAlign = {
   /** Aligns the UI content on the left */
   Left: 'left',
   /** Aligns the UI content in the center */
   Center: 'center',
   /** Aligns the UI content on the right */
   Right: 'right',
-});
+} as const;
 
 /** Override type */
 export type HorizontalAlign = (typeof HorizontalAlign)[keyof typeof HorizontalAlign];
@@ -42,12 +42,12 @@ export type HorizontalAlign = (typeof HorizontalAlign)[keyof typeof HorizontalAl
 /**
  * Position options for the logo in the consent UI
  */
-export const LogoPosition = makeEnum({
+export const LogoPosition = {
   /** Logo is positioned above the content */
   Above: 'above',
   /** Logo is positioned to the left of the content */
   Left: 'left',
-});
+} as const;
 
 /** Override type */
 export type LogoPosition = (typeof LogoPosition)[keyof typeof LogoPosition];
@@ -55,14 +55,14 @@ export type LogoPosition = (typeof LogoPosition)[keyof typeof LogoPosition];
 /**
  * Defines how content can flow in a layout
  */
-export const ContentFlows = makeEnum({
+export const ContentFlows = {
   /** Items are stacked vertically, top to bottom */
   Vertical: 'vertical',
   /** Items are stacked horizontally, often wrapping if space runs out */
   HorizontalStacked: 'horizontalStacked',
   /** Items are laid out horizontally, in a single row */
   HorizontalFlat: 'horizontalFlat',
-});
+} as const;
 
 /** Override type */
 export type ContentFlows = (typeof ContentFlows)[keyof typeof ContentFlows];
@@ -70,12 +70,12 @@ export type ContentFlows = (typeof ContentFlows)[keyof typeof ContentFlows];
 /**
  * Units available for responsive breakpoints.
  */
-export const BreakpointType = makeEnum({
+export const BreakpointType = {
   /** Breakpoint defined in pixels */
   Px: 'px',
   /** Breakpoint defined as a percentage */
   Percent: 'percent',
-});
+} as const;
 
 /** Override type */
 export type BreakpointType = (typeof BreakpointType)[keyof typeof BreakpointType];

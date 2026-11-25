@@ -1,14 +1,21 @@
+import { FETCH_CONSENT_MANAGER, CONSENT_PARTITIONS } from '@transcend-io/sdk';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getPreferenceTools } from '../src/tools.js';
 
 const EXPECTED_TOOL_NAMES = [
+  'preferences_list_partitions',
   'preferences_query',
   'preferences_upsert',
   'preferences_delete',
   'preferences_append_identifiers',
   'preferences_update_identifiers',
   'preferences_delete_identifiers',
+  'preferences_write_partitions',
+  'preferences_list_option_values',
+  'preferences_write_option_values',
+  'preferences_list_workflow_configs',
+  'preferences_write_workflow_configs',
 ] as const;
 
 describe('Preferences Tools', () => {
@@ -20,6 +27,9 @@ describe('Preferences Tools', () => {
     updateIdentifiers: ReturnType<typeof vi.fn>;
     deleteIdentifiers: ReturnType<typeof vi.fn>;
   };
+  let mockGraphql: {
+    makeRequest: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockRest = {
@@ -30,19 +40,157 @@ describe('Preferences Tools', () => {
       updateIdentifiers: vi.fn(),
       deleteIdentifiers: vi.fn(),
     };
+    mockGraphql = {
+      makeRequest: vi.fn(),
+    };
   });
 
   const getTools = () =>
     getPreferenceTools({
       rest: mockRest as never,
-      graphql: {} as never,
+      graphql: mockGraphql as never,
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 6 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(6);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('preferences_list_partitions', () => {
+    it('returns default + custom partitions with effective flag using path key', async () => {
+      const bundleId = 'bundle-uuid-1111';
+      const customPath = 'custom-slug-abc';
+      const customDbId = 'airgap-partition-db-id';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: {
+                id: bundleId,
+                partition: { partition: customPath },
+              },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return {
+            consentPartitions: {
+              nodes: [{ id: customDbId, name: 'EU Store', partition: customPath }],
+            },
+          };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        success: boolean;
+        data: {
+          effectivePartition: string;
+          partitions: Array<{
+            partition: string;
+            name: string;
+            type: string;
+            isEffectiveForConsentManager: boolean;
+            airgapPartitionId?: string;
+          }>;
+        };
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data.effectivePartition).toBe(customPath);
+      expect(result.data.partitions).toEqual([
+        {
+          partition: bundleId,
+          name: 'Default (airgap bundle)',
+          type: 'default',
+          isEffectiveForConsentManager: false,
+        },
+        {
+          partition: customPath,
+          name: 'EU Store',
+          type: 'custom',
+          isEffectiveForConsentManager: true,
+          airgapPartitionId: customDbId,
+        },
+      ]);
+      expect(result.data.partitions[1].partition).not.toBe(customDbId);
+      expect(mockGraphql.makeRequest).toHaveBeenCalledWith(FETCH_CONSENT_MANAGER, {});
+      expect(mockGraphql.makeRequest).toHaveBeenCalledWith(CONSENT_PARTITIONS, {
+        first: 50,
+        offset: 0,
+      });
+    });
+
+    it('marks default as effective when no custom partition is linked', async () => {
+      const bundleId = 'bundle-uuid-2222';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: {
+                id: bundleId,
+              },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return { consentPartitions: { nodes: [] } };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        data: {
+          effectivePartition: string;
+          partitions: Array<{ type: string; isEffectiveForConsentManager: boolean }>;
+        };
+      };
+
+      expect(result.data.effectivePartition).toBe(bundleId);
+      expect(result.data.partitions).toHaveLength(1);
+      expect(result.data.partitions[0]).toMatchObject({
+        type: 'default',
+        isEffectiveForConsentManager: true,
+      });
+    });
+
+    it('deduplicates custom rows whose path equals the bundle id', async () => {
+      const bundleId = 'bundle-uuid-3333';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: { id: bundleId },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return {
+            consentPartitions: {
+              nodes: [{ id: 'dup-id', name: 'Dup', partition: bundleId }],
+            },
+          };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        data: { partitions: unknown[] };
+      };
+
+      expect(result.data.partitions).toHaveLength(1);
+    });
   });
 
   describe('preferences_query', () => {
@@ -58,23 +206,103 @@ describe('Preferences Tools', () => {
       );
     });
 
-    it('returns preferences on success', async () => {
-      const preferences = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
-      mockRest.queryPreferences.mockResolvedValue(preferences);
+    it('returns preferences with next page when page is full and cursor is present', async () => {
+      const nodes = Array.from({ length: 10 }, (_, i) => ({
+        userId: `u${i}`,
+        purposes: [{ purpose: 'analytics', enabled: true }],
+      }));
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: 'next-page' });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
       const result = await tool.handler({
         partition: 'my-org',
-        identifiers: [{ value: 'user@example.com', type: 'email' }],
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
       });
 
-      expect(result).toMatchObject({ success: true, data: preferences });
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        count: 10,
+        hasNextPage: true,
+        nextCursor: 'next-page',
+      });
+      expect(result).not.toHaveProperty('totalCount');
       expect(mockRest.queryPreferences).toHaveBeenCalledWith({
         partition: 'my-org',
-        identifiers: [{ value: 'user@example.com', type: 'email' }],
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+        cursor: undefined,
       });
+    });
+
+    it('sets hasNextPage false and omits nextCursor when API returns no cursor', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      mockRest.queryPreferences.mockResolvedValue({ nodes });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
+      expect(result).not.toHaveProperty('totalCount');
+    });
+
+    it('sets hasNextPage false when cursor is present but page is not full', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: 'spurious-cursor' });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
+    });
+
+    it('sets hasNextPage false when cursor decodes to decryptionStatus ERROR', async () => {
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      const errorCursor = Buffer.from(
+        JSON.stringify({ decryptionStatus: 'ERROR', offset: 1 }),
+      ).toString('base64');
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: errorCursor });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_query')!;
+
+      const result = await tool.handler({
+        partition: 'my-org',
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 1,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: false,
+      });
+      expect(result).not.toHaveProperty('nextCursor');
     });
 
     it('throws when client throws', async () => {
@@ -86,9 +314,104 @@ describe('Preferences Tools', () => {
       await expect(
         tool.handler({
           partition: 'my-org',
-          identifiers: [{ value: 'user@example.com' }],
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
         }),
       ).rejects.toThrow('REST error');
+    });
+  });
+
+  describe('preferences_upsert', () => {
+    it('forwards records[].options.mergeRecordsOnConflict to the REST client', async () => {
+      mockRest.upsertPreferences.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_upsert')!;
+      const records = [
+        {
+          partition: 'default',
+          timestamp: '2024-01-15T10:30:00.000Z',
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
+          purposes: [{ purpose: 'Marketing', enabled: false }],
+          options: { mergeRecordsOnConflict: false },
+        },
+      ];
+
+      const result = await tool.handler({ records, skipWorkflowTriggers: true });
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.upsertPreferences).toHaveBeenCalledWith({
+        records,
+        skipWorkflowTriggers: true,
+      });
+    });
+
+    it('accepts upsert records without options (API default merge)', async () => {
+      mockRest.upsertPreferences.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_upsert')!;
+      const records = [
+        {
+          partition: 'default',
+          timestamp: '2024-01-15T10:30:00.000Z',
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
+          purposes: [{ purpose: 'Marketing', enabled: true }],
+        },
+      ];
+
+      const parsed = tool.zodSchema.safeParse({ records });
+      expect(parsed.success).toBe(true);
+
+      const result = await tool.handler({ records });
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.upsertPreferences).toHaveBeenCalledWith({
+        records,
+        skipWorkflowTriggers: undefined,
+      });
+    });
+  });
+
+  describe('preferences_append_identifiers', () => {
+    it('reports failure when append returns failures', async () => {
+      mockRest.appendIdentifiers.mockResolvedValue({
+        records: [{ success: false, errorMessage: 'No consent record found' }],
+        failures: [{ index: 0, error: 'No consent record found' }],
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_append_identifiers')!;
+      const result = (await tool.handler({
+        partition: 'default',
+        records: [
+          {
+            anchorIdentifier: { name: 'email', value: 'user@example.com' },
+            append: { name: 'phone', value: '+14155550101' },
+            timestamp: '2024-01-15T10:30:00.000Z',
+          },
+        ],
+      })) as { success: boolean; error?: string };
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('failed');
+    });
+
+    it('calls appendIdentifiers with records payload', async () => {
+      mockRest.appendIdentifiers.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_append_identifiers')!;
+      const records = [
+        {
+          anchorIdentifier: { name: 'email', value: 'user@example.com' },
+          append: { name: 'phone', value: '+15551234567' },
+          timestamp: '2024-01-15T10:30:00.000Z',
+        },
+      ];
+
+      const result = await tool.handler({ partition: 'default', records });
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.appendIdentifiers).toHaveBeenCalledWith('default', records);
     });
   });
 });

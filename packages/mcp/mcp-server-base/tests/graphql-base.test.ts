@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
+import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
-import { ToolError, ErrorCode } from '../src/errors.js';
+import { ToolError } from '../src/errors.js';
 import { TOOLCALL_ID_HEADER, TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 import { toolCallContext } from '../src/tool-call-context.js';
 
@@ -362,7 +363,7 @@ describe('TranscendGraphQLBase', () => {
         expect.fail('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(ToolError);
-        expect((err as ToolError).code).toBe(ErrorCode.AUTH_ERROR);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.AuthError);
         expect((err as ToolError).retryable).toBe(false);
       }
     });
@@ -388,7 +389,7 @@ describe('TranscendGraphQLBase', () => {
       try {
         await promise;
       } catch (err) {
-        expect((err as ToolError).code).toBe(ErrorCode.RATE_LIMITED);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.RateLimited);
         expect((err as ToolError).retryable).toBe(true);
       }
 
@@ -413,10 +414,55 @@ describe('TranscendGraphQLBase', () => {
 
       const client = new TestGraphQLClient(API_KEY_AUTH);
 
-      await expect(client.query('query { __typename }')).rejects.toThrow(
-        /GraphQL errors: Unauthorized; Invalid query/,
-      );
+      try {
+        await client.query('query { __typename }');
+        expect.fail('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ToolError);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.ApiError);
+        expect((err as ToolError).message).toMatch(/GraphQL errors: Unauthorized; Invalid query/);
+      }
       expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws PERMISSION_ERROR when GraphQL extensions.code is ACCESS_DENIED', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => '',
+        json: async () => ({
+          data: null,
+          errors: [
+            {
+              message:
+                'Client error: You can only access the route "updateOrCreateCookies" if you have one of the scopes: "Manage Data Flows"',
+              extensions: {
+                code: 'ACCESS_DENIED',
+                route: 'updateOrCreateCookies',
+                requiredScopes: ['ManageDataFlows'],
+              },
+            },
+          ],
+        }),
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      try {
+        await client.query('mutation { updateOrCreateCookies }');
+        expect.fail('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ToolError);
+        expect((err as ToolError).code).toBe(McpToolErrorCode.PermissionError);
+        expect((err as ToolError).retryable).toBe(false);
+        expect((err as ToolError).details).toEqual({
+          route: 'updateOrCreateCookies',
+          requiredScopes: ['ManageDataFlows'],
+        });
+      }
     });
 
     it('throws when response has no data', async () => {

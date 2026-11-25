@@ -1,9 +1,8 @@
 import { EventEmitter } from 'node:events';
-import * as readline from 'node:readline';
 
 import type { WorkerLogPaths } from '@transcend-io/utils';
 /* eslint-disable no-underscore-dangle,max-lines */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 
 import { installInteractiveSwitcher } from '../installInteractiveSwitcher.js';
 import { keymap } from '../keymap.js';
@@ -13,9 +12,6 @@ import { getWorkerIds, cycleWorkers } from '../workerIds.js';
 /**
  * Mocks must be hoist-safe: define spies inside factories.
  */
-vi.mock('node:readline', () => ({
-  emitKeypressEvents: vi.fn(),
-}));
 vi.mock('../keymap.js', () => ({
   keymap: vi.fn(),
 }));
@@ -57,6 +53,8 @@ function makePorts(tty = true): {
   stdout: NodeJS.WriteStream;
   /** Fake stderr with a spyable write */
   stderr: NodeJS.WriteStream;
+  /** Fake keypress event initializer */
+  emitKeypressEvents: MockedFunction<typeof import('node:readline').emitKeypressEvents>;
 } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlers = new Map<string, any[]>();
@@ -99,6 +97,7 @@ function makePorts(tty = true): {
     stderr: {
       write: vi.fn(() => true),
     } as unknown as NodeJS.WriteStream,
+    emitKeypressEvents: vi.fn<typeof import('node:readline').emitKeypressEvents>(),
   };
 
   return ports;
@@ -160,7 +159,6 @@ function makeWorker(): {
 }
 
 describe('installInteractiveSwitcher', () => {
-  const mEmitKeypress = vi.mocked(readline.emitKeypressEvents);
   const mKeymap = vi.mocked(keymap);
   const mReplay = vi.mocked(replayFileTailToStdout);
   const mGetIds = vi.mocked(getWorkerIds);
@@ -177,7 +175,7 @@ describe('installInteractiveSwitcher', () => {
       ports,
     });
     expect(typeof cleanup).toBe('function');
-    expect(mEmitKeypress).not.toHaveBeenCalled();
+    expect(ports.emitKeypressEvents).not.toHaveBeenCalled();
     expect(ports.stdin.setRawMode).not.toHaveBeenCalled();
     // call cleanup to ensure it’s safe
     expect(() => cleanup()).not.toThrow();

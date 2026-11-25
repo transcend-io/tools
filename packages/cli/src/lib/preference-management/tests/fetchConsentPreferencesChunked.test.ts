@@ -84,7 +84,12 @@ vi.mock('../../../../../sdk/src/preference-management/iterateConsentPages.js', (
    * @param pageSize - Page size
    * @yields Async generator
    */
-  async *iterateConsentPages(_sombra: Got, partition: string, filter: any, pageSize: number) {
+  async *iterateConsentPages(
+    _sombra: Pick<Got, 'post'>,
+    partition: string,
+    filter: any,
+    pageSize: number,
+  ) {
     H.iterateCalls.push({ partition, filter, pageSize });
     const it = H.iterators.shift();
     /* istanbul ignore next */

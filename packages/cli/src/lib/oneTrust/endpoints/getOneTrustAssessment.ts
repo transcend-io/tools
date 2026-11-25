@@ -14,7 +14,7 @@ export const getOneTrustAssessment = async ({
   assessmentId,
 }: {
   /** The OneTrust client instance */
-  oneTrust: Got;
+  oneTrust: Pick<Got, 'get'>;
   /** The ID of the assessment to retrieve */
   assessmentId: string;
 }): Promise<OneTrustGetAssessmentResponse> => {

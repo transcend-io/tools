@@ -14,7 +14,6 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { initCsvFile, appendCsvRowsOrdered } from '../../../lib/helpers/index.js';
-import { logger } from '../../../logger.js';
 
 // Known “core” columns your transformer usually produces up front.
 // Leave this list conservative; we’ll still union with transformer keys.
@@ -72,13 +71,13 @@ export async function pullConsentPreferences(
     maxLookbackDays,
   }: PullConsentPreferencesCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: this.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: this.process.env.SOMBRA_URL,
   });
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -109,18 +108,18 @@ export async function pullConsentPreferences(
     ...(parsedIdentifiers.length > 0 ? { identifiers: parsedIdentifiers } : {}),
   };
 
-  logger.info(
+  this.logger.info(
     `Fetching consent preferences from partition ${partition}, using mode=${
       shouldChunk ? 'chunked-stream' : 'paged-stream'
     }...`,
   );
 
-  logger.info(colors.magenta(`Preparing CSV at: ${file}`));
+  this.logger.info(colors.magenta(`Preparing CSV at: ${file}`));
 
   // Fetch full sets (purposes+topics, identifiers) to ensure header completeness
   const [purposesWithTopics, allIdentifiers] = await Promise.all([
-    fetchAllPurposesAndPreferences(client, { logger }),
-    fetchAllIdentifiers(client, { logger }),
+    fetchAllPurposesAndPreferences(client, { logger: this.logger }),
+    fetchAllIdentifiers(client, { logger: this.logger }),
   ]);
 
   // Identifier columns: exactly the identifier names
@@ -175,11 +174,11 @@ export async function pullConsentPreferences(
       windowConcurrency,
       maxChunks,
       maxLookbackDays,
-      logger,
+      logger: this.logger,
       onItems: (items) => writeRows(items),
     });
 
-    logger.info(colors.green(`Finished writing CSV to ${file}`));
+    this.logger.info(colors.green(`Finished writing CSV to ${file}`));
     return;
   }
 
@@ -188,9 +187,9 @@ export async function pullConsentPreferences(
     partition,
     filterBy,
     limit: concurrency, // page size (API max 50 enforced internally)
-    logger,
+    logger: this.logger,
     onItems: (items) => writeRows(items),
   });
 
-  logger.info(colors.green(`Finished writing CSV to ${file}`));
+  this.logger.info(colors.green(`Finished writing CSV to ${file}`));
 }

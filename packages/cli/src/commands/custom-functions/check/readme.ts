@@ -1,0 +1,11 @@
+export default `#### Validate before pushing
+
+\`\`\`sh
+transcend custom-functions check \\
+  --variables=TRANSCEND_API_KEY:placeholder
+\`\`\`
+
+\`check\` defaults to \`transcend/custom-functions\` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. Every \`<<parameters.name>>\` placeholder must be provided through \`--variables=name:value\`; non-secret placeholder values are sufficient for validation. It validates every test fixture against the published authoring schemas, rejects local runtime imports that cannot be deployed, then asks Deno 2 to inspect exports, type-check, lint, and check formatting without executing the modules. A different Deno 2 version produces a non-blocking production-parity warning; other major versions fail with installation or version-switch guidance.
+
+In CI, use \`--noInteractive --json\`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless \`--fix\` is explicitly passed; an interactive terminal may preview and confirm the same repair.
+`;

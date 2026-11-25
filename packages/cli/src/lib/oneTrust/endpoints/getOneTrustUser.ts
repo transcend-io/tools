@@ -14,7 +14,7 @@ export const getOneTrustUser = async ({
   userId,
 }: {
   /** The OneTrust client instance */
-  oneTrust: Got;
+  oneTrust: Pick<Got, 'get'>;
   /** The ID of the OneTrust user to retrieve */
   userId: string;
 }): Promise<OneTrustGetUserResponse> => {

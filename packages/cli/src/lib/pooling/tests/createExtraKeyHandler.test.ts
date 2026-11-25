@@ -1,6 +1,8 @@
 import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 /* eslint-disable max-lines */
-import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import type { ShowCombinedLogsPorts } from '../showCombinedLogs.js';
 
 /**
  * Mock the combined logs viewer. We assert calls and control resolution/rejection.
@@ -25,34 +27,30 @@ function loadSutFresh(): Promise<SutModule> {
   return import('../createExtraKeyHandler.js');
 }
 
-/**
- * Spy on process.stdout.write and expose helpers.
- *
- * @returns An object with the spy and helpers to inspect/clear/restore it.
- */
-function spyStdout(): {
-  /** The spy instance. */
-  spy: ReturnType<typeof vi.spyOn>;
-  /** Restore the original implementation. */
-  restore: () => void;
-  /** All write payloads coerced to string. */
-  calls: () => string[];
-  /** Clear recorded calls. */
-  clear: () => void;
-} {
-  const spy = vi
-    .spyOn(process.stdout, 'write')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .mockImplementation((): any => true) as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const calls = (): string[] => spy.mock.calls.map((c: any) => String(c[0]));
-
-  const clear = (): void => spy.mockClear();
-  const restore = (): void => spy.mockRestore();
-  return { spy, restore, calls, clear };
-}
-
 // --- Helpers -----------------------------------------------------------------
+
+/**
+ * Build an in-memory stdout port.
+ *
+ * @returns Injected stdout and its recorded payloads.
+ */
+function makeStdout(): {
+  /** Standard output port passed to the handler. */
+  stdout: ShowCombinedLogsPorts['stdout'];
+  /** Recorded write payloads. */
+  writes: string[];
+} {
+  const writes: string[] = [];
+  return {
+    stdout: {
+      write: vi.fn((chunk) => {
+        writes.push(String(chunk));
+        return true;
+      }),
+    } as unknown as ShowCombinedLogsPorts['stdout'],
+    writes,
+  };
+}
 
 /**
  * Minimal SlotPaths stub for tests. Only the identity matters for forwarding.
@@ -127,33 +125,26 @@ function key(s: string): Buffer {
 }
 
 describe('createExtraKeyHandler: viewers', () => {
-  const stdout = spyStdout();
-
   beforeEach(() => {
-    stdout.clear();
     mShowCombinedLogs.mockClear();
-  });
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-  afterAll(() => {
-    stdout.restore();
   });
 
   it('e / w / i / l trigger showCombinedLogs with correct sources/levels and pause the UI', async () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
+    const { stdout } = makeStdout();
 
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
+      stdout,
     });
 
     // e => ['err'], 'error'
     handler(key('e'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['err'], 'error');
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['err'], 'error', { stdout });
     expect(pausedSpy).toHaveBeenCalledWith(true);
 
     // While viewing, another key should not stack a new viewer
@@ -168,31 +159,35 @@ describe('createExtraKeyHandler: viewers', () => {
 
     // w => ['warn','err'], 'warn'
     handler(key('w'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['warn', 'err'], 'warn');
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['warn', 'err'], 'warn', { stdout });
 
     // exit before opening another viewer
     handler(key('\x1b'));
 
     // i => ['info'], 'all'
     handler(key('i'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['info'], 'all');
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['info'], 'all', { stdout });
 
     // exit before opening another viewer
     handler(key('\x1b'));
 
     // l => ['out','err','structured'], 'all'
     handler(key('l'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['out', 'err', 'structured'], 'all');
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['out', 'err', 'structured'], 'all', {
+      stdout,
+    });
   });
 
   it('Ctrl+] also exits viewer and repaints', async () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
+    const { stdout } = makeStdout();
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
+      stdout,
     });
 
     handler(key('e')); // open viewer
@@ -208,10 +203,12 @@ describe('createExtraKeyHandler: viewers', () => {
 
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
+    const { stdout } = makeStdout();
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
+      stdout,
     });
 
     handler(key('e'));
@@ -225,20 +222,8 @@ describe('createExtraKeyHandler: viewers', () => {
 });
 
 describe('createExtraKeyHandler: exports', () => {
-  const stdout = spyStdout();
-
   beforeEach(() => {
-    stdout.clear();
     mShowCombinedLogs.mockClear();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.clearAllMocks();
-  });
-  afterAll(() => {
-    stdout.restore();
   });
 
   it('E/W/I/A export combined logs, update exportStatus, and repaint when exportMgr present', async () => {
@@ -247,6 +232,8 @@ describe('createExtraKeyHandler: exports', () => {
     const exportStatus = makeExportStatus();
     const mgr = makeExportMgr();
     const { repaint, setPaused, repaintSpy } = makeUiSpies();
+    const { stdout } = makeStdout();
+    const now = vi.fn(() => 1_735_689_600_000);
 
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
@@ -254,6 +241,8 @@ describe('createExtraKeyHandler: exports', () => {
       setPaused,
       exportMgr: mgr,
       exportStatus,
+      stdout,
+      now,
     });
 
     const seq: Array<[string, 'error' | 'warn' | 'info' | 'all', string]> = [
@@ -269,8 +258,11 @@ describe('createExtraKeyHandler: exports', () => {
       // exportStatus should be populated for the key
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cur = (exportStatus as any)[which];
-      expect(cur).toMatchObject({ exported: true, path: `/exp/${which}.log` });
-      expect(typeof cur.savedAt).toBe('number');
+      expect(cur).toMatchObject({
+        exported: true,
+        path: `/exp/${which}.log`,
+        savedAt: 1_735_689_600_000,
+      });
       expect(repaintSpy).toHaveBeenCalled();
     }
   });
@@ -279,11 +271,13 @@ describe('createExtraKeyHandler: exports', () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy } = makeUiSpies();
+    const terminal = makeStdout();
 
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
+      stdout: terminal.stdout,
     });
 
     handler(key('E'));
@@ -294,34 +288,25 @@ describe('createExtraKeyHandler: exports', () => {
     expect(repaintSpy).not.toHaveBeenCalled();
     expect(mShowCombinedLogs).not.toHaveBeenCalled();
     // No stdout messages about exports
-    expect(stdout.calls().join('')).not.toMatch(/Wrote combined/);
+    expect(terminal.writes.join('')).not.toMatch(/Wrote combined/);
   });
 });
 
 describe('createExtraKeyHandler: custom keys', () => {
-  const stdout = spyStdout();
-
-  beforeEach(() => {
-    stdout.clear();
-  });
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-  afterAll(() => {
-    stdout.restore();
-  });
-
   it('invokes custom handler with say and noteExport helpers', async () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const exportStatus = makeExportStatus();
     const { repaint, setPaused, repaintSpy } = makeUiSpies();
+    const terminal = makeStdout();
 
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
       exportStatus,
+      stdout: terminal.stdout,
+      now: () => 123,
       custom: {
         F: ({ say, noteExport }): void => {
           say('Hello from custom');
@@ -335,8 +320,8 @@ describe('createExtraKeyHandler: custom keys', () => {
     // Assert the side effects rather than fragile stdout text.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { info } = exportStatus as any;
-    expect(info).toMatchObject({ path: '/tmp/f.csv', exported: true });
-    expect(typeof info.savedAt).toBe('number');
+    expect(info).toMatchObject({ path: '/tmp/f.csv', exported: true, savedAt: 123 });
+    expect(terminal.writes).toContain('Hello from custom\n');
     expect(repaintSpy).toHaveBeenCalled();
   });
 });

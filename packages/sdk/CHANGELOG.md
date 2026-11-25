@@ -1,5 +1,596 @@
 # @transcend-io/sdk
 
+## 3.4.0
+
+### Minor Changes
+
+- 2ec345c: Add `renderPushPlanDiff` for inventory push previews and a read-only `config_diff` MCP tool that returns a paste-ready diff before `config_push`.
+- 23bdda1: Inventory push and MCP can now update existing system discovery triage from `transcend.yml` (title, suggested catalog, and ignore status). Use `discovery_write_results` or include `system-discovery` in config push.
+- 5110643: Centralized MCP OAuth scope lists in the SDK so OAuth clients and servers can pin scopes by server type. Domain MCP packages no longer export per-server `*_OAUTH_SCOPES` constants; import `getMcpServerOAuthScopes` from `@transcend-io/sdk` instead.
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+
+### Patch Changes
+
+- f4c51c9: The unified MCP server and Admin domain server add list and write tools for `action-items` and `action-item-collections` in transcend.yml shape. The Discovery server adds a list tool for system-discovery results. Action-item OAuth scopes now apply to the Admin server instead of Workflows.
+- 460eb96: Privacy center settings in `transcend.yml` now include branding assets and additional toggle fields for org-to-org configuration copy. Pull writes each asset's `src` (and optional `alt`); push can re-host assets from `src` URLs when copying into another organization.
+- 353a73d: Email templates in `transcend.yml` now round-trip subject, body, and type. Push updates existing templates matched by title instead of only creating empty shells.
+- 6eb83b5: Org config copy now round-trips DSR action copy and file form fields, data subject class on create, database preflight SQL settings, and identifier SQL metadata through `transcend.yml`.
+- 8bd784e: Org config copy now matches intl messages by `targetReactIntlId` on push and keys pulled messages the same way in `transcend.yml`.
+- faada80: Org config copy now pulls and pushes data silo vendor links plus inventory metadata (contacts, DPA fields, DSR notes, and processing flags) through `transcend.yml`.
+- 3214d5b: Pushing selected `transcend.yml` sections is safer when keys are minted with only section scopes.
+  - Data silo, preflight, and processing-activity pushes now include the view scope needed to resolve referenced data subjects. Missing subjects are no longer auto-created unless the push includes a `data-subjects` section.
+  - SDK helpers throw errors instead of calling `process.exit`, so servers and MCP hosts are not killed on validation failures.
+  - Data category sync reports per-item errors and no longer crashes the batch when one create fails.
+  - Data silo batch updates retry per silo when a chunk fails, so one bad silo does not block the rest.
+
+  If you push data silos that reference new data subject types without a `data-subjects` section, add those subjects to the yaml first.
+
+- ef4a7ba: Org config copy now pulls and pushes DSR workflow associations: linked data silos, preflight checks, and intake identifiers in `transcend.yml`.
+- Updated dependencies [460eb96]
+- Updated dependencies [6eb83b5]
+  - @transcend-io/privacy-types@7.1.2
+
+## 3.3.0
+
+### Minor Changes
+
+- 7217c74: Add `preferences_write_partitions`, `preferences_list_option_values`, `preferences_write_option_values`, `preferences_list_workflow_configs` and `preferences_write_workflow_configs`. They cover the partitions, preference-options and preference-workflow-configs sections of `transcend.yml`. The SDK adds `convertConsentWorkflowTriggersToInputs`, which `transcend inventory pull` now uses.
+
+## 3.2.0
+
+### Minor Changes
+
+- f7b3d3a: `transcend inventory pull` now writes data silo business entities as `businessEntityTitles`, so pushing a pulled file keeps those links.
+
+  The SDK adds `planPush` and `renderPushPlan` to compare a `transcend.yml` with your organization and list what a push would create, update, or delete.
+
+- 530f513: Preview changes before you apply them. `transcend inventory push --dryRun` lists what a push would create, update, or delete, including changes you did not write in the file, and changes nothing. `transcend inventory pull --dryRun` shows how the file would change without writing it. Add `--json` to push for machine-readable output.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
+### Patch Changes
+
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
+## 3.1.0
+
+### Minor Changes
+
+- 18ddf25: Add a `consent-sites` section to `transcend.yml`. You can now manage the hosts that Airgap discovers, including their description, owners, teams, and attributes, with `transcend inventory pull --resources consentSites` and `transcend inventory push`. The existing `consent-manager.domains` list is unchanged. Pulling needs the View Consent Manager scope and pushing needs Manage Consent Manager.
+
+## 3.0.1
+
+### Patch Changes
+
+- Updated dependencies [fb660b4]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/airgap.js-types@14.2.51
+
+## 3.0.0
+
+### Major Changes
+
+- f99575b: Removed SDK helpers for the dropped agents GraphQL API (tables no longer exist on the backend).
+
+  **Removed exports:** `fetchAllAgents`, `createAgent`, `updateAgents`, `syncAgents`, `Agent`, `AgentInput`; `fetchAllAgentFiles`, `createAgentFile`, `updateAgentFiles`, `syncAgentFiles`, `AgentFile`, `AgentFileInput`, `AgentFileFilterBy`; `fetchAllAgentFunctions`, `createAgentFunction`, `updateAgentFunctions`, `syncAgentFunctions`, `AgentFunction`, `AgentFunctionInput`.
+
+- 1bb32a0: Removed the SDK `ai` module and its root export. The backend no longer exposes the underlying large language model catalog, prompt thread, or prompt run message APIs.
+
+  **Removed exports:** `addMessagesToPromptRun`, `AddMessagesToPromptRunInput`; `fetchAllLargeLanguageModels`, `LargeLanguageModel`; `fetchAllPromptThreads`, `PromptThread`.
+
+### Minor Changes
+
+- d3584ee: Move the `transcend.yml` pull, sync and codec logic into `@transcend-io/sdk`. Import codecs and sync helpers from the main SDK entry point. Pull and sync no longer print by default. Pass a `logger` (and a `progressReporter` for sync) to get output. Moved log messages no longer use ANSI colors.
+
+### Patch Changes
+
+- 08b28b8: Fix `transcend.yml` push and pull for organization-to-organization copies.
+  - Data subject `active` now applies through `updateSubject`. The removed `toggleSubject` mutation caused every `active` push to fail.
+  - `syncConfigurationToTranscend` records every failure in `SyncResult.errors` with its resource and item, and uses the injected logger.
+  - Enricher `description` is now pulled, and a push no longer clears it when the input omits it.
+  - `createTemplate` now sends the required `type` and `product` fields.
+
+- 3fb7e15: Fix two GraphQL documents that no longer match the schema.
+  - `approveRequest` in the CLI now declares `ApproveRequestInput`. `CommunicationInput` is rejected by the current schema.
+  - The assessments query no longer selects the removed `AttributePromptRunResource` and `AttributePromptGroupResource` types.
+
+## 2.2.1
+
+### Patch Changes
+
+- 5bd03e2: Share the Privacy Center access token format from privacy-types.
+- Updated dependencies [5bd03e2]
+  - @transcend-io/privacy-types@6.8.0
+
+## 2.2.0
+
+### Minor Changes
+
+- 62eb047: Add a SHORT token format for preference access links.
+
+### Patch Changes
+
+- Updated dependencies [2e995fd]
+  - @transcend-io/type-utils@3.3.0
+
+## 2.1.17
+
+### Patch Changes
+
+- a0d513d: Narrowed use of Got types to only the relevant got methods
+
+## 2.1.16
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/airgap.js-types@14.2.48
+  - @transcend-io/privacy-types@6.3.1
+  - @transcend-io/utils@0.3.3
+
+## 2.1.15
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/airgap.js-types@14.2.47
+  - @transcend-io/utils@0.3.2
+
+## 2.1.14
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+  - @transcend-io/airgap.js-types@14.2.46
+  - @transcend-io/privacy-types@6.2.1
+  - @transcend-io/utils@0.3.1
+
+## 2.1.13
+
+### Patch Changes
+
+- Updated dependencies [3ae909e]
+  - @transcend-io/privacy-types@6.2.0
+  - @transcend-io/airgap.js-types@14.2.45
+
+## 2.1.12
+
+### Patch Changes
+
+- Updated dependencies [4726631]
+  - @transcend-io/utils@0.3.0
+
+## 2.1.11
+
+### Patch Changes
+
+- Updated dependencies [b86b173]
+- Updated dependencies [20b054b]
+  - @transcend-io/privacy-types@6.1.0
+  - @transcend-io/airgap.js-types@14.2.44
+
+## 2.1.10
+
+### Patch Changes
+
+- 1f35e6f: Inventory pull for multi-Sombra organizations fetches `sombra-id` from the bulk data silos query instead of one extra request per silo.
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+  - @transcend-io/privacy-types@6.0.0
+  - @transcend-io/airgap.js-types@14.2.43
+
+## 2.1.9
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+  - @transcend-io/airgap.js-types@14.2.42
+
+## 2.1.8
+
+### Patch Changes
+
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+
+## 2.1.7
+
+### Patch Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+## 2.1.6
+
+### Patch Changes
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+## 2.1.5
+
+### Patch Changes
+
+- 7e7d797: Consolidate every paginated tool onto two schemas, fix a `hasNextPage` bug that made
+  agents page forever, and give eight tools the paging they never had.
+
+  Pagination had drifted into three shared schemas and fourteen inline copies across 27
+  tools, producing four caller-facing conventions. `PaginationSchema` was marked deprecated
+  yet had eight users; `CursorPaginationSchema`, marked preferred, had none — not even
+  `dsr_list`, the one tool that genuinely pages by cursor.
+
+  Checking the GraphQL schema settled what shapes are actually needed. Of the list fields
+  the MCP servers query, 24 accept `first`/`offset` and return `nodes` plus `totalCount`
+  with no `pageInfo`; exactly one, `requests`, accepts `after` and returns a real
+  `pageInfo.endCursor`. So there are two shapes, and `CursorPaginationSchema` is for the
+  rare case rather than the default. Both now expose `limit` — 22 of 27 tools already used
+  that name, and `first` is the GraphQL wire name, which mixins map internally so Relay
+  vocabulary never reaches callers. `PaginationSchema` is deleted.
+
+  Because almost no payload carries a `pageInfo`, every mixin synthesized one, and they
+  disagreed. Eight wrote `nodeCount < totalCount`, which ignores where the page starts: on
+  the last page 20 rows against a total of 120 still compares true, so `hasNextPage` never
+  went false. An agent told to page until it did would loop until it exhausted its context.
+  That affected `assessments_list`, `assessments_list_groups`, `assessments_list_templates`,
+  `workflows_list`, `workflows_list_email_templates`, `admin_list_teams`,
+  `admin_list_api_keys` and `discovery_list_scans`. A shared `derivePageInfo` helper in
+  `mcp-server-base` now owns the comparison, and every offset-paginated mixin routes
+  through it.
+
+  Eight tools returned `hasNextPage: true` with no continuation parameter at all, because
+  their query documents never declared the `$offset` the schema has always accepted —
+  `ListApiKeysDoc` twelve lines below `ListTeamsDoc` declares it correctly. `admin_list_teams`,
+  `workflows_list`, `consent_list_purposes`, `discovery_list_scans`, `discovery_list_plugins`,
+  `assessments_list`, `assessments_list_groups` and `assessments_list_templates` now page.
+  This adds `$offset` to the shared `TranscendCliPurposes` query in the SDK, which is
+  backward compatible: the argument is optional and existing CLI callers are unaffected.
+
+  Tools renamed from `first` to `limit`: `dsr_list_identifiers`,
+  `dsr_list_request_data_silos`, `consent_list_cookies`, `consent_list_data_flows` and
+  `inventory_list_categories`. Nine tools drop a `cursor` parameter that was never wired to
+  anything. `preferences_query` keeps `limit`/`cursor` but not the shared bound, since its
+  REST endpoint caps a page at 50 rather than 100.
+
+  Descriptions no longer explain how to paginate — "Paginate with `offset` until
+  `hasNextPage` is false", "max 100", "Note: cursor pagination is not supported". The schema
+  already carries the bounds, defaults and parameter names, so that prose was spending
+  `tools/list` budget on every call to restate machine-readable facts. Removing it more than
+  paid for the eight tools that gained `offset`: the paginated surface costs 1,473 characters
+  less than on main, and the payload as a whole drops from 82,531 to 76,794 characters once
+  the per-schema `$schema` pointer goes too.
+
+  A new contract test asserts across the whole registry that no tool exposes `first` or
+  `after`, that no tool caps with `limit` without offering a continuation parameter, that
+  `limit` is bounded identically everywhere, and that descriptions do not restate paging
+  mechanics — plus unit coverage pinning the `derivePageInfo` termination cases.
+
+  Every paginated tool was also driven against a real org by hand while developing this
+  change, checking that each page is no larger than `limit`, that the continuation parameter
+  advances, that the last page reports `hasNextPage: false`, and that an offset past the end
+  does not promise another page. Of the 27 paginated tools, 25 pass every check,
+  `dsr_list_identifiers` has no rows in that org, and `preferences_query` needs a partition
+  no list call can supply. That probe was a throwaway harness rather than a committed test,
+  so nothing in the suite points at a live environment.
+
+  It caught something the mocked tests could not: `consent_list_regimes` returned four
+  rows for `limit: 3`. Probing the API directly showed `experiences` answers `first: n` with
+  `n + 1` rows at every size, and the tool forwarded that verbatim, so `limit` was a lie and
+  offset paging double-counted the seam. It now trims to `limit`, which keeps paging gapless
+  because the extra row is the one the next offset starts on.
+
+  The two `discovery_*` tools remain built on `dataSilos` and synthesize their rows, so
+  `discovery_list_scans` reports a hardcoded `COMPLETED` status and `discovery_list_plugins`
+  derives integration types per page. Their descriptions now say so rather than overclaiming;
+  repointing them at the real `discoClassScans` and `plugins` fields is follow-up work.
+
+## 2.1.4
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/airgap.js-types@14.2.41
+
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/airgap.js-types@14.2.40
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/airgap.js-types@14.2.39
+
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+
+## 2.1.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/airgap.js-types@14.2.37
+
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+  - @transcend-io/airgap.js-types@14.2.36
+
+## 2.0.0
+
+### Major Changes
+
+- 43d6ffe: Support per-workflow deletion dependencies in `transcend.yml`. Use a list of titles for the global configuration only, or a list of objects when any per-workflow override is present (`{ titles }` for global, `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for overrides). Mixing titles and objects in the same list is not allowed.
+
+  `syncDataSiloDependencies` now takes `[dataSiloId, DependedOnDataSiloInput[]][]` instead of `[dataSiloId, string[]][]` and pushes through `dependedOnDataSilos` rather than the deprecated `dependedOnDataSiloTitles`.
+
+### Minor Changes
+
+- 98eeb1d: `@transcend-io/privacy-types` gains custom function enums (`CustomFunctionType`, `CustomFunctionLifecycleState`, `CustomFunctionVersionLifecycleState`, `CustomFunctionPayloadType`), mirroring the backend's canonical values.
+
+  Add custom function sync support. The SDK gains a customer-ingress code signing helper (`signCustomFunctionCode`, calling Sombra's `/v1/custom/sign` route with bearer authentication) and typed custom function fetch/diff/sync helpers (`fetchAllCustomFunctions`, `syncCustomFunction`). The custom function type/lifecycle/payload-type unions come from the new `@transcend-io/privacy-types` enums, and JWT payload decoding uses `jsonwebtoken`. Existing custom functions are matched by `id` when provided, falling back to exact name, with an error on ambiguous names.
+
+  `createSombraGotInstance` gains a `sombraId` option to connect to a specific (non-primary) Sombra gateway by ID, resolved from the organization's gateway list.
+
+  Creating a GENERAL function without a pinned gateway resolves the organization's primary Sombra (the backend requires an explicit `sombraId` for GENERAL creates); DSR creates never send `sombraId` or `setActive` — the linked data silo dictates the gateway, and DSR functions are always created active (a warning is logged when `promote` is disabled for a DSR create).
+
+  Also adds a test-before-promote flow: `runCustomFunctionTest` test-runs freshly signed code via the `runCustomFunction` mutation (pre-signed JWT pair, `isCustomFunctionTestRun: true`) and reports a `passed` boolean; `syncCustomFunction` accepts a `testPayloads` list (each payload optionally tagged with a `payloadType`, so DSR functions can cover both the default `DATA_POINT` export and the `REQUEST_ENRICHER` enricher export in one push). Every payload runs and all must pass — any failure rejects the push with a new `test-failed` outcome, with per-payload `testResults` (error and logs) attached.
+
+  New DSR functions get their DSR integration created automatically: when a DSR config has no `dataSiloId` and no existing function matches, `syncCustomFunction` creates a `customFunction`-catalog data silo shell (`createCustomFunctionDataSilo`), tests the signed code against it (DSR test payloads always get `extras.dataSilo` injected from the resolved silo, with `title`/`description`/`link` defaulted to satisfy the backend's webhook payload codec), then creates and links the function on a passing test — rolling the silo back (`deleteDataSilo`) when the test or the create itself fails. Sync results now report `dataSiloId` / `createdDataSilo`.
+
+  `makeGraphQLRequest` no longer retries backend payload validation failures (`Failed to decode codec`) — they are deterministic, and retrying repeated the full codec error output.
+
+  Metadata-only changes (description, or name for id-pinned entries) are detected when code and context are unchanged, and update the function record in place — no signing, no test runs, and no new code revision — reported with a new `metadata-updated` outcome. Environment variable _values_ remain undiffable (encrypted at sign time); use `force` for value-only rotations.
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+  - @transcend-io/privacy-types@5.19.0
+  - @transcend-io/airgap.js-types@14.2.35
+
+## 1.9.5
+
+### Patch Changes
+
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+  - @transcend-io/privacy-types@5.18.0
+  - @transcend-io/airgap.js-types@14.2.34
+
+## 1.9.4
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+  - @transcend-io/airgap.js-types@14.2.33
+
+## 1.9.3
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+  - @transcend-io/airgap.js-types@14.2.32
+
+## 1.9.2
+
+### Patch Changes
+
+- Updated dependencies [2cc726f]
+  - @transcend-io/privacy-types@5.15.0
+  - @transcend-io/airgap.js-types@14.2.31
+
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+  - @transcend-io/airgap.js-types@14.2.30
+
+## 1.9.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/airgap.js-types@14.2.29
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [188ba6f]
+  - @transcend-io/privacy-types@5.12.0
+  - @transcend-io/airgap.js-types@14.2.28
+
+## 1.8.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+### Patch Changes
+
+- Updated dependencies [29e9d5f]
+  - @transcend-io/privacy-types@5.11.0
+  - @transcend-io/airgap.js-types@14.2.27
+
+## 1.7.7
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+  - @transcend-io/airgap.js-types@14.2.26
+
+## 1.7.6
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+  - @transcend-io/airgap.js-types@14.2.25
+
+## 1.7.5
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+  - @transcend-io/privacy-types@5.10.0
+  - @transcend-io/airgap.js-types@14.2.24
+
+## 1.7.4
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+  - @transcend-io/privacy-types@5.9.1
+  - @transcend-io/airgap.js-types@14.2.23
+
+## 1.7.3
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+  - @transcend-io/airgap.js-types@14.2.22
+
+## 1.7.2
+
+### Patch Changes
+
+- Updated dependencies [ac7537b]
+  - @transcend-io/privacy-types@5.8.5
+  - @transcend-io/airgap.js-types@14.2.21
+
+## 1.7.1
+
+### Patch Changes
+
+- Updated dependencies [54f4aff]
+  - @transcend-io/privacy-types@5.8.4
+  - @transcend-io/airgap.js-types@14.2.20
+
+## 1.7.0
+
+### Minor Changes
+
+- 55358da: Support `supportsAuthorizedAgent` on `data-subjects` in transcend.yml — the field can now be pushed via `updateSubject` and pulled from `internalSubjects`. Pushing `supportsAuthorizedAgent` requires the Authorized Agents feature to be enabled for the organization; the sync error message now calls this out explicitly.
+
+### Patch Changes
+
+- 259151f: Allow null consent UI variant description/userFlow/themeSlug on inventory pull so unset backend fields no longer fail the transcend.yml codec.
+- Updated dependencies [259151f]
+  - @transcend-io/privacy-types@5.8.2
+  - @transcend-io/airgap.js-types@14.2.19
+
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [ccb3c45]
+  - @transcend-io/privacy-types@5.8.1
+  - @transcend-io/airgap.js-types@14.2.18
+
+## 1.6.0
+
+### Minor Changes
+
+- 941113c: Add preference-workflow-configs pull/push (Workflows → Preference Workflows), including Workflows V2 via workflow-title and legacy action-type / data-silo-titles mode.
+
+### Patch Changes
+
+- b1750a6: Set PolicyType on policy create in updatePolicies (infer from title or use optional yml type). Pull/push round-trips type on policies.
+- Updated dependencies [b1750a6]
+  - @transcend-io/privacy-types@5.8.0
+  - @transcend-io/airgap.js-types@14.2.17
+
+## 1.5.0
+
+### Minor Changes
+
+- 97db927: Add optional `sombra-id` on data silos in `transcend.yml` so inventory pull/push can sync the GraphQL `DataSilo.sombraId` association for multi-Sombra organizations.
+- 2355c9e: Add privacy-center sync/pull for displayed-child-organization-uris, workflows-custom-fields-required, footer-layout, footer-links, home, and expandSideMenuByDefault. Honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.
+
+### Patch Changes
+
+- Updated dependencies [2355c9e]
+  - @transcend-io/privacy-types@5.7.0
+  - @transcend-io/airgap.js-types@14.2.16
+
+## 1.4.0
+
+### Minor Changes
+
+- 89f4fe5: Add workflow-configs pull and push support for DSR workflow settings. Sync matches by required, unique `internal-name` and creates missing DSR workflows (then updates remaining fields). `action-type` is required; note that changing a workflow's action type creates a new workflow version server-side. Supports title, subtitle, description, data subject, visibility, region collection, region list, per-region expiry times (requires a `default` entry with all values > 0), and attribute keys. Pull is filtered to DSR workflows (preference-management workflows are excluded).
+
+### Patch Changes
+
+- Updated dependencies [89f4fe5]
+  - @transcend-io/privacy-types@5.6.0
+  - @transcend-io/airgap.js-types@14.2.15
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [b0c9656]
+  - @transcend-io/privacy-types@5.5.0
+  - @transcend-io/airgap.js-types@14.2.14
+
 ## 1.3.0
 
 ### Minor Changes

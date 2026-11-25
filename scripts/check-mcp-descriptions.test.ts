@@ -20,13 +20,22 @@ import {
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, expect, test } from 'vitest';
+
+/**
+ * Hard ceiling for a tool's top-level description. Long enough for real
+ * guidance; too short to inline another catalog (TRANSCEND_SCOPES was ~18.5k).
+ */
+const MAX_DESCRIPTION_LENGTH = 700;
 
 /**
  * Mock ToolClients sufficient for tool *construction*. Tools dereference
@@ -42,11 +51,14 @@ const mockClients = {
 const serverFactories = [
   { name: 'admin', getTools: getAdminTools },
   { name: 'assessment', getTools: getAssessmentTools },
+  { name: 'config', getTools: getConfigTools },
   { name: 'consent', getTools: getConsentTools },
+  { name: 'custom-functions', getTools: getCustomFunctionsTools },
   { name: 'discovery', getTools: getDiscoveryTools },
   { name: 'dsr', getTools: getDSRTools },
   { name: 'inventory', getTools: getInventoryTools },
   { name: 'preferences', getTools: getPreferenceTools },
+  { name: 'privacy-center', getTools: getPrivacyCenterTools },
   { name: 'workflows', getTools: getWorkflowTools },
 ] as const;
 
@@ -84,6 +96,12 @@ describe('MCP tool input descriptions', () => {
             tool.description.trim().length >= MIN_DESCRIPTION_LENGTH,
           `[${name}] tool "${tool.name}" is missing a meaningful top-level description`,
         ).toBe(true);
+
+        expect(
+          tool.description.length,
+          `[${name}] tool "${tool.name}" description is ${tool.description.length} chars; ` +
+            `keep it under ${MAX_DESCRIPTION_LENGTH} so catalogs stay out of tools/list`,
+        ).toBeLessThanOrEqual(MAX_DESCRIPTION_LENGTH);
 
         const missing = collectMissingDescriptions(tool.zodSchema);
         expect(

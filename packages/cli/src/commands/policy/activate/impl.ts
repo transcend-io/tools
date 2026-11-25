@@ -1,21 +1,24 @@
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
+  policyEngineRequest,
+  PolicyEngineCliError,
   printResult,
   resolveBundleIdByName,
   resolvePolicyBundleVersion,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {
   /** Logical bundle name to activate */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Caller-supplied version label to activate */
   version?: string;
   /** Transcend API key */
@@ -26,12 +29,14 @@ export interface ActivateCommandFlags {
   'dry-run': boolean;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
  * Activate an uploaded policy bundle version.
  *
- * Resolves `--bundle-name` to the parent bundle UUID internally, then calls the
+ * Resolves `--remote-bundle-name` to the parent bundle UUID internally, then calls the
  * Policy Engine activate endpoint. The bundle is addressed by name only -- the
  * UUID is never exposed to the operator.
  *
@@ -41,16 +46,19 @@ export interface ActivateCommandFlags {
 export async function activate(
   this: LocalContext,
   {
-    'bundle-name': bundleName,
+    'remote-bundle-name': bundleName,
     version,
     auth,
     'transcend-url': transcendUrl,
     'dry-run': dryRun,
     json,
+    debug = false,
   }: ActivateCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
+  setPolicyEngineCliDebug(debug);
 
+  const commandLogger = selectCommandLogger(this.logger, json);
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
   if (!resolvedBundleId) {
@@ -58,7 +66,7 @@ export async function activate(
   }
   const resolvedVersion = await resolvePolicyBundleVersion(client, resolvedBundleId, { version });
 
-  logger.info(
+  commandLogger.info(
     colors.green(
       dryRun
         ? `Validating activation for version "${resolvedVersion.version}"...`
@@ -66,14 +74,35 @@ export async function activate(
     ),
   );
 
-  const body = await client
-    .post(
-      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
-      {
-        json: dryRun ? { dryRun: true } : {},
-      },
-    )
-    .json<ActivatePolicyBundleVersionResponse>();
+  let body: ActivatePolicyBundleVersionResponse;
+  try {
+    body = await policyEngineRequest(
+      client
+        .post(
+          `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
+          {
+            json: dryRun ? { dryRun: true } : {},
+          },
+        )
+        .json<ActivatePolicyBundleVersionResponse>(),
+    );
+  } catch (err) {
+    // A 409 here means the requested version is already the active version --
+    // surface that specifically (referencing the operator-facing bundle name
+    // and version label) rather than the generic conflict fallback.
+    const statusCode = (
+      err instanceof PolicyEngineCliError
+        ? (err.cause as { response?: { statusCode?: number } } | undefined)
+        : undefined
+    )?.response?.statusCode;
+    if (statusCode === 409) {
+      throw new PolicyEngineCliError(
+        `Version "${resolvedVersion.version}" of policy bundle "${bundleName}" is already the active version.`,
+        { cause: err },
+      );
+    }
+    throw err;
+  }
 
   printResult(this.process.stdout, {
     json,
@@ -86,7 +115,7 @@ export async function activate(
       ].join('\n'),
   });
 
-  logger.info(
+  commandLogger.info(
     colors.green(dryRun ? 'Activation validation succeeded.' : 'Policy bundle version activated.'),
   );
 }

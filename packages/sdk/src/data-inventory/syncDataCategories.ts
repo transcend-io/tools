@@ -106,15 +106,20 @@ export async function updateDataCategories(
  * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
+/** Reports a per-item sync failure */
+export type SyncItemErrorHandler = (message: string, item?: string) => void;
+
 export async function syncDataCategories(
   client: GraphQLClient,
   inputs: DataCategoryInput[],
   options: {
     /** Logger instance */
     logger?: Logger;
+    /** Called for each failed item */
+    onError?: SyncItemErrorHandler;
   } = {},
 ): Promise<boolean> {
-  const { logger = NOOP_LOGGER } = options;
+  const { logger = NOOP_LOGGER, onError } = options;
   logger.info(`Syncing "${inputs.length}" data categories...`);
 
   let encounteredError = false;
@@ -141,26 +146,38 @@ export async function syncDataCategories(
       logger.info(`Successfully synced data category "${dataCategory.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.error(
-        `Failed to sync data category "${dataCategory.name}"! - ${(err as Error).message}`,
-      );
+      const message = `Failed to sync data category "${dataCategory.name}"! - ${(err as Error).message}`;
+      logger.error(message);
+      onError?.(message, dataCategory.name);
     }
   });
 
   // Update all data categories
-  try {
-    logger.info(`Updating "${inputs.length}" data categories!`);
-    await updateDataCategories(client, {
-      input: inputs.map((input) => [
-        input,
-        dataCategoryByName[`${input.name}:${input.category}`]!.id,
-      ]),
-      logger,
-    });
-    logger.info(`Successfully synced "${inputs.length}" data categories!`);
-  } catch (err) {
-    encounteredError = true;
-    logger.error(`Failed to sync "${inputs.length}" data categories ! - ${(err as Error).message}`);
+  const updates: [DataCategoryInput, string][] = [];
+  for (const input of inputs) {
+    const key = `${input.name}:${input.category}`;
+    const existing = dataCategoryByName[key];
+    if (!existing) {
+      encounteredError = true;
+      const message = `Data category "${input.name}" (${input.category}) has no id after create; skipping update`;
+      logger.error(message);
+      onError?.(message, input.name);
+      continue;
+    }
+    updates.push([input, existing.id]);
+  }
+
+  if (updates.length > 0) {
+    try {
+      logger.info(`Updating "${updates.length}" data categories!`);
+      await updateDataCategories(client, { input: updates, logger });
+      logger.info(`Successfully synced "${updates.length}" data categories!`);
+    } catch (err) {
+      encounteredError = true;
+      const message = `Failed to sync "${updates.length}" data categories! - ${(err as Error).message}`;
+      logger.error(message);
+      onError?.(message);
+    }
   }
 
   return !encounteredError;

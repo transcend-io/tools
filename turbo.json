@@ -5,14 +5,20 @@
     "mise.toml",
     "mise.lock",
     "tsconfig.base.json",
+    "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
+    "tsdown.config.mcp.ts",
+    "vite.config.base.ts",
     "vitest.config.ts",
+    "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
     "oxlint.json",
     ".oxfmtrc.jsonc",
     "codegen.ts",
-    "schema.graphql"
+    "schema.graphql",
+    "skills/transcend-custom-functions/**",
+    "skills/transcend-policy-engine/**"
   ],
   "tasks": {
     "build": {
@@ -21,6 +27,11 @@
     },
     "test": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["transit", "//#codegen"],
+      "cache": false,
       "outputs": []
     },
     "quality": {
@@ -35,6 +46,7 @@
     "quality:checks": {
       "dependsOn": [
         "typecheck",
+        "typecheck:ui",
         "//#typecheck:root",
         "//#check:packages",
         "check:deps",
@@ -48,6 +60,10 @@
     },
     "typecheck": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "typecheck:ui": {
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "//#codegen": {
@@ -72,6 +88,10 @@
       "outputs": []
     },
     "check:publint": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "check:skill-bundle": {
       "dependsOn": ["build"],
       "outputs": []
     },
@@ -100,6 +120,74 @@
     },
     "//#format:check:root": {},
     "//#check:packages": {},
-    "//#check:deps:root": {}
+    "//#check:deps:root": {},
+    "@transcend-io/mcp-server-examples#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-examples#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/mcp-server-consent#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-consent#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/mcp#typecheck": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": []
+    },
+    "@transcend-io/mcp#test": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": []
+    },
+    "@transcend-io/design-tokens#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts"],
+      "outputs": [
+        "dist/**",
+        "src/primitive/**",
+        "src/semantic/**",
+        "src/index.ts",
+        "src/tokens.css"
+      ]
+    },
+    "@transcend-io/design-tokens#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/design-tokens#typecheck": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/custom-function-types#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "scripts/**",
+        "src/**",
+        "!src/__generated__/**",
+        "package.json",
+        "tsconfig.json",
+        "tsdown.config.ts"
+      ],
+      "outputs": ["dist/**", "src/__generated__/**"]
+    },
+    "@transcend-io/cli#quality:checks": {
+      "dependsOn": [
+        "typecheck",
+        "typecheck:ui",
+        "//#typecheck:root",
+        "//#check:packages",
+        "check:deps",
+        "//#check:deps:root",
+        "check:exports",
+        "check:publint",
+        "check:skill-bundle"
+      ]
+    }
   }
 }

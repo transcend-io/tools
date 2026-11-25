@@ -14,7 +14,7 @@ import { ConsentPreferenceResponse, type PreferencesQueryFilter, type ChunkMode 
  * @returns True if any records exist in the given window
  */
 export async function consentWindowHasAny(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     partition,
     mode,

@@ -8,7 +8,7 @@
   - [Repo Structure](#repo-structure)
   - [Generated files](#generated-files)
     - [README.md](#readmemd)
-    - [transcend.yml and pathfinder.yml JSON schemas](#transcendyml-and-pathfinderyml-json-schemas)
+    - [transcend.yml JSON schema](#transcendyml-json-schema)
   - [Testing](#testing)
   - [Publishing](#publishing)
 
@@ -74,16 +74,27 @@ pnpm -F cli genfiles
 pnpm -F cli docgen
 ```
 
-This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
+This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For required positionals (e.g. a `<bundle>` directory), pass `positionals` on each example. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
 
-### transcend.yml and pathfinder.yml JSON schemas
+### transcend.yml JSON schema
 
 ```bash
 pnpm -F cli script:transcend-json-schema
-pnpm -F cli script:pathfinder-json-schema
 ```
 
-These commands generate the `transcend.yml` and `pathfinder.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+This command generates the `transcend.yml` JSON schema files in `schema/` (`transcend-yml-schema-latest.json` and `transcend-yml-schema-vN.json` for the current CLI major version). They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+
+On release, `pnpm changeset:version:release` regenerates these after Changesets bumps `package.json`, so a new major version's `vN` schema lands in the Version Packages PR.
+
+### Permissions API OPA input schema
+
+```bash
+pnpm -F cli script:permissions-policy-input-schema
+```
+
+This command regenerates `schema/permissions-policy-input.json` from the
+`PermissionsPolicyInput` codec in `@transcend-io/privacy-types`. The CLI uses
+that file when scaffolding `policy new --template permissions`.
 
 ## Testing
 

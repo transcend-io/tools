@@ -1,5 +1,5 @@
 import { buildCommand } from '@stricli/core';
-import { ScopeName } from '@transcend-io/privacy-types';
+import { PrivacyCenterAccessTokenFormat, ScopeName } from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
@@ -39,6 +39,13 @@ export const generateAccessTokensCommand = buildCommand({
         parse: String,
         optional: true,
         brief: 'Name of the column in the CSV that contains user core identifiers',
+      },
+      tokenFormat: {
+        kind: 'enum',
+        values: Object.values(PrivacyCenterAccessTokenFormat),
+        brief:
+          'Token written into the link. JWT is the signed token. SHORT is a 43-character token for email and SMS tools that limit URL length.',
+        default: PrivacyCenterAccessTokenFormat.Jwt,
       },
       duration: {
         kind: 'parsed',

@@ -1,23 +1,37 @@
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  canObtainApproval,
+  ConfirmationPolicy,
   createErrorResult,
+  EMPTY_CAPABILITY_REPORT,
+  expandToolsForClient,
+  isVisibleToModel,
+  resolveToolVariant,
+  shouldRegisterTool,
   SimpleLogger,
+  toolInputSchema,
+  withConfirmation,
+  type ClientCapabilityReport,
+  type ConfirmationGate,
   type ToolDefinition,
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPolicyTools, type PolicyToolClients } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 
 import type { TranscendGraphQLClient } from './graphql-client.js';
 
-export interface UmbrellaToolClients {
+export interface UmbrellaToolClients extends PolicyToolClients {
   /** REST client for Sombra API */
   rest: TranscendRestClient;
   /** Composed GraphQL client with all domain mixins */
@@ -25,6 +39,16 @@ export interface UmbrellaToolClients {
   /** Admin-dashboard base URL used to build deep links */
   dashboardUrl: string;
 }
+
+/**
+ * Confirmation policy for callers that drive the registry directly.
+ *
+ * Refuse, because there is no transport here to tell us a person is reachable:
+ * embedders call `executeTool` in-process, with no `elicitation/create` channel
+ * and nowhere to return an approval token to. The serving paths pick their own
+ * policy in `buildMcpServer` from the transport they are on.
+ */
+const EMBEDDED_GATE: ConfirmationGate = { policy: ConfirmationPolicy.Refuse };
 
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
@@ -41,29 +65,45 @@ export class ToolRegistry {
     this.registerToolsFromModule(getDocsTools(this.clients));
     this.registerToolsFromModule(getDSRTools(this.clients));
     this.registerToolsFromModule(getConsentTools(this.clients));
+    this.registerToolsFromModule(getCustomFunctionsTools(this.clients));
     this.registerToolsFromModule(getPreferenceTools(this.clients));
     this.registerToolsFromModule(getInventoryTools(this.clients));
     this.registerToolsFromModule(getDiscoveryTools(this.clients));
     this.registerToolsFromModule(getAssessmentTools(this.clients));
     this.registerToolsFromModule(getWorkflowTools(this.clients));
+    this.registerToolsFromModule(getPolicyTools(this.clients));
+    this.registerToolsFromModule(getPrivacyCenterTools(this.clients));
     this.registerToolsFromModule(getAdminTools(this.clients));
+    this.registerToolsFromModule(getConfigTools(this.clients));
   }
 
   private registerToolsFromModule(tools: ToolDefinition[]): void {
     for (const tool of tools) {
+      if (!shouldRegisterTool(tool)) {
+        continue;
+      }
       if (this.tools.has(tool.name)) {
         this.logger.warn('Duplicate tool name - skipping', { toolName: tool.name });
         continue;
       }
       this.tools.set(tool.name, tool);
-      this.jsonSchemaCache.set(
-        tool.name,
-        toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
-      );
+      this.jsonSchemaCache.set(tool.name, toolInputSchema(tool.zodSchema));
     }
   }
 
-  getToolList(): Array<{
+  /**
+   * Tool descriptors as a host would see them.
+   *
+   * The serving path builds descriptors in `buildMcpServer` rather than here, so
+   * this method exists for callers embedding the registry directly. It still
+   * resolves capability variants and carries `_meta`, because a descriptor list
+   * that quietly disagreed with what the server actually serves would be worse
+   * than no method at all.
+   */
+  getToolList(
+    /** Capabilities of the host being served; defaults to a host with none */
+    client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT,
+  ): Array<{
     name: string;
     description: string;
     inputSchema: Record<string, unknown>;
@@ -72,24 +112,48 @@ export class ToolRegistry {
       destructiveHint: boolean;
       idempotentHint: boolean;
     };
+    _meta?: Record<string, unknown>;
   }> {
-    return Array.from(this.tools.values()).map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
-      annotations: tool.annotations,
-    }));
+    // Nothing here can obtain approval, so a gated tool would only be described
+    // and then refuse. `executeTool` still refuses it either way.
+    const canApprove = canObtainApproval(EMBEDDED_GATE, client);
+
+    return expandToolsForClient(Array.from(this.tools.values()), client, EMBEDDED_GATE)
+      .filter((tool) => isVisibleToModel(tool))
+      .filter((tool) => canApprove || !tool.confirmation)
+      .map((tool) => {
+        const resourceUri = tool.ui?.resource.uri;
+        return {
+          name: tool.name,
+          description: tool.description,
+          inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
+          annotations: tool.annotations,
+          ...(resourceUri && {
+            _meta: { ui: { resourceUri }, 'ui/resourceUri': resourceUri },
+          }),
+        };
+      });
   }
 
   getTool(name: string): ToolDefinition | undefined {
     return this.tools.get(name);
   }
 
-  async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-    const tool = this.tools.get(name);
-    if (!tool) {
+  async executeTool(
+    name: string,
+    args: Record<string, unknown>,
+    /** Capabilities of the host being served; defaults to a host with none */
+    client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT,
+  ): Promise<unknown> {
+    const registered = this.tools.get(name);
+    if (!registered) {
       throw new Error(`Unknown tool: ${name}`);
     }
+
+    // Resolve so the handler that runs matches the descriptor getToolList emitted,
+    // and gate it: calling the registered handler directly would walk past the
+    // confirmation a gated tool asked for.
+    const tool = withConfirmation(resolveToolVariant(registered, client), EMBEDDED_GATE);
 
     const parseResult = tool.zodSchema.safeParse(args);
     if (!parseResult.success) {

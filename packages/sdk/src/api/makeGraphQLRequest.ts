@@ -17,6 +17,9 @@ const KNOWN_ERRORS = [
   'Client error',
   'cannot affect row a second time',
   'GRAPHQL_VALIDATION_FAILED',
+  // Backend io-ts payload validation failures are deterministic — retrying
+  // just repeats a (potentially enormous) codec error message
+  'Failed to decode codec',
 ];
 
 /**

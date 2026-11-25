@@ -34,7 +34,6 @@ teams:
     users:
       - test@acme.com
     scopes:
-      - manageContractScanning
       - manageDataInventory
       - managePromptRuns
       - managePrompts

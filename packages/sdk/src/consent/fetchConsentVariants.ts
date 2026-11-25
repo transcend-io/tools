@@ -20,8 +20,8 @@ export interface ConsentUiVariant {
   name: string;
   /** The unique identifier for this UI variant */
   slug: string;
-  /** Description of this UI variant */
-  description?: string;
+  /** Description of this UI variant (null when unset) */
+  description?: string | null;
   /** Locales this UI variant applies to */
   locales: string[];
   /** Variant behavior and layer configuration */
@@ -34,9 +34,9 @@ export interface ConsentUiVariant {
     id: string;
     /** The slug of the consent UI theme */
     slug: string;
-  };
-  /** The user flow for this UI variant */
-  userFlow?: ConsentUiUserFlow;
+  } | null;
+  /** The user flow for this UI variant (null when unset) */
+  userFlow?: ConsentUiUserFlow | null;
 }
 
 /** Paginated response from the consentUiVariants GraphQL query */

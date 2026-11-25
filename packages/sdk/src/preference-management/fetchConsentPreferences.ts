@@ -20,7 +20,7 @@ import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.
  * @returns All nodes (only when onItems is not provided)
  */
 export async function fetchConsentPreferences(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     partition,
     filterBy = {},

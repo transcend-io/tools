@@ -1,7 +1,6 @@
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
+import { TR_PUSH_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
-import { TR_PUSH_RESOURCE_SCOPE_MAP } from '../../../constants.js';
-import { TranscendPullResource } from '../../../enums.js';
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';
 import type { GenerateApiKeysCommandFlags } from '../../admin/generate-api-keys/impl.js';
@@ -15,6 +14,14 @@ const examples = buildExamples<PushCommandFlags>(
       description: 'Looks for file at ./transcend.yml',
       flags: {
         auth: '$TRANSCEND_API_KEY',
+      },
+    },
+    {
+      description:
+        'Preview what the push would create, update, or delete. Nothing is changed in Transcend',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        dryRun: true,
       },
     },
     {
@@ -41,7 +48,7 @@ const examples = buildExamples<PushCommandFlags>(
     },
     {
       description:
-        'Use dynamic variables to fill out parameters in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))',
+        'Use dynamic variables in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))',
       flags: {
         auth: '$TRANSCEND_API_KEY',
         variables: 'domain:acme.com,stage:staging',
@@ -135,6 +142,19 @@ ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
 })}
 \`\`\`
 
+**Preview a push before applying it**
+
+\`--dryRun\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add \`--json\` for machine-readable output.
+
+The preview needs view access to every resource in your file, because it reads the current values first.
+
+\`\`\`sh
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+  dryRun: true,
+})}
+\`\`\`
+
 Some things to note about this sync process:
 
 1. Any field that is defined in your .yml file will be synced up to app.transcend.io. If any change was made on the Admin Dashboard, it will be overwritten.
@@ -146,6 +166,21 @@ Some things to note about this sync process:
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
 
+#### Workflow configs push notes
+
+\`workflow-configs\` are matched using a cascading key:
+
+1. \`internal-name\` (when provided; zero matches create a new workflow instead of falling through)
+2. \`title\`
+3. \`action-type\`
+4. \`data-subject-type\` (when provided in YAML)
+5. \`region-list\` (order-independent set match)
+
+- **Create:** If no workflow matches after the cascade, the CLI creates a DSR workflow via \`createWorkflow\` (starts as Draft with default associations), then applies the remaining YAML fields via \`updateWorkflowConfig\`.
+- **Update:** If a unique match exists, fields from YAML are updated in place. When \`internal-name\` is provided on update, it is written back via \`updateWorkflowConfig\`.
+- Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
+- Publishing (\`visibility: PUBLISHED\`) requires a \`data-subject-type\`.
+
 #### Preference management push notes
 
 When pushing \`purposes\`, \`preference-options\`, or nested \`preference-topics\`:
@@ -154,6 +189,16 @@ When pushing \`purposes\`, \`preference-options\`, or nested \`preference-topics
 - **Built-in purposes:** Default purposes (Advertising, Analytics, Essential, Functional, SaleOfInfo) can be updated via API key for most fields (\`description\`, \`title\`, \`display-order\`, \`show-in-privacy-center\`, \`auth-level\`, etc.). The CLI omits \`configurable\` and \`show-in-consent-manager\` from updates for built-in purposes and logs a warning if your YAML differs on those fields — change them in the [Admin Dashboard](https://app.transcend.io/consent-manager/regional-experiences/purposes) instead.
 - **BOOLEAN topics:** Do not define \`options\` for \`BOOLEAN\` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
 - **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change \`type\` in YAML is rejected by the CLI.
+
+#### Preference workflow configs push notes
+
+When pushing \`preference-workflow-configs\`:
+
+- **Purposes required:** Each config needs a non-empty \`purposes\` list. The CLI derives \`triggerCondition\` from purposes on push (same shape as the Admin Dashboard).
+- **Exactly one mode:** Use either legacy fields (\`action-type\`, optional \`data-silo-titles\`) **or** Workflows V2 (\`workflow-title\`). Do not mix them on the same config.
+- **Legacy:** \`action-type\` and \`data-subject-type\` are required when creating a new config. \`data-silo-titles\` must match existing data silo titles exactly.
+- **Workflows V2:** \`workflow-title\` must match a DSR workflow's \`internalName\` (when set) or external title. On create, \`actionId\` / \`dataSubjectId\` are taken from that workflow. Requires the Manage Workflows scope to list workflows.
+- **Example:** See [preference-workflow-configs.yml](../../../../examples/preference-workflow-configs.yml).
 
 #### CI Integration
 
@@ -192,18 +237,18 @@ jobs:
         run: transcend inventory push --auth=\${{ secrets.TRANSCEND_API_KEY }}
 \`\`\`
 
-#### Dynamic Variables
+#### Dynamic variables
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The \`transcend inventory push\` command takes in a parameter \`variables\`. This is a CSV of \`key:value\` pairs.
+The \`transcend inventory push\` command accepts \`--variables\` as a comma-separated list of \`key:value\` pairs. Colons are preserved in values; escape a literal comma as \`\\,\` inside a quoted flag value.
 
-This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
+This command can fill out multiple variables in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 
 \`\`\`yml
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,

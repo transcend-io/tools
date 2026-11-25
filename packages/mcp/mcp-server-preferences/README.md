@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewPrivacyCenter`, `ManagePrivacyCenter`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewManagedConsentDatabaseAdminApi`, `ManageStoredPreferences`, `ViewConsentManager`, `ManageConsentManagerDeveloperSettings`, `ViewPreferenceStoreSettings`, `ManagePreferenceStoreSettings`, `ViewDataSubjectRequestSettings`, `ViewDataMap`, `ManageWorkflows`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts). Existing OAuth clients created before `ViewConsentManager` was added must re-grant that scope (re-auth / update the client).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -102,12 +102,20 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
+Call `preferences_list_partitions` first to discover valid Preference Store partition keys, then pass a returned `partition` value into the other tools (prefer `effectivePartition` / the row with `isEffectiveForConsentManager` unless the user named another partition). Do not use the organization id as `partition`.
+
+- `preferences_list_partitions` — List Preference Store partitions (default airgap bundle + custom)
 - `preferences_query` — Query preference records
 - `preferences_upsert` — Create or update a preference record
 - `preferences_delete` — Delete a preference record
 - `preferences_append_identifiers` — Append identifiers to a record
 - `preferences_update_identifiers` — Update identifiers on a record
 - `preferences_delete_identifiers` — Delete identifiers from a record
+- `preferences_write_partitions` — Create partitions by name (transcend.yml `partitions`)
+- `preferences_list_option_values` — List preference option values (`preference-options`)
+- `preferences_write_option_values` — Create or update preference option values by slug
+- `preferences_list_workflow_configs` — List preference workflow configs (`preference-workflow-configs`)
+- `preferences_write_workflow_configs` — Create or update preference workflow configs by name
 
 ## Related packages
 

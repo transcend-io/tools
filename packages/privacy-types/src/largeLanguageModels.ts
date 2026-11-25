@@ -4,11 +4,11 @@ import * as t from 'io-ts';
 /**
  * The role of the message's author. One of `system`, `user`, `assistant`
  */
-export const ChatCompletionRole = makeEnum({
+export const ChatCompletionRole = {
   System: 'system',
   User: 'user',
   Assistant: 'assistant',
-});
+} as const;
 
 /** Overrides type */
 export type ChatCompletionRole = (typeof ChatCompletionRole)[keyof typeof ChatCompletionRole];
@@ -18,11 +18,9 @@ export type ChatCompletionRole = (typeof ChatCompletionRole)[keyof typeof ChatCo
  */
 export enum PromptRunProductArea {
   Assessments = 'assessments',
-  ContractScanning = 'contractScanning',
   PromptManager = 'promptManager',
   UnstructuredDiscovery = 'unstructuredDiscovery',
   DataInventory = 'dataInventory',
-  Pathfinder = 'pathfinder',
 }
 
 export const ChatCompletionMessage = t.type({
@@ -36,11 +34,11 @@ export type ChatCompletionMessage = t.TypeOf<typeof ChatCompletionMessage>;
 /**
  * LLM model clients
  */
-export const LargeLanguageModelClient = makeEnum({
+export const LargeLanguageModelClient = {
   OpenAi: 'openai',
   Claude: 'claude',
   Llama: 'llama',
-});
+} as const;
 
 /** Overrides type */
 export type LargeLanguageModelClient =

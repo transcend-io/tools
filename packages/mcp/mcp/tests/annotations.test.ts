@@ -1,12 +1,16 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPolicyTools } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -18,24 +22,30 @@ const mockClients: ToolClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
   dashboardUrl: 'https://app.transcend.io',
+  transcendApiUrl: 'https://api.transcend.io',
+  auth: { type: 'apiKey', apiKey: 'test-key' },
 };
 
 const allTools = [
   ...getDSRTools(mockClients),
   ...getConsentTools(mockClients),
+  ...getCustomFunctionsTools(mockClients),
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
-  ...getWorkflowTools(mockClients),
+  ...getWorkflowTools(mockClients as never),
+  ...getPolicyTools(mockClients as never),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
+  ...getConfigTools(mockClients),
 ];
 
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
 
 describe('MCP Tool Annotations', () => {
-  it('registers all umbrella tools (deduped like ToolRegistry)', () => {
+  it('defines all umbrella tools across domain packages', () => {
     expect(allTools.length).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
   });
 
@@ -79,18 +89,39 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
+      'privacy_center_write',
+      'assessments_submit_response',
+      'config_push',
+      'consent_bulk_triage',
+      'consent_delete_cookies',
+      'consent_delete_data_flows',
+      'consent_deploy_bundle',
+      'consent_update_cookies',
+      'consent_update_data_flows',
+      'custom_functions_promote_version',
       'dsr_cancel',
-      'admin_create_api_key',
-      'inventory_create_data_silo',
+      'dsr_enrich_identifiers',
+      'dsr_submit',
+      'policy_set_live',
       'preferences_delete',
       'preferences_delete_identifiers',
-      'assessments_submit_response',
+      'preferences_update_identifiers',
     ];
 
     it.each(expectedDestructive)('%s has destructiveHint: true', (name) => {
       const tool = toolByName(name);
       expect(tool.annotations.destructiveHint).toBe(true);
       expect(tool.annotations.readOnlyHint).toBe(false);
+    });
+
+    // Exact rather than a lower bound: a tool picking up destructiveHint changes how
+    // every host prompts for it, so it should not happen without editing this list.
+    it('no other tool is marked destructive', () => {
+      const actual = allTools
+        .filter((t) => t.annotations.destructiveHint)
+        .map((t) => t.name)
+        .sort();
+      expect(actual).toEqual([...expectedDestructive].sort());
     });
 
     it('no read-only tool is marked destructive', () => {
@@ -101,17 +132,91 @@ describe('MCP Tool Annotations', () => {
     });
   });
 
+  describe('confirmation-gated tools', () => {
+    const expectedGated = [
+      'admin_write_teams',
+      'config_push',
+      'privacy_center_write',
+      'consent_deploy_bundle',
+      'custom_functions_promote_version',
+      'custom_functions_test_run',
+      'custom_functions_upsert',
+      'dsr_cancel',
+      'dsr_enrich_identifiers',
+      'dsr_submit',
+      'policy_publish',
+      'policy_set_live',
+      'preferences_append_identifiers',
+      'preferences_delete',
+      'preferences_delete_identifiers',
+      'preferences_update_identifiers',
+      'preferences_upsert',
+    ];
+
+    const expectedGatedNonDestructive = [
+      'admin_write_teams',
+      'custom_functions_test_run',
+      'custom_functions_upsert',
+      'policy_publish',
+      'preferences_append_identifiers',
+      'preferences_upsert',
+    ];
+
+    // Exact in both directions: adding a gate makes a tool refuse on hosts that
+    // cannot ask, and dropping one silently un-guards an irreversible action.
+    it('exactly the expected tools require confirmation', () => {
+      const actual = allTools
+        .filter((t) => t.confirmation)
+        .map((t) => t.name)
+        .sort();
+      expect(actual).toEqual([...expectedGated].sort());
+    });
+
+    it.each(expectedGated)('%s has a non-empty confirmation hint', (name) => {
+      const tool = toolByName(name);
+      expect(tool.confirmation?.hint.trim()).not.toBe('');
+    });
+
+    it('every gated tool is annotated mutating', () => {
+      for (const tool of allTools.filter((t) => t.confirmation)) {
+        expect(tool.annotations.readOnlyHint, `${tool.name}`).toBe(false);
+      }
+    });
+
+    it.each(expectedGatedNonDestructive)(
+      '%s is gated without destructiveHint (confirmation and destructiveHint are independent)',
+      (name) => {
+        const tool = toolByName(name);
+        expect(tool.confirmation?.hint.trim()).not.toBe('');
+        expect(tool.annotations.destructiveHint).toBe(false);
+      },
+    );
+  });
+
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
+      'admin_write_teams',
+      'privacy_center_write',
+      'privacy_center_write_intl_messages',
+      'privacy_center_write_policies',
       'workflows_update_config',
-      'consent_set_preferences',
+      'workflows_write_email_templates',
+      'workflows_write_configs',
       'preferences_upsert',
       'preferences_update_identifiers',
-      'inventory_update_data_silo',
+      'preferences_write_partitions',
+      'preferences_write_option_values',
+      'preferences_write_workflow_configs',
+      'inventory_write_vendor',
+      'dsr_write_enrichers',
+      'dsr_write_actions',
+      'inventory_write_processing_purpose',
+      'inventory_update_or_create_data_point',
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
-      'dsr_respond_erasure',
+      'consent_write_consent_manager',
+      'consent_write_purposes',
     ];
 
     it.each(expectedIdempotentMutative)(

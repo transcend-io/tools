@@ -1,6 +1,10 @@
 export { getPreferenceTools } from './tools/index.js';
-export { PREFERENCE_OAUTH_SCOPES } from './scopes.js';
 
+export {
+  ListPartitionsSchema,
+  type ListPartitionsInput,
+  type PreferencePartitionRow,
+} from './tools/preferences_list_partitions.js';
 export {
   IdentifierSchema,
   QueryPreferencesSchema,
@@ -9,12 +13,13 @@ export {
 } from './tools/preferences_query.js';
 export {
   UpsertPreferencesSchema,
-  UpsertPreferencesPurposeSchema,
-  UpsertPreferencesRecordSchema,
   type UpsertPreferencesInput,
-  type UpsertPreferencesPurposeInput,
-  type UpsertPreferencesRecordInput,
 } from './tools/preferences_upsert.js';
+export {
+  PARTITION_DESCRIBE,
+  UpsertPurposeSchema,
+  UpsertRecordSchema,
+} from './tools/preference-schemas.js';
 export {
   DeletePreferencesSchema,
   type DeletePreferencesInput,
@@ -25,11 +30,29 @@ export {
 } from './tools/preferences_append_identifiers.js';
 export {
   UpdateIdentifiersSchema,
-  UpdateIdentifiersItemSchema,
   type UpdateIdentifiersInput,
-  type UpdateIdentifiersItemInput,
 } from './tools/preferences_update_identifiers.js';
 export {
   DeleteIdentifiersSchema,
   type DeleteIdentifiersInput,
 } from './tools/preferences_delete_identifiers.js';
+export {
+  WritePartitionsSchema,
+  type WritePartitionsInput,
+} from './tools/preferences_write_partitions.js';
+export {
+  ListOptionValuesSchema,
+  type ListOptionValuesInput,
+} from './tools/preferences_list_option_values.js';
+export {
+  WriteOptionValuesSchema,
+  type WriteOptionValuesInput,
+} from './tools/preferences_write_option_values.js';
+export {
+  ListWorkflowConfigsSchema,
+  type ListWorkflowConfigsInput,
+} from './tools/preferences_list_workflow_configs.js';
+export {
+  WriteWorkflowConfigsSchema,
+  type WriteWorkflowConfigsInput,
+} from './tools/preferences_write_workflow_configs.js';

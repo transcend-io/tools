@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { describe, it, expect, afterAll } from 'vitest';
 
-import { fileContainsExactBytes } from '../impl.js';
+import { fileContainsExactBytes } from '../helpers.js';
 
 const TMP = path.join(os.tmpdir(), 'find-text-in-folder-tests');
 

@@ -8,6 +8,13 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import type {
+  ConsentManagerConnectionStatus,
+  CustomSiloConnectionStrategy,
+  DataProcessingAgreementStatus,
+  HasPersonalDataStatus,
+  PrivacyRequestConnectionStatus,
+} from '../transcend-yml/enums.js';
 import { fetchAllDataPoints, type DataPointWithSubDataPoint } from './fetchAllDataPoints.js';
 import { fetchAllDataSilos, type DataSiloAttributeValue } from './fetchAllDataSilos.js';
 import { DATA_SILOS_ENRICHED } from './gqls/dataSilo.js';
@@ -46,10 +53,25 @@ export interface DataSiloEnriched {
     /** True if identifier is wired */
     isConnected: boolean;
   }[];
-  /** Dependent data silos */
+  /** Dependent data silos that apply to every erasure workflow */
   dependentDataSilos: {
     /** Title of silo */
     title: string;
+  }[];
+  /**
+   * Dependent data silos for the erasure workflows that override the global configuration.
+   * An entry with an empty list is a workflow that runs this data silo with no dependencies.
+   */
+  dependedOnDataSilosPerWorkflow: {
+    /** ID of the workflow config the override applies to */
+    workflowConfigId: string;
+    /** Internal name of the workflow config; used as the transcend.yml workflow key */
+    workflowInternalName: string;
+    /** Silos depended on within that workflow */
+    dependedOnDataSilos: {
+      /** Title of silo */
+      title: string;
+    }[];
   }[];
   /** Silo owners */
   owners: {
@@ -111,6 +133,52 @@ export interface DataSiloEnriched {
     /** Title of business entity */
     title: string;
   }[];
+  /**
+   * Configured Sombra instance that processes this data silo
+   */
+  sombra?: {
+    /** Sombra instance ID */
+    id: string;
+  } | null;
+  /** Linked vendor in the data inventory */
+  vendor?: {
+    /** Vendor title */
+    title: string;
+  } | null;
+  /** Primary contact name for this data silo or its vendor */
+  contactName?: string | null;
+  /** Primary contact email for DPA or operational questions */
+  contactEmail?: string | null;
+  /** Public website for the vendor or system */
+  websiteUrl?: string | null;
+  /** Free-form notes about the data silo */
+  notes: string;
+  /** Description of how long data is retained in this system */
+  dataRetentionNote: string;
+  /** Internal documentation for how DSRs are processed in this silo */
+  dsrProcessingDocumentation: string;
+  /** URL to the signed or online data processing agreement */
+  dataProcessingAgreementLink?: string | null;
+  /** Status of the data processing agreement */
+  dataProcessingAgreementStatus?: DataProcessingAgreementStatus;
+  /** Webhook URL for DSR notifications (distinct from integration webhook `url`) */
+  notifyWebhookUrl?: string | null;
+  /** When true, new DSR work is paused for this data silo */
+  isPausedForDsrs: boolean;
+  /** When true, skip secondary actions when a DSR has no files to process */
+  skipSecondaryIfNoFiles: boolean;
+  /** Earliest time of day (HH:mm) when DSR processing may start */
+  allowDsrProcessingStartTime?: string | null;
+  /** Latest time of day (HH:mm) when DSR processing may end */
+  allowDsrProcessingEndTime?: string | null;
+  /** Connection strategy for custom integrations */
+  customSiloConnectionStrategy?: CustomSiloConnectionStrategy | null;
+  /** Consent Manager recommendation for connecting this silo */
+  recommendedForConsent?: ConsentManagerConnectionStatus;
+  /** Privacy request automation recommendation for connecting this silo */
+  recommendedForPrivacy?: PrivacyRequestConnectionStatus;
+  /** Whether this silo is believed to store personal data */
+  hasPersonalData?: HasPersonalDataStatus;
 }
 
 /**
@@ -186,6 +254,10 @@ export async function fetchEnrichedDataSilos(
       }
 
       dataSilos.push([silo, dataPoints]);
+    });
+  } else {
+    silos.forEach((silo) => {
+      dataSilos.push([silo, []]);
     });
   }
 

@@ -1,0 +1,5 @@
+# Terrazzo-generated output (rebuilt via prebuild)
+src/primitive/
+src/semantic/
+src/tokens.css
+src/_bootstrap-variables.scss

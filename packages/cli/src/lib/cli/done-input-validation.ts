@@ -1,4 +1,14 @@
 /**
+ * Process dependencies used after command input validation.
+ */
+export interface DoneInputValidationProcess {
+  /** Environment variables for the current command runtime */
+  readonly env: NodeJS.ProcessEnv;
+  /** Exit the current command runtime */
+  readonly exit: (code?: number) => void;
+}
+
+/**
  * If the environment variable `DEVELOPMENT_MODE_VALIDATE_ONLY` is set,
  * this function will exit the process with a status code of 0.
  *
@@ -7,10 +17,10 @@
  *
  * This should be called after input validation, and must be agnostic to the environment (e.g., the existence of a file on the file system)
  *
- * @param exit - The function to exit the process.
+ * @param process - Process dependencies for environment access and exit.
  */
-export function doneInputValidation(exit: (code?: number) => void): void {
+export function doneInputValidation(process: DoneInputValidationProcess): void {
   if (process.env.DEVELOPMENT_MODE_VALIDATE_ONLY === 'true') {
-    exit(0);
+    process.exit(0);
   }
 }

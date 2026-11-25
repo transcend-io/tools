@@ -15,7 +15,7 @@ export async function rejectUnverifiedIdentifiers(
   this: LocalContext,
   { auth, transcendUrl, identifierNames, actions = [] }: RejectUnverifiedIdentifiersCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await removeUnverifiedRequestIdentifiers({
     requestActions: actions,

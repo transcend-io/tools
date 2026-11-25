@@ -1,8 +1,10 @@
 import { ScopeName } from '@transcend-io/privacy-types';
-
-import type { TranscendInput } from '../codecs.js';
-import { TR_PUSH_RESOURCE_SCOPE_MAP, TR_YML_RESOURCE_TO_FIELD_NAME } from '../constants.js';
-import { TranscendPullResource } from '../enums.js';
+import {
+  TR_PUSH_RESOURCE_SCOPE_MAP,
+  TR_YML_RESOURCE_TO_FIELD_NAME,
+  TranscendPullResource,
+  type TranscendInput,
+} from '@transcend-io/sdk';
 
 export interface TranscendConfigResourceDefinition {
   /** YAML top-level key */

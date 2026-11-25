@@ -9,6 +9,7 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { fetchAllDataSilos } from '../data-inventory/fetchAllDataSilos.js';
 import type { Identifier } from '../data-inventory/fetchAllIdentifiers.js';
 import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/enricher.js';
 
@@ -50,6 +51,12 @@ export interface EnricherInput {
   }[];
   /** The privacy actions that the enricher should run against */
   'privacy-actions'?: RequestAction[];
+  /** Linked data silo title (database enrichers) */
+  'data-silo-title'?: string;
+  /** SQL query for database enrichers */
+  'sql-query'?: string;
+  /** Database name for database enrichers */
+  'database-name'?: string;
 }
 
 export interface Enricher {
@@ -57,6 +64,8 @@ export interface Enricher {
   id: string;
   /** Title of enricher */
   title: string;
+  /** Internal description of why the enricher is needed */
+  description?: string;
   /** URL of enricher */
   url: string;
   /** Server silo */
@@ -90,6 +99,9 @@ export interface Enricher {
   phoneNumbers: string[];
   /** The list of regions that should trigger the enrichment condition */
   regionList: (IsoCountryCode | IsoCountrySubdivisionCode)[];
+  databaseName?: string;
+  sqlQuery?: string;
+  dataSilo?: { title: string };
 }
 
 export interface DataSubjectRef {
@@ -183,6 +195,21 @@ export async function syncEnricher(
 
   const inputIdentifier = enricher['input-identifier'];
   const actionUpdates = enricher['privacy-actions'] || Object.values(RequestAction);
+
+  let dataSiloId: string | undefined;
+  if (enricher['data-silo-title']) {
+    const dataSilos = await fetchAllDataSilos(client, {
+      logger,
+      pageSize: 20,
+      titles: [enricher['data-silo-title']],
+    });
+    const match = dataSilos.find(({ title }) => title === enricher['data-silo-title']);
+    if (!match) {
+      throw new Error(`Failed to find data silo with title "${enricher['data-silo-title']}"`);
+    }
+    dataSiloId = match.id;
+  }
+
   if (existingEnricher) {
     await makeGraphQLRequest(client, UPDATE_ENRICHER, {
       variables: {
@@ -201,14 +228,24 @@ export async function syncEnricher(
           phoneNumbers: enricher.phoneNumbers,
           regionList: enricher.regionList,
           dataSubjectIds,
-          description: enricher.description || '',
+          // Leave the stored description alone when the input does not set one
+          description: enricher.description,
           inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier]!.id : undefined,
           identifiers: enricher['output-identifiers']!.map((id) => identifierByName[id]!.id),
+          ...(dataSiloId ? { dataSiloId } : {}),
+          ...(enricher['sql-query'] !== undefined ? { sqlQuery: enricher['sql-query'] } : {}),
+          ...(enricher['database-name'] !== undefined
+            ? { databaseName: enricher['database-name'] }
+            : {}),
           ...(existingEnricher.type === EnricherType.Sombra ? {} : { actions: actionUpdates }),
         },
       },
       logger,
     });
+  } else if (!existingEnricher && !inputIdentifier) {
+    throw new Error(
+      `Cannot create enricher "${enricher.title}" without input-identifier. Set input-identifier in the preflight definition.`,
+    );
   } else if (inputIdentifier) {
     await makeGraphQLRequest(client, CREATE_ENRICHER, {
       variables: {
@@ -230,6 +267,11 @@ export async function syncEnricher(
           description: enricher.description || '',
           inputIdentifier: identifierByName[inputIdentifier]!.id,
           identifiers: enricher['output-identifiers'].map((id) => identifierByName[id]!.id),
+          ...(dataSiloId ? { dataSiloId } : {}),
+          ...(enricher['sql-query'] !== undefined ? { sqlQuery: enricher['sql-query'] } : {}),
+          ...(enricher['database-name'] !== undefined
+            ? { databaseName: enricher['database-name'] }
+            : {}),
           actions: actionUpdates,
         },
       },

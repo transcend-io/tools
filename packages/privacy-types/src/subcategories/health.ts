@@ -1,10 +1,10 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /** Information about an individual's health */
-export const HealthSubCategory = makeEnum({
+export const HealthSubCategory = {
   /** Fallback subcategory */
   Health: 'HEALTH',
-});
+} as const;
 
 /**
  * Overload with type of integration

@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`, `ManageConsentManagerDeveloperSettings`, `ViewPreferenceStoreSettings`, `ManagePreferenceStoreSettings`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -103,21 +103,38 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `consent_get_preferences` — Get consent preferences for a user
-- `consent_set_preferences` — Set consent preferences
 - `consent_list_purposes` — List tracking purposes
 - `consent_list_data_flows` — List data flows
 - `consent_list_cookies` — List cookies
 - `consent_list_airgap_bundles` — List Airgap bundles
 - `consent_list_regimes` — List consent regimes
-- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk)
+- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk). Matches the Consent Manager tables; CSP data flows are omitted like the UI.
+- `consent_cookie_triage_review_app` — Open an interactive cookie/data-flow triage review UI; pass `triageType` (`cookies` | `data_flows`). MCP App hosts get a fast shell then the view pages `consent_list_cookies` or `consent_list_data_flows`; other hosts get the full payload from the tool
 - `consent_get_aggregate_analytics` — Aggregate consent analytics (`airgapBundleAggregateAnalytics`)
 - `consent_get_timeseries_analytics` — Timeseries consent analytics (`airgapBundleTimeseriesAnalytics`)
 - `consent_get_analytics_data` — Consent metrics via `analyticsData` (opt-in/out, signals, sessions)
 - `consent_update_cookies` — Update cookies (approve, junk, assign purposes)
+- `consent_delete_cookies` — Permanently delete cookies by ID (MCP App only; hidden from agents)
 - `consent_update_data_flows` — Update data flows
+- `consent_delete_data_flows` — Permanently delete data flows by ID (MCP App only; hidden from agents)
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
+- `consent_list_roc_records` - List record of consent records for a user
+- `consent_preview_deploy` — Preview consent bundle changes before deploy (per-module diffs; read-only)
+- `consent_deploy_bundle` — Deploy the consent manager bundle to `TEST` or `PRODUCTION` (requires `environment`; asks for human confirmation with change summary)
+- `consent_list_sites` - List consent sites (hosts Airgap discovers) with owners, teams and attributes
+- `consent_write_sites` - Create or update consent sites by host (like the `consent-sites` section of `transcend.yml`)
+- `consent_write_consent_manager` — Create or update consent manager settings, experiences, UI variants and themes (the `consent-manager` section of `transcend.yml`)
+- `consent_write_purposes` — Create or update consent purposes and their preference topics (the `purposes` section of `transcend.yml`)
 
-Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).
+Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api). `consent_list_roc_records` requires the **ViewManagedConsentDatabaseAdminApi** scope. `consent_list_sites` requires **ViewConsentManager** and `consent_write_sites` requires **ManageConsentManager**.
+
+## Prompts
+
+Workflow templates discoverable via MCP `prompts/list` / `prompts/get`:
+
+- `consent-triage` — End-to-end cookie/data-flow triage via `consent_cookie_triage_review_app` + classification push
+- `consent-research-tracker` — Research methodology for classifying a single tracker
+- `consent-inspect-site` — Live site investigation via browser DevTools / airgap console
 
 ## Related packages
 

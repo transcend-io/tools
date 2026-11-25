@@ -1,9 +1,9 @@
 import { join } from 'node:path';
 
+import type { CodePackageInput } from '@transcend-io/sdk';
 /* eslint-disable max-lines */
 import { expect, describe, it } from 'vitest';
 
-import type { CodePackageInput } from '../../codecs.js';
 import { findCodePackagesInFolder } from '../code-scanning/findCodePackagesInFolder.js';
 
 const expected: CodePackageInput[] = [
@@ -269,7 +269,7 @@ const expected: CodePackageInput[] = [
       },
       {
         name: 'fast-csv',
-        version: '^4.3.6',
+        version: '^5.0.0',
       },
       {
         name: 'sequelize',
@@ -304,7 +304,7 @@ const expected: CodePackageInput[] = [
       },
       {
         name: 'fast-csv',
-        version: '^4.3.6',
+        version: '^5.0.0',
       },
       {
         name: 'typescript',

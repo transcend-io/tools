@@ -1,33 +1,37 @@
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
+import { selectCommandLogger } from '../../../lib/cli/command-output.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
-  formatPolicyEngineRequestError,
   printResult,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
+  throwPolicyEngineRequestError,
+  PolicyEngineCliError,
 } from '../helpers/index.js';
 import type { DeactivatePolicyBundleResponse } from '../types.js';
 
 /** CLI flags for `transcend policy deactivate`. */
 export interface DeactivateCommandFlags {
   /** Logical bundle name to deactivate */
-  'bundle-name': string;
+  'remote-bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
   'transcend-url': string;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
  * Deactivate the currently active version of a policy bundle.
  *
- * Resolves `--bundle-name` to the parent bundle UUID internally, then calls the
+ * Resolves `--remote-bundle-name` to the parent bundle UUID internally, then calls the
  * Policy Engine deactivate endpoint. The bundle is addressed by name only -- the
  * UUID is never exposed to the operator.
  *
@@ -36,10 +40,18 @@ export interface DeactivateCommandFlags {
  */
 export async function deactivate(
   this: LocalContext,
-  { 'bundle-name': bundleName, auth, 'transcend-url': transcendUrl, json }: DeactivateCommandFlags,
+  {
+    'remote-bundle-name': bundleName,
+    auth,
+    'transcend-url': transcendUrl,
+    json,
+    debug = false,
+  }: DeactivateCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
+  setPolicyEngineCliDebug(debug);
 
+  const commandLogger = selectCommandLogger(this.logger, json);
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
   const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
@@ -47,7 +59,7 @@ export async function deactivate(
     throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
   }
 
-  logger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
+  commandLogger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
 
   let body: DeactivatePolicyBundleResponse;
   try {
@@ -59,9 +71,11 @@ export async function deactivate(
     // user-supplied bundle name so the error is actionable.
     const statusCode = (err as { response?: { statusCode?: number } })?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(`Policy bundle "${bundleName}" has no active version.`, { cause: err });
+      throw new PolicyEngineCliError(`Policy bundle "${bundleName}" has no active version.`, {
+        cause: err,
+      });
     }
-    throw new Error(formatPolicyEngineRequestError(err), { cause: err });
+    throwPolicyEngineRequestError(err);
   }
 
   printResult(this.process.stdout, {
@@ -75,5 +89,5 @@ export async function deactivate(
       ].join('\n'),
   });
 
-  logger.info(colors.green('Policy bundle version deactivated.'));
+  commandLogger.info(colors.green('Policy bundle version deactivated.'));
 }

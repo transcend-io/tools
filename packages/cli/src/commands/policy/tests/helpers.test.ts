@@ -6,6 +6,7 @@ import {
   defaultPolicyVersionLabel,
   printResult,
   renderTable,
+  resolveBundleByName,
   resolveBundleIdByName,
 } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
@@ -51,52 +52,59 @@ describe('policy helpers', () => {
     );
   });
 
-  it('resolveBundleIdByName paginates with offset until a bundle name matches', async () => {
-    const get = vi
-      .fn()
-      .mockReturnValueOnce({
-        json: vi.fn().mockResolvedValue({
-          nodes: [
-            {
-              id: 'other-id',
-              bundleName: 'common',
-              description: null,
-              activeVersionId: null,
-              lastActivatedAt: null,
-              createdAt: '2026-01-01',
-              updatedAt: '2026-01-01',
-            },
-          ],
-          totalCount: 2,
-        } satisfies PolicyBundleListResponse),
-      })
-      .mockReturnValueOnce({
-        json: vi.fn().mockResolvedValue({
-          nodes: [
-            {
-              id: 'main-id',
-              bundleName: 'main',
-              description: null,
-              activeVersionId: null,
-              lastActivatedAt: null,
-              createdAt: '2026-01-02',
-              updatedAt: '2026-01-02',
-            },
-          ],
-          totalCount: 2,
-        } satisfies PolicyBundleListResponse),
-      });
+  it('resolveBundleByName uses the bundleName list filter', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 'main-id',
+            bundleName: 'main',
+            description: null,
+            activeVersionId: 'active-version-id',
+            lastActivatedAt: '2026-01-02',
+            createdAt: '2026-01-02',
+            updatedAt: '2026-01-02',
+          },
+        ],
+        totalCount: 1,
+      } satisfies PolicyBundleListResponse),
+    });
+
+    gotExtendMock.mockReturnValue({ get });
+    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
+
+    await expect(resolveBundleByName(client, 'main')).resolves.toMatchObject({
+      id: 'main-id',
+      bundleName: 'main',
+      activeVersionId: 'active-version-id',
+    });
+    expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
+      searchParams: { 'filter[bundleName]': 'main', limit: 1, offset: 0 },
+    });
+  });
+
+  it('resolveBundleIdByName returns the matching bundle UUID', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 'main-id',
+            bundleName: 'main',
+            description: null,
+            activeVersionId: null,
+            lastActivatedAt: null,
+            createdAt: '2026-01-02',
+            updatedAt: '2026-01-02',
+          },
+        ],
+        totalCount: 1,
+      } satisfies PolicyBundleListResponse),
+    });
 
     gotExtendMock.mockReturnValue({ get });
     const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
 
     await expect(resolveBundleIdByName(client, 'main')).resolves.toBe('main-id');
-    expect(get).toHaveBeenNthCalledWith(1, 'v1/policy-engine/policy-bundles', {
-      searchParams: { limit: 100, offset: 0 },
-    });
-    expect(get).toHaveBeenNthCalledWith(2, 'v1/policy-engine/policy-bundles', {
-      searchParams: { limit: 100, offset: 1 },
-    });
   });
 
   it('renderTable formats aligned columns', () => {

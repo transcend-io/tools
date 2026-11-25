@@ -1,0 +1,80 @@
+import type { RequestAction } from '@transcend-io/privacy-types';
+import type { Logger } from '@transcend-io/utils';
+import type { GraphQLClient } from 'graphql-request';
+
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { CONSENT_WORKFLOW_TRIGGERS } from './gqls/consentWorkflowTrigger.js';
+
+export interface ConsentWorkflowTrigger {
+  /** ID of the trigger */
+  id: string;
+  /** Name of the trigger */
+  name: string;
+  /** JSON string of the trigger condition */
+  triggerCondition: string | null;
+  /** Whether the trigger runs silently */
+  isSilent: boolean;
+  /** Whether unauthenticated requests are allowed */
+  allowUnauthenticated: boolean;
+  /** Whether the trigger is active */
+  isActive: boolean;
+  /** The workflow config ID */
+  workflowConfigId: string | null;
+  /** The request action associated with the trigger */
+  action: {
+    /** Action type (e.g. ERASURE, ACCESS) */
+    type: RequestAction;
+  };
+  /** The data subject associated with the trigger */
+  subject: {
+    /** Data subject type */
+    type: string;
+  };
+  /** Data silos associated with this trigger */
+  dataSilos: {
+    /** Title of data silo */
+    title: string;
+  }[];
+}
+
+const PAGE_SIZE = 50;
+
+/**
+ * Fetch all consent workflow triggers in the organization
+ *
+ * @param client - GraphQL client
+ * @param options - Options
+ * @returns All consent workflow triggers in the organization
+ */
+export async function fetchAllConsentWorkflowTriggers(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<ConsentWorkflowTrigger[]> {
+  const { logger } = options;
+  const triggers: ConsentWorkflowTrigger[] = [];
+  let offset = 0;
+
+  let shouldContinue = false;
+  do {
+    const {
+      consentWorkflowTriggers: { nodes },
+    } = await makeGraphQLRequest<{
+      /** Consent workflow triggers */
+      consentWorkflowTriggers: {
+        /** List */
+        nodes: ConsentWorkflowTrigger[];
+      };
+    }>(client, CONSENT_WORKFLOW_TRIGGERS, {
+      variables: { first: PAGE_SIZE, offset },
+      logger,
+    });
+    triggers.push(...nodes);
+    offset += PAGE_SIZE;
+    shouldContinue = nodes.length === PAGE_SIZE;
+  } while (shouldContinue);
+
+  return triggers.sort((a, b) => a.name.localeCompare(b.name));
+}

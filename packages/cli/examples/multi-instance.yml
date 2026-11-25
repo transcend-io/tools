@@ -2,7 +2,7 @@
 
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,

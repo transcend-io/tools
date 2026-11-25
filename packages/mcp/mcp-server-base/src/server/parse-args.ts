@@ -1,8 +1,10 @@
 import { parseArgs } from 'node:util';
 
+import { McpTransport } from './transport.js';
+
 export interface TransportConfig {
   /** Transport type: stdio (default) or http */
-  transport: 'stdio' | 'http';
+  transport: McpTransport;
   /** HTTP listen port */
   port: number;
   /** HTTP listen host */
@@ -39,7 +41,7 @@ function parseIntOrDefault(raw: string | undefined, fallback: number): number {
 export function parseTransportArgs(): TransportConfig {
   const { values } = parseArgs({
     options: {
-      transport: { type: 'string', default: 'stdio' },
+      transport: { type: 'string', default: McpTransport.Stdio },
       port: { type: 'string' },
       host: { type: 'string' },
       'mcp-path': { type: 'string' },
@@ -49,7 +51,7 @@ export function parseTransportArgs(): TransportConfig {
     allowPositionals: true,
   });
 
-  const transport = values.transport === 'http' ? 'http' : 'stdio';
+  const transport = values.transport === McpTransport.Http ? McpTransport.Http : McpTransport.Stdio;
 
   const port = parseIntOrDefault(
     (values.port as string | undefined) ?? process.env.TRANSCEND_HTTP_PORT,

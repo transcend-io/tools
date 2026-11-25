@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "coreIdentifier": {
+      "$ref": "#/definitions/CustomFunction.CoreIdentifier",
+      "description": "Optional override for the identifier Transcend would add."
+    }
+  },
+  "additionalProperties": {
+    "description": "Webhook or schedule fields from the test fixture."
+  },
+  "description": "Payload supplied when locally testing a General Custom Function.\n\nTranscend adds `coreIdentifier` when it is omitted.",
+  "definitions": {
+    "CustomFunction.CoreIdentifier": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "The identifier value."
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "The authenticated identifier attached to every invocation."
+    }
+  },
+  "$id": "file:///general-custom-function-payload.schema.json",
+  "title": "General Custom Function payload"
+}

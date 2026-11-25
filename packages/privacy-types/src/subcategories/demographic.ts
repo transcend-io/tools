@@ -1,7 +1,7 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 /** Information about the features or characteristics of a user */
-export const DemographicSubCategory = makeEnum({
+export const DemographicSubCategory = {
   /** Information about an individual's racial or ethnic origin */
   RaceOrEthnicity: 'RACE_OR_ETHNICITY',
   /** An individual's gender */
@@ -22,7 +22,7 @@ export const DemographicSubCategory = makeEnum({
   PoliticalAffiliation: 'POLITICAL_AFFILIATION',
   /** Fallback subcategory */
   Demographic: 'DEMOGRAPHIC',
-});
+} as const;
 
 /**
  * Overload with type of integration

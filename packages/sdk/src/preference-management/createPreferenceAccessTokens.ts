@@ -1,4 +1,7 @@
-import type { SombraStandardScope } from '@transcend-io/privacy-types';
+import {
+  PrivacyCenterAccessTokenFormat,
+  type SombraStandardScope,
+} from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
@@ -26,6 +29,9 @@ export interface PreferenceAccessTokenInputWithIndex extends PreferenceAccessTok
 
 const MAX_BATCH_SIZE = 50;
 
+/** Wire format of a preference access token. JWT is the API default. */
+export type PreferenceAccessTokenFormat = PrivacyCenterAccessTokenFormat;
+
 /**
  * Create preference access tokens for a single page of identifiers.
  *
@@ -37,6 +43,7 @@ const MAX_BATCH_SIZE = 50;
 async function createPreferenceAccessTokensPage(
   client: GraphQLClient,
   records: PreferenceAccessTokenInput[],
+  tokenFormat?: PreferenceAccessTokenFormat,
   logger?: Logger,
 ): Promise<string[]> {
   const {
@@ -52,7 +59,12 @@ async function createPreferenceAccessTokensPage(
     };
   }>(client, CREATE_PREFERENCE_ACCESS_TOKENS, {
     logger,
-    variables: { input: { records } },
+    variables: {
+      input: {
+        records,
+        ...(tokenFormat === PrivacyCenterAccessTokenFormat.Short ? { tokenFormat } : {}),
+      },
+    },
   });
   return nodes.map((node) => node.token);
 }
@@ -76,6 +88,8 @@ export async function createPreferenceAccessTokens(
     emitProgress?: (progress: number) => void;
     /** Number of concurrent requests to make (default: 10) */
     concurrency?: number;
+    /** Wire format. Omit or use JWT for the signed token. SHORT is 43 characters. */
+    tokenFormat?: PreferenceAccessTokenFormat;
   },
 ): Promise<
   {
@@ -85,7 +99,7 @@ export async function createPreferenceAccessTokens(
     accessToken: string;
   }[]
 > {
-  const { records, logger, emitProgress, concurrency = 10 } = options;
+  const { records, logger, emitProgress, concurrency = 10, tokenFormat } = options;
 
   let completed = 0;
   emitProgress?.(0);
@@ -104,6 +118,7 @@ export async function createPreferenceAccessTokens(
         client,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         chunkedRecords.map(({ index, ...rest }) => rest),
+        tokenFormat,
         logger,
       );
       const mappedResults = tokens.map((token, idx) => ({

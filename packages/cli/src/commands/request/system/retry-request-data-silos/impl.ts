@@ -15,7 +15,7 @@ export async function retryRequestDataSilos(
   this: LocalContext,
   { auth, dataSiloId, actions, transcendUrl }: RetryRequestDataSilosCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await retryRequestDataSilosHelper({
     requestActions: actions,

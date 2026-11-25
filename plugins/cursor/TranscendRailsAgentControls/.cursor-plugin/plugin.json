@@ -1,0 +1,24 @@
+{
+  "name": "transcend-agent-governance",
+  "displayName": "Transcend Rails Agent Controls",
+  "version": "0.7.0",
+  "description": "Connect Cursor to Transcend Rails Agent Controls for policy-enforced MCP tool access via browser sign-in.",
+  "author": {
+    "name": "Transcend",
+    "email": "support@transcend.io"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["transcend", "agent-governance", "mcp", "cursor", "governance", "policy", "oauth"],
+  "logo": "assets/logo.svg",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "GATEWAY_BASE_URL": {
+        "type": "string",
+        "title": "Gateway base URL",
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to https://mcp.us.withrails.ai. Do not append /mcp/... — the plugin adds that.",
+        "default": "https://mcp.us.withrails.ai"
+      }
+    }
+  }
+}

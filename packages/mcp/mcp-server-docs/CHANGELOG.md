@@ -1,5 +1,449 @@
 # @transcend-io/mcp-server-docs
 
+## 0.6.2
+
+### Patch Changes
+
+- 87ce10b: Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages import it from privacy-types directly (not re-exported through mcp-server-base). The former `ErrorCode` enum on mcp-server-base is removed.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+  - @transcend-io/mcp-server-base@3.2.1
+
+## 0.6.1
+
+### Patch Changes
+
+- 3b92b89: Resolve optional stdio startup credentials for MCP servers that mix public and signed-in tools (fixes `docs_integration_lookup` in the standalone docs server), and verify OAuth client setup at startup when OAuth env vars are set without blocking public tools on verification failure.
+- Updated dependencies [3b92b89]
+- Updated dependencies [c466144]
+- Updated dependencies [7217c74]
+  - @transcend-io/mcp-server-base@3.1.1
+
+## 0.6.0
+
+### Minor Changes
+
+- df6b649: Add signed-in `docs_integration_lookup`, which reads one integration's catalog connection docs by name or title and lists close names on a miss. Extend `docs_list` with an `integration` filter for public guides. The standalone docs server now builds a catalog-capable GraphQL client, so the tool works there as well as in the umbrella server.
+
+## 0.5.2
+
+### Patch Changes
+
+- 1023e16: Keep room for full-text results when `docs_list` combines `route` with `query`, refresh the route index hourly, report the real cause when the route index fails to load, accept app URLs pasted without a scheme, and reject a blank `route`.
+- b4753ca: `docs_list` rows now carry the one-line description from `llms.txt` when the page has one, including route, product, search, and section rows, so an agent can pick a page before calling `docs_fetch`.
+- 2624435: Fix `docs_list` search and section listing returning no articles since docs.transcend.io moved `llms.txt` to a nested list with relative URLs. The parser reads both layouts and now fails loudly when a non-empty file yields no articles.
+
+## 0.5.1
+
+### Patch Changes
+
+- 286ddd2: Added shared docs and MCP enums for the docs lookup program and feature-request tooling.
+- Updated dependencies [286ddd2]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+
+## 0.5.0
+
+### Minor Changes
+
+- fb660b4: Add `route` and `product` arguments to `docs_list` to find docs by Admin Dashboard route or product, with page, then product, then search tiers.
+
+### Patch Changes
+
+- Updated dependencies [fb660b4]
+- Updated dependencies [581b1a9]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/mcp-server-base@3.1.0
+
+## 0.4.18
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
+## 0.4.17
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+- Updated dependencies [d166b89]
+  - @transcend-io/mcp-server-base@2.5.7
+
+## 0.4.16
+
+### Patch Changes
+
+- 32695c0: Fix `tools/list` failing when a host installs a different Zod copy than the MCP SDK (common with pnpm). Tool input schemas are now converted with the server’s own Zod and handed to the SDK as plain JSON Schema.
+
+  Domain `mcp-server-*` packages now declare `zod` and `@modelcontextprotocol/sdk` as peer dependencies; `@transcend-io/mcp` still installs them for you. If you depend on a domain package alone, ensure those peers are present (npm/pnpm usually install them automatically).
+
+  Prefer the published `transcend-mcp` binary over pointing clients at `dist/cli.mjs`.
+
+- Updated dependencies [32695c0]
+  - @transcend-io/mcp-server-base@2.5.6
+
+## 0.4.15
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/mcp-server-base@2.5.4
+
+## 0.4.14
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@2.5.3
+
+## 0.4.13
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-base@2.5.2
+
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [f3a7dc8]
+  - @transcend-io/mcp-server-base@2.5.1
+
+## 0.4.11
+
+### Patch Changes
+
+- Updated dependencies [f5294d8]
+- Updated dependencies [fcbc71b]
+- Updated dependencies [c052029]
+- Updated dependencies [8f8a9a0]
+  - @transcend-io/mcp-server-base@2.5.0
+
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [13092af]
+  - @transcend-io/mcp-server-base@2.4.0
+
+## 0.4.9
+
+### Patch Changes
+
+- Updated dependencies [9bc5cb7]
+  - @transcend-io/mcp-server-base@2.3.1
+
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/mcp-server-base@2.3.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [aefe248]
+- Updated dependencies [aefe248]
+- Updated dependencies [76e5a82]
+- Updated dependencies [74f2734]
+  - @transcend-io/mcp-server-base@2.2.0
+
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [60d1ea0]
+  - @transcend-io/mcp-server-base@2.1.0
+
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies [2e8558d]
+- Updated dependencies [6dccc24]
+- Updated dependencies [2730f0d]
+- Updated dependencies [746e2da]
+  - @transcend-io/mcp-server-base@2.0.0
+
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [7e7d797]
+- Updated dependencies [7e7d797]
+  - @transcend-io/mcp-server-base@1.9.0
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+  - @transcend-io/mcp-server-base@1.8.1
+
+## 0.4.0
+
+### Minor Changes
+
+- 557a80b: Rename the `docs_list` search argument from `keyword` to `query`, and tighten BM25 matching.
+
+  `query` is what comparable search tools name this argument — Linear, Notion, and Datadog all use
+  it — so the rename stops `docs_list` from being the one search tool in a caller's toolset that
+  differs from the convention.
+
+  Search now uses `tolerance: 0` and `threshold: 0.3`. Fuzzy matching cost accuracy on every set
+  of a labeled benchmark, and a typo it "rescued" returned unrelated articles rather than the
+  intended one. The threshold change leaves recall unchanged while cutting matches on a typical
+  query from roughly 417 to 131, so the reported `totalCount` is a usable signal rather than
+  close to the size of the corpus.
+
+  The argument description now asks for the most distinctive terms rather than a whole sentence,
+  since generic words match most articles and blur the ranking.
+
+  Search returns 20 results rather than 10. On the same benchmark, targets that missed the top ten
+  sat at a median rank of 16 and 19, so one page deeper lifts hit@k from 87% to 95% on title terms
+  and 88% to 95% on natural questions, for roughly 434 extra tokens. There is deliberately no
+  offset: almost nothing recoverable ranks past 30, and paging only helps a caller that knows it
+  missed — at rank 16 the first ten results all look plausible, so the miss goes unnoticed and the
+  page is never requested.
+
+  `docs_list` also no longer answers an argument-less call with the whole catalog. It returns the
+  seven documentation sections with their article counts — 540 characters against the roughly 69KB
+  the full listing cost — which is a better answer to "what is documented" and makes the next call
+  obvious. Listing a single section is capped at 50 articles, since the largest holds 125. Whenever
+  results are withheld, the response now carries a note saying how many and what to change; a
+  truncated response the caller cannot distinguish from a complete one is what made the previous
+  behavior hard to notice. An unrecognized `section` is now an error naming the valid ones instead
+  of an empty list that reads like "no such articles", and a `query` that is present but blank is
+  an error rather than a silent fall-through to browsing — the caller asked to search, so answering
+  with the section list and reporting success hides the fact that no search ran.
+
+- 557a80b: Rank `docs_list` keyword results with in-process Orama BM25 over article bodies (not just titles) so queries like "session" can surface Consent Dashboard and telemetry docs (ZEL-8224).
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.3.25
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.3.24
+
+### Patch Changes
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.3.23
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.3.22
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.3.21
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.3.20
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+  - @transcend-io/mcp-server-base@1.6.0
+
+## 0.3.19
+
+### Patch Changes
+
+- Updated dependencies [9032822]
+  - @transcend-io/mcp-server-base@1.5.0
+
+## 0.3.18
+
+### Patch Changes
+
+- Updated dependencies [c8df618]
+  - @transcend-io/mcp-server-base@1.4.0
+
+## 0.3.17
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@1.3.1
+
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies [5819bc1]
+- Updated dependencies [c787e9d]
+  - @transcend-io/mcp-server-base@1.3.0
+
+## 0.3.15
+
+### Patch Changes
+
+- Updated dependencies [4404c48]
+- Updated dependencies [7d980a1]
+  - @transcend-io/mcp-server-base@1.2.0
+
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies [26fadc4]
+  - @transcend-io/mcp-server-base@1.1.1
+
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies [2faaff6]
+- Updated dependencies [5b239dc]
+- Updated dependencies [5b239dc]
+- Updated dependencies [6293072]
+- Updated dependencies [daffc18]
+- Updated dependencies [dc9ab41]
+- Updated dependencies [5b239dc]
+- Updated dependencies [97fa941]
+- Updated dependencies [5b239dc]
+  - @transcend-io/mcp-server-base@1.1.0
+
+## 0.3.12
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@1.0.0
+
+## 0.3.11
+
+### Patch Changes
+
+- Updated dependencies [f6ca084]
+- Updated dependencies [66e641e]
+  - @transcend-io/mcp-server-base@0.14.0
+
+## 0.3.10
+
+### Patch Changes
+
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+- Updated dependencies [4bc21f7]
+- Updated dependencies [e127dfc]
+- Updated dependencies [f3ce7dc]
+- Updated dependencies [6d2b56d]
+  - @transcend-io/mcp-server-base@0.13.0
+
+## 0.3.9
+
+### Patch Changes
+
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [c166809]
+- Updated dependencies [1b93859]
+  - @transcend-io/mcp-server-base@0.12.0
+
+## 0.3.8
+
+### Patch Changes
+
+- Updated dependencies [6932df1]
+  - @transcend-io/mcp-server-base@0.11.0
+
+## 0.3.7
+
+### Patch Changes
+
+- Updated dependencies [8034d59]
+- Updated dependencies [c00f3c5]
+  - @transcend-io/mcp-server-base@0.10.0
+
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [c65d41e]
+  - @transcend-io/mcp-server-base@0.9.0
+
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [cf74715]
+- Updated dependencies [29821b9]
+- Updated dependencies [fb24b96]
+- Updated dependencies [637b357]
+  - @transcend-io/mcp-server-base@0.8.0
+
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [e410109]
+  - @transcend-io/mcp-server-base@0.7.0
+
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [3f41944]
+  - @transcend-io/mcp-server-base@0.6.2
+
+## 0.3.2
+
+### Patch Changes
+
+- 212568a: Fix punctuation in README usage section.
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [cbe9d3a]
+  - @transcend-io/mcp-server-base@0.6.1
+
 ## 0.3.0
 
 ### Minor Changes

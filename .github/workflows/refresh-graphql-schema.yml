@@ -74,4 +74,7 @@ jobs:
           labels: |
             MCP
             automation
+          reviewers: |
+            michaelfarrell76
+            dsklyar
           add-paths: schema.graphql

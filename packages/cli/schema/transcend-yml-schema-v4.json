@@ -132,8 +132,6 @@
                     "manageCodeScanning",
                     "viewPathfinder",
                     "managePathfinder",
-                    "viewContractScanning",
-                    "manageContractScanning",
                     "viewAuditorRuns",
                     "viewAuditEvents",
                     "manageActionItemCollections",
@@ -40105,57 +40103,6 @@
           },
           "assessment-template": {
             "type": "string"
-          }
-        }
-      }
-    },
-    "prompts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-partials": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-groups": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "description", "prompts"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "prompts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       }

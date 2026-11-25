@@ -55,13 +55,14 @@ Additional checks:
 - `pnpm check:exports`: validate published package shape with `attw`
 - `pnpm check:publint`: validate published package compatibility and packaging metadata
 - `pnpm check:deps`: enforce dependency version policy
+- `pnpm check:new-packages`: fail when a publishable package does not exist on npm yet (runs in `Publish` and on the Version Packages PR)
 
 `pnpm quality` intentionally excludes `pnpm check:changeset`, since that check compares the current branch to its base and is mainly useful in pull request workflows.
 
 Release and maintenance:
 
 - `pnpm changeset:version`: apply pending changesets to versions and changelogs
-- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm changeset:version:release`: apply pending changesets, regenerate CLI `transcend.yml` JSON schemas (so major bumps create `schema/transcend-yml-schema-vN.json`), and reformat the repo
 - `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
@@ -93,6 +94,7 @@ Stable releases are driven by Changesets, the [Version workflow](.github/workflo
    In a release PR:
    - Each changeset file (at `.changeset/*.md`) is turned into a change entry in each package's `CHANGELOG.md` file, and the changeset file is deleted.
    - Package versions are bumped accordingly.
+   - The CLI `transcend.yml` JSON schema is regenerated so a new major (e.g. `transcend-yml-schema-v13.json`) is created when `@transcend-io/cli` bumps major — that only happens here, not in feature PRs.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
 3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.
@@ -120,6 +122,7 @@ Add a changeset when changes to a package under `packages/` would require a new 
 - package `README.md` changes
 - test files
 - generated `dist/` output
+- committed generated `schema/` files (e.g. CLI `transcend.yml` JSON schemas)
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
@@ -190,6 +193,15 @@ On pull requests, GitHub Actions runs:
   - `CI / <package-name>` jobs: some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
 - **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
+### Public PR Content
+
+This repo is public, and GitHub keeps PR body edit history. Do not put customer names, org or request IDs, customer emails, or links to internal tools (Slack, admin dashboard, Retool, Gong, Intercom, Datadog, Notion) in a PR title, body, intent note, or comment. Say "a customer" and keep the evidence in Linear or Slack. Use bare Linear ticket IDs, not URLs with a title slug.
+
+Two checks enforce this. Both run [`scripts/check-pr-content.ts`](scripts/check-pr-content.ts), which matches links, UUIDs, and emails. It cannot see customer names, so keep those out yourself.
+
+- **`PR content`** workflow: fails the PR when the title or body matches. It also runs when you edit the body. If it fails, edit the body, then delete the old revision from the PR edit history.
+- **Cursor hook** (`.cursor/hooks/check-pr-content.sh`): blocks an agent's `gh pr create|edit|comment|review` before it posts.
+
 ### Fresh Approvals Are Required
 
 New, reviewable commits pushed will dismiss previous pull request review approvals. As a public repository, we want to ensure that all changes are reviewed and approved by at least one team member.
@@ -203,7 +215,7 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 Transcend Team:
 
 - See our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
-- If this is a net-new npm package, it needs to first be created [here](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10), and it needs trusted publishing set up (see the HOWTO guide above for more on that). Once that is done, it should publish successfully the next time a release PR merges with a changeset for that package.
+- If this is a net-new npm package, trusted publishing cannot create it. Before merging the release PR that first versions it, check out the release PR head, run `pnpm build`, then run `pnpm publish --access public --no-git-checks` from the package directory (pnpm, not npm, so `workspace:` ranges get rewritten). Then grant the [developers team](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10) access and set up trusted publishing for `publish.yml` (see the HOWTO guide above). `pnpm check:new-packages` blocks the release PR and the `Publish` workflow until this is done.
 
 New packages should match the shape used in `packages/sdk` and `packages/utils`.
 
@@ -238,11 +250,14 @@ packages/mcp/
   mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
   mcp-server-admin/      # Domain: org, users, API keys
   mcp-server-assessment/
+  mcp-server-config/
   mcp-server-consent/
+  mcp-server-custom-functions/
   mcp-server-discovery/
   mcp-server-dsr/
   mcp-server-inventory/
   mcp-server-preferences/
+  mcp-server-privacy-center/
   mcp-server-workflows/
   mcp/                   # Unified server that re-exports all domain tools
 ```
@@ -305,12 +320,14 @@ OAuth stdio variables:
 - `TRANSCEND_OAUTH_CLIENT_SECRET` — client secret from the OAuth clients admin page
 - `TRANSCEND_OAUTH_REDIRECT_PORT` — localhost callback port; must match registered redirect URI
 - `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host (default `127.0.0.1`; use `::1` for IPv6)
-- `TRANSCEND_OAUTH_ISSUER` — optional test-only override; production auto-detects region
+- `TRANSCEND_OAUTH_ISSUER` — optional test-only override (requires `ALLOW_TEST_OVERRIDES=1`); production auto-detects region
+- `ALLOW_TEST_OVERRIDES` — set to `1` to enable test-only URL overrides (`TRANSCEND_OAUTH_ISSUER`, `TRANSCEND_DASHBOARD_URL`). Unset or any other value is treated as disabled.
 
 Optional overrides:
 
 - `TRANSCEND_API_URL` — GraphQL backend API base URL (default: `https://api.transcend.io`). Matches the CLI and main monorepo convention.
 - `SOMBRA_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`). Matches the CLI / SDK convention.
+- `TRANSCEND_DASHBOARD_URL` — test-only dashboard base URL override (requires `ALLOW_TEST_OVERRIDES=1`)
 
 For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
 

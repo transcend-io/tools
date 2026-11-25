@@ -1,4 +1,5 @@
 export * from './shared.js';
+export * from './consentSites.js';
 export * from './cookies.js';
 export * from './dataFlows.js';
 export * from './experiences.js';
@@ -9,5 +10,7 @@ export * from './consentManager.js';
 export * from './consentManagerMetrics.js';
 export * from './airgapBundleAnalytics.js';
 export * from './policy.js';
+export * from './prefixModules.js';
 export * from './privacyCenter.js';
 export * from './processingPurpose.js';
+export * from './consentWorkflowTrigger.js';

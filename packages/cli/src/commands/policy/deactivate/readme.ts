@@ -9,14 +9,14 @@ const examples = buildExamples<DeactivateCommandFlags>(
     {
       description: 'Deactivate the active version of a bundle by name',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
     {
       description: 'Print the raw JSON response',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         json: true,
       },
@@ -24,7 +24,7 @@ const examples = buildExamples<DeactivateCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        'bundle-name': 'main',
+        'remote-bundle-name': 'main',
       },
     },
   ],

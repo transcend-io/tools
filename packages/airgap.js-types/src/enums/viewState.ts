@@ -4,15 +4,15 @@ import { makeEnum } from '@transcend-io/type-utils';
 /**
  * Consent Manager view state for the Interactive Advertising Bureau
  */
-export const IABViewState = makeEnum({
+export const IABViewState = {
   /** Transparency and Consent Framework for Europe */
   TCF_EU: 'TCF_EU',
-});
+} as const;
 
 /**
  * View States for Transcend's Consent Manager UI
  */
-export const InitialTranscendViewState = makeEnum({
+export const InitialTranscendViewState = {
   /** expanded and showing quick select options */
   QuickOptions: 'QuickOptions',
   /** three option UI: essential, functional/analytics, advertising */
@@ -50,7 +50,7 @@ export const InitialTranscendViewState = makeEnum({
   CompleteOptionsInverted: 'CompleteOptionsInverted',
   /** hidden */
   Hidden: 'Hidden',
-});
+} as const;
 
 /**
  * Type override
@@ -61,12 +61,12 @@ export type InitialTranscendViewState =
 /**
  * Consent Manager view states that can be used at launch
  */
-export const InitialViewState = makeEnum({
+export const InitialViewState = {
   /** View States for Transcend's Consent Manager UI */
   ...InitialTranscendViewState,
   /** View States for IAB Frameworks */
   ...IABViewState,
-});
+} as const;
 
 /**
  * Type override
@@ -76,12 +76,12 @@ export type InitialViewState = (typeof InitialViewState)[keyof typeof InitialVie
 /**
  * View states that are displayed in response to a user request (e.g. transcend.doNotSell() or )
  */
-export const ResponseViewState = makeEnum({
+export const ResponseViewState = {
   /** notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
   /** notice of a 1 click opt out for multiple consent purposes */
   OptOutDisclosure: 'OptOutDisclosure',
-});
+} as const;
 
 /**
  * Type override
@@ -91,10 +91,10 @@ export type ResponseViewState = (typeof ResponseViewState)[keyof typeof Response
 /**
  * Consent Manager view states that can be navigated to after initial view state
  */
-export const DeepViewState = makeEnum({
+export const DeepViewState = {
   /** language options */
   LanguageOptions: 'LanguageOptions',
-});
+} as const;
 
 /**
  * Type override
@@ -104,12 +104,12 @@ export type DeepViewState = (typeof DeepViewState)[keyof typeof DeepViewState];
 /**
  * Consent Manager view states after it's been dismissed
  */
-export const DismissedViewState = makeEnum({
+export const DismissedViewState = {
   /** showing and collapsed */
   Collapsed: 'Collapsed',
   /** closed */
   Closed: 'Closed',
-});
+} as const;
 
 /**
  * Type override
@@ -119,12 +119,12 @@ export type DismissedViewState = (typeof DismissedViewState)[keyof typeof Dismis
 /**
  * All possible view states of the Consent Manager
  */
-export const ViewState = makeEnum({
+export const ViewState = {
   ...InitialViewState,
   ...ResponseViewState,
   ...DeepViewState,
   ...DismissedViewState,
-});
+} as const;
 
 /**
  * Type override

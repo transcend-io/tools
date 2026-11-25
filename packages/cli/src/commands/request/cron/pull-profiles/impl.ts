@@ -11,7 +11,6 @@ import {
   type CsvFormattedIdentifier,
 } from '../../../../lib/cron/index.js';
 import { parseFilePath, writeLargeCsv } from '../../../../lib/helpers/index.js';
-import { logger } from '../../../../logger.js';
 
 export interface PullProfilesCommandFlags {
   file: string;
@@ -44,13 +43,13 @@ export async function pullProfiles(
   }: PullProfilesCommandFlags,
 ): Promise<void> {
   if (skipRequestCount) {
-    logger.info(
+    this.logger.info(
       colors.yellow('Skipping request count as requested. This may help speed up the call.'),
     );
   }
 
   if (Number.isNaN(chunkSize) || chunkSize <= 0 || chunkSize % pageLimit !== 0) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `Invalid chunk size: "${chunkSize}". Must be a positive integer that is a multiple of ${pageLimit}.`,
       ),
@@ -58,7 +57,7 @@ export async function pullProfiles(
     this.process.exit(1);
   }
 
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Create GraphQL client to connect to Transcend backend
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
@@ -82,11 +81,11 @@ export async function pullProfiles(
     const results = await map(
       chunkedRequestIds,
       async (requestIds) => {
-        logger.info(
+        this.logger.info(
           colors.magenta(`Fetching target identifiers for ${requestIds.length} requests`),
         );
         const results = await fetchRequestFilesForRequest(client, {
-          logger,
+          logger: this.logger,
           pageSize: pageLimit * 2,
           filterBy: {
             requestIds,
@@ -117,20 +116,20 @@ export async function pullProfiles(
     const numberedFileName = `${baseName}-${fileCount}${extension}`;
     const numberedFileNameTarget = `${baseNameTarget}-${fileCount}${extensionTarget}`;
     await writeLargeCsv(numberedFileName, chunkToSave, headers);
-    logger.info(
+    this.logger.info(
       colors.green(`Successfully wrote ${chunkToSave.length} identifiers to file "${file}"`),
     );
 
     const targetIdentifiers = results.flat();
     const headers2 = uniq(targetIdentifiers.map((d) => Object.keys(d)).flat());
     await writeLargeCsv(numberedFileNameTarget, targetIdentifiers, headers2);
-    logger.info(
+    this.logger.info(
       colors.green(
         `Successfully wrote ${targetIdentifiers.length} identifiers to file "${fileTarget}"`,
       ),
     );
 
-    logger.info(
+    this.logger.info(
       colors.blue(
         `Processed chunk of ${chunk.length} identifiers, found ${targetIdentifiers.length} target identifiers`,
       ),
@@ -151,10 +150,10 @@ export async function pullProfiles(
     skipRequestCount,
   });
 
-  logger.info(
+  this.logger.info(
     colors.green(`Successfully wrote ${allIdentifiersCount} identifiers to file "${file}"`),
   );
-  logger.info(
+  this.logger.info(
     colors.green(
       `Successfully wrote ${allTargetIdentifiersCount} identifiers to file "${fileTarget}"`,
     ),

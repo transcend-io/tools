@@ -1,0 +1,137 @@
+# @transcend-io/mcp-server-policy
+
+## 0.2.11
+
+### Patch Changes
+
+- 87ce10b: Add `McpToolErrorCode` to privacy-types as the canonical MCP tool failure codes (seven values). MCP packages import it from privacy-types directly (not re-exported through mcp-server-base). The former `ErrorCode` enum on mcp-server-base is removed.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+  - @transcend-io/mcp-server-base@3.2.1
+
+## 0.2.10
+
+### Patch Changes
+
+- 5110643: Centralized MCP OAuth scope lists in the SDK so OAuth clients and servers can pin scopes by server type. Domain MCP packages no longer export per-server `*_OAUTH_SCOPES` constants; import `getMcpServerOAuthScopes` from `@transcend-io/sdk` instead.
+- Updated dependencies [2ec345c]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [0c71caf]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [8bd784e]
+- Updated dependencies [faada80]
+- Updated dependencies [3214d5b]
+- Updated dependencies [ef4a7ba]
+  - @transcend-io/sdk@3.4.0
+  - @transcend-io/mcp-server-base@3.2.0
+  - @transcend-io/privacy-types@7.1.2
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [fb660b4]
+- Updated dependencies [581b1a9]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/mcp-server-base@3.1.0
+
+## 0.2.8
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@3.0.0
+
+## 0.2.7
+
+### Patch Changes
+
+- d166b89: Update Zod to a security-fixed release across the MCP packages.
+- Updated dependencies [d166b89]
+  - @transcend-io/mcp-server-base@2.5.7
+
+## 0.2.6
+
+### Patch Changes
+
+- 32695c0: Fix `tools/list` failing when a host installs a different Zod copy than the MCP SDK (common with pnpm). Tool input schemas are now converted with the server’s own Zod and handed to the SDK as plain JSON Schema.
+
+  Domain `mcp-server-*` packages now declare `zod` and `@modelcontextprotocol/sdk` as peer dependencies; `@transcend-io/mcp` still installs them for you. If you depend on a domain package alone, ensure those peers are present (npm/pnpm usually install them automatically).
+
+  Prefer the published `transcend-mcp` binary over pointing clients at `dist/cli.mjs`.
+
+- Updated dependencies [6dc6471]
+- Updated dependencies [32695c0]
+  - @transcend-io/privacy-types@6.6.2
+  - @transcend-io/mcp-server-base@2.5.6
+
+## 0.2.5
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/mcp-server-base@2.5.4
+  - @transcend-io/privacy-types@6.3.1
+  - @transcend-io/utils@0.3.3
+
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/mcp-server-base@2.5.3
+  - @transcend-io/utils@0.3.2
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+  - @transcend-io/mcp-server-base@2.5.2
+  - @transcend-io/privacy-types@6.2.1
+  - @transcend-io/utils@0.3.1
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [3ae909e]
+  - @transcend-io/privacy-types@6.2.0
+
+## 0.2.1
+
+### Patch Changes
+
+- 9331229: Require human confirmation before Policy Engine publish/go-live and Custom Function upsert, promote, and test-run actions so those changes cannot run without your approval.
+
+## 0.2.0
+
+### Minor Changes
+
+- 3501b59: Add `policy_get_templates` and `policy_list_bundles` for Policy Engine authoring templates and bundle/version inspection.
+- 4726631: Scaffold `@transcend-io/mcp-server-policy` and share Policy Engine bundle size limits from `@transcend-io/utils`.
+
+  The new MCP package provides the Policy Engine server shell (OAuth scopes, client helpers, and error formatting). Bundle upload limits (`MAX_BUNDLE_COMPRESSED_BYTES` / `MAX_BUNDLE_DECOMPRESSED_BYTES`) now live in `@transcend-io/utils` so the CLI and MCP server share one source of truth.
+
+- 2efa29d: Add `policy_publish` and `policy_set_live` for uploading inert Policy Engine versions and explicitly activating or deactivating them.
+- 582fdbe: Add Policy Engine MCP domain with `policy_help`, `policy_status`, `policy_publish`, and `policy_set_live`. Operations follow `transcend policy` CLI paths; OAuth requests only Activate Policy scope (superset of Manage/View).
+
+### Patch Changes
+
+- Updated dependencies [f3a7dc8]
+- Updated dependencies [4726631]
+  - @transcend-io/mcp-server-base@2.5.1
+  - @transcend-io/utils@0.3.0
+
+## 0.1.0
+
+### Minor Changes
+
+- Initial release with Policy Engine MCP tools: `policy_get_templates`, `policy_list_bundles`, `policy_publish`, and `policy_set_live`.

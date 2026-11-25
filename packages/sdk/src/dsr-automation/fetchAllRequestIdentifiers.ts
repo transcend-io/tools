@@ -80,7 +80,7 @@ export async function validateSombraVersion(
  */
 export async function fetchAllRequestIdentifiers(
   client: GraphQLClient,
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   options: {
     /** Filter options */
     filterBy: {

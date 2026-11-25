@@ -1,5 +1,841 @@
 # @transcend-io/cli
 
+## 13.4.3
+
+### Patch Changes
+
+- 1f2072c: Align airgap.js-types with main ag-types for policy-update events and pending-event block() serialization. Add UserOrderField, AssessmentFormRawOrderField, and OPAExplainMode to privacy-types and consume them in admin and assessment MCP tools and policy CLI explain flags.
+- Updated dependencies [1f2072c]
+  - @transcend-io/airgap.js-types@14.3.0
+  - @transcend-io/privacy-types@7.3.0
+
+## 13.4.2
+
+### Patch Changes
+
+- d80abc6: Link the Policy Engine documentation from the bundled Policy Engine agent skill.
+- Updated dependencies [87ce10b]
+  - @transcend-io/privacy-types@7.2.0
+
+## 13.4.1
+
+### Patch Changes
+
+- f70a436: Config push and consent deploy now show a short summary of pending changes in the human confirmation prompt. New read-only tools `config_preview_push` and `consent_preview_deploy` return full diffs for agents to show in chat before running the gated tools.
+- 3214d5b: Pushing selected `transcend.yml` sections is safer when keys are minted with only section scopes.
+  - Data silo, preflight, and processing-activity pushes now include the view scope needed to resolve referenced data subjects. Missing subjects are no longer auto-created unless the push includes a `data-subjects` section.
+  - SDK helpers throw errors instead of calling `process.exit`, so servers and MCP hosts are not killed on validation failures.
+  - Data category sync reports per-item errors and no longer crashes the batch when one create fails.
+  - Data silo batch updates retry per silo when a chunk fails, so one bad silo does not block the rest.
+
+  If you push data silos that reference new data subject types without a `data-subjects` section, add those subjects to the yaml first.
+
+- ef4a7ba: Org config copy now pulls and pushes DSR workflow associations: linked data silos, preflight checks, and intake identifiers in `transcend.yml`.
+- Updated dependencies [2ec345c]
+- Updated dependencies [23bdda1]
+- Updated dependencies [f4c51c9]
+- Updated dependencies [5110643]
+- Updated dependencies [f70a436]
+- Updated dependencies [460eb96]
+- Updated dependencies [353a73d]
+- Updated dependencies [6eb83b5]
+- Updated dependencies [8bd784e]
+- Updated dependencies [faada80]
+- Updated dependencies [3214d5b]
+- Updated dependencies [ef4a7ba]
+  - @transcend-io/sdk@3.4.0
+  - @transcend-io/privacy-types@7.1.2
+
+## 13.4.0
+
+### Minor Changes
+
+- 530f513: Preview changes before you apply them. `transcend inventory push --dryRun` lists what a push would create, update, or delete, including changes you did not write in the file, and changes nothing. `transcend inventory pull --dryRun` shows how the file would change without writing it. Add `--json` to push for machine-readable output.
+- 1b190bd: `transcend pull` now writes the Airgap prefix modules attached to your consent manager bundle to `consent-manager.prefixModules` in `transcend.yml`. Each entry has the module name, catalog, version, and a string-to-string config map. This field is pull only: `transcend push` ignores it.
+
+  `@transcend-io/privacy-types` exports shared prefix module catalog and config types.
+
+### Patch Changes
+
+- f7b3d3a: `transcend inventory pull` now writes data silo business entities as `businessEntityTitles`, so pushing a pulled file keeps those links.
+
+  The SDK adds `planPush` and `renderPushPlan` to compare a `transcend.yml` with your organization and list what a push would create, update, or delete.
+
+- Updated dependencies [286ddd2]
+- Updated dependencies [f7b3d3a]
+- Updated dependencies [530f513]
+- Updated dependencies [1b190bd]
+  - @transcend-io/privacy-types@7.1.0
+  - @transcend-io/sdk@3.2.0
+
+## 13.3.0
+
+### Minor Changes
+
+- 18ddf25: Add a `consent-sites` section to `transcend.yml`. You can now manage the hosts that Airgap discovers, including their description, owners, teams, and attributes, with `transcend inventory pull --resources consentSites` and `transcend inventory push`. The existing `consent-manager.domains` list is unchanged. Pulling needs the View Consent Manager scope and pushing needs Manage Consent Manager.
+
+### Patch Changes
+
+- Updated dependencies [18ddf25]
+  - @transcend-io/sdk@3.1.0
+
+## 13.2.1
+
+### Patch Changes
+
+- 7f568ab: Remove `PROMPT_MANAGER` from `TranscendProduct` and reassign prompt-related API scopes to Data Inventory and Structured/Unstructured Discovery product lines. Regenerate `transcend.yml` JSON schemas.
+- Updated dependencies [fb660b4]
+- Updated dependencies [7f568ab]
+  - @transcend-io/privacy-types@7.0.0
+  - @transcend-io/airgap.js-types@14.2.51
+  - @transcend-io/sdk@3.0.1
+
+## 13.2.0
+
+### Minor Changes
+
+- d3584ee: Move the `transcend.yml` pull, sync and codec logic into `@transcend-io/sdk`. Import codecs and sync helpers from the main SDK entry point. Pull and sync no longer print by default. Pass a `logger` (and a `progressReporter` for sync) to get output. Moved log messages no longer use ANSI colors.
+
+### Patch Changes
+
+- 08b28b8: Fix `transcend.yml` push and pull for organization-to-organization copies.
+  - Data subject `active` now applies through `updateSubject`. The removed `toggleSubject` mutation caused every `active` push to fail.
+  - `syncConfigurationToTranscend` records every failure in `SyncResult.errors` with its resource and item, and uses the injected logger.
+  - Enricher `description` is now pulled, and a push no longer clears it when the input omits it.
+  - `createTemplate` now sends the required `type` and `product` fields.
+
+- 3fb7e15: Fix two GraphQL documents that no longer match the schema.
+  - `approveRequest` in the CLI now declares `ApproveRequestInput`. `CommunicationInput` is rejected by the current schema.
+  - The assessments query no longer selects the removed `AttributePromptRunResource` and `AttributePromptGroupResource` types.
+
+- Updated dependencies [08b28b8]
+- Updated dependencies [f99575b]
+- Updated dependencies [1bb32a0]
+- Updated dependencies [d3584ee]
+- Updated dependencies [3fb7e15]
+  - @transcend-io/sdk@3.0.0
+
+## 13.1.1
+
+### Patch Changes
+
+- 5bd03e2: Share the Privacy Center access token format from privacy-types.
+- Updated dependencies [5bd03e2]
+  - @transcend-io/privacy-types@6.8.0
+  - @transcend-io/sdk@2.2.1
+
+## 13.1.0
+
+### Minor Changes
+
+- 62eb047: Add a SHORT token format for preference access links.
+
+### Patch Changes
+
+- Updated dependencies [2e995fd]
+- Updated dependencies [62eb047]
+  - @transcend-io/type-utils@3.3.0
+  - @transcend-io/sdk@2.2.0
+
+## 13.0.8
+
+### Patch Changes
+
+- 4e9549d: Add `ServerWebhookAwaitingCallback` to the `ActionItemCode` enum so server webhook integrations that accept jobs but never call back can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+- Updated dependencies [4e9549d]
+  - @transcend-io/privacy-types@6.6.1
+
+## 13.0.7
+
+### Patch Changes
+
+- 974478c: Add an API key scope to call Sombra-hosted LLM classification endpoints.
+- Updated dependencies [974478c]
+  - @transcend-io/privacy-types@6.6.0
+
+## 13.0.6
+
+### Patch Changes
+
+- a0d513d: Narrowed use of Got types to only the relevant got methods
+- Updated dependencies [a0d513d]
+  - @transcend-io/sdk@2.1.17
+
+## 13.0.5
+
+### Patch Changes
+
+- da79134: Use workspace protocol to reference secret value package
+- Updated dependencies [7441a42]
+- Updated dependencies [12989f1]
+- Updated dependencies [88087f0]
+  - @transcend-io/secret-value@2.0.0
+  - @transcend-io/internationalization@4.2.0
+
+## 13.0.4
+
+### Patch Changes
+
+- 325a9c5: Remove query-string in favor of URLSearchParams
+
+## 13.0.3
+
+### Patch Changes
+
+- dea8763: Add integration owner-approval action item codes (`RequestDataSiloNeedsApproval` / `RequestDataSiloNeedsApprovalAssigned`) and an `ApproveAssignedIntegrationRequests` scope so assigned owners can approve or reject privacy request processing for their integrations without needing broader Manage Assigned Integrations access. Regenerate the CLI `transcend.yml` JSON schema so the new codes and scope are reflected.
+- Updated dependencies [dea8763]
+  - @transcend-io/privacy-types@6.4.0
+
+## 13.0.2
+
+### Patch Changes
+
+- 393020f: Ensure all prod dependencies use caret (^) SemVer ranges
+- Updated dependencies [393020f]
+  - @transcend-io/airgap.js-types@14.2.48
+  - @transcend-io/privacy-types@6.3.1
+  - @transcend-io/utils@0.3.3
+  - @transcend-io/sdk@2.1.16
+
+## 13.0.1
+
+### Patch Changes
+
+- 7140d27: Add the missing `transcend.yml` JSON schema for CLI v13. Version Packages now regenerates that versioned schema when the CLI major bumps.
+
+## 13.0.0
+
+### Major Changes
+
+- 8d8efe3: **Breaking:** Rename the Policy Engine verification gate from `transcend policy lint` to `transcend policy check`. Use `transcend policy lint` for OPA formatting and Regal only.
+
+  Migration:
+  - Replace `transcend policy lint` (CI, scripts, VS Code tasks) with `transcend policy check` for the full gate (manifest, formatting, strict OPA check, Regal, and tests).
+  - Keep or switch to `transcend policy lint` when you only want formatting + Regal (`--fix` still repairs OPA formatting).
+  - Re-run `transcend policy init --editor` / `--ci` (or `policy new`) to refresh generated VS Code tasks and GitHub Actions; legacy `policy: lint*` tasks are migrated to `policy: check*`.
+
+### Patch Changes
+
+- f02f57e: Generate more compact JSON schemas by reusing shared codecs with local references. A shared locale codec is now available from `@transcend-io/privacy-types`.
+- Updated dependencies [f02f57e]
+  - @transcend-io/privacy-types@6.3.0
+  - @transcend-io/type-utils@3.2.0
+  - @transcend-io/airgap.js-types@14.2.47
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.15
+  - @transcend-io/utils@0.3.2
+
+## 12.1.5
+
+### Patch Changes
+
+- Updated dependencies [e819811]
+- Updated dependencies [e819811]
+  - @transcend-io/type-utils@3.1.0
+  - @transcend-io/airgap.js-types@14.2.46
+  - @transcend-io/privacy-types@6.2.1
+  - @transcend-io/sdk@2.1.14
+  - @transcend-io/utils@0.3.1
+  - @transcend-io/custom-function-types@0.2.0
+
+## 12.1.4
+
+### Patch Changes
+
+- 1919505: Resolve Policy Engine bundles and versions by name via list filters instead of paginating full listings. Look up versions by UUID on the nested bundle route used by download (not the flat policy-bundle-versions path).
+
+## 12.1.3
+
+### Patch Changes
+
+- eb1f9bc: Generated Policy Engine and Custom Functions GitHub Actions workflows no longer double-run on pull request updates. `push` is limited to `main`; PR validation still runs via `pull_request`.
+
+  If you already have a generated workflow, update its `push` trigger to include `branches: [main]`, or remove the workflow and re-run `policy init` / `custom-functions init` with CI enabled.
+
+## 12.1.2
+
+### Patch Changes
+
+- Updated dependencies [3ae909e]
+  - @transcend-io/privacy-types@6.2.0
+  - @transcend-io/airgap.js-types@14.2.45
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.13
+
+## 12.1.1
+
+### Patch Changes
+
+- 0f58125: Add optional `workflowConfigId` CSV column support to `transcend request upload` so callers can target a workflow config explicitly.
+
+## 12.1.0
+
+### Minor Changes
+
+- 8e496d4: `policy new` writes each bundle's input JSON Schema as `input.schema.json` inside the publish directory (for example `permissions-bundle/input.schema.json`) instead of a shared workspace `schemas/` folder. VS Code setup no longer sets `opa.schema`; Permissions templates point `json.schemas` at the published schema URL so editor validation tracks the live contract. Pass `--schema` with the local file path when type-checking input during `policy eval` / `policy test`.
+- 08e6e29: `policy new` can set a local publish folder with `--bundle-dir` independently of the package root (`--name`). Defaults remain `{name}-bundle/`. Help text clarifies workspace vs local bundle path vs remote `--remote-bundle-name`.
+- b5690fd: Policy Engine API commands rename `--bundle-name` to `--remote-bundle-name` so it is clearly distinct from the local bundle directory path (and from `policy new --bundle-dir`).
+
+  ### Migration
+
+  Replace `--bundle-name` with `--remote-bundle-name` on:
+  - `policy publish`
+  - `policy activate`
+  - `policy deactivate`
+  - `policy download`
+  - `policy versions`
+
+### Patch Changes
+
+- 4726631: Scaffold `@transcend-io/mcp-server-policy` and share Policy Engine bundle size limits from `@transcend-io/utils`.
+
+  The new MCP package provides the Policy Engine server shell (OAuth scopes, client helpers, and error formatting). Bundle upload limits (`MAX_BUNDLE_COMPRESSED_BYTES` / `MAX_BUNDLE_DECOMPRESSED_BYTES`) now live in `@transcend-io/utils` so the CLI and MCP server share one source of truth.
+
+- 7d1754d: `policy eval` now ignores local `*_test.rego` files by default (same as lint/publish), so local Evaluate matches production bundles that do not ship tests.
+- 7d1754d: Scaffolded policy `.manifest` files now record `metadata.transcend.io.templateVersion` with the `@transcend-io/cli` version that generated the template.
+- Updated dependencies [4726631]
+  - @transcend-io/utils@0.3.0
+  - @transcend-io/sdk@2.1.12
+
+## 12.0.0
+
+### Major Changes
+
+- 598e5b6: Breaking: Policy bundle uploads now require an OPA `.manifest` file — `manifest.json` is no longer accepted. The CLI no longer renames `.manifest` to `manifest.json` when packing the upload tarball; `.manifest` is used end to end. Rename any remaining `manifest.json` files to `.manifest`.
+- 868a0c6: Breaking: `policy init` now scaffolds an **empty multi-bundle workspace** (shared Regal config and README only — no bundles or Rego). Add bundles with the new `policy new` command.
+
+  ### New: `transcend policy new`
+
+  Adds a publishable `{name}-bundle/` directory to an initialized workspace from a template:
+  - **Generic** — a fail-closed teaching entrypoint (default root: `example`)
+  - **Permissions** — a Permission API starter with purpose preference resolution (default root: `permissions`)
+
+  ```sh
+  transcend policy init
+  transcend policy new --template generic --name example --yes
+  transcend policy new --template permissions --name permissions --yes
+  ```
+
+  `policy new` merges the root into `.regal/config.yaml`, creates bundle files, input schemas, and a gitignored local `input.json` (copy of the example). It also updates VS Code settings and lint tasks when `.vscode` is present.
+
+  `policy lint` and `policy test` now run `opa test -b` (bundle mode) so local `input.json` next to `input.example.json` no longer causes a merge error.
+
+  `policy lint` and `policy test` default to the workspace (`transcend/policy`) and run against **every** immediate child that contains a `.manifest`. Pass one bundle path to target a single unit. Strict OPA checks use Rego v1 (no `--v0-compatible`).
+
+  `policy eval` and `policy publish` require an explicit bundle directory (one-bundle operations — no default path).
+
+  `policy eval` uses `--package` for the OPA query (renamed from `--pkg`) and forwards curated `opa eval` options (`--format`, `--schema`, `--explain`, `--stdin-input`, `--metrics`, `--instrument`, `--profile`, `--timeout`, `--var-values`, `--show-builtin-errors`). Exit-on-result flags like OPA’s `--fail` are not exposed — production Evaluate uses the Data API (deny is a successful evaluation). `policy test` forwards `--format`, `--verbose`, `--run`, `--coverage`, `--threshold`, `--timeout`, `--var-values`, `--explain`, `--schema`, and `--exit-zero-on-skipped` while keeping `-b` and `--fail-on-empty` owned by the CLI.
+
+  Generated Policy Engine CI and Regal config now pin **OPA 1.18.2** (Regal 0.42.0 capabilities). Help text distinguishes the **workspace** directory (`init` / `new` / `lint` / `test`) from a **bundle** directory (`eval` / `publish`).
+
+  ### Migration
+  - `policy init` no longer creates `example-bundle/` or any Rego — run `policy new` after init.
+  - `policy lint` / `policy test` with no args cover all `.manifest` bundles under `transcend/policy`.
+  - `policy new` still scaffolds directories as `{name}-bundle/`; that suffix is a layout convention, not a discovery requirement.
+  - `policy new` merges the new root into existing `.regal/config.yaml` without wiping custom Regal settings; invalid `project.roots` fail instead of resetting.
+  - `policy eval` and `policy publish` no longer default to `transcend/policy/example-bundle` — pass the bundle directory explicitly.
+  - `policy eval --pkg` is now `--package`.
+  - Upgrade local/CI OPA to 1.18.2 (and Regal to ≥ 0.42.0 for the generated capabilities pin).
+  - If you already use a flat `transcend/policy` publish directory, move the Rego tree and `.manifest` into a child publish directory (or pass that path explicitly).
+
+- ed6319d: Breaking: Policy projects now use an OPA `.manifest` file instead of `manifest.json`.
+
+  Rename existing `manifest.json` files to `.manifest`. `policy init` generates the OPA schema shape (including `roots` and `rego_version`), and editor setup associates `.manifest` with JSON.
+
+- 7c9d69a: Breaking: unify Custom Function project selection across local development and deployment commands.
+
+  `custom-functions push` now accepts the project directory positionally, defaults to `transcend/custom-functions`, and uses `--manifest` for an explicit manifest path. Replace existing `custom-functions push --file=path/to/transcend-functions.yml` invocations with `custom-functions push --manifest=path/to/transcend-functions.yml`.
+
+  `custom-functions list` and `custom-functions push` also support `--json` for structured automation output.
+
+- 794fa41: Breaking: use one consistent command shape across Policy Engine workflows.
+
+  `policy init`, `lint`, `test`, `eval`, and `publish` now accept the Policy project directory positionally and default to `transcend/policy`. Replace `--dir=./policies` or `--bundle=./policies` with a positional directory such as `transcend policy lint ./policies`.
+
+  Policy commands using `--json` now reserve stdout for valid JSON and do not prompt. Pass `--yes` with `policy publish --json` when creating a new bundle.
+
+### Minor Changes
+
+- 1d3e65d: Clarify how Permissions vs generic policy bundles are distinguished at publish time: scaffolded `.manifest` files now include `metadata.transcend.io.template`, docs explain that Permissions API only loads the remote bundle named `permissions`, and `policy publish` soft-warns when `--bundle-name` disagrees with that convention.
+
+### Patch Changes
+
+- 22916a2: Internal typing improvements for shared CLI parameter definitions. No user-facing changes.
+- b86b173: Publish the Permissions API OPA input schema at `packages/cli/schema/permissions-policy-input.json`, generated from the `@transcend-io/privacy-types` codec. `policy new --template permissions` scaffolds from that published contract (including Preference Store-style purpose slugs like `Analytics`).
+- Updated dependencies [b86b173]
+- Updated dependencies [20b054b]
+  - @transcend-io/privacy-types@6.1.0
+  - @transcend-io/airgap.js-types@14.2.44
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.11
+
+## 11.0.0
+
+### Major Changes
+
+- 3bc8980: Remove the unused `BusinessEntityNeedsDocumentation` / `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` action item code. The product feature was already disabled and is being deleted; configs that still reference this value should drop it.
+
+  **Migration:** Remove any `BUSINESS_ENTITY_NEEDS_DOCUMENTATION` entries from `transcend.yml` action-item configuration before upgrading.
+
+### Patch Changes
+
+- 8695da7: Add `ConsentSiteTelemetryStale` to the `ActionItemCode` enum so Consent Manager sites with stale telemetry can surface as action items. Regenerate the CLI `transcend.yml` JSON schema so the new code is reflected.
+- 1f35e6f: Inventory pull for multi-Sombra organizations fetches `sombra-id` from the bulk data silos query instead of one extra request per silo.
+- Updated dependencies [8695da7]
+- Updated dependencies [3bc8980]
+- Updated dependencies [1f35e6f]
+  - @transcend-io/privacy-types@6.0.0
+  - @transcend-io/sdk@2.1.10
+  - @transcend-io/airgap.js-types@14.2.43
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.29.3
+
+### Patch Changes
+
+- Updated dependencies [76c05da]
+  - @transcend-io/privacy-types@5.27.0
+  - @transcend-io/airgap.js-types@14.2.42
+  - @transcend-io/custom-function-types@0.2.0
+  - @transcend-io/sdk@2.1.9
+
+## 10.29.2
+
+### Patch Changes
+
+- c4f1a55: Upgrade csv-parse to patch CVE
+- Updated dependencies [c4f1a55]
+  - @transcend-io/utils@0.2.2
+  - @transcend-io/sdk@2.1.8
+
+## 10.29.1
+
+### Patch Changes
+
+- c2b842a: Add an experimental consent cookie/data-flow triage MCP App, plus the list/delete tools it needs.
+
+  Reviewers had no interactive surface for clearing the cookie and data-flow backlog. The new
+  `consent_cookie_triage_review_app` tool opens a purpose-grouped review UI (MCP App hosts get a
+  fast shell that pages `consent_list_cookies` / `consent_list_data_flows`; other hosts get a
+  prefetched payload). Suggestions follow static business rules, not an agent classifier.
+
+  `consent_delete_cookies` and `consent_delete_data_flows` land alongside list-filter updates so
+  triage can discard items. SDK delete mutations now return `success`. Shared MCP UI gains
+  `useTool` for app views that call tools from the client.
+
+  CLI picks up a `stripAnsi` test helper so assertions stay stable under `FORCE_COLOR`.
+
+- Updated dependencies [c2b842a]
+  - @transcend-io/sdk@2.1.7
+
+## 10.29.0
+
+### Minor Changes
+
+- f74e10f: Add local Policy Engine scaffolding and validation.
+
+  `policy init` creates a safe, publishable Rego v1 starter and can merge repository-level VS Code tooling, install a portable policy authoring skill, and generate credential-free GitHub Actions validation. The transactional setup preserves existing policy, editor, workflow, and customized skill content.
+
+  `policy lint` now requires a manifest, OPA 1.x, and Regal, and verifies formatting, production compilation, and tests. Existing lint invocations may newly fail until these requirements are met.
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+### Patch Changes
+
+- 27e7c7a: Say which Custom Function type each `custom-functions new` template produces.
+
+  The command described its templates by the code they emit ("General or DSR starter", "Generated
+  handler and fixture shape"), which does not map onto the two product concepts a caller is choosing
+  between: a General function triggered by Rules Automation, and a DSR function triggered by a
+  Workflow step. The interactive flow now asks for that type first, using
+  `CustomFunctionType` from `@transcend-io/privacy-types` rather than a parallel local union.
+  General continues immediately because it has only one template; DSR opens a second prompt for a
+  data point resolver, preflight check, or both. The flag brief, command description, and README
+  use the same language.
+
+  The scaffolded DSR enricher comments and the skill's CI recipe follow the same wording, and that
+  recipe now pins Deno 2.4.5 to match the version this repository validates against.
+
+- Updated dependencies [e03b2bd]
+  - @transcend-io/sdk@2.1.6
+
+## 10.28.0
+
+### Minor Changes
+
+- 7384caa: Add a guided local workflow for developing Custom Functions without Transcend credentials.
+
+  `custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions run` exercises those payloads in a credential-free local Deno simulator and shows function logs. `custom-functions check` validates the project locally with Deno before it is pushed.
+
+  The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
+
+  The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
+
+### Patch Changes
+
+- cfc269d: Fix Custom Function export checks for Deno configurations that contain non-import-map settings.
+- 7630f48: Widen undici range for security patches
+- Updated dependencies [7384caa]
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.27.5
+
+### Patch Changes
+
+- 46488a6: Route CLI runtime I/O through Stricli's isolated command context and centralize pooling UI
+  wiring so embedded and test invocations can provide their own process streams, filesystem, and
+  logger.
+- 118c5b6: Move CSV and YAML filesystem access to Stricli command boundaries while preserving reusable,
+  pure parsing, serialization, and file-selection helpers.
+- c5fb568: Move consent CSV parsing and row mapping into pure functions while routing command filesystem,
+  logging, network, and exit behavior through the isolated CLI context.
+- Updated dependencies [7e7d797]
+  - @transcend-io/sdk@2.1.5
+
+## 10.27.4
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/airgap.js-types@14.2.41
+  - @transcend-io/sdk@2.1.4
+
+## 10.27.3
+
+### Patch Changes
+
+- ff0204c: Add `ConsentSite` to `AttributeSupportedResourceType` for Consent Manager domain custom fields. Regenerate CLI transcend.yml JSON schemas to match.
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/airgap.js-types@14.2.40
+  - @transcend-io/sdk@2.1.3
+
+## 10.27.2
+
+### Patch Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/airgap.js-types@14.2.39
+  - @transcend-io/sdk@2.1.2
+
+## 10.27.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+  - @transcend-io/sdk@2.1.1
+
+## 10.27.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 48a41a5: Bump `fast-csv` from `^4.3.6` to `^5.0.0`.
+- 6e5c4cf: Bump `undici` from `6.27.0` to `6.28.0` to address CVE-2026-15157 (CRLF injection via blob-like body `type`, GHSA-m8rv-5g2x-5cg5), CVE-2026-16728 (downstream response desynchronization via retry interceptor, GHSA-8xcm-r25x-g524), and CVE-2026-16729 (cookie attribute injection via `setCookie`, GHSA-v3r7-h72x-cjcm).
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+- Updated dependencies [a5e8334]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/sdk@2.1.0
+  - @transcend-io/airgap.js-types@14.2.37
+
+## 10.26.1
+
+### Patch Changes
+
+- 9637490: Add dedicated Custom Function scopes to the AD scope catalog: `ViewCustomFunction` and `ManageCustomFunction` (wire values `viewCustomFunction` / `manageCustomFunction`), titled "View Custom Functions" / "Manage Custom Functions". These let Custom Function access be granted independently of the broader Data Map scopes (LINK-7162). Endpoint mapping onto the new scopes lands in a follow-up (LINK-7163).
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+  - @transcend-io/airgap.js-types@14.2.36
+  - @transcend-io/sdk@2.0.1
+
+## 10.26.0
+
+### Minor Changes
+
+- 2f5271e: Add `transcend custom-functions push` (manifest-driven create/update of custom function code revisions with change detection, draft + promote, and dry-run support) and `transcend custom-functions list`, designed to run from client CI. Code is signed against the Sombra customer ingress (pass `--sombraAuth` when self-hosting Sombra). Manifest entries can pin a custom function `id` (required when names are not unique), and `push --updateManifest` writes assigned IDs back into the manifest while preserving comments and `<<parameters.x>>` placeholders.
+
+  Manifest entries can also define `test-payloads` — a list of JSON payload files, each with an optional `payload-type` so DSR functions cover both their default (`DATA_POINT`) and enricher (`REQUEST_ENRICHER`) exports on every push (`test-payload` remains as single-payload shorthand). The freshly signed code is test-run with every payload via the `runCustomFunction` mutation before pushing; all must pass or the function is rejected with each failing payload's reason and execution logs (exit code 1). A warning is printed when a DSR entry only covers one export. Use `--skipTests` to bypass testing.
+
+  New DSR functions no longer require a `data-silo-id`: the DSR integration (a `customFunction`-catalog data silo) is created automatically before the test run, the function is created and linked on a passing test (the silo is rolled back on failure), and `--updateManifest` writes both the function `id` and the `data-silo-id` back into the manifest. DSR test payloads get `extras.dataSilo` injected from the resolved silo automatically.
+
+  Metadata-only changes (description, or name for id-pinned entries) are updated in place without signing, testing, or pushing a new code revision, reported as "metadata-only" in the sync summary. The skip message now points at `--force` for env value-only rotations, which cannot be diffed.
+
+- 43d6ffe: Support per-workflow deletion dependencies in `transcend.yml`. Use a list of titles for the global configuration only, or a list of objects when any per-workflow override is present (`{ titles }` for global, `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for overrides). Mixing titles and objects in the same list is not allowed.
+
+  `syncDataSiloDependencies` now takes `[dataSiloId, DependedOnDataSiloInput[]][]` instead of `[dataSiloId, string[]][]` and pushes through `dependedOnDataSilos` rather than the deprecated `dependedOnDataSiloTitles`.
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+- Updated dependencies [43d6ffe]
+  - @transcend-io/sdk@2.0.0
+  - @transcend-io/privacy-types@5.19.0
+  - @transcend-io/airgap.js-types@14.2.35
+
+## 10.25.5
+
+### Patch Changes
+
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+  - @transcend-io/privacy-types@5.18.0
+  - @transcend-io/airgap.js-types@14.2.34
+  - @transcend-io/sdk@1.9.5
+
+## 10.25.4
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+  - @transcend-io/airgap.js-types@14.2.33
+  - @transcend-io/sdk@1.9.4
+
+## 10.25.3
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+  - @transcend-io/airgap.js-types@14.2.32
+  - @transcend-io/sdk@1.9.3
+
+## 10.25.2
+
+### Patch Changes
+
+- Updated dependencies [2cc726f]
+  - @transcend-io/privacy-types@5.15.0
+  - @transcend-io/airgap.js-types@14.2.31
+  - @transcend-io/sdk@1.9.2
+
+## 10.25.1
+
+### Patch Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+  - @transcend-io/airgap.js-types@14.2.30
+  - @transcend-io/sdk@1.9.1
+
+## 10.25.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/sdk@1.9.0
+  - @transcend-io/airgap.js-types@14.2.29
+
+## 10.24.1
+
+### Patch Changes
+
+- Updated dependencies [188ba6f]
+  - @transcend-io/privacy-types@5.12.0
+  - @transcend-io/airgap.js-types@14.2.28
+  - @transcend-io/sdk@1.8.1
+
+## 10.24.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+### Patch Changes
+
+- Updated dependencies [29e9d5f]
+  - @transcend-io/privacy-types@5.11.0
+  - @transcend-io/sdk@1.8.0
+  - @transcend-io/airgap.js-types@14.2.27
+
+## 10.23.8
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+  - @transcend-io/airgap.js-types@14.2.26
+  - @transcend-io/sdk@1.7.7
+
+## 10.23.7
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+  - @transcend-io/airgap.js-types@14.2.25
+  - @transcend-io/sdk@1.7.6
+
+## 10.23.6
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+  - @transcend-io/privacy-types@5.10.0
+  - @transcend-io/airgap.js-types@14.2.24
+  - @transcend-io/sdk@1.7.5
+
+## 10.23.5
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+  - @transcend-io/privacy-types@5.9.1
+  - @transcend-io/airgap.js-types@14.2.23
+  - @transcend-io/sdk@1.7.4
+
+## 10.23.4
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+  - @transcend-io/airgap.js-types@14.2.22
+  - @transcend-io/sdk@1.7.3
+
+## 10.23.3
+
+### Patch Changes
+
+- Updated dependencies [ac7537b]
+  - @transcend-io/privacy-types@5.8.5
+  - @transcend-io/airgap.js-types@14.2.21
+  - @transcend-io/sdk@1.7.2
+
+## 10.23.2
+
+### Patch Changes
+
+- Updated dependencies [54f4aff]
+  - @transcend-io/privacy-types@5.8.4
+  - @transcend-io/airgap.js-types@14.2.20
+  - @transcend-io/sdk@1.7.1
+
+## 10.23.1
+
+### Patch Changes
+
+- 7ae638c: Include `ViewApiKeys` in the required scopes for data-silos inventory push/pull so API key titles on data silos can be resolved without a separate api-keys resource.
+- 01d2625: `transcend policy *` commands now show actionable error messages for common Policy Engine API failures (invalid API key, missing bundles, upload limits, rate limits) instead of raw HTTP stack traces. Pass `--debug` to include underlying technical details when troubleshooting.
+- e5688b5: Policy Engine bug-bash fixes for `transcend policy`:
+  - `--limit`/`--offset` on `policy bundles` and `--limit` on `policy versions` now reject fractional values and enforce the server-side cap of 100 client-side, instead of failing with an opaque API 400.
+  - `policy versions` distinguishes an empty page past the `--after` cursor ("No more versions … end of results") from a bundle with no versions.
+  - `policy publish` validates `manifest.json` shape (non-empty `roots` array) and that every Rego package is covered by a declared root, surfacing a clear error at upload time instead of a decide-time fail-closed.
+  - `policy publish` size-limit errors now report human-readable sizes (KiB/MiB) with the bundle's actual size and the limit.
+  - `--transcend-url` ending in `/v1` is rejected with a clear hint (the CLI appends `/v1` itself), avoiding an opaque `/v1/v1` 400.
+  - `policy activate` surfaces a clear "version is already the active version" message on 409.
+
+## 10.23.0
+
+### Minor Changes
+
+- 55358da: Support `supportsAuthorizedAgent` on `data-subjects` in transcend.yml — the field can now be pushed via `updateSubject` and pulled from `internalSubjects`. Pushing `supportsAuthorizedAgent` requires the Authorized Agents feature to be enabled for the organization; the sync error message now calls this out explicitly.
+
+### Patch Changes
+
+- 259151f: Allow null consent UI variant description/userFlow/themeSlug on inventory pull so unset backend fields no longer fail the transcend.yml codec.
+- Updated dependencies [259151f]
+- Updated dependencies [55358da]
+  - @transcend-io/privacy-types@5.8.2
+  - @transcend-io/sdk@1.7.0
+  - @transcend-io/airgap.js-types@14.2.19
+
+## 10.22.1
+
+### Patch Changes
+
+- Updated dependencies [ccb3c45]
+  - @transcend-io/privacy-types@5.8.1
+  - @transcend-io/airgap.js-types@14.2.18
+  - @transcend-io/sdk@1.6.1
+
+## 10.22.0
+
+### Minor Changes
+
+- 941113c: Add preference-workflow-configs pull/push (Workflows → Preference Workflows), including Workflows V2 via workflow-title and legacy action-type / data-silo-titles mode.
+
+### Patch Changes
+
+- b1750a6: Set PolicyType on policy create in updatePolicies (infer from title or use optional yml type). Pull/push round-trips type on policies.
+- Updated dependencies [b1750a6]
+- Updated dependencies [941113c]
+  - @transcend-io/privacy-types@5.8.0
+  - @transcend-io/sdk@1.6.0
+  - @transcend-io/airgap.js-types@14.2.17
+
+## 10.21.0
+
+### Minor Changes
+
+- 97db927: Add optional `sombra-id` on data silos in `transcend.yml` so inventory pull/push can sync the GraphQL `DataSilo.sombraId` association for multi-Sombra organizations.
+- 2355c9e: Add privacy-center sync/pull for displayed-child-organization-uris, workflows-custom-fields-required, footer-layout, footer-links, home, and expandSideMenuByDefault. Honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.
+
+### Patch Changes
+
+- Updated dependencies [97db927]
+- Updated dependencies [2355c9e]
+  - @transcend-io/sdk@1.5.0
+  - @transcend-io/privacy-types@5.7.0
+  - @transcend-io/airgap.js-types@14.2.16
+
+## 10.20.0
+
+### Minor Changes
+
+- 55cdab4: Add `transcend policy download` subcommand
+
+  `transcend policy download --bundle-name <name> [--version <label>]` downloads a
+  compiled policy bundle tarball (`.tar.gz`) for local inspection, diffing, or
+  offline `opa eval` / `opa test`. When `--version` is omitted, downloads the
+  bundle's currently active version (errors if none is active).
+
+## 10.19.0
+
+### Minor Changes
+
+- 89f4fe5: Add workflow-configs pull and push support for DSR workflow settings. Sync matches by required, unique `internal-name` and creates missing DSR workflows (then updates remaining fields). `action-type` is required; note that changing a workflow's action type creates a new workflow version server-side. Supports title, subtitle, description, data subject, visibility, region collection, region list, per-region expiry times (requires a `default` entry with all values > 0), and attribute keys. Pull is filtered to DSR workflows (preference-management workflows are excluded).
+
+### Patch Changes
+
+- Updated dependencies [89f4fe5]
+  - @transcend-io/sdk@1.4.0
+  - @transcend-io/privacy-types@5.6.0
+  - @transcend-io/airgap.js-types@14.2.15
+
+## 10.18.1
+
+### Patch Changes
+
+- Updated dependencies [b0c9656]
+  - @transcend-io/privacy-types@5.5.0
+  - @transcend-io/airgap.js-types@14.2.14
+  - @transcend-io/sdk@1.3.1
+
 ## 10.18.0
 
 ### Minor Changes

@@ -19,3 +19,11 @@ The packages in `packages/` are the public developer tools for Transcend.
   per-domain packages) so AI agents can work with Transcend.
 - [`packages/airgap.js-types`](./packages/airgap.js-types/) (`@transcend-io/airgap.js-types`): shared enums, codecs, and type
   definitions for Transcend airgap.js.
+
+## Agent Skills
+
+Install [Transcend's Agent Skills](./skills) via:
+
+```sh
+npx skills add transcend-io/tools
+```

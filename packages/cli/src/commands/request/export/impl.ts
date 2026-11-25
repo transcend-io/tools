@@ -4,7 +4,6 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { streamPrivacyRequestsToCsv } from '../../../lib/requests/index.js';
-import { logger } from '../../../logger.js';
 
 export interface ExportCommandFlags {
   auth: string;
@@ -44,7 +43,7 @@ export async function _export(
     showTests,
   }: ExportCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { filePaths, totalCount } = await streamPrivacyRequestsToCsv({
     transcendUrl,
@@ -63,7 +62,7 @@ export async function _export(
     file,
   });
 
-  logger.info(
+  this.logger.info(
     colors.green(
       `Successfully wrote ${totalCount} requests to ` +
         `${filePaths.length} file(s): ${filePaths.join(', ')}`,

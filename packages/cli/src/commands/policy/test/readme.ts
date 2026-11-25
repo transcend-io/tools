@@ -5,10 +5,28 @@ const examples = buildExamples<TestCommandFlags>(
   ['policy', 'test'],
   [
     {
-      description: 'Run tests in a local policy directory',
+      description: 'Run tests for every bundle under the default workspace',
+      flags: {},
+    },
+    {
+      description: 'Filter tests and emit JSON',
       flags: {
-        dir: './policies',
+        format: 'json',
+        run: 'test_allows',
+        verbose: true,
       },
+    },
+    {
+      description: 'Fail CI when coverage is below a threshold',
+      flags: {
+        coverage: true,
+        threshold: '80',
+      },
+    },
+    {
+      description: 'Test a single local publish directory',
+      positionals: ['transcend/policy/example-bundle'],
+      flags: {},
     },
   ],
 );
@@ -16,4 +34,7 @@ const examples = buildExamples<TestCommandFlags>(
 export default `#### Examples
 
 ${examples}
+
+With no directory argument, \`policy test\` runs every immediate child under the default workspace
+(\`transcend/policy\`) that contains a \`.manifest\`. Pass one bundle path to test a single unit.
 `;

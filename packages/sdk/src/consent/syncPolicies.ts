@@ -1,4 +1,5 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import { PolicyType } from '@transcend-io/privacy-types';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
@@ -11,6 +12,11 @@ import { UPDATE_POLICIES } from './gqls/policy.js';
 export interface PolicyInput {
   /** The title of the policy */
   title: string;
+  /**
+   * Policy type. Required by the API on create; optional on update.
+   * When omitted on create, inferred from title.
+   */
+  type?: PolicyType;
   /** Effective date of policy */
   effectiveOn?: string;
   /** Whether or not to disable the effective date */
@@ -22,6 +28,22 @@ export interface PolicyInput {
 }
 
 const MAX_PAGE_SIZE = 100;
+
+/**
+ * Infer PolicyType from a policy title when type is not provided on create.
+ *
+ * @param title - Policy title
+ * @returns Inferred policy type
+ */
+export function inferPolicyTypeFromTitle(title: string): PolicyType {
+  if (title === 'Privacy Policy') {
+    return PolicyType.PrivacyPolicy;
+  }
+  if (title === 'Cookie Policy') {
+    return PolicyType.CookiePolicy;
+  }
+  return PolicyType.Custom;
+}
 
 /**
  * Update or create policies
@@ -48,6 +70,12 @@ export async function updatePolicies(
         policies: page.map(([policy, policyId]) => ({
           id: policyId,
           title: policy.title,
+          // Backend requires type on create; leave existing type alone on update
+          ...(!policyId
+            ? {
+                type: policy.type ?? inferPolicyTypeFromTitle(policy.title),
+              }
+            : {}),
           disableEffectiveOn: policy.disableEffectiveOn,
           disabledLocales: policy.disabledLocales,
           ...(policy.effectiveOn || policy.content

@@ -1,0 +1,36 @@
+name: Cursor Plugin Manifests
+
+# JSON parse + required-field checks for marketplace and plugin manifests.
+# Runs without pnpm bootstrap — plugins live outside the workspace.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cursor-plugin-manifests.yml'
+      - '.cursor-plugin/**'
+      - 'plugins/**'
+      - 'scripts/validate-cursor-plugins.mjs'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cursor-plugin-manifests.yml'
+      - '.cursor-plugin/**'
+      - 'plugins/**'
+      - 'scripts/validate-cursor-plugins.mjs'
+  merge_group:
+
+concurrency:
+  group: cursor-plugin-manifests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Validate Cursor plugin manifests
+        run: node scripts/validate-cursor-plugins.mjs

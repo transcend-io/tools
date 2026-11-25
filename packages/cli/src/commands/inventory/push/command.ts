@@ -4,6 +4,10 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import {
+  projectDryRunParameter,
+  projectJsonParameter,
+} from '../../../lib/scaffolding/command-parameters.js';
 
 export const pushCommand = buildCommand({
   loader: async () => {
@@ -32,7 +36,7 @@ export const pushCommand = buildCommand({
         kind: 'parsed',
         parse: String,
         brief:
-          'The variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.',
+          'Variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.',
         default: '',
       },
       publishToPrivacyCenter: {
@@ -51,6 +55,15 @@ export const pushCommand = buildCommand({
         brief:
           'When true and syncing attributes, delete any extra attributes instead of just upserting',
         default: false,
+      },
+      dryRun: {
+        ...projectDryRunParameter,
+        brief:
+          'Show what the push would create, update, or delete without changing anything in Transcend',
+      },
+      json: {
+        ...projectJsonParameter,
+        brief: 'With --dryRun, print the plan as JSON on stdout',
       },
     },
   },

@@ -1,0 +1,35 @@
+/*
+ * Deliberately unlayered. The shared theme declares its rules in cascade
+ * layers, so these component-owned keyframes win without `!important`.
+ */
+
+.compact-count-shimmer {
+  position: relative;
+  display: block;
+  width: 3ch;
+  height: 0.7em;
+  overflow: hidden;
+  border-radius: 9999px;
+  /* Soft bar so the placeholder reads on both filled badges and plain KPIs. */
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.compact-count-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, currentColor 28%, transparent) 45%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: compact-count-shimmer 1.1s ease-in-out infinite;
+}
+
+@keyframes compact-count-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

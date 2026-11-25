@@ -15,7 +15,7 @@ import { SurveySubCategory } from './survey.js';
 import { TrackingSubCategory } from './tracking.js';
 import { UserProfileSubCategory } from './userProfile.js';
 
-export const DefaultDataSubCategoryType = makeEnum({
+export const DefaultDataSubCategoryType = {
   ...ConnectionSubCategory,
   ...ContactSubCategory,
   ...DemographicSubCategory,
@@ -30,7 +30,7 @@ export const DefaultDataSubCategoryType = makeEnum({
   ...TrackingSubCategory,
   ...UserProfileSubCategory,
   ...NotPersonalDataSubCategory,
-});
+} as const;
 
 /**
  * Overload type

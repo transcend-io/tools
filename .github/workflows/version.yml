@@ -62,6 +62,7 @@ jobs:
           version: pnpm changeset:version:release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+          HUSKY: '0'
 
       - name: Request reviewer on Version Packages PR
         if: >-

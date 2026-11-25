@@ -1,33 +1,21 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-export const ListEmailTemplatesSchema = PaginationSchema.extend({
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip (default: 0)'),
-});
+export const ListEmailTemplatesSchema = OffsetPaginationSchema;
 export type ListEmailTemplatesInput = z.infer<typeof ListEmailTemplatesSchema>;
 
 export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;
   return defineTool({
     name: 'workflows_list_email_templates',
-    description:
-      'List all email templates used in workflows and communications. Note: API does not support cursor pagination (max ~100 results).',
+    description: 'List all email templates used in workflows and communications.',
     category: 'Workflows',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

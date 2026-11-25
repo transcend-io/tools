@@ -61,7 +61,7 @@ function mergeFilter(
  * @returns preference items (only if onItems is not provided)
  */
 export async function fetchConsentPreferencesChunked(
-  sombra: Got,
+  sombra: Pick<Got, 'post'>,
   {
     partition,
     filterBy = {},

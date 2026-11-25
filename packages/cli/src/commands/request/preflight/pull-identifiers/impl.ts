@@ -17,7 +17,7 @@ export async function pullIdentifiers(
   this: LocalContext,
   { auth, transcendUrl, file, concurrency, actions, sombraAuth }: PullIdentifiersCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await pullManualEnrichmentIdentifiersToCsv({
     file,

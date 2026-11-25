@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewEmailTemplates`, `ManageEmailTemplates`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -105,6 +105,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `workflows_list` — List workflows
 - `workflows_list_email_templates` — List email templates
 - `workflows_update_config` — Update workflow configuration
+- `workflows_write_email_templates` — Create email templates by title
+- `workflows_write_configs` — Create or update DSR workflow configs (`workflow-configs` in transcend.yml)
 
 ## Related packages
 

@@ -1,29 +1,30 @@
-import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
+import { LocaleCodec } from './locale.js';
+
 /** Status of a consent UI variant */
-export const UiVariantStatus = makeEnum({
+export const UiVariantStatus = {
   /** Variant is in draft */
   Draft: 'DRAFT',
   /** Variant is active */
   Active: 'ACTIVE',
   /** Variant is published */
   Published: 'PUBLISHED',
-});
+} as const;
 
 /** Type override */
 export type UiVariantStatus = (typeof UiVariantStatus)[keyof typeof UiVariantStatus];
 
 /** User flow for a consent UI variant */
-export const ConsentUiUserFlow = makeEnum({
+export const ConsentUiUserFlow = {
   /** Banner-only flow */
   Banner: 'BANNER',
   /** Modal-only flow */
   Modal: 'MODAL',
   /** Banner and modal flow */
   BannerAndModal: 'BANNER_AND_MODAL',
-});
+} as const;
 
 /** Type override */
 export type ConsentUiUserFlow = (typeof ConsentUiUserFlow)[keyof typeof ConsentUiUserFlow];
@@ -40,17 +41,26 @@ export const ConsentVariantInput = t.intersection([
     /** Status of variant */
     status: valuesOf(UiVariantStatus),
     /** Locales of variant */
-    locales: t.array(valuesOf(LOCALE_KEY)),
+    locales: t.array(LocaleCodec),
     /** Configuration of variant */
     configuration: t.string,
   }),
   t.partial({
-    /** Description of variant */
-    description: t.string,
-    /** User flow of variant */
-    userFlow: valuesOf(ConsentUiUserFlow),
-    /** Slug of the consent UI theme associated with this variant */
-    themeSlug: t.string,
+    /**
+     * Description of variant.
+     * Backend returns null when unset; omit from yaml rather than writing null.
+     */
+    description: t.union([t.string, t.null]),
+    /**
+     * User flow of variant.
+     * Backend may return null when unset.
+     */
+    userFlow: t.union([valuesOf(ConsentUiUserFlow), t.null]),
+    /**
+     * Slug of the consent UI theme associated with this variant.
+     * Absent when the variant has no theme; backend may also return null.
+     */
+    themeSlug: t.union([t.string, t.null]),
   }),
 ]);
 

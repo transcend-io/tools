@@ -1,36 +1,42 @@
 import type { Got } from 'got';
 
-import type { PolicyBundleListResponse } from '../types.js';
+import type { PolicyBundle, PolicyBundleListResponse } from '../types.js';
+import { throwPolicyEngineRequestError } from './formatPolicyEngineRequestError.js';
 
 /**
- * Resolves a bundle name to its UUID by scanning offset-paginated bundle listings.
+ * Resolves a bundle name to its parent record via the bundleName list filter.
+ *
+ * @param client - Policy Engine REST client
+ * @param bundleName - Bundle name to resolve
+ * @returns Matching bundle when found
+ */
+export async function resolveBundleByName(
+  client: Pick<Got, 'get'>,
+  bundleName: string,
+): Promise<PolicyBundle | undefined> {
+  try {
+    const body = await client
+      .get('v1/policy-engine/policy-bundles', {
+        searchParams: { 'filter[bundleName]': bundleName, limit: 1, offset: 0 },
+      })
+      .json<PolicyBundleListResponse>();
+    return body.nodes[0];
+  } catch (error) {
+    throwPolicyEngineRequestError(error);
+  }
+}
+
+/**
+ * Resolves a bundle name to its UUID via the bundleName list filter.
  *
  * @param client - Policy Engine REST client
  * @param bundleName - Bundle name to resolve
  * @returns Bundle UUID when found
  */
 export async function resolveBundleIdByName(
-  client: Got,
+  client: Pick<Got, 'get'>,
   bundleName: string,
 ): Promise<string | undefined> {
-  const limit = 100;
-  let offset = 0;
-
-  while (true) {
-    const body = await client
-      .get('v1/policy-engine/policy-bundles', {
-        searchParams: { limit, offset },
-      })
-      .json<PolicyBundleListResponse>();
-
-    const match = body.nodes.find((bundle) => bundle.bundleName === bundleName);
-    if (match) {
-      return match.id;
-    }
-
-    offset += body.nodes.length;
-    if (offset >= body.totalCount || body.nodes.length === 0) {
-      return undefined;
-    }
-  }
+  const bundle = await resolveBundleByName(client, bundleName);
+  return bundle?.id;
 }

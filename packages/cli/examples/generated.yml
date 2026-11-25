@@ -2,7 +2,7 @@
 
 api-keys:
   - title: Transcend Prod Server Silo Key
-enrichers: []
+preflights: []
 data-silos:
   - title: Customer.io
     integrationName: customerIo

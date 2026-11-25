@@ -1,34 +1,32 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import type { DiscoveryMixin } from '../graphql.js';
 
-export const ListScansSchema = PaginationSchema.extend({
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
-});
+export const ListScansSchema = OffsetPaginationSchema;
 export type ListScansInput = z.infer<typeof ListScansSchema>;
 
 export function createDiscoveryListScansTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;
   return defineTool({
     name: 'discovery_list_scans',
-    description: 'List all data classification scans. Returns data silos with classification info.',
+    description:
+      'List data silos as classification scan records. Each row describes a silo rather than ' +
+      'a real scan run, so `status` is not a live scan state; use `inventory_list_data_silos` ' +
+      'when you want the silos themselves.',
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListScansSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listClassificationScans({
         first: limit,
-        after: cursor,
+        offset,
       });
       return createListResult(result.nodes, {
         totalCount: result.totalCount,

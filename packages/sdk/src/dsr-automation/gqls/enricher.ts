@@ -14,6 +14,7 @@ export const ENRICHERS = gql`
       nodes {
         id
         title
+        description
         url
         type
         expirationDuration
@@ -32,6 +33,11 @@ export const ENRICHERS = gql`
           type
         }
         actions
+        databaseName
+        sqlQuery
+        dataSilo {
+          title
+        }
       }
     }
   }

@@ -1,16 +1,20 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  isVisibleToModel,
   TranscendRestClient,
   type AuthCredentials,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { getConfigTools } from '@transcend-io/mcp-server-config';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
+import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
 
@@ -31,13 +35,16 @@ const mockClients: ToolClients = {
 const allTools = [
   ...getDSRTools(mockClients),
   ...getConsentTools(mockClients),
+  ...getCustomFunctionsTools(mockClients),
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients),
+  ...getPrivacyCenterTools(mockClients),
   ...getAdminTools(mockClients),
+  ...getConfigTools(mockClients),
 ];
 
 describe('ToolRegistry', () => {
@@ -49,6 +56,17 @@ describe('ToolRegistry', () => {
     expect(unique.size).toBe(names.length);
   });
 
+  // A `cursor` param is only honest where the underlying API threads it through to a real
+  // endCursor. Everywhere else it was silently dropped, so callers paged forever on page one.
+  it('only exposes cursor on the tools whose API actually pages by cursor', () => {
+    const withCursor = allTools
+      .filter((tool) => 'cursor' in (tool.zodSchema as { shape: Record<string, unknown> }).shape)
+      .map((tool) => tool.name)
+      .sort();
+
+    expect(withCursor).toEqual(['dsr_list', 'preferences_query']);
+  });
+
   it('ToolRegistry registers all tools with correct count', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
@@ -56,10 +74,21 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
-    expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT);
+    // Experimental tools are defined but omitted from registration unless
+    // TRANSCEND_MCP_EXPERIMENTAL=1 (unset in this test).
+    const experimental = allTools.filter((tool) => tool.experimental).length;
+    const expectedRegistered = EXPECTED_UMBRELLA_TOOL_COUNT - experimental;
+    expect(registry.getToolCount()).toBe(expectedRegistered);
+
+    // Registering a tool and describing it to an embedder differ: gated tools and
+    // tools with visibility omitting `model` stay callable but are withheld from the list.
+    const hidden = registry.getAllTools().filter((tool) => !isVisibleToModel(tool)).length;
+    const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
+    expect(registry.getToolList()).toHaveLength(expectedRegistered - gated - hidden);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {
@@ -69,6 +98,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     for (const tool of registry.getToolList()) {
@@ -86,6 +117,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     expect(registry.getTool('nonexistent_tool')).toBeUndefined();
@@ -98,6 +131,8 @@ describe('ToolRegistry', () => {
       rest,
       graphql,
       dashboardUrl: 'https://app.transcend.io',
+      transcendApiUrl: 'http://localhost:0',
+      auth: TEST_AUTH,
     });
 
     await expect(registry.executeTool('nonexistent_tool', {})).rejects.toThrow('Unknown tool');

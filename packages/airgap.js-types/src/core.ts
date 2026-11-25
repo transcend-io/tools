@@ -425,7 +425,7 @@ export type AirgapConsentEventType = 'consent-change' | 'sync' | 'consent-resolu
 /**
  * airgap.js event type
  */
-export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load';
+export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load' | 'policy-update';
 
 export interface ConsentChangeEventPayload {
   /** consent change event details */
@@ -598,6 +598,12 @@ const ReservedMetadataCodec = t.partial({
   }),
 });
 
+/** Tracking purpose */
+export const TrackingPurpose = t.union([t.keyof(SpecialTrackingPurpose), t.string]);
+
+/** Type override */
+export type TrackingPurpose = t.TypeOf<typeof TrackingPurpose>;
+
 export const CoreTrackingConsentDetails = t.intersection([
   t.type({
     /**
@@ -620,6 +626,13 @@ export const CoreTrackingConsentDetails = t.intersection([
     metadata: t.intersection([ReservedMetadataCodec, t.UnknownRecord]),
     /** When the metadata was last updated */
     metadataTimestamp: t.string,
+    /** When and (optionally) how purposes acquired their current value, as an array of timestamp (ISO 8601) x tracking purpose array x (optional) provenance tuples */
+    changes: t.array(
+      t.union([
+        t.tuple([t.string, t.array(TrackingPurpose)]),
+        t.tuple([t.string, t.array(TrackingPurpose), t.unknown]),
+      ]),
+    ),
   }),
 ]);
 
@@ -695,12 +708,6 @@ export const ConsentTokenPayload = t.intersection([
 
 /** Type override */
 export type ConsentTokenPayload = t.TypeOf<typeof ConsentTokenPayload>;
-
-/** Tracking purpose */
-export const TrackingPurpose = t.union([t.keyof(SpecialTrackingPurpose), t.string]);
-
-/** Type override */
-export type TrackingPurpose = t.TypeOf<typeof TrackingPurpose>;
 
 /** Tracking purposes */
 export type TrackingPurposes = Set<TrackingPurpose>;
@@ -843,6 +850,7 @@ type PendingEventUnserializableProps =
   | 'omitCredentials'
   | 'allow'
   | 'deny'
+  | 'block'
   | 'purposes'
   | 'allowed'
   | 'blocked';
@@ -969,6 +977,7 @@ type PendingCookieMutationUnserializableProps =
   | 'mutator'
   | 'allow'
   | 'deny'
+  | 'block'
   | 'purposes'
   | 'allowed'
   | 'blocked';

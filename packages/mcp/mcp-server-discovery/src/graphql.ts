@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type ClassificationScan,
   type DiscoveryPlugin,
@@ -9,8 +10,8 @@ import {
 import { graphql } from './__generated__/gql.js';
 
 const ListDataSilosForClassificationDoc = graphql(/* GraphQL */ `
-  query DiscoveryListDataSilos($first: Int) {
-    dataSilos(first: $first) {
+  query DiscoveryListDataSilos($first: Int, $offset: Int) {
+    dataSilos(first: $first, offset: $offset) {
       nodes {
         id
         title
@@ -23,8 +24,8 @@ const ListDataSilosForClassificationDoc = graphql(/* GraphQL */ `
 `);
 
 const ListDataSiloTypesDoc = graphql(/* GraphQL */ `
-  query DiscoveryListDataSiloTypes($first: Int) {
-    dataSilos(first: $first) {
+  query DiscoveryListDataSiloTypes($first: Int, $offset: Int) {
+    dataSilos(first: $first, offset: $offset) {
       nodes {
         id
         title
@@ -40,8 +41,10 @@ export class DiscoveryMixin extends TranscendGraphQLBase {
   async listClassificationScans(
     options?: ListOptions,
   ): Promise<PaginatedResponse<ClassificationScan>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListDataSilosForClassificationDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     const scans: ClassificationScan[] = data.dataSilos.nodes.map((silo) => ({
       id: silo.id,
@@ -53,14 +56,20 @@ export class DiscoveryMixin extends TranscendGraphQLBase {
     }));
     return {
       nodes: scans,
-      pageInfo: { hasNextPage: scans.length < data.dataSilos.totalCount, hasPreviousPage: false },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: scans.length,
+        totalCount: data.dataSilos.totalCount,
+      }),
       totalCount: data.dataSilos.totalCount,
     };
   }
 
   async listDiscoveryPlugins(options?: ListOptions): Promise<PaginatedResponse<DiscoveryPlugin>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListDataSiloTypesDoc, {
       first: options?.first ?? 50,
+      offset,
     });
     const typeMap = new Map<string, DiscoveryPlugin>();
     data.dataSilos.nodes.forEach((silo) => {
@@ -77,8 +86,12 @@ export class DiscoveryMixin extends TranscendGraphQLBase {
     const plugins = Array.from(typeMap.values());
     return {
       nodes: plugins,
-      pageInfo: { hasNextPage: false, hasPreviousPage: false },
-      totalCount: plugins.length,
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.dataSilos.nodes.length,
+        totalCount: data.dataSilos.totalCount,
+      }),
+      totalCount: data.dataSilos.totalCount,
     };
   }
 }
