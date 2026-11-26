@@ -7,7 +7,7 @@ import {
 import {
   ConsentManagerInput,
   type ConsentManagerInput as ConsentManagerSettings,
-} from '@transcend-io/sdk';
+} from '@transcend-io/privacy-types';
 
 export const WriteConsentManagerSchema = z.object({
   consentManager: ymlRecordSchema(

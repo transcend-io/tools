@@ -36,6 +36,19 @@ Without an explicit provider, set `transcend:apiKey` (as a secret) and `transcen
 
 A push stages changes. Visitors see consent changes only after you deploy a bundle.
 
+## Verify a plugin download
+
+Each plugin tarball on a `transcend-io/pulumi-transcend` release has a build provenance attestation. Check it before you install the plugin:
+
+```sh
+gh attestation verify pulumi-resource-transcend-v<version>-<os>-<arch>.tar.gz \
+  --repo transcend-io/tools \
+  --signer-workflow transcend-io/tools/.github/workflows/pulumi-transcend-plugin.yml \
+  --source-ref refs/tags/@transcend-io/pulumi-transcend@<version>
+```
+
+A release rebuilt by a manual run has `--source-ref refs/heads/main`. Reject any other source ref.
+
 ## Limits
 
 - Preview reports a changed resource, not a per-field diff. Use `transcend inventory push --dryRun` for a field-level view.

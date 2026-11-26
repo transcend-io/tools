@@ -1,5 +1,18 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.2.2
+
+### Patch Changes
+
+- 4aa63e8: Show the real transcend.yml JSON schema for the admin write tools (teams, action items, action item collections) and the DSR write tools (actions, enrichers).
+- Updated dependencies [6bd42eb]
+- Updated dependencies [aa5e8bb]
+- Updated dependencies [4d600ad]
+- Updated dependencies [29fbc06]
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/sdk@3.8.0
+  - @transcend-io/mcp-server-base@3.3.0
+
 ## 2.2.1
 
 ### Patch Changes
