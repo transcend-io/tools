@@ -27,7 +27,7 @@ fi
 quality_status=0
 # shellcheck disable=SC2086 # affected_flag is empty or one flag
 pnpm exec turbo run quality:fix lint:fix:root format:root typecheck:root check:packages check:deps:root \
-  $affected_flag --concurrency=4 --output-logs=errors-only --no-update-notifier || quality_status=$?
+  $affected_flag --concurrency="${TURBO_CONCURRENCY:-4}" --output-logs=errors-only --no-update-notifier || quality_status=$?
 
 git diff --cached --binary -- >"$after_staged_diff"
 git diff --binary -- >"$after_unstaged_diff"
