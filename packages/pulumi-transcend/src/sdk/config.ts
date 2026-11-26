@@ -33,11 +33,17 @@ export class Config extends pulumi.CustomResource {
   declare public readonly warnings: pulumi.Output<string[]>;
 
   constructor(name: string, args: ConfigArgs, opts?: pulumi.CustomResourceOptions) {
+    const variables = args.variables === undefined ? undefined : pulumi.secret(args.variables);
     super(
       CONFIG_TYPE_TOKEN,
       name,
-      { ...args, sections: undefined, warnings: undefined },
-      withPluginDefaults(opts),
+      { ...args, variables, sections: undefined, warnings: undefined },
+      withPluginDefaults({
+        ...opts,
+        additionalSecretOutputs: [
+          ...new Set([...(opts?.additionalSecretOutputs ?? []), 'variables']),
+        ],
+      }),
     );
   }
 }

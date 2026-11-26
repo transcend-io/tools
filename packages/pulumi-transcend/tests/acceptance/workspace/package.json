@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@pulumi/pulumi": "^3.277.0",
+    "@pulumi/pulumi": "3.277.0",
     "@transcend-io/pulumi-transcend": "file:../../.."
   }
 }
