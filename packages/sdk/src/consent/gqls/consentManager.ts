@@ -1,4 +1,4 @@
-import { AirgapModuleName } from '@transcend-io/privacy-types';
+import { AirgapModuleName } from '@transcend-io/airgap.js-types';
 import { getValues } from '@transcend-io/type-utils';
 import { gql } from 'graphql-request';
 
