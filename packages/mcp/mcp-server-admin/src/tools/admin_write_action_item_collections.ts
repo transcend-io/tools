@@ -13,7 +13,7 @@ export const writeActionItemCollectionsSchema = z.object({
   actionItemCollections: ymlItemsSchema(
     'Action item collections in transcend.yml `action-item-collections` shape. Each needs ' +
       '`title` and `productLine`. Matched by title. See config_get_schema.',
-    50,
+    { codec: ActionItemCollectionInput, max: 50 },
   ),
 });
 export type WriteActionItemCollectionsInput = z.infer<typeof writeActionItemCollectionsSchema>;

@@ -10,7 +10,7 @@ export const writeEnrichersSchema = z.object({
   enrichers: ymlItemsSchema(
     'Enrichers in transcend.yml `preflights` shape. Each needs `title` and `output-identifiers`. ' +
       'New ones also need `input-identifier`. Matched by title. See config_get_schema.',
-    50,
+    { codec: EnricherInput, max: 50 },
   ),
   publishToPrivacyCenter: z
     .boolean()

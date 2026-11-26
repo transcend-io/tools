@@ -10,7 +10,7 @@ export const writeActionItemsSchema = z.object({
   actionItems: ymlItemsSchema(
     'Action items in transcend.yml `action-items` shape. Each needs `title`, `type`, and ' +
       '`collections` (collection titles). Matched by title. See config_get_schema.',
-    50,
+    { codec: ActionItemInput, max: 50 },
   ),
 });
 export type WriteActionItemsInput = z.infer<typeof writeActionItemsSchema>;
