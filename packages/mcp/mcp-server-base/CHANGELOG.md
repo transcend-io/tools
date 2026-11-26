@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-base
 
+## 3.2.4
+
+### Patch Changes
+
+- 08e77a6: Raise the timeout on the stdio startup auth tests so they do not fail on a busy machine.
+- Updated dependencies [08e77a6]
+  - @transcend-io/privacy-types@7.4.0
+  - @transcend-io/sdk@3.7.1
+
 ## 3.2.3
 
 ### Patch Changes
