@@ -1,3 +1,4 @@
+export * from './airgapModule.js';
 export * from './core.js';
 export * from './iab.js';
 export * from './ui.js';

@@ -188,6 +188,8 @@ Guidelines:
 - prefer `workspace:*` for dependencies between local packages
 - keep additions consistent with the single-version policy enforced by `syncpack`
 
+Published type packages (`type-utils`, `internationalization`, `airgap.js-types`, `privacy-types`) follow a fixed dependency order and enum placement guide in [`.cursor/rules/package-layering.mdc`](.cursor/rules/package-layering.mdc). Each package has a `package-dependencies.test.ts` allowlist.
+
 ## Pull Requests
 
 ### Pull Request GitHub Actions Workflows

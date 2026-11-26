@@ -1,5 +1,3 @@
-import { IsoCountryCode } from '@transcend-io/privacy-types';
-// main
 import { applyEnum } from '@transcend-io/type-utils';
 
 import {
@@ -17,8 +15,8 @@ import { InitialViewState } from './enums/viewState.js';
 import { DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME } from './ui.js';
 
 export interface Region {
-  /** A country's ISO code */
-  country: IsoCountryCode;
+  /** A country's ISO 3166-1 alpha-2 code */
+  country: string;
   /** A country subdivision ISO code */
   countrySubDivision?: string;
 }

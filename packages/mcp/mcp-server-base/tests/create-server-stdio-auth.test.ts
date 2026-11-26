@@ -15,7 +15,8 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
   StdioServerTransport: vi.fn(),
 }));
 
-describe('createMCPServer stdio optional startup auth', () => {
+// Each test re-imports create-server after resetModules, which passes 5s on a busy machine.
+describe('createMCPServer stdio optional startup auth', { timeout: 30_000 }, () => {
   const originalApiKey = process.env.TRANSCEND_API_KEY;
 
   beforeEach(() => {

@@ -1,4 +1,8 @@
-import { CoreUIModuleName, IABModuleName, NativeAppModuleName } from '@transcend-io/privacy-types';
+import {
+  CoreUIModuleName,
+  IABModuleName,
+  NativeAppModuleName,
+} from '@transcend-io/airgap.js-types';
 import got from 'got';
 
 import type { PendingConsentBundleConfig } from './types.js';
