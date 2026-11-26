@@ -23,6 +23,7 @@
     { "path": "./packages/mcp/mcp-server-privacy-center" },
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
+    { "path": "./packages/pulumi-transcend" },
     { "path": "./packages/sdk" },
     { "path": "./packages/secret-value" },
     { "path": "./packages/type-utils" },
