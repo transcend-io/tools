@@ -19,11 +19,13 @@ export interface TranscendCredentials {
 
 /**
  * Holds provider settings captured from the engine and resolves credentials.
- * Environment variables back-fill what the stack configuration leaves unset, so
- * `TRANSCEND_API_KEY` works the same way it does for the Transcend CLI.
+ * Environment variables back-fill only after `Configure` arrives, so a missed
+ * gRPC hook does not silently fall back to `TRANSCEND_API_KEY`.
  */
 export class CredentialStore {
   private settings: ProviderSettings = {};
+  private configureReceived = false;
+  private credentialsLocked = false;
 
   constructor(
     /** Environment to read fallbacks from */
@@ -32,18 +34,41 @@ export class CredentialStore {
 
   /** Record the settings the engine sent in `Configure`. */
   setSettings(settings: ProviderSettings): void {
-    this.settings = settings;
+    if (this.credentialsLocked) {
+      const apiKeyChanged =
+        settings.apiKey !== undefined && settings.apiKey !== this.settings.apiKey;
+      const urlChanged = settings.url !== undefined && settings.url !== this.settings.url;
+      if (apiKeyChanged || urlChanged) {
+        throw new Error('Provider Configure cannot change credentials after the first call.');
+      }
+      return;
+    }
+    this.settings = { ...settings };
+    this.configureReceived = true;
+    this.credentialsLocked = true;
   }
 
   /** Resolve credentials, throwing when no API key is available. */
   resolve(): TranscendCredentials {
-    const apiKey = this.settings.apiKey || this.env.TRANSCEND_API_KEY;
+    if (!this.configureReceived) {
+      throw new Error(
+        'Provider Configure was not received. Set `transcend:apiKey` in stack config before resources run.',
+      );
+    }
+    const apiKeyFromStack = this.settings.apiKey;
+    const apiKey = apiKeyFromStack || this.env.TRANSCEND_API_KEY;
     if (!apiKey) {
       throw new Error(
         'No Transcend API key. Set the `transcend:apiKey` stack config (as a secret) or the TRANSCEND_API_KEY environment variable.',
       );
     }
-    const url = this.settings.url || this.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
-    return { apiKey, url: url.replace(/\/+$/, '') };
+    const url = apiKeyFromStack
+      ? this.settings.url || DEFAULT_TRANSCEND_API_URL
+      : this.settings.url || this.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
+    const normalized = url.replace(/\/+$/, '');
+    if (!normalized.startsWith('https://')) {
+      throw new Error('Transcend API URL must use https.');
+    }
+    return { apiKey, url: normalized };
   }
 }

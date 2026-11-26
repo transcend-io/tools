@@ -50,7 +50,7 @@ export function checkConfig(news: Properties): ConfigCheckFailure[] {
     return [
       {
         property: inputs.yaml === undefined ? 'content' : 'yaml',
-        reason: error instanceof Error ? error.message : String(error),
+        reason: formatConfigParseFailure(error),
       },
     ];
   }
@@ -92,10 +92,28 @@ function describeSyncFailure(result: SyncResult): string {
         : `${error.resource}: ${error.message}`,
     )
     .join('; ');
-  const logs = (result.logs ?? [])
-    .filter((entry) => entry.level === 'error' || entry.level === 'warn')
-    .map((entry) => entry.message);
-  return [`Transcend rejected part of the configuration. ${details}`, ...logs].join('\n');
+  return `Transcend rejected part of the configuration. ${details}`;
+}
+
+/** Report parse failures without echoing substituted secret values from YAML snippets. */
+function formatConfigParseFailure(error: unknown): string {
+  if (error && typeof error === 'object' && 'name' in error) {
+    const named = error as {
+      name: string;
+      reason?: string;
+      mark?: { line?: number; column?: number };
+    };
+    if (named.name === 'YAMLException') {
+      const reason = named.reason ?? 'Invalid YAML';
+      if (named.mark && typeof named.mark.line === 'number') {
+        const column = typeof named.mark.column === 'number' ? named.mark.column + 1 : 1;
+        return `${reason} (line ${named.mark.line + 1}, column ${column})`;
+      }
+      return reason;
+    }
+  }
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
 /**
