@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
  *
  * Usage: node scripts/pack-plugin.mjs [--out DIR]
  */
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +32,16 @@ const pluginYaml = readFileSync(path.join(pluginSource, 'PulumiPlugin.yaml'), 'u
 );
 writeFileSync(path.join(staging, 'PulumiPlugin.yaml'), pluginYaml);
 cpSync(path.join(pluginSource, 'package.json'), path.join(staging, 'package.json'));
+const shrinkwrap = path.join(pluginSource, 'npm-shrinkwrap.json');
+if (existsSync(shrinkwrap)) {
+  cpSync(shrinkwrap, path.join(staging, 'npm-shrinkwrap.json'));
+} else {
+  execFileSync('npm', ['install', '--omit=dev', '--package-lock-only'], {
+    cwd: staging,
+    stdio: 'inherit',
+  });
+  execFileSync('npm', ['shrinkwrap'], { cwd: staging, stdio: 'inherit' });
+}
 mkdirSync(path.join(staging, 'dist'), { recursive: true });
 cpSync(path.join(packageRoot, 'dist', 'plugin'), path.join(staging, 'dist', 'plugin'), {
   recursive: true,

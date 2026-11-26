@@ -55,8 +55,8 @@ function decodeConfigValue(raw: string): string {
  * `pulumi.provider.main` answers `Configure` with a stub that drops the stack
  * configuration, and it exposes no hook for resource handlers to read it. This
  * wraps the `configure` handler when the host registers its gRPC service. Call
- * it once before `pulumi.provider.main`. The plugin ships with a pinned Pulumi
- * version, so the host internals cannot change underneath it.
+ * it once before `pulumi.provider.main`. Pin exact `@pulumi/pulumi` and
+ * `@grpc/grpc-js` versions in the packed plugin so host internals stay stable.
  */
 export function captureProviderConfig(credentials: CredentialStore): void {
   const originalAddService = grpc.Server.prototype.addService;
