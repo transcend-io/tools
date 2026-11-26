@@ -24,8 +24,10 @@ describe('@transcend-io/pulumi-transcend scaffold', () => {
     expect(pluginYaml).toContain('name: nodejs');
   });
 
-  test('public entry file is present until SDK exports land', () => {
-    const source = readFileSync(join(packageRoot, 'src/index.ts'), 'utf8');
-    expect(source).toContain('plugin core');
+  test('public entry re-exports the TypeScript SDK', async () => {
+    const index = await import('./index.js');
+    expect(index.Provider).toBeDefined();
+    expect(index.Config).toBeDefined();
+    expect(index.getConfig).toBeDefined();
   });
 });
