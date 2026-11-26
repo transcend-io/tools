@@ -21,7 +21,9 @@ const provider = new transcend.Provider('us', {
 new transcend.Config('consent', { yaml: fs.readFileSync('./transcend.yml', 'utf8') }, { provider });
 ```
 
-Without an explicit provider, set `transcend:apiKey` (as a secret) and `transcend:url` in stack config, or set `TRANSCEND_API_KEY` and `TRANSCEND_API_URL`. The default API is the EU host.
+Without an explicit provider, set `transcend:apiKey` (as a secret) and `transcend:url` in stack config. The default API is the EU host.
+
+`Config.variables` is always stored as a secret in state. When `yaml` or `content` inlines webhook header values or other secrets, wrap those inputs with `pulumi.secret(...)` before passing them to `Config`.
 
 ## Behavior
 

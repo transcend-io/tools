@@ -97,7 +97,8 @@ Stable releases are driven by Changesets, the [Version workflow](.github/workflo
    - The CLI `transcend.yml` JSON schema is regenerated so a new major (e.g. `transcend-yml-schema-v13.json`) is created when `@transcend-io/cli` bumps major — that only happens here, not in feature PRs.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
-3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.
+3. When the release PR is merged, a `push` to `main` (with updated package changelogs) runs
+   the [Publish workflow](.github/workflows/publish.yml), which publishes the packages to npm.
 
 Thus, after you merge a feature PR, you can either:
 
@@ -134,18 +135,29 @@ Pull requests also get preview packages via `pkg.pr.new`, which you'll see as an
 
 ### Trusted Publishing
 
-This repo is set up for npm trusted publishing via GitHub OIDC. The publish workflow has
-`id-token: write`, and normal publishing should not require a long-lived `NPM_TOKEN`. Each
-published package still has to be configured in npm to trust this repository and the
-`publish.yml` workflow filename.
+This repo uses npm trusted publishing via GitHub OIDC. The `Publish` job runs on `push` to
+`main` (only when `packages/**/CHANGELOG.md` changes) and on `workflow_dispatch`, both with
+`refs/heads/main` and the `npm-publish` environment. The publish job grants `id-token: write`
+at the job level. A long-lived `NPM_TOKEN` is not required for normal releases.
 
-If npm trusted publishing is not configured for a package, the publish workflow will build and
-version correctly but fail at publish time.
+Each published package must trust this repository, the `publish.yml` workflow filename, and the
+`npm-publish` environment in npm. If trusted publishing is missing or misconfigured, the
+workflow can pass checks and still fail at `changeset publish`.
+
+Do not use `pull_request_target` for publishing. npm rejects OIDC tokens from that trigger, so
+the CLI falls back to unauthenticated publish and fails with `ENEEDAUTH`.
+
+Before publishing, the workflow refuses to run while `.changeset` still has pending changeset
+files (other than `README.md`). That usually means a feature merge raced ahead of the next
+Version Packages PR. Merge the open Version Packages PR first, then merge the release PR so
+`main` has no pending changesets when publish runs.
 
 ### Manual Releases
 
-`publish.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
-release path.
+`workflow_dispatch` on `publish.yml` is for recovery after a failed publish, not the normal
+release path. It uses the same guards as the push trigger (main ref, no pending changesets,
+full CI checks). If dispatch fails because changesets are still pending, merge the Version
+Packages PR instead of forcing a publish from a dirty `main`.
 
 ## Turborepo
 

@@ -34,8 +34,12 @@ describe('@transcend-io/pulumi-transcend scaffold', () => {
     expect(shrinkwrap.packages[''].dependencies).toEqual(pluginPackageJson.dependencies);
   });
 
-  test('public entry file is present until SDK exports land', () => {
+  test('public entry re-exports the TypeScript SDK', () => {
     const source = readFileSync(join(packageRoot, 'src/index.ts'), 'utf8');
-    expect(source).toContain('plugin core');
+    expect(source).toContain("export { Config, type ConfigArgs } from './sdk/config.js'");
+    expect(source).toContain(
+      "export { getConfig, type GetConfigArgs, type GetConfigResult } from './sdk/getConfig.js'",
+    );
+    expect(source).toContain("export { Provider, type ProviderArgs } from './sdk/provider.js'");
   });
 });
