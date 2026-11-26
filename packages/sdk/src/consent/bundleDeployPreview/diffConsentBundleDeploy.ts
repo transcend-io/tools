@@ -1,3 +1,4 @@
+import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { diffCss, diffJson, diffLines } from 'diff';
 import { isEqual } from 'lodash-es';
 
@@ -20,8 +21,8 @@ type CoreForDiff = Record<string, unknown> & {
   };
   bundledModuleData?: {
     uiV2?: {
-      loadOptions?: { themeConfigMap?: Record<string, unknown> };
-      mobileUiLoadOptions?: { themeConfigMap?: Record<string, unknown> };
+      loadOptions?: { themeConfigMap?: Record<string, unknown>; deploymentId?: unknown };
+      mobileUiLoadOptions?: { themeConfigMap?: Record<string, unknown>; deploymentId?: unknown };
     };
   };
   prefixModules?: unknown;
@@ -35,8 +36,53 @@ function transformCoreForDiff(module: unknown): CoreForDiff | undefined {
   delete obj.loadOptions?.telemetrySampleRate;
   delete obj.bundledModuleData?.uiV2?.loadOptions?.themeConfigMap;
   delete obj.bundledModuleData?.uiV2?.mobileUiLoadOptions?.themeConfigMap;
+  // Changes on every deploy, so it would always show as a pending change
+  delete obj.bundledModuleData?.uiV2?.loadOptions?.deploymentId;
+  delete obj.bundledModuleData?.uiV2?.mobileUiLoadOptions?.deploymentId;
   delete obj.prefixModules;
   return obj;
+}
+
+const UI_V2_PREFIX = 'uiV2-';
+const VALID_LOCALES = new Set<string>(Object.values(LOCALE_KEY));
+
+/** UI v2 messages in the nested shape: variant -> locale -> message id -> value */
+type UiV2MessagesNested = Record<string, Record<string, unknown>>;
+
+/**
+ * Parse a flat key `uiV2-{variant}-{locale}` into its parts.
+ * Variant and locale can both contain hyphens (`default-consent`, `pt-BR`), so
+ * the longest locale suffix that is a real locale wins.
+ */
+function parseUiV2Key(key: string): { variant: string; locale: string } | null {
+  if (!key.startsWith(UI_V2_PREFIX)) return null;
+  const parts = key.slice(UI_V2_PREFIX.length).split('-');
+  for (let localeParts = parts.length - 1; localeParts >= 1; localeParts -= 1) {
+    const locale = parts.slice(parts.length - localeParts).join('-');
+    const variant = parts.slice(0, parts.length - localeParts).join('-');
+    if (variant && VALID_LOCALES.has(locale)) return { variant, locale };
+  }
+  return null;
+}
+
+/**
+ * Bring UI v2 messages to one shape before comparing.
+ * The CDN gives flat keys (`uiV2-default-consent-en`). Saved config is nested.
+ */
+function normalizeUiV2Messages(messages: unknown): UiV2MessagesNested {
+  if (messages === null || typeof messages !== 'object') return {};
+  const record = messages as Record<string, unknown>;
+  if (!Object.keys(record).some((key) => key.startsWith(UI_V2_PREFIX))) {
+    return record as UiV2MessagesNested;
+  }
+  const nested: UiV2MessagesNested = {};
+  for (const [key, value] of Object.entries(record)) {
+    const parsed = parseUiV2Key(key);
+    if (!parsed) continue;
+    nested[parsed.variant] ??= {};
+    nested[parsed.variant]![parsed.locale] = value;
+  }
+  return nested;
 }
 
 function prefixModulesJson(core: unknown): string {
@@ -90,14 +136,19 @@ function messageLocalesChanged(
   return [...locales].filter((locale) => !isEqual(cur[locale], pend[locale])).sort();
 }
 
-function uiV2KeysChanged(
-  before: Record<string, unknown> | undefined,
-  after: Record<string, unknown> | undefined,
-): string[] {
-  const cur = before ?? {};
-  const pend = after ?? {};
-  const keys = new Set([...Object.keys(cur), ...Object.keys(pend)]);
-  return [...keys].filter((key) => !isEqual(cur[key], pend[key])).sort();
+/** Changed variant and locale pairs, formatted `variant/locale` */
+function uiV2KeysChanged(before: UiV2MessagesNested, after: UiV2MessagesNested): string[] {
+  const variants = new Set([...Object.keys(before), ...Object.keys(after)]);
+  const changed: string[] = [];
+  for (const variant of variants) {
+    const cur = before[variant] ?? {};
+    const pend = after[variant] ?? {};
+    const locales = new Set([...Object.keys(cur), ...Object.keys(pend)]);
+    for (const locale of locales) {
+      if (!isEqual(cur[locale], pend[locale])) changed.push(`${variant}/${locale}`);
+    }
+  }
+  return changed.sort();
 }
 
 function themeSlugsChanged(
@@ -219,16 +270,15 @@ export function diffConsentBundleDeploy(
     );
   }
 
-  const uiV2Highlights = uiV2KeysChanged(
-    deployedModules.uiV2Messages as Record<string, unknown> | undefined,
-    pending.uiV2Messages as Record<string, unknown> | undefined,
-  );
+  const deployedUiV2 = normalizeUiV2Messages(deployedModules.uiV2Messages);
+  const pendingUiV2 = normalizeUiV2Messages(pending.uiV2Messages);
   if (pending.uiV2Messages !== undefined && pending.uiV2Messages !== null) {
+    const uiV2Highlights = uiV2KeysChanged(deployedUiV2, pendingUiV2);
     modules.push(
       moduleDiff(
         ConsentDeployModuleKey.UiV2Messages,
-        deployedModules.uiV2Messages,
-        pending.uiV2Messages,
+        deployedUiV2,
+        pendingUiV2,
         (a, b) => buildJsonPatch(a, b),
         uiV2Highlights,
       ),
