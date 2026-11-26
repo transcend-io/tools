@@ -1,629 +1,629 @@
 consent-manager:
   experiences:
     - name: US-AK
-      displayNAme: 'Alaska'
+      displayName: 'Alaska'
       regions:
         - countrySubDivision: 'US-AK'
           country: 'US'
       operator: 'IN'
       displayPriority: 1
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-AL
-      displayNAme: 'Alabama'
+      displayName: 'Alabama'
       regions:
         - countrySubDivision: 'US-AL'
           country: 'US'
       operator: 'IN'
       displayPriority: 2
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-AR
-      displayNAme: 'Arkansas'
+      displayName: 'Arkansas'
       regions:
         - countrySubDivision: 'US-AR'
           country: 'US'
       operator: 'IN'
       displayPriority: 3
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-AS
-      displayNAme: 'American Samoa'
+      displayName: 'American Samoa'
       regions:
         - countrySubDivision: 'US-AS'
           country: 'US'
       operator: 'IN'
       displayPriority: 4
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-AZ
-      displayNAme: 'Arizona'
+      displayName: 'Arizona'
       regions:
         - countrySubDivision: 'US-AZ'
           country: 'US'
       operator: 'IN'
       displayPriority: 5
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-CA
-      displayNAme: 'California'
+      displayName: 'California'
       regions:
         - countrySubDivision: 'US-CA'
           country: 'US'
       operator: 'IN'
       displayPriority: 6
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-CO
-      displayNAme: 'Colorado'
+      displayName: 'Colorado'
       regions:
         - countrySubDivision: 'US-CO'
           country: 'US'
       operator: 'IN'
       displayPriority: 7
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-CT
-      displayNAme: 'Connecticut'
+      displayName: 'Connecticut'
       regions:
         - countrySubDivision: 'US-CT'
           country: 'US'
       operator: 'IN'
       displayPriority: 8
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-DC
-      displayNAme: 'District of Columbia'
+      displayName: 'District of Columbia'
       regions:
         - countrySubDivision: 'US-DC'
           country: 'US'
       operator: 'IN'
       displayPriority: 9
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-DE
-      displayNAme: 'Delaware'
+      displayName: 'Delaware'
       regions:
         - countrySubDivision: 'US-DE'
           country: 'US'
       operator: 'IN'
       displayPriority: 10
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-FL
-      displayNAme: 'Florida'
+      displayName: 'Florida'
       regions:
         - countrySubDivision: 'US-FL'
           country: 'US'
       operator: 'IN'
       displayPriority: 11
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-GA
-      displayNAme: 'Georgia'
+      displayName: 'Georgia'
       regions:
         - countrySubDivision: 'US-GA'
           country: 'US'
       operator: 'IN'
       displayPriority: 12
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-GU
-      displayNAme: 'Guam'
+      displayName: 'Guam'
       regions:
         - countrySubDivision: 'US-GU'
           country: 'US'
       operator: 'IN'
       displayPriority: 13
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-HI
-      displayNAme: 'Hawaii'
+      displayName: 'Hawaii'
       regions:
         - countrySubDivision: 'US-HI'
           country: 'US'
       operator: 'IN'
       displayPriority: 14
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-IA
-      displayNAme: 'Iowa'
+      displayName: 'Iowa'
       regions:
         - countrySubDivision: 'US-IA'
           country: 'US'
       operator: 'IN'
       displayPriority: 15
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-ID
-      displayNAme: 'Idaho'
+      displayName: 'Idaho'
       regions:
         - countrySubDivision: 'US-ID'
           country: 'US'
       operator: 'IN'
       displayPriority: 16
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-IL
-      displayNAme: 'Illinois'
+      displayName: 'Illinois'
       regions:
         - countrySubDivision: 'US-IL'
           country: 'US'
       operator: 'IN'
       displayPriority: 17
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-IN
-      displayNAme: 'Indiana'
+      displayName: 'Indiana'
       regions:
         - countrySubDivision: 'US-IN'
           country: 'US'
       operator: 'IN'
       displayPriority: 18
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-KS
-      displayNAme: 'Kansas'
+      displayName: 'Kansas'
       regions:
         - countrySubDivision: 'US-KS'
           country: 'US'
       operator: 'IN'
       displayPriority: 19
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-KY
-      displayNAme: 'Kentucky'
+      displayName: 'Kentucky'
       regions:
         - countrySubDivision: 'US-KY'
           country: 'US'
       operator: 'IN'
       displayPriority: 20
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-LA
-      displayNAme: 'Louisiana'
+      displayName: 'Louisiana'
       regions:
         - countrySubDivision: 'US-LA'
           country: 'US'
       operator: 'IN'
       displayPriority: 21
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MA
-      displayNAme: 'Massachusetts'
+      displayName: 'Massachusetts'
       regions:
         - countrySubDivision: 'US-MA'
           country: 'US'
       operator: 'IN'
       displayPriority: 22
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MD
-      displayNAme: 'Maryland'
+      displayName: 'Maryland'
       regions:
         - countrySubDivision: 'US-MD'
           country: 'US'
       operator: 'IN'
       displayPriority: 23
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-ME
-      displayNAme: 'Maine'
+      displayName: 'Maine'
       regions:
         - countrySubDivision: 'US-ME'
           country: 'US'
       operator: 'IN'
       displayPriority: 24
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MI
-      displayNAme: 'Michigan'
+      displayName: 'Michigan'
       regions:
         - countrySubDivision: 'US-MI'
           country: 'US'
       operator: 'IN'
       displayPriority: 25
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MN
-      displayNAme: 'Minnesota'
+      displayName: 'Minnesota'
       regions:
         - countrySubDivision: 'US-MN'
           country: 'US'
       operator: 'IN'
       displayPriority: 26
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MO
-      displayNAme: 'Missouri'
+      displayName: 'Missouri'
       regions:
         - countrySubDivision: 'US-MO'
           country: 'US'
       operator: 'IN'
       displayPriority: 27
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MP
-      displayNAme: 'Northern Mariana Islands'
+      displayName: 'Northern Mariana Islands'
       regions:
         - countrySubDivision: 'US-MP'
           country: 'US'
       operator: 'IN'
       displayPriority: 28
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MS
-      displayNAme: 'Mississippi'
+      displayName: 'Mississippi'
       regions:
         - countrySubDivision: 'US-MS'
           country: 'US'
       operator: 'IN'
       displayPriority: 29
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-MT
-      displayNAme: 'Montana'
+      displayName: 'Montana'
       regions:
         - countrySubDivision: 'US-MT'
           country: 'US'
       operator: 'IN'
       displayPriority: 30
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NC
-      displayNAme: 'North Carolina'
+      displayName: 'North Carolina'
       regions:
         - countrySubDivision: 'US-NC'
           country: 'US'
       operator: 'IN'
       displayPriority: 31
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-ND
-      displayNAme: 'North Dakota'
+      displayName: 'North Dakota'
       regions:
         - countrySubDivision: 'US-ND'
           country: 'US'
       operator: 'IN'
       displayPriority: 32
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NE
-      displayNAme: 'Nebraska'
+      displayName: 'Nebraska'
       regions:
         - countrySubDivision: 'US-NE'
           country: 'US'
       operator: 'IN'
       displayPriority: 33
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NH
-      displayNAme: 'New Hampshire'
+      displayName: 'New Hampshire'
       regions:
         - countrySubDivision: 'US-NH'
           country: 'US'
       operator: 'IN'
       displayPriority: 34
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NJ
-      displayNAme: 'New Jersey'
+      displayName: 'New Jersey'
       regions:
         - countrySubDivision: 'US-NJ'
           country: 'US'
       operator: 'IN'
       displayPriority: 35
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NM
-      displayNAme: 'New Mexico'
+      displayName: 'New Mexico'
       regions:
         - countrySubDivision: 'US-NM'
           country: 'US'
       operator: 'IN'
       displayPriority: 36
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NV
-      displayNAme: 'Nevada'
+      displayName: 'Nevada'
       regions:
         - countrySubDivision: 'US-NV'
           country: 'US'
       operator: 'IN'
       displayPriority: 37
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-NY
-      displayNAme: 'New York'
+      displayName: 'New York'
       regions:
         - countrySubDivision: 'US-NY'
           country: 'US'
       operator: 'IN'
       displayPriority: 38
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-OH
-      displayNAme: 'Ohio'
+      displayName: 'Ohio'
       regions:
         - countrySubDivision: 'US-OH'
           country: 'US'
       operator: 'IN'
       displayPriority: 39
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-OK
-      displayNAme: 'Oklahoma'
+      displayName: 'Oklahoma'
       regions:
         - countrySubDivision: 'US-OK'
           country: 'US'
       operator: 'IN'
       displayPriority: 40
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-OR
-      displayNAme: 'Oregon'
+      displayName: 'Oregon'
       regions:
         - countrySubDivision: 'US-OR'
           country: 'US'
       operator: 'IN'
       displayPriority: 41
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-PA
-      displayNAme: 'Pennsylvania'
+      displayName: 'Pennsylvania'
       regions:
         - countrySubDivision: 'US-PA'
           country: 'US'
       operator: 'IN'
       displayPriority: 42
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-PR
-      displayNAme: 'Puerto Rico'
+      displayName: 'Puerto Rico'
       regions:
         - countrySubDivision: 'US-PR'
           country: 'US'
       operator: 'IN'
       displayPriority: 43
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-RI
-      displayNAme: 'Rhode Island'
+      displayName: 'Rhode Island'
       regions:
         - countrySubDivision: 'US-RI'
           country: 'US'
       operator: 'IN'
       displayPriority: 44
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-SC
-      displayNAme: 'South Carolina'
+      displayName: 'South Carolina'
       regions:
         - countrySubDivision: 'US-SC'
           country: 'US'
       operator: 'IN'
       displayPriority: 45
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-SD
-      displayNAme: 'South Dakota'
+      displayName: 'South Dakota'
       regions:
         - countrySubDivision: 'US-SD'
           country: 'US'
       operator: 'IN'
       displayPriority: 46
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-TN
-      displayNAme: 'Tennessee'
+      displayName: 'Tennessee'
       regions:
         - countrySubDivision: 'US-TN'
           country: 'US'
       operator: 'IN'
       displayPriority: 47
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-TX
-      displayNAme: 'Texas'
+      displayName: 'Texas'
       regions:
         - countrySubDivision: 'US-TX'
           country: 'US'
       operator: 'IN'
       displayPriority: 48
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-UM
-      displayNAme: 'United States Minor Outlying Islands'
+      displayName: 'United States Minor Outlying Islands'
       regions:
         - countrySubDivision: 'US-UM'
           country: 'US'
       operator: 'IN'
       displayPriority: 49
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-UT
-      displayNAme: 'Utah'
+      displayName: 'Utah'
       regions:
         - countrySubDivision: 'US-UT'
           country: 'US'
       operator: 'IN'
       displayPriority: 50
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-VA
-      displayNAme: 'Virginia'
+      displayName: 'Virginia'
       regions:
         - countrySubDivision: 'US-VA'
           country: 'US'
       operator: 'IN'
       displayPriority: 51
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-VI
-      displayNAme: 'U.S. Virgin Islands'
+      displayName: 'U.S. Virgin Islands'
       regions:
         - countrySubDivision: 'US-VI'
           country: 'US'
       operator: 'IN'
       displayPriority: 52
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-VT
-      displayNAme: 'Vermont'
+      displayName: 'Vermont'
       regions:
         - countrySubDivision: 'US-VT'
           country: 'US'
       operator: 'IN'
       displayPriority: 53
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-WA
-      displayNAme: 'Washington'
+      displayName: 'Washington'
       regions:
         - countrySubDivision: 'US-WA'
           country: 'US'
       operator: 'IN'
       displayPriority: 54
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-WI
-      displayNAme: 'Wisconsin'
+      displayName: 'Wisconsin'
       regions:
         - countrySubDivision: 'US-WI'
           country: 'US'
       operator: 'IN'
       displayPriority: 55
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-WV
-      displayNAme: 'West Virginia'
+      displayName: 'West Virginia'
       regions:
         - countrySubDivision: 'US-WV'
           country: 'US'
       operator: 'IN'
       displayPriority: 56
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []
     - name: US-WY
-      displayNAme: 'Wyoming'
+      displayName: 'Wyoming'
       regions:
         - countrySubDivision: 'US-WY'
           country: 'US'
       operator: 'IN'
       displayPriority: 57
       purposes:
-        - name: SaleOfInfo
+        - trackingType: SaleOfInfo
       browserLanguages: []
       browserTimeZones: []

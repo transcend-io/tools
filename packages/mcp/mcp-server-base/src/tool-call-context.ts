@@ -11,6 +11,8 @@ export interface ToolCallContext {
   toolName: string;
   /** Unique id shared by every outbound request in this invocation */
   correlationId: string;
+  /** JSON-RPC id of the `tools/call` request, to line logs up with host logs */
+  requestId?: string | number;
 }
 
 export const toolCallContext = new AsyncLocalStorage<ToolCallContext>();
