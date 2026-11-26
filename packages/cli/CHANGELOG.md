@@ -1,5 +1,18 @@
 # @transcend-io/cli
 
+## 13.8.0
+
+### Minor Changes
+
+- c1dd80d: Add `--expectBundleId` and `--resources` to `transcend inventory push`. `--expectBundleId` stops the push, before the preview, when the consent manager bundle id of the organization differs or the organization has no consent manager. `--resources` pushes only the named top-level sections of the file, using the same names as `inventory pull --resources`.
+
+### Patch Changes
+
+- Updated dependencies [08e77a6]
+  - @transcend-io/privacy-types@7.4.0
+  - @transcend-io/airgap.js-types@14.4.0
+  - @transcend-io/sdk@3.7.1
+
 ## 13.7.1
 
 ### Patch Changes
