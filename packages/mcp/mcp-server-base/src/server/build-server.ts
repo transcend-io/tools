@@ -21,6 +21,7 @@ import {
   type ClientCapabilityReport,
 } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { describeToolResult, isMcpDebugLogEnabled, logMcpDebugEvent } from '../debug-log.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import {
@@ -30,7 +31,7 @@ import {
 } from '../oauth/env.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import type { PromptDefinition } from '../prompts/types.js';
-import { toolCallContext } from '../tool-call-context.js';
+import { toolCallContext, type ToolCallContext } from '../tool-call-context.js';
 import { ApprovalTokenStore } from '../tools/approval-tokens.js';
 import {
   APPROVAL_TOKEN_ARG,
@@ -491,6 +492,45 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     resolveClient();
     logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}), host: client.host });
 
+    const callContext: ToolCallContext = {
+      toolName: name,
+      correlationId: randomUUID(),
+      requestId: extra.requestId,
+    };
+    const progressToken = extra._meta?.progressToken;
+    const callStartedAt = Date.now();
+    logMcpDebugEvent(
+      'call.received',
+      {
+        host: client.host,
+        client: client.clientInfo?.name,
+        argNames: Object.keys(args || {}),
+        hasProgressToken: progressToken !== undefined,
+      },
+      callContext,
+    );
+    let callFinished = false;
+    const logCallEnd = (data: Record<string, unknown>): void => {
+      callFinished = true;
+      logMcpDebugEvent('call.end', { elapsedMs: Date.now() - callStartedAt, ...data }, callContext);
+    };
+    if (isMcpDebugLogEnabled()) {
+      // Fires when the host cancels, times out, or drops the connection. The SDK also
+      // aborts the signal when the connection closes after a call, which is not news.
+      extra.signal.addEventListener(
+        'abort',
+        () => {
+          if (callFinished) return;
+          logMcpDebugEvent(
+            'call.aborted',
+            { elapsedMs: Date.now() - callStartedAt, reason: String(extra.signal.reason) },
+            callContext,
+          );
+        },
+        { once: true },
+      );
+    }
+
     try {
       const tool = toolsForClient(client).get(name);
       if (!tool) {
@@ -510,6 +550,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
           code: McpToolErrorCode.ValidationError,
           retryable: false,
         });
+        logCallEnd({ outcome: 'validation_error' });
         return {
           content: [{ type: 'text', text: JSON.stringify(errorResult, null, 2) }],
           isError: true,
@@ -519,21 +560,50 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       const toolRequiresAuth = tool.requireAuth !== false;
       let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
       if (toolRequiresAuth) {
+        const authStartedAt = Date.now();
         await ensureLazyOAuthAuth(logger);
         oauthCredentials = getLazyOAuthCredentials();
+        logMcpDebugEvent(
+          'auth.ensured',
+          { elapsedMs: Date.now() - authStartedAt, hasCredentials: oauthCredentials !== null },
+          callContext,
+        );
       }
 
       // The id and signal are what let a confirmation form reach whoever made this
-      // call, and be torn down if they give up. See McpSession.request.
+      // call, and be torn down if they give up. The token and sender let a long wait
+      // tell the host the call is alive. See McpSession.request.
       const session = {
         client,
         server,
-        request: { id: extra.requestId, signal: extra.signal },
+        request: {
+          id: extra.requestId,
+          signal: extra.signal,
+          progressToken,
+          sendNotification: extra.sendNotification,
+        },
       };
 
       const result = await mcpSessionContext.run(session, () =>
-        toolCallContext.run({ toolName: name, correlationId: randomUUID() }, () => {
-          const execute = () => tool.handler(parseResult.data);
+        toolCallContext.run(callContext, async () => {
+          const handlerStartedAt = Date.now();
+          logMcpDebugEvent('handler.start');
+          const execute = async () => {
+            try {
+              const handlerResult = await tool.handler(parseResult.data);
+              logMcpDebugEvent('handler.end', {
+                elapsedMs: Date.now() - handlerStartedAt,
+                ...describeToolResult(handlerResult),
+              });
+              return handlerResult;
+            } catch (error) {
+              logMcpDebugEvent('handler.error', {
+                elapsedMs: Date.now() - handlerStartedAt,
+                error: error instanceof Error ? error.message : String(error),
+              });
+              throw error;
+            }
+          };
           if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
             return requestAuthContext.run(oauthCredentials, execute);
           }
@@ -541,6 +611,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         }),
       );
       logger.debug(`Tool ${name} completed successfully`);
+      logCallEnd({ outcome: 'returned' });
 
       const meta = buildToolMeta(tool);
       return {
@@ -549,6 +620,10 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       };
     } catch (error) {
       logger.error(`Error executing tool ${name}:`, error);
+      logCallEnd({
+        outcome: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      });
       return {
         content: [{ type: 'text', text: JSON.stringify(createErrorResult(error), null, 2) }],
         isError: true,

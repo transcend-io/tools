@@ -1,5 +1,6 @@
 export * from './actionItems.js';
 export * from './actions.js';
+export * from './airgapModule.js';
 export * from './assessmentForm.js';
 export * from './assessmentQuestion.js';
 export * from './attribute.js';

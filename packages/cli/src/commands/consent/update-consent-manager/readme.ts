@@ -44,7 +44,11 @@ const examples = buildExamples<UpdateConsentManagerCommandFlags>(
   ],
 );
 
-export default `This command always updates airgap.js to the latest version before it deploys. To deploy without changing the airgap.js version, use \`transcend consent deploy\`.
+export default `#### Deploy after a consent as code push
+
+Run this command after [\`transcend inventory push\`](#transcend-inventory-push) to publish your saved consent manager settings. A push alone does not publish them.
+
+This command always updates airgap.js to the latest version for each bundle type, then deploys when you pass \`--deploy\`. It runs even if your \`transcend.yml\` sets a \`version\`. To deploy without changing the airgap.js version, use \`transcend consent deploy\`. Use \`--bundleTypes=TEST\` to check a new version before you touch \`PRODUCTION\`.
 
 #### Examples
 

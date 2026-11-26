@@ -5,9 +5,9 @@ import { deletePreferenceRecordsCommand } from './delete-preference-records/comm
 import { deployCommand } from './deploy/command.js';
 import { generateAccessTokensCommand } from './generate-access-tokens/command.js';
 import { previewDeployCommand } from './preview-deploy/command.js';
-import { rollbackCommand } from './rollback/command.js';
 import { pullConsentMetricsCommand } from './pull-consent-metrics/command.js';
 import { pullConsentPreferencesCommand } from './pull-consent-preferences/command.js';
+import { rollbackCommand } from './rollback/command.js';
 import { updateConsentManagerCommand } from './update-consent-manager/command.js';
 import { uploadConsentPreferencesCommand } from './upload-consent-preferences/command.js';
 import { uploadCookiesFromCsvCommand } from './upload-cookies-from-csv/command.js';

@@ -16,9 +16,11 @@ import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
+import { TranscendMcpServer } from '@transcend-io/sdk';
 import { describe, it, expect, vi } from 'vitest';
 
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
+import type { McpServerAllowlist } from '../src/mcp-server-allowlist.js';
 import { ToolRegistry } from '../src/registry.js';
 import { EXPECTED_UMBRELLA_TOOL_COUNT } from './umbrella-tool-count.js';
 
@@ -122,6 +124,30 @@ describe('ToolRegistry', () => {
     });
 
     expect(registry.getTool('nonexistent_tool')).toBeUndefined();
+  });
+
+  it('registers only allowlisted domains', () => {
+    const allowlist: McpServerAllowlist = new Set([
+      TranscendMcpServer.Config,
+      TranscendMcpServer.Consent,
+    ]);
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
+    const registry = new ToolRegistry(
+      {
+        rest,
+        graphql,
+        dashboardUrl: 'https://app.transcend.io',
+        transcendApiUrl: 'http://localhost:0',
+        auth: TEST_AUTH,
+      },
+      allowlist,
+    );
+
+    expect(registry.getTool('config_pull')).toBeDefined();
+    expect(registry.getTool('consent_write_sites')).toBeDefined();
+    expect(registry.getTool('docs_list')).toBeUndefined();
+    expect(registry.getTool('dsr_list')).toBeUndefined();
   });
 
   it('executeTool throws for unknown tools', async () => {

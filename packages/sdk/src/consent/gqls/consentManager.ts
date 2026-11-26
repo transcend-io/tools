@@ -1,3 +1,5 @@
+import { AirgapModuleName } from '@transcend-io/privacy-types';
+import { getValues } from '@transcend-io/type-utils';
 import { gql } from 'graphql-request';
 
 // ---- FETCH_CONSENT_MANAGER_ID query ----
@@ -603,14 +605,25 @@ export const UPDATE_CONSENT_UI_THEME = gql`
 `;
 // ---- Deploy state and rollback ----
 
-/** Deploy status of the consent manager, see BundleDeployStatus in the GraphQL schema */
+/** Deploy status of the consent manager, aligned with BundleDeployStatus in the GraphQL schema */
+export const TranscendConsentManagerDeployState = {
+  /** Deploy completed successfully */
+  Deployed: 'DEPLOYED',
+  /** Deploy in progress */
+  DeployPending: 'DEPLOY_PENDING',
+  /** Preview deploy */
+  Preview: 'PREVIEW',
+  /** Rollback in progress */
+  RollbackPending: 'ROLLBACK_PENDING',
+  /** Deploy failed */
+  Error: 'ERROR',
+  /** Test deploy failed */
+  TestError: 'TEST_ERROR',
+} as const;
+
+/** Values of {@link TranscendConsentManagerDeployState} */
 export type TranscendConsentManagerDeployState =
-  | 'DEPLOYED'
-  | 'DEPLOY_PENDING'
-  | 'PREVIEW'
-  | 'ROLLBACK_PENDING'
-  | 'ERROR'
-  | 'TEST_ERROR';
+  (typeof TranscendConsentManagerDeployState)[keyof typeof TranscendConsentManagerDeployState];
 
 /** Deploy state fields of the consent manager */
 export interface TranscendConsentManagerDeployStateGql {
@@ -642,162 +655,25 @@ export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
     }
   }
 `;
+
+/** GraphQL field names on airgap bundle version nodes used for rollback */
 export const AIRGAP_BUNDLE_ROLLBACK_FIELDS = [
   'cdn',
-  'core',
-  'xdi',
-  'userscript',
-  'explorer',
-  'metadata',
-  'ui',
-  'uiV2',
-  'uiV2Css',
-  'stylesheet',
-  'En',
-  'He',
-  'Bs',
-  'Dv',
-  'Fa',
-  'ArAe',
-  'FrFr',
-  'DeDe',
-  'ItIt',
-  'AfZz',
-  'BgBg',
-  'ZhCn',
-  'ZhHans',
-  'HrHr',
-  'CsCz',
-  'DaDk',
-  'FiFi',
-  'ElGr',
-  'HiIn',
-  'HuHu',
-  'IdId',
-  'JaJp',
-  'KoKr',
-  'LtLt',
-  'MsMy',
-  'MrIn',
-  'NbNi',
-  'PlPl',
-  'PtBr',
-  'RoRo',
-  'RuRu',
-  'SrLatnRs',
-  'SvSe',
-  'TaIn',
-  'ThTh',
-  'TrTr',
-  'UkUa',
-  'ViVn',
-  'NlNl',
-  'EsEs',
-  'Es419',
-  'ZhHk',
-  'HeIl',
-  'IsIs',
-  'tcfUi',
-  'gpp',
-  'tcfStylesheet',
-  'tcfVendorsList',
-  'tcfGvlAr',
-  'tcfGvlBg',
-  'tcfGvlBs',
-  'tcfGvlCs',
-  'tcfGvlDa',
-  'tcfGvlDe',
-  'tcfGvlEl',
-  'tcfGvlEn',
-  'tcfGvlEs',
-  'tcfGvlFi',
-  'tcfGvlFr',
-  'tcfGvlHe',
-  'tcfGvlHi',
-  'tcfGvlHr',
-  'tcfGvlHu',
-  'tcfGvlId',
-  'tcfGvlIs',
-  'tcfGvlIt',
-  'tcfGvlJa',
-  'tcfGvlKo',
-  'tcfGvlLt',
-  'tcfGvlMs',
-  'tcfGvlNl',
-  'tcfGvlNo',
-  'tcfGvlPl',
-  'tcfGvlPtBr',
-  'tcfGvlRo',
-  'tcfGvlRu',
-  'tcfGvlSrLatn',
-  'tcfGvlSv',
-  'tcfGvlTh',
-  'tcfGvlTr',
-  'tcfGvlUk',
-  'tcfGvlVi',
-  'tcfGvlZh',
-  'tcfEn',
-  'tcfHe',
-  'tcfBs',
-  'tcfDv',
-  'tcfFa',
-  'tcfArAe',
-  'tcfFrFr',
-  'tcfDeDe',
-  'tcfItIt',
-  'tcfAfZz',
-  'tcfBgBg',
-  'tcfZhCn',
-  'tcfZhHans',
-  'tcfHrHr',
-  'tcfCsCz',
-  'tcfDaDk',
-  'tcfFiFi',
-  'tcfElGr',
-  'tcfHiIn',
-  'tcfHuHu',
-  'tcfIdId',
-  'tcfJaJp',
-  'tcfKoKr',
-  'tcfLtLt',
-  'tcfMsMy',
-  'tcfMrIn',
-  'tcfNbNi',
-  'tcfPlPl',
-  'tcfPtBr',
-  'tcfRoRo',
-  'tcfRuRu',
-  'tcfSrLatnRs',
-  'tcfSvSe',
-  'tcfTaIn',
-  'tcfThTh',
-  'tcfTrTr',
-  'tcfUkUa',
-  'tcfViVn',
-  'tcfNlNl',
-  'tcfEsEs',
-  'tcfEs419',
-  'tcfZhHk',
-  'tcfHeIl',
-  'tcfIsIs',
-  'nativeAppConfig',
-  'bridgeJs',
-  'bridgeHtml',
-  'mobileLoadOptions',
-  'mobileUiLoadOptions',
   'sync',
   'isTest',
+  ...getValues(AirgapModuleName),
 ] as const;
 
 /** One deployed bundle version that can be rolled back to */
-export interface TranscendCliAirgapBundleRollbackVersionNode {
+export type TranscendCliAirgapBundleRollbackVersionNode = {
   /** airgap.js version string */
   version: string | null;
   /** When this version was deployed */
   createdAt: string;
-  /** Module versions, keyed by the names in {@link AIRGAP_BUNDLE_ROLLBACK_FIELDS} */
-  [field: string]: string | boolean | null | undefined;
-}
+  cdn?: string | null;
+  sync?: string | null;
+  isTest?: boolean | null;
+} & Partial<Record<AirgapModuleName, string | null>>;
 
 /** Response from AIRGAP_BUNDLE_ROLLBACK_VERSIONS */
 export interface TranscendCliAirgapBundleRollbackVersionsResponse {

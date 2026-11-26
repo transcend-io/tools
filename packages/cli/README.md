@@ -50,6 +50,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
+  - [`transcend inventory check`](#transcend-inventory-check)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
   - [`transcend inventory discover-silos`](#transcend-inventory-discover-silos)
   - [`transcend inventory pull-datapoints`](#transcend-inventory-pull-datapoints)
@@ -110,6 +111,8 @@ _Authentication: commands that require a Transcend API key accept it via the `--
 Within your git repositories, you can define a file `transcend.yml`. This file allows you define part of your Data Map in code. Using the CLI, you can sync that configuration back to the Transcend Admin Dashboard (https://app.transcend.io/infrastructure/integrations).
 
 You can find various examples for your `transcend.yml` file in the [examples/](./examples/) folder. If you are looking for a starting point to copy and paste, [simple.yml](./examples/simple.yml) is a good place to start. This file is annotated with links and documentations that new members of your team can use if they come across the file.
+
+To manage your consent manager, purposes, data flows, cookies, and consent sites as code, see [Consent as code](#consent-as-code) and [consent-as-code.yml](./examples/consent-as-code.yml).
 
 The API for this YAML file can be found in [./src/codecs.ts](./src/codecs.ts) under the variable named "TranscendInput". The shape of the YAML file will be type-checked every time a command is run.
 
@@ -2209,7 +2212,11 @@ FLAGS
   -h  --help           Print help information and exit
 ```
 
-This command always updates airgap.js to the latest version before it deploys. To deploy without changing the airgap.js version, use `transcend consent deploy`.
+#### Deploy after a consent as code push
+
+Run this command after [`transcend inventory push`](#transcend-inventory-push) to publish your saved consent manager settings. A push alone does not publish them.
+
+This command always updates airgap.js to the latest version for each bundle type, then deploys when you pass `--deploy`. It runs even if your `transcend.yml` sets a `version`. To deploy without changing the airgap.js version, use `transcend consent deploy`. Use `--bundleTypes=TEST` to check a new version before you touch `PRODUCTION`.
 
 #### Examples
 
@@ -3246,6 +3253,30 @@ FLAGS
   -h  --help                         Print help information and exit
 ```
 
+#### Consent as code
+
+You can manage your consent manager, purposes, data flows, cookies, and consent sites in git. See [consent-as-code.yml](./examples/consent-as-code.yml) for a starting file.
+
+1. Pull the current state with [`transcend inventory pull`](#transcend-inventory-pull).
+2. Edit `transcend.yml`.
+3. Preview the change with `transcend inventory push --dryRun`. Nothing is changed in Transcend.
+4. Push the change with `transcend inventory push`. This saves the settings. It does not publish a new consent manager bundle.
+5. Publish the bundle with `transcend consent update-consent-manager --deploy`. See [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager).
+
+```sh
+transcend inventory pull \
+  --auth="$TRANSCEND_API_KEY" \
+  --resources=consentManager,purposes,dataFlows,cookies,consentSites
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
+transcend inventory push --auth="$TRANSCEND_API_KEY"
+transcend consent update-consent-manager --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST --deploy
+```
+
+Two things to know before you push:
+
+- A push replaces the whole `consent-manager.domains` list. Domains missing from your file are removed.
+- `inventory push` applies `consent-manager.version` from `transcend.yml` when you set it. It does not upgrade airgap.js. The separate `transcend consent update-consent-manager` command moves each bundle to the latest airgap.js and overrides a pinned version. Its default bundle types are `TEST` and `PRODUCTION`. Deploy `TEST` first if you want to check the new version.
+
 #### Scopes
 
 The API key permissions for this command vary based on the resources declared as top-level keys in your [`transcend.yml`](#transcendyml) file:
@@ -3496,6 +3527,68 @@ data-silos:
     url: https://example.<<parameters.domain>>/transcend-webhook
     api-key-title: Webhook Key
 ```
+
+### `transcend inventory check`
+
+```txt
+USAGE
+  transcend inventory check [--file value] [--rules *|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers] [--variables value] [--json]
+  transcend inventory check --help
+
+Reads a transcend.yml the same way inventory push does and checks that it matches the schema. Pass --rules to also run opt-in rules. Exits non-zero when any error is found. No Transcend API key and no network access are needed.
+
+FLAGS
+     [--file]       Path to the transcend.yml file to check                                                                        [default = ./transcend.yml]
+     [--rules]      Comma-separated opt-in rules to run, or * for every rule. By default only the schema check runs.               [*|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers, separator = ,]
+     [--variables]  Variables to template into the YAML file, the same as inventory push. Comma-separated list of key:value pairs. [default = ""]
+     [--json]       Print the result as JSON on stdout                                                                             [default = false]
+  -h  --help        Print help information and exit
+```
+
+#### Examples
+
+**Check that ./transcend.yml matches the schema**
+
+```sh
+transcend inventory check
+```
+
+**Check a file at a custom location**
+
+```sh
+transcend inventory check --file=./custom/location.yml
+```
+
+**Run opt-in rules on consent sites**
+
+```sh
+transcend inventory check --rules=consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts
+```
+
+**Run every opt-in rule in CI and read the result as JSON**
+
+```sh
+transcend inventory check --rules=* --json
+```
+
+**Fill in template variables, the same as inventory push**
+
+```sh
+transcend inventory check --variables=domain:example.com
+```
+
+By default `check` only decodes the file with the same codecs as `inventory push`. Decode errors
+include the key path. Pass `--rules` to turn on more checks.
+
+| Rule                     | What it checks                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                      | Runs every rule below. New rules join this set as the SDK gains them.                                                                                               |
+| `consentSitesHaveOwners` | Every `consent-sites` row has a real owner or team. Empty lists and the placeholders UNASSIGNED, TBD, and TODO (any case) do not count.                             |
+| `consentSitesInDomains`  | Every `consent-sites` host is in `consent-manager.domains`. Case and a leading `www.` are ignored. Hosts with a port, such as `localhost:5173`, must match exactly. |
+| `uniqueConsentSiteHosts` | No duplicate hosts in `consent-sites`.                                                                                                                              |
+| `uniqueTrackers`         | No duplicate `data-flows` (value and type) or `cookies` (name and isRegex).                                                                                         |
+
+The command exits with code 1 when any error is found.
 
 ### `transcend inventory scan-packages`
 

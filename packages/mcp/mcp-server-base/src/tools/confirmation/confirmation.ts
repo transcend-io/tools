@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../../capabilities/types.js';
 import { SimpleLogger } from '../../clients/graphql/base.js';
+import { getCallRef, isMcpDebugLogEnabled, logMcpDebugEvent } from '../../debug-log.js';
 import { getMcpSession, hasCapability, requestElicitation } from '../../mcp-session-context.js';
 import { skipConfirmation } from '../../oauth/env.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from '../approval-tokens.js';
@@ -10,6 +11,7 @@ import { describeArgs, type ConfirmationSummary } from '../describe-args.js';
 import { createToolResult } from '../helpers.js';
 import { assertConfirmableSchema, type ToolDefinition } from '../types.js';
 import { declineCameFromUndeliveredPrompt } from './cursor-decline-quirk.js';
+import { withProgressHeartbeat } from './progress-heartbeat.js';
 import {
   ConfirmationCode,
   ConfirmationPolicy,
@@ -31,12 +33,21 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
  */
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
-/** Max wait for {@link ToolConfirmation.describe} before falling back to hint-only text. */
-export const CONFIRMATION_DESCRIBE_TIMEOUT_MS = 20_000;
+/**
+ * Max wait for {@link ToolConfirmation.describe} before falling back to hint-only text.
+ *
+ * Kept well under the host's 60s call limit, which also counts the time the form
+ * stays open. A summary that needs longer is not worth the person's remaining time.
+ */
+export const CONFIRMATION_DESCRIBE_TIMEOUT_MS = 8_000;
 
 const logger = new SimpleLogger();
 
-const DESCRIBE_UNAVAILABLE = 'Could not load a summary of changes.';
+/** Shown in place of the summary. Written for the person reading the form. */
+const DESCRIBE_TIMED_OUT = 'Summary of changes unavailable: it took too long to load.';
+const DESCRIBE_FAILED = 'Summary of changes unavailable: loading it failed.';
+
+const DESCRIBE_TIMEOUT = Symbol('describe timed out');
 
 async function resolveConfirmationDescribe(
   toolName: string,
@@ -44,20 +55,45 @@ async function resolveConfirmationDescribe(
   args: Record<string, unknown>,
 ): Promise<string | undefined> {
   if (!describe) return undefined;
+
+  const startedAt = Date.now();
+  let timer: NodeJS.Timeout | undefined;
+  logMcpDebugEvent('confirmation.describe.start');
   try {
     const text = await Promise.race([
       describe(args),
-      new Promise<string | undefined>((_, reject) => {
-        setTimeout(() => reject(new Error('describe timeout')), CONFIRMATION_DESCRIBE_TIMEOUT_MS);
+      new Promise<typeof DESCRIBE_TIMEOUT>((resolve) => {
+        timer = setTimeout(() => resolve(DESCRIBE_TIMEOUT), CONFIRMATION_DESCRIBE_TIMEOUT_MS);
       }),
     ]);
+    if (text === DESCRIBE_TIMEOUT) {
+      logger.warn(`Confirmation summary for ${toolName} timed out`, {
+        timeoutMs: CONFIRMATION_DESCRIBE_TIMEOUT_MS,
+      });
+      logMcpDebugEvent('confirmation.describe.end', {
+        elapsedMs: Date.now() - startedAt,
+        outcome: 'timeout',
+      });
+      return DESCRIBE_TIMED_OUT;
+    }
     const trimmed = typeof text === 'string' ? text.trim() : '';
+    logMcpDebugEvent('confirmation.describe.end', {
+      elapsedMs: Date.now() - startedAt,
+      outcome: trimmed.length > 0 ? 'ok' : 'empty',
+    });
     return trimmed.length > 0 ? trimmed : undefined;
   } catch (error) {
-    logger.warn(`Failed to build confirmation summary for ${toolName}`, {
-      error: error instanceof Error ? error.message : String(error),
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.warn(`Failed to build confirmation summary for ${toolName}`, { error: reason });
+    logMcpDebugEvent('confirmation.describe.end', {
+      elapsedMs: Date.now() - startedAt,
+      outcome: 'error',
+      error: reason,
     });
-    return DESCRIBE_UNAVAILABLE;
+    return DESCRIBE_FAILED;
+  } finally {
+    // The race leaves the timer running when `describe` wins
+    clearTimeout(timer);
   }
 }
 
@@ -156,17 +192,28 @@ export function withConfirmation(
       // the restriction applies to it, which is backwards.
       if (gate.policy === ConfirmationPolicy.Refuse) return refusedByPolicy(tool.name, message);
 
-      const describeText = await resolveConfirmationDescribe(tool.name, describeFn, args);
-      const promptMessage = messageWithDescribe(message, describeText);
-
-      const asked = await askForConfirmation(tool.name, promptMessage, args, {
-        // An unbound prompt lands on the connection's shared stream, where it can
-        // surface in the wrong user's turn or go undelivered and silently expire.
-        // stdio has one stream and a token to fall back on, so neither applies.
-        requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
-        // Without somewhere to fall back to, second-guessing a refusal would only
-        // change which refusal is returned, so the host's answer stands as given.
-        softConfirmationAvailable: tokens !== undefined,
+      // The host counts the whole wait, summary and open form included, against its
+      // call timeout. Heartbeats tell it the call is alive while a person decides.
+      const { promptMessage, asked } = await withProgressHeartbeat(
+        'Waiting for approval',
+        async () => {
+          const describeText = await resolveConfirmationDescribe(tool.name, describeFn, args);
+          const text = messageWithDescribe(message, describeText);
+          const outcome = await askForConfirmation(tool.name, text, args, {
+            // An unbound prompt lands on the connection's shared stream, where it can
+            // surface in the wrong user's turn or go undelivered and silently expire.
+            // stdio has one stream and a token to fall back on, so neither applies.
+            requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
+            // Without somewhere to fall back to, second-guessing a refusal would only
+            // change which refusal is returned, so the host's answer stands as given.
+            softConfirmationAvailable: tokens !== undefined,
+          });
+          return { promptMessage: text, asked: outcome };
+        },
+      );
+      logMcpDebugEvent('confirmation.decision', {
+        outcome: asked.outcome,
+        ...(asked.outcome === 'unasked' && { reason: asked.reason }),
       });
       if (asked.outcome === 'confirmed') return await mutate(args);
       if (asked.outcome === 'refused') return asked.result;
@@ -202,19 +249,28 @@ async function askForConfirmation(
 ): Promise<AskOutcome> {
   const unasked = { outcome: 'unasked', reason: UnaskedReason.NoAnswer } as const;
 
-  if (!hasCapability(McpClientCapability.Elicitation)) return unasked;
+  if (!hasCapability(McpClientCapability.Elicitation)) {
+    logMcpDebugEvent('confirmation.skipped', { reason: 'host_has_no_elicitation' });
+    return unasked;
+  }
 
   if (options.requireBinding && getMcpSession()?.request === undefined) {
     logger.warn(
       `Not asking for confirmation of ${toolName}: no originating call to bind the form to`,
     );
+    logMcpDebugEvent('confirmation.skipped', { reason: 'no_originating_call' });
     return unasked;
   }
 
-  const prompt = renderConfirmationPrompt(message, describeArgs(args));
+  const recap = renderConfirmationPrompt(message, describeArgs(args));
+  // With the debug log on, the form shows the same reference as the log lines, so a
+  // screenshot of a form is enough to find its events.
+  const ref = getCallRef();
+  const prompt = isMcpDebugLogEnabled() && ref ? `${recap}\n\nRef: ${ref}` : recap;
 
   const askedAt = Date.now();
   let answer: ElicitResult | undefined;
+  logMcpDebugEvent('confirmation.form.sent', { promptChars: prompt.length });
   try {
     answer = await requestElicitation(prompt, NO_FIELDS, {
       timeout: CONFIRMATION_TIMEOUT_MS,
@@ -225,20 +281,30 @@ async function askForConfirmation(
       // The caller gave up while the form was open, so nothing is wrong here — but
       // the answer that never arrived must not be treated as one.
       logger.debug(`Confirmation of ${toolName} abandoned by the caller`);
+      logMcpDebugEvent('confirmation.form.abandoned', { elapsedMs: Date.now() - askedAt });
       return unasked;
     }
     // A warning rather than silence: the host said it could ask and then did not,
     // so whatever happens below is covering for a host-side problem someone may
     // need to fix.
+    const reason = error instanceof Error ? error.message : String(error);
     logger.warn(`Host failed to show the confirmation form for ${toolName}`, {
-      error: error instanceof Error ? error.message : String(error),
+      error: reason,
       host: session?.client.host,
       clientName: session?.client.clientInfo?.name,
+    });
+    logMcpDebugEvent('confirmation.form.error', {
+      elapsedMs: Date.now() - askedAt,
+      error: reason,
     });
     return unasked;
   }
 
   if (!answer) return unasked;
+  logMcpDebugEvent('confirmation.form.answered', {
+    elapsedMs: Date.now() - askedAt,
+    action: answer.action,
+  });
 
   if (answer.action === 'cancel') {
     return {

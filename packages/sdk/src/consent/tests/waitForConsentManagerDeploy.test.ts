@@ -7,6 +7,7 @@ vi.mock('../../api/makeGraphQLRequest.js', () => ({
   makeGraphQLRequest: (...args: unknown[]) => makeGraphQLRequest(...args),
 }));
 
+import { TranscendConsentManagerDeployState } from '../gqls/consentManager.js';
 import { waitForConsentManagerDeploy } from '../waitForConsentManagerDeploy.js';
 
 const client = {} as GraphQLClient;
@@ -25,20 +26,22 @@ describe('waitForConsentManagerDeploy', () => {
 
   it('polls until the state is no longer pending', async () => {
     makeGraphQLRequest
-      .mockResolvedValueOnce(stateResponse('DEPLOY_PENDING'))
-      .mockResolvedValueOnce(stateResponse('DEPLOY_PENDING'))
-      .mockResolvedValueOnce(stateResponse('DEPLOYED'));
+      .mockResolvedValueOnce(stateResponse(TranscendConsentManagerDeployState.DeployPending))
+      .mockResolvedValueOnce(stateResponse(TranscendConsentManagerDeployState.DeployPending))
+      .mockResolvedValueOnce(stateResponse(TranscendConsentManagerDeployState.Deployed));
 
     const state = await waitForConsentManagerDeploy(client, { sleep, pollIntervalMs: 10 });
 
-    expect(state).toBe('DEPLOYED');
+    expect(state).toBe(TranscendConsentManagerDeployState.Deployed);
     expect(makeGraphQLRequest).toHaveBeenCalledTimes(3);
     expect(sleep).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledWith(10);
   });
 
   it('throws with the deploy error when the deploy fails', async () => {
-    makeGraphQLRequest.mockResolvedValueOnce(stateResponse('ERROR', 'bundle build failed'));
+    makeGraphQLRequest.mockResolvedValueOnce(
+      stateResponse(TranscendConsentManagerDeployState.Error, 'bundle build failed'),
+    );
 
     await expect(waitForConsentManagerDeploy(client, { sleep })).rejects.toThrow(
       'Consent manager deploy failed with state ERROR: bundle build failed',
@@ -46,7 +49,9 @@ describe('waitForConsentManagerDeploy', () => {
   });
 
   it('treats TEST_ERROR as a failure', async () => {
-    makeGraphQLRequest.mockResolvedValueOnce(stateResponse('TEST_ERROR'));
+    makeGraphQLRequest.mockResolvedValueOnce(
+      stateResponse(TranscendConsentManagerDeployState.TestError),
+    );
 
     await expect(waitForConsentManagerDeploy(client, { sleep })).rejects.toThrow(
       'Consent manager deploy failed with state TEST_ERROR',
@@ -54,7 +59,9 @@ describe('waitForConsentManagerDeploy', () => {
   });
 
   it('times out when the deploy stays pending', async () => {
-    makeGraphQLRequest.mockResolvedValue(stateResponse('DEPLOY_PENDING'));
+    makeGraphQLRequest.mockResolvedValue(
+      stateResponse(TranscendConsentManagerDeployState.DeployPending),
+    );
     let time = 0;
 
     await expect(
