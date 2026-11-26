@@ -1,5 +1,34 @@
 # @transcend-io/mcp-server-consent
 
+## 1.6.4
+
+### Patch Changes
+
+- 6bd42eb: Add `AirgapModuleName` and related consent manager airgap bundle module enums. These mirror the GraphQL `RollbackAirgapBundleInput` module fields shared with transcend-io/main.
+- 29fbc06: Show the real transcend.yml JSON schema for the consent write tools (consent manager, sites, purposes). Enums over 100 values show as plain strings.
+- Updated dependencies [6bd42eb]
+- Updated dependencies [aa5e8bb]
+- Updated dependencies [4d600ad]
+- Updated dependencies [29fbc06]
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/sdk@3.8.0
+  - @transcend-io/mcp-server-base@3.3.0
+
+## 1.6.3
+
+### Patch Changes
+
+- 4204f74: The consent deploy tool description explains retrying when an approval form expires before anyone answers.
+
+## 1.6.2
+
+### Patch Changes
+
+- 63e5999: Support consent manager `reportOnly` in transcend.yml inventory push and pull.
+- Updated dependencies [9b34876]
+- Updated dependencies [63e5999]
+  - @transcend-io/sdk@3.5.0
+
 ## 1.6.1
 
 ### Patch Changes

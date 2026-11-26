@@ -10,6 +10,7 @@ export const WriteSitesSchema = z.object({
   sites: ymlItemsSchema(
     'Sites to create or update, matched by host, like the consent-sites section of ' +
       'transcend.yml. Use consent_list_sites for current values.',
+    { codec: ConsentSiteInput },
   ),
 });
 export type WriteSitesInput = z.infer<typeof WriteSitesSchema>;

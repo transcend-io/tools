@@ -1,9 +1,10 @@
-import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
+import { ConsentBundleType, ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 import { TR_PUSH_RESOURCE_SCOPE_MAP, TranscendPullResource } from '@transcend-io/sdk';
 
 import { buildExampleCommand, buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { createPullResourceScopesTable } from '../../../lib/docgen/createPullResourceScopesTable.js';
 import type { GenerateApiKeysCommandFlags } from '../../admin/generate-api-keys/impl.js';
+import type { UpdateConsentManagerCommandFlags } from '../../consent/update-consent-manager/impl.js';
 import type { PullCommandFlags } from '../pull/impl.js';
 import type { PushCommandFlags } from './impl.js';
 
@@ -32,6 +33,22 @@ const examples = buildExamples<PushCommandFlags>(
       },
     },
     {
+      description:
+        'Push only the vendors and data flows sections of the file. Every other section is ignored',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        resources: [TranscendPullResource.Vendors, TranscendPullResource.DataFlows],
+      },
+    },
+    {
+      description:
+        'Stop unless the organization has this consent manager bundle id, so CI never pushes with the wrong API key',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        expectBundleId: '$EXPECTED_BUNDLE_ID',
+      },
+    },
+    {
       description: 'Apply service classifier to all data flows',
       flags: {
         auth: '$TRANSCEND_API_KEY',
@@ -57,7 +74,47 @@ const examples = buildExamples<PushCommandFlags>(
   ],
 );
 
-export default `#### Scopes
+export default `#### Consent as code
+
+You can manage your consent manager, purposes, data flows, cookies, and consent sites in git. See [consent-as-code.yml](./examples/consent-as-code.yml) for a starting file.
+
+1. Pull the current state with [\`transcend inventory pull\`](#transcend-inventory-pull).
+2. Edit \`transcend.yml\`.
+3. Preview the change with \`transcend inventory push --dryRun\`. Nothing is changed in Transcend.
+4. Push the change with \`transcend inventory push\`. This saves the settings. It does not publish a new consent manager bundle.
+5. Publish the bundle with \`transcend consent update-consent-manager --deploy\`. See [\`transcend consent update-consent-manager\`](#transcend-consent-update-consent-manager).
+
+\`\`\`sh
+${buildExampleCommand<PullCommandFlags>(['inventory', 'pull'], {
+  auth: '$TRANSCEND_API_KEY',
+  resources: [
+    TranscendPullResource.ConsentManager,
+    TranscendPullResource.Purposes,
+    TranscendPullResource.DataFlows,
+    TranscendPullResource.Cookies,
+    TranscendPullResource.ConsentSites,
+  ],
+})}
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+  dryRun: true,
+})}
+${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
+  auth: '$TRANSCEND_API_KEY',
+})}
+${buildExampleCommand<UpdateConsentManagerCommandFlags>(['consent', 'update-consent-manager'], {
+  auth: '$TRANSCEND_API_KEY',
+  bundleTypes: [ConsentBundleType.Test],
+  deploy: true,
+})}
+\`\`\`
+
+Two things to know before you push:
+
+- A push replaces the whole \`consent-manager.domains\` list. Domains missing from your file are removed.
+- \`inventory push\` applies \`consent-manager.version\` from \`transcend.yml\` when you set it. It does not upgrade airgap.js. The separate \`transcend consent update-consent-manager\` command moves each bundle to the latest airgap.js and overrides a pinned version. Its default bundle types are \`TEST\` and \`PRODUCTION\`. Deploy \`TEST\` first if you want to check the new version.
+
+#### Scopes
 
 The API key permissions for this command vary based on the resources declared as top-level keys in your [\`transcend.yml\`](#transcendyml) file:
 
@@ -147,6 +204,10 @@ ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {
 \`--dryRun\` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add \`--json\` for machine-readable output.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
+
+\`--resources\` limits the push to the named top-level sections, using the same names as \`inventory pull --resources\`. Other sections are removed before a dry run or a push, so both agree. It fails for a name that is not in the file.
+
+\`--expectBundleId\` reads the consent manager bundle id of the organization first. It stops before a dry run or push if the id differs or the organization has no consent manager. It cannot be used with a list of API keys.
 
 \`\`\`sh
 ${buildExampleCommand<PushCommandFlags>(['inventory', 'push'], {

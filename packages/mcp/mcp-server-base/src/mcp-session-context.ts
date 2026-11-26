@@ -6,6 +6,7 @@ import type {
   ElicitRequestFormParams,
   ElicitResult,
   RequestId,
+  ServerNotification,
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { McpClientCapability, type ClientCapabilityReport } from './capabilities/types.js';
@@ -30,7 +31,17 @@ export interface McpSession {
    * front of the caller rather than on the connection's shared stream. The signal
    * aborts when they cancel or the connection drops.
    */
-  request?: { id: RequestId; signal: AbortSignal };
+  request?: {
+    id: RequestId;
+    signal: AbortSignal;
+    /**
+     * Token the host sent in `_meta.progressToken`. Hosts that send one reset their
+     * call timeout when a `notifications/progress` carrying it arrives.
+     */
+    progressToken?: string | number;
+    /** Sends a notification on this call's stream, such as `notifications/progress` */
+    sendNotification?: (notification: ServerNotification) => Promise<void>;
+  };
 }
 
 /**

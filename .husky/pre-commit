@@ -12,8 +12,22 @@ trap cleanup EXIT
 git diff --cached --binary -- >"$before_staged_diff"
 git diff --binary -- >"$before_unstaged_diff"
 
+# Check only the packages this branch changed, plus their dependents. CI checks the full workspace.
+# --affected skips the root tasks when no package changed, so they are named here.
+# A local `main` is often stale, so compare against origin/main.
+export TURBO_SCM_BASE="${TURBO_SCM_BASE:-origin/main}"
+
+# Turbo fails when the base ref is missing, for example in a fork. Check the full workspace then.
+affected_flag="--affected"
+if ! git rev-parse --verify --quiet "${TURBO_SCM_BASE}^{commit}" >/dev/null; then
+  echo "pre-commit: ${TURBO_SCM_BASE} not found, checking the full workspace."
+  affected_flag=""
+fi
+
 quality_status=0
-pnpm exec turbo run quality:fix --output-logs=errors-only --no-update-notifier || quality_status=$?
+# shellcheck disable=SC2086 # affected_flag is empty or one flag
+pnpm exec turbo run quality:fix lint:fix:root format:root typecheck:root check:packages check:deps:root \
+  $affected_flag --concurrency="${TURBO_CONCURRENCY:-4}" --output-logs=errors-only --no-update-notifier || quality_status=$?
 
 git diff --cached --binary -- >"$after_staged_diff"
 git diff --binary -- >"$after_unstaged_diff"

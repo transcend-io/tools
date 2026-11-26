@@ -10,7 +10,7 @@ export const writeActionsSchema = z.object({
   actions: ymlItemsSchema(
     'Action settings in transcend.yml `actions` shape. Each needs `type` (such as ACCESS) of an ' +
       'existing action. Optional: requiresReview, waitingPeriod, regionList. See config_get_schema.',
-    20,
+    { codec: ActionInput, max: 20 },
   ),
   publishToPrivacyCenter: z
     .boolean()

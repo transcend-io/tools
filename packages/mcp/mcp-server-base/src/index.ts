@@ -43,6 +43,14 @@ export {
 export type { McpSession } from './mcp-session-context.js';
 
 export { toolCallContext, getToolCallIdHeader, TOOLCALL_ID_HEADER } from './tool-call-context.js';
+export {
+  MCP_LOG_FILE_ENV,
+  getCallRef,
+  getMcpLogFile,
+  isMcpDebugLogEnabled,
+  logMcpDebugEvent,
+} from './debug-log.js';
+export { formatMcpTimeline } from './debug-timeline.js';
 export type { ToolCallContext } from './tool-call-context.js';
 
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';

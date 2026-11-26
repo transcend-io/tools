@@ -1,5 +1,6 @@
 import { buildRouteMap } from '@stricli/core';
 
+import { checkCommand } from './check/command.js';
 import { consentManagerServiceJsonToYmlCommand } from './consent-manager-service-json-to-yml/command.js';
 import { consentManagersToBusinessEntitiesCommand } from './consent-managers-to-business-entities/command.js';
 import { deriveDataSilosFromDataFlowsCrossInstanceCommand } from './derive-data-silos-from-data-flows-cross-instance/command.js';
@@ -15,6 +16,7 @@ export const inventoryRoutes = buildRouteMap({
   routes: {
     pull: pullCommand,
     push: pushCommand,
+    check: checkCommand,
     'scan-packages': scanPackagesCommand,
     'discover-silos': discoverSilosCommand,
     'pull-datapoints': pullDatapointsCommand,

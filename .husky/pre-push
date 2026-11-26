@@ -1,1 +1,13 @@
-pnpm exec turbo run test --output-logs=errors-only --no-update-notifier
+# Test only the packages this branch changed, plus their dependents. CI tests the full workspace.
+# A local `main` is often stale, so compare against origin/main.
+export TURBO_SCM_BASE="${TURBO_SCM_BASE:-origin/main}"
+
+# Turbo fails when the base ref is missing, for example in a fork. Test the full workspace then.
+affected_flag="--affected"
+if ! git rev-parse --verify --quiet "${TURBO_SCM_BASE}^{commit}" >/dev/null; then
+  echo "pre-push: ${TURBO_SCM_BASE} not found, testing the full workspace."
+  affected_flag=""
+fi
+
+# shellcheck disable=SC2086 # affected_flag is empty or one flag
+pnpm exec turbo run test $affected_flag --concurrency="${TURBO_CONCURRENCY:-4}" --output-logs=errors-only --no-update-notifier

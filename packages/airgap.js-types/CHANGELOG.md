@@ -1,5 +1,22 @@
 # @transcend-io/airgap.js-types
 
+## 14.5.0
+
+### Minor Changes
+
+- 6bd42eb: Add `AirgapModuleName` and related consent manager airgap bundle module enums. These mirror the GraphQL `RollbackAirgapBundleInput` module fields shared with transcend-io/main.
+
+### Patch Changes
+
+- Updated dependencies [6bd42eb]
+  - @transcend-io/internationalization@4.3.0
+
+## 14.4.0
+
+### Minor Changes
+
+- 08e77a6: Move the consent-manager transcend.yml codec into privacy-types; it imports view state, browser language, and consent expiry enums from airgap.js-types. Drop the runtime privacy-types dependency from airgap.js-types (Region.country is typed as string). SDK and airgap.js-types import paths are unchanged.
+
 ## 14.3.0
 
 ### Minor Changes

@@ -31,9 +31,12 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend request cron pull-identifiers`](#transcend-request-cron-pull-identifiers)
   - [`transcend request cron mark-identifiers-completed`](#transcend-request-cron-mark-identifiers-completed)
   - [`transcend consent build-xdi-sync-endpoint`](#transcend-consent-build-xdi-sync-endpoint)
+  - [`transcend consent deploy`](#transcend-consent-deploy)
   - [`transcend consent generate-access-tokens`](#transcend-consent-generate-access-tokens)
   - [`transcend consent pull-consent-metrics`](#transcend-consent-pull-consent-metrics)
   - [`transcend consent pull-consent-preferences`](#transcend-consent-pull-consent-preferences)
+  - [`transcend consent preview-deploy`](#transcend-consent-preview-deploy)
+  - [`transcend consent rollback`](#transcend-consent-rollback)
   - [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager)
   - [`transcend consent upload-consent-preferences`](#transcend-consent-upload-consent-preferences)
   - [`transcend consent upload-cookies-from-csv`](#transcend-consent-upload-cookies-from-csv)
@@ -48,6 +51,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
+  - [`transcend inventory check`](#transcend-inventory-check)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
   - [`transcend inventory discover-silos`](#transcend-inventory-discover-silos)
   - [`transcend inventory pull-datapoints`](#transcend-inventory-pull-datapoints)
@@ -108,6 +112,8 @@ _Authentication: commands that require a Transcend API key accept it via the `--
 Within your git repositories, you can define a file `transcend.yml`. This file allows you define part of your Data Map in code. Using the CLI, you can sync that configuration back to the Transcend Admin Dashboard (https://app.transcend.io/infrastructure/integrations).
 
 You can find various examples for your `transcend.yml` file in the [examples/](./examples/) folder. If you are looking for a starting point to copy and paste, [simple.yml](./examples/simple.yml) is a good place to start. This file is annotated with links and documentations that new members of your team can use if they come across the file.
+
+To manage your consent manager, purposes, data flows, cookies, and consent sites as code, see [Consent as code](#consent-as-code) and [consent-as-code.yml](./examples/consent-as-code.yml).
 
 The API for this YAML file can be found in [./src/codecs.ts](./src/codecs.ts) under the variable named "TranscendInput". The shape of the YAML file will be type-checked every time a command is run.
 
@@ -1792,6 +1798,69 @@ transcend consent build-xdi-sync-endpoint \
   --transcendUrl=https://api.us.transcend.io
 ```
 
+### `transcend consent deploy`
+
+```txt
+USAGE
+  transcend consent deploy (--auth value) [--bundleTypes PRODUCTION|TEST] [--expectBundleId value] [--wait] [--waitTimeoutSeconds value] [--transcendUrl value]
+  transcend consent deploy --help
+
+Deploy the Consent Manager bundle without changing the airgap.js version. Use this when the airgap.js version is pinned. To update airgap.js to the latest version first, use `transcend consent update-consent-manager --deploy`. TEST is deployed before PRODUCTION, one at a time, and the command stops at the first failure.
+
+FLAGS
+      --auth                 The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
+     [--bundleTypes]         The bundle types to deploy. Defaults to TEST,PRODUCTION. TEST is always deployed before PRODUCTION.                                                                                                [PRODUCTION|TEST, separator = ,]
+     [--expectBundleId]      Abort unless the Consent Manager ID of the organization matches this value. Protects against deploying with the wrong API key.
+     [--wait]                Wait for each deploy to finish before continuing. Fails if the deploy ends in an error state.                                                                                                      [default = false]
+     [--waitTimeoutSeconds]  Max seconds to wait for each deploy when --wait is set                                                                                                                                             [default = 600]
+     [--transcendUrl]        URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help                 Print help information and exit
+```
+
+#### Examples
+
+**Deploy the TEST and PRODUCTION bundles without changing the airgap.js version**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY"
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+**Deploy just the TEST bundle**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST
+```
+
+**Abort if the API key belongs to a different Consent Manager than expected**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --expectBundleId="$EXPECTED_CONSENT_MANAGER_ID"
+```
+
+**Wait for each deploy to finish and fail if it ends in an error**
+
+```sh
+transcend consent deploy --auth="$TRANSCEND_API_KEY" --wait --waitTimeoutSeconds=300
+```
+
+**Deploy multiple organizations at once**
+
+```sh
+transcend admin generate-api-keys \
+  --email=test@example.com \
+  --password="$TRANSCEND_PASSWORD" \
+  --scopes="Manage Consent Manager" \
+  --apiKeyTitle="CLI Usage Cross Instance Sync" \
+  --file=./transcend-api-keys.json
+transcend consent deploy --auth=./transcend-api-keys.json
+```
+
 ### `transcend consent generate-access-tokens`
 
 ```txt
@@ -2084,6 +2153,91 @@ If you need to transfer this data, you may want to leverage the following comman
 transcend admin chunk-csv --directory=./working/files --outputDir=./working/chunks
 ```
 
+### `transcend consent preview-deploy`
+
+```txt
+USAGE
+  transcend consent preview-deploy (--auth value) [--bundleTypes PRODUCTION|TEST] [--json] [--transcendUrl value]
+  transcend consent preview-deploy --help
+
+Show what deploying the Consent Manager would change, by comparing the saved configuration with the deployed bundle. This command is read-only and exits with code 0 unless an error occurs.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"
+     [--bundleTypes]   The bundle types to preview. Defaults to TEST,PRODUCTION.                                                                                                                                          [PRODUCTION|TEST, separator = ,]
+     [--json]          Print the result as JSON instead of a text summary                                                                                                                                                 [default = false]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Preview the TEST and PRODUCTION deploys**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview only the PRODUCTION deploy**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --bundleTypes=PRODUCTION
+```
+
+**Print the result as JSON**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent preview-deploy --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend consent rollback`
+
+```txt
+USAGE
+  transcend consent rollback (--auth value) (--bundleTypes PRODUCTION|TEST) (--version value) [--dryRun] [--transcendUrl value]
+  transcend consent rollback --help
+
+Roll the Consent Manager bundle back to the module versions of an earlier deploy. You must pass the bundle types and the airgap.js version to roll back to. Every target is looked up before anything changes, so a missing version changes nothing.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
+      --bundleTypes    The bundle types to roll back. Required, there is no default.                                                                                                                                      [PRODUCTION|TEST, separator = ,]
+      --version        The airgap.js version to roll back to. It must be an earlier deploy of each bundle type.
+     [--dryRun]        Look up the rollback targets and print them without rolling back                                                                                                                                   [default = false]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Roll the TEST bundle back to an earlier airgap.js version**
+
+```sh
+transcend consent rollback --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST --version=1.2.3
+```
+
+**Check what a PRODUCTION rollback would do without changing anything**
+
+```sh
+transcend consent rollback --auth="$TRANSCEND_API_KEY" --bundleTypes=PRODUCTION --version=1.2.3 --dryRun
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend consent rollback \
+  --auth="$TRANSCEND_API_KEY" \
+  --bundleTypes=TEST,PRODUCTION \
+  --version=1.2.3 \
+  --transcendUrl=https://api.us.transcend.io
+```
+
 ### `transcend consent update-consent-manager`
 
 ```txt
@@ -2091,15 +2245,21 @@ USAGE
   transcend consent update-consent-manager (--auth value) (--bundleTypes PRODUCTION|TEST) [--deploy] [--transcendUrl value]
   transcend consent update-consent-manager --help
 
-This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command.
+This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command, but only after the version is updated. To deploy without changing the airgap.js version, use `transcend consent deploy`.
 
 FLAGS
       --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
       --bundleTypes    The bundle types to deploy. Defaults to PRODUCTION,TEST.                                                                                                                                           [PRODUCTION|TEST, separator = ,]
-     [--deploy]        When true, deploy the Consent Manager after updating the version                                                                                                                                   [default = false]
+     [--deploy]        When true, deploy the Consent Manager after updating the version. This always updates airgap.js to the latest version first. To deploy without a version update, use `transcend consent deploy`.   [default = false]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
   -h  --help           Print help information and exit
 ```
+
+#### Deploy after a consent as code push
+
+Run this command after [`transcend inventory push`](#transcend-inventory-push) to publish your saved consent manager settings. A push alone does not publish them.
+
+This command always updates airgap.js to the latest version for each bundle type, then deploys when you pass `--deploy`. It runs even if your `transcend.yml` sets a `version`. To deploy without changing the airgap.js version, use `transcend consent deploy`. Use `--bundleTypes=TEST` to check a new version before you touch `PRODUCTION`.
 
 #### Examples
 
@@ -3117,10 +3277,10 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues] [--dryRun] [--json] [--expectBundleId value] [--resources apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs]
   transcend inventory push --help
 
-Given a transcend.yml file, sync the contents up to your Transcend instance.
+Given a transcend.yml file, sync the contents up to your Transcend instance. Use `--dryRun` to preview changes without writing anything. Use `--resources` to push only some sections of the file, and `--expectBundleId` to stop when the API key belongs to the wrong organization.
 
 FLAGS
       --auth                         The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
@@ -3133,8 +3293,34 @@ FLAGS
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
      [--dryRun]                      Show what the push would create, update, or delete without changing anything in Transcend                                                                                                                                                                   [default = false]
      [--json]                        With --dryRun, print the plan as JSON on stdout                                                                                                                                                                                                             [default = false]
+     [--expectBundleId]              Stop before anything is previewed or pushed unless the consent manager bundle id of the organization matches this id. Protects CI from using the API key of the wrong organization. Cannot be used with a list of API keys.
+     [--resources]                   Push only these top-level sections of the YAML file, using the same names as `inventory pull --resources`. Every other section is ignored by the preview and the push.                                                                                      [apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentSites|consentManager|partitions|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
   -h  --help                         Print help information and exit
 ```
+
+#### Consent as code
+
+You can manage your consent manager, purposes, data flows, cookies, and consent sites in git. See [consent-as-code.yml](./examples/consent-as-code.yml) for a starting file.
+
+1. Pull the current state with [`transcend inventory pull`](#transcend-inventory-pull).
+2. Edit `transcend.yml`.
+3. Preview the change with `transcend inventory push --dryRun`. Nothing is changed in Transcend.
+4. Push the change with `transcend inventory push`. This saves the settings. It does not publish a new consent manager bundle.
+5. Publish the bundle with `transcend consent update-consent-manager --deploy`. See [`transcend consent update-consent-manager`](#transcend-consent-update-consent-manager).
+
+```sh
+transcend inventory pull \
+  --auth="$TRANSCEND_API_KEY" \
+  --resources=consentManager,purposes,dataFlows,cookies,consentSites
+transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
+transcend inventory push --auth="$TRANSCEND_API_KEY"
+transcend consent update-consent-manager --auth="$TRANSCEND_API_KEY" --bundleTypes=TEST --deploy
+```
+
+Two things to know before you push:
+
+- A push replaces the whole `consent-manager.domains` list. Domains missing from your file are removed.
+- `inventory push` applies `consent-manager.version` from `transcend.yml` when you set it. It does not upgrade airgap.js. The separate `transcend consent update-consent-manager` command moves each bundle to the latest airgap.js and overrides a pinned version. Its default bundle types are `TEST` and `PRODUCTION`. Deploy `TEST` first if you want to check the new version.
 
 #### Scopes
 
@@ -3192,6 +3378,18 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --file=./custom/location.yml
+```
+
+**Push only the vendors and data flows sections of the file. Every other section is ignored**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --resources=vendors,dataFlows
+```
+
+**Stop unless the organization has this consent manager bundle id, so CI never pushes with the wrong API key**
+
+```sh
+transcend inventory push --auth="$TRANSCEND_API_KEY" --expectBundleId="$EXPECTED_BUNDLE_ID"
 ```
 
 **Apply service classifier to all data flows**
@@ -3262,6 +3460,10 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValue
 `--dryRun` pulls the current state of your organization, compares it with your file, and lists what would be created, updated, or deleted. It also lists changes you did not write in the file, such as identifiers that get auto-created, deletion dependencies that get cleared, and footer links that get deleted. Nothing is changed in Transcend. Add `--json` for machine-readable output.
 
 The preview needs view access to every resource in your file, because it reads the current values first.
+
+`--resources` limits the push to the named top-level sections, using the same names as `inventory pull --resources`. Other sections are removed before a dry run or a push, so both agree. It fails for a name that is not in the file.
+
+`--expectBundleId` reads the consent manager bundle id of the organization first. It stops before a dry run or push if the id differs or the organization has no consent manager. It cannot be used with a list of API keys.
 
 ```sh
 transcend inventory push --auth="$TRANSCEND_API_KEY" --dryRun
@@ -3386,6 +3588,68 @@ data-silos:
     url: https://example.<<parameters.domain>>/transcend-webhook
     api-key-title: Webhook Key
 ```
+
+### `transcend inventory check`
+
+```txt
+USAGE
+  transcend inventory check [--file value] [--rules *|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers] [--variables value] [--json]
+  transcend inventory check --help
+
+Reads a transcend.yml the same way inventory push does and checks that it matches the schema. Pass --rules to also run opt-in rules. Exits non-zero when any error is found. No Transcend API key and no network access are needed.
+
+FLAGS
+     [--file]       Path to the transcend.yml file to check                                                                        [default = ./transcend.yml]
+     [--rules]      Comma-separated opt-in rules to run, or * for every rule. By default only the schema check runs.               [*|consentSitesHaveOwners|consentSitesInDomains|uniqueConsentSiteHosts|uniqueTrackers, separator = ,]
+     [--variables]  Variables to template into the YAML file, the same as inventory push. Comma-separated list of key:value pairs. [default = ""]
+     [--json]       Print the result as JSON on stdout                                                                             [default = false]
+  -h  --help        Print help information and exit
+```
+
+#### Examples
+
+**Check that ./transcend.yml matches the schema**
+
+```sh
+transcend inventory check
+```
+
+**Check a file at a custom location**
+
+```sh
+transcend inventory check --file=./custom/location.yml
+```
+
+**Run opt-in rules on consent sites**
+
+```sh
+transcend inventory check --rules=consentSitesHaveOwners,consentSitesInDomains,uniqueConsentSiteHosts
+```
+
+**Run every opt-in rule in CI and read the result as JSON**
+
+```sh
+transcend inventory check --rules=* --json
+```
+
+**Fill in template variables, the same as inventory push**
+
+```sh
+transcend inventory check --variables=domain:example.com
+```
+
+By default `check` only decodes the file with the same codecs as `inventory push`. Decode errors
+include the key path. Pass `--rules` to turn on more checks.
+
+| Rule                     | What it checks                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                      | Runs every rule below. New rules join this set as the SDK gains them.                                                                                               |
+| `consentSitesHaveOwners` | Every `consent-sites` row has a real owner or team. Empty lists and the placeholders UNASSIGNED, TBD, and TODO (any case) do not count.                             |
+| `consentSitesInDomains`  | Every `consent-sites` host is in `consent-manager.domains`. Case and a leading `www.` are ignored. Hosts with a port, such as `localhost:5173`, must match exactly. |
+| `uniqueConsentSiteHosts` | No duplicate hosts in `consent-sites`.                                                                                                                              |
+| `uniqueTrackers`         | No duplicate `data-flows` (value and type) or `cookies` (name and isRegex).                                                                                         |
+
+The command exits with code 1 when any error is found.
 
 ### `transcend inventory scan-packages`
 

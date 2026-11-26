@@ -1,6 +1,12 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".changeset/*.md", "**/__generated__/**", "schema.graphql", "pnpm-lock.yaml"],
+  "ignorePatterns": [
+    ".changeset/*.md",
+    "**/__generated__/**",
+    "schema.graphql",
+    "pnpm-lock.yaml",
+    "**/npm-shrinkwrap.json"
+  ],
   "printWidth": 100,
   "tabWidth": 2,
   "semi": true,

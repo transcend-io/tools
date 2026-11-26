@@ -28,8 +28,15 @@ import { getPolicyTools, type PolicyToolClients } from '@transcend-io/mcp-server
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getPrivacyCenterTools } from '@transcend-io/mcp-server-privacy-center';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
+import { TranscendMcpServer } from '@transcend-io/sdk';
 
 import type { TranscendGraphQLClient } from './graphql-client.js';
+import {
+  MCP_ALLOWLIST_DOCS,
+  resolveMcpServerAllowlist,
+  type McpAllowlistEntry,
+  type McpServerAllowlist,
+} from './mcp-server-allowlist.js';
 
 export interface UmbrellaToolClients extends PolicyToolClients {
   /** REST client for Sombra API */
@@ -56,25 +63,34 @@ export class ToolRegistry {
   private clients: UmbrellaToolClients;
   private logger = new SimpleLogger();
 
-  constructor(clients: UmbrellaToolClients) {
+  constructor(
+    clients: UmbrellaToolClients,
+    allowlist: McpServerAllowlist = resolveMcpServerAllowlist(),
+  ) {
     this.clients = clients;
-    this.registerAllTools();
+    this.registerAllTools(allowlist);
   }
 
-  private registerAllTools(): void {
-    this.registerToolsFromModule(getDocsTools(this.clients));
-    this.registerToolsFromModule(getDSRTools(this.clients));
-    this.registerToolsFromModule(getConsentTools(this.clients));
-    this.registerToolsFromModule(getCustomFunctionsTools(this.clients));
-    this.registerToolsFromModule(getPreferenceTools(this.clients));
-    this.registerToolsFromModule(getInventoryTools(this.clients));
-    this.registerToolsFromModule(getDiscoveryTools(this.clients));
-    this.registerToolsFromModule(getAssessmentTools(this.clients));
-    this.registerToolsFromModule(getWorkflowTools(this.clients));
-    this.registerToolsFromModule(getPolicyTools(this.clients));
-    this.registerToolsFromModule(getPrivacyCenterTools(this.clients));
-    this.registerToolsFromModule(getAdminTools(this.clients));
-    this.registerToolsFromModule(getConfigTools(this.clients));
+  private registerAllTools(allowlist: McpServerAllowlist): void {
+    const maybeRegister = (entry: McpAllowlistEntry, tools: ToolDefinition[]): void => {
+      if (!allowlist.has(entry)) return;
+      this.registerToolsFromModule(tools);
+    };
+
+    const docs = MCP_ALLOWLIST_DOCS;
+    maybeRegister(docs, getDocsTools(this.clients));
+    maybeRegister(TranscendMcpServer.Dsr, getDSRTools(this.clients));
+    maybeRegister(TranscendMcpServer.Consent, getConsentTools(this.clients));
+    maybeRegister(TranscendMcpServer.CustomFunctions, getCustomFunctionsTools(this.clients));
+    maybeRegister(TranscendMcpServer.Preferences, getPreferenceTools(this.clients));
+    maybeRegister(TranscendMcpServer.Inventory, getInventoryTools(this.clients));
+    maybeRegister(TranscendMcpServer.Discovery, getDiscoveryTools(this.clients));
+    maybeRegister(TranscendMcpServer.Assessment, getAssessmentTools(this.clients));
+    maybeRegister(TranscendMcpServer.Workflows, getWorkflowTools(this.clients));
+    maybeRegister(TranscendMcpServer.Policy, getPolicyTools(this.clients));
+    maybeRegister(TranscendMcpServer.PrivacyCenter, getPrivacyCenterTools(this.clients));
+    maybeRegister(TranscendMcpServer.Admin, getAdminTools(this.clients));
+    maybeRegister(TranscendMcpServer.Config, getConfigTools(this.clients));
   }
 
   private registerToolsFromModule(tools: ToolDefinition[]): void {

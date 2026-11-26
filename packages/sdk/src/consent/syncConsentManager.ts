@@ -1,16 +1,7 @@
-import { InitialViewState, OnConsentExpiry, BrowserLanguage } from '@transcend-io/airgap.js-types';
+import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
 import {
-  ConsentBundleType,
-  ConsentPrecedenceOption,
-  IsoCountryCode,
-  IsoCountrySubdivisionCode,
-  RegionsOperator,
-  UnknownRequestPolicy,
-  TelemetryPartitionStrategy,
-  SignedIabAgreementOption,
-  BrowserTimeZone,
-  type ConsentThemeInput,
-  type ConsentVariantInput,
+  type ConsentManageExperienceInput,
+  type ConsentManagerInput,
 } from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
@@ -33,6 +24,7 @@ import {
   TOGGLE_CONSENT_PRECEDENCE,
   TOGGLE_UNKNOWN_REQUEST_POLICY,
   UPDATE_CONSENT_MANAGER_THEME,
+  UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK,
 } from './gqls/consentManager.js';
 import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/experiences.js';
 import {
@@ -43,93 +35,6 @@ import {
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
-
-export interface ConsentManageExperienceInput {
-  /** Name of experience */
-  name: string;
-  /** Display name of experience */
-  displayName?: string;
-  /** Regions that define this regional experience */
-  regions?: {
-    /** Country */
-    country?: IsoCountryCode;
-    /** Country subdivision */
-    countrySubDivision?: IsoCountrySubdivisionCode;
-  }[];
-  /** How to handle consent expiry */
-  onConsentExpiry?: OnConsentExpiry;
-  /** Consent expiration value */
-  consentExpiry?: number;
-  /** In vs not in operator */
-  operator?: RegionsOperator;
-  /** Priority of experience */
-  displayPriority?: number;
-  /** View state to prompt when auto prompting is enabled */
-  viewState?: InitialViewState;
-  /** Purposes that can be opted out of in a particular experience */
-  purposes?: {
-    /** Slug of purpose */
-    trackingType: string;
-  }[];
-  /** Purposes that are opted out by default in a particular experience */
-  optedOutPurposes?: {
-    /** Slug of purpose */
-    trackingType: string;
-  }[];
-  /** Browser languages that define this regional experience */
-  browserLanguages?: BrowserLanguage[];
-  /** Browser time zones that define this regional experience */
-  browserTimeZones?: BrowserTimeZone[];
-  /** Slug of the consent UI variant assigned to this experience */
-  consentUiVariantSlug?: string;
-}
-
-export interface ConsentManagerInput {
-  /** Airgap version */
-  version?: string;
-  /** Bundle URLs per bundle type */
-  bundleUrls?: Partial<Record<ConsentBundleType, string>>;
-  /** The consent manager domains */
-  domains?: string[];
-  /** Key used to partition consent records */
-  partition?: string;
-  /** Precedence of signals vs user input */
-  consentPrecedence?: ConsentPrecedenceOption;
-  /** The consent manager unknown request policy */
-  unknownRequestPolicy?: UnknownRequestPolicy;
-  /** The consent manager unknown cookie policy */
-  unknownCookiePolicy?: UnknownRequestPolicy;
-  /** The XDI sync endpoint */
-  syncEndpoint?: string;
-  /** The telemetry partitioning strategy */
-  telemetryPartitioning?: TelemetryPartitionStrategy;
-  /** Whether the site owner has signed the IAB agreement */
-  signedIabAgreement?: SignedIabAgreementOption;
-  /** Regional experience configurations */
-  experiences?: ConsentManageExperienceInput[];
-  /** Theme configuration */
-  theme?: {
-    /** Primary color */
-    primaryColor?: string;
-    /** Font color */
-    fontColor?: string;
-    /** Privacy policy URL */
-    privacyPolicy?: string;
-    /** Auto-prompt setting */
-    prompt?: number;
-  };
-  /** The Shared XDI host sync groups config (JSON) */
-  syncGroups?: string;
-  /** Consent UI variant configurations */
-  consentVariants?: ConsentVariantInput[];
-  /** Consent UI theme configurations */
-  consentThemes?: ConsentThemeInput[];
-  /**
-   * When true, traffic is report-only (enforcement off).
-   * Maps to the dashboard "Reporting only" mode. Deploy the bundle after pushing to go live.
-   */
-  reportOnly?: boolean;
-}
 
 /**
  * Sync consent manager experiences up to Transcend
@@ -346,7 +251,7 @@ export async function syncConsentManager(
     });
   }
 
-  if (consentManager.unknownRequestPolicy) {
+  if (consentManager.unknownCookiePolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_COOKIE_POLICY, {
       variables: {
         input: {
@@ -432,6 +337,27 @@ export async function syncConsentManager(
       },
       logger,
     });
+  }
+
+  if (consentManager.webhookUrl !== undefined || consentManager.webhookHeaders !== undefined) {
+    const webhookInput: {
+      webhookUrl?: string;
+      headers?: ConsentManagerInput['webhookHeaders'];
+    } = {};
+    if (consentManager.webhookUrl !== undefined) {
+      webhookInput.webhookUrl = consentManager.webhookUrl;
+    }
+    if (consentManager.webhookHeaders !== undefined) {
+      webhookInput.headers = consentManager.webhookHeaders;
+    }
+    await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK, {
+      variables: {
+        airgapBundleId,
+        input: webhookInput,
+      },
+      logger,
+    });
+    logger.info('Successfully synced consent manager deployment webhook');
   }
 
   // TODO: https://transcend.height.app/T-23875

@@ -1,5 +1,53 @@
 # @transcend-io/sdk
 
+## 3.8.0
+
+### Minor Changes
+
+- aa5e8bb: Add `transcend consent rollback` to roll Consent Manager bundles back to a prior airgap.js version. The SDK adds `rollbackConsentManager` and rollback lookup helpers.
+
+### Patch Changes
+
+- 6bd42eb: Add `AirgapModuleName` and related consent manager airgap bundle module enums. These mirror the GraphQL `RollbackAirgapBundleInput` module fields shared with transcend-io/main.
+- Updated dependencies [6bd42eb]
+- Updated dependencies [6bd42eb]
+  - @transcend-io/airgap.js-types@14.5.0
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/internationalization@4.3.0
+
+## 3.7.1
+
+### Patch Changes
+
+- 08e77a6: Move the consent-manager transcend.yml codec into privacy-types; it imports view state, browser language, and consent expiry enums from airgap.js-types. Drop the runtime privacy-types dependency from airgap.js-types (Region.country is typed as string). SDK and airgap.js-types import paths are unchanged.
+- Updated dependencies [08e77a6]
+  - @transcend-io/privacy-types@7.4.0
+  - @transcend-io/airgap.js-types@14.4.0
+
+## 3.7.0
+
+### Minor Changes
+
+- e65594d: Add `transcend inventory check` to validate a transcend.yml offline, with opt-in consent site and tracker rules.
+
+## 3.6.0
+
+### Minor Changes
+
+- 39efde0: Add `transcend consent deploy` to deploy the Consent Manager bundle without changing the airgap.js version. Optional `--wait` polls deploy state until completion. The SDK adds `fetchConsentManagerDeployState` and `waitForConsentManagerDeploy`.
+- 3833044: Add `isJunk` to `data-flows` and `cookies` and `includeInMetadata` to `consent-sites` in transcend.yml push and pull.
+
+### Patch Changes
+
+- f132514: Push the consent manager `unknownCookiePolicy` when it is set on its own, and warn when a purpose sets `default-consent` (use `consent-manager.experiences[].optedOutPurposes` in transcend.yml instead).
+
+## 3.5.0
+
+### Minor Changes
+
+- 9b34876: Support consent manager deployment webhook URL and headers in transcend.yml inventory push and pull.
+- 63e5999: Support consent manager `reportOnly` in transcend.yml inventory push and pull.
+
 ## 3.4.0
 
 ### Minor Changes

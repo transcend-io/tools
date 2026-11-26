@@ -1,3 +1,5 @@
+import { AirgapModuleName } from '@transcend-io/airgap.js-types';
+import { getValues } from '@transcend-io/type-utils';
 import { gql } from 'graphql-request';
 
 // ---- FETCH_CONSENT_MANAGER_ID query ----
@@ -84,6 +86,7 @@ export const FETCH_CONSENT_MANAGER = gql`
         off
         bundleURL
         testBundleURL
+        webhookUrl
         configuration {
           domains
           consentPrecedence
@@ -163,6 +166,17 @@ export const CREATE_CONSENT_MANAGER = gql`
 export const UPDATE_CONSENT_MANAGER_VERSION = gql`
   mutation TranscendCliUpdateConsentManager($airgapBundleId: ID!, $version: String!) {
     updateConsentManager(id: $airgapBundleId, input: { version: $version }) {
+      clientMutationId
+    }
+  }
+`;
+
+export const UPDATE_CONSENT_MANAGER_DEPLOYMENT_WEBHOOK = gql`
+  mutation TranscendCliUpdateConsentManagerDeploymentWebhook(
+    $airgapBundleId: ID!
+    $input: UpdateConsentManagerInput!
+  ) {
+    updateConsentManager(id: $airgapBundleId, input: $input) {
       clientMutationId
     }
   }
@@ -586,6 +600,110 @@ export const UPDATE_CONSENT_UI_THEME = gql`
       consentUiTheme {
         id
       }
+    }
+  }
+`;
+// ---- Deploy state and rollback ----
+
+/** Deploy status of the consent manager, aligned with BundleDeployStatus in the GraphQL schema */
+export const TranscendConsentManagerDeployState = {
+  /** Deploy completed successfully */
+  Deployed: 'DEPLOYED',
+  /** Deploy in progress */
+  DeployPending: 'DEPLOY_PENDING',
+  /** Preview deploy */
+  Preview: 'PREVIEW',
+  /** Rollback in progress */
+  RollbackPending: 'ROLLBACK_PENDING',
+  /** Deploy failed */
+  Error: 'ERROR',
+  /** Test deploy failed */
+  TestError: 'TEST_ERROR',
+} as const;
+
+/** Values of {@link TranscendConsentManagerDeployState} */
+export type TranscendConsentManagerDeployState =
+  (typeof TranscendConsentManagerDeployState)[keyof typeof TranscendConsentManagerDeployState];
+
+/** Deploy state fields of the consent manager */
+export interface TranscendConsentManagerDeployStateGql {
+  /** Current deploy state */
+  state: TranscendConsentManagerDeployState;
+  /** Error message from the last failed deploy */
+  deployError: string | null;
+  /** When the last deploy finished */
+  lastDeployedAt: string | null;
+}
+
+/** Full response from FETCH_CONSENT_MANAGER_DEPLOY_STATE */
+export interface TranscendCliFetchConsentManagerDeployStateResponse {
+  /** Consent manager wrapper */
+  consentManager: {
+    /** Consent manager object */
+    consentManager: TranscendConsentManagerDeployStateGql;
+  };
+}
+
+export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
+  query TranscendCliFetchConsentManagerDeployState {
+    consentManager {
+      consentManager {
+        state
+        deployError
+        lastDeployedAt
+      }
+    }
+  }
+`;
+
+/** GraphQL field names on airgap bundle version nodes used for rollback */
+export const AIRGAP_BUNDLE_ROLLBACK_FIELDS = [
+  'cdn',
+  'sync',
+  'isTest',
+  ...getValues(AirgapModuleName),
+] as const;
+
+/** One deployed bundle version that can be rolled back to */
+export type TranscendCliAirgapBundleRollbackVersionNode = {
+  /** airgap.js version string */
+  version: string | null;
+  /** When this version was deployed */
+  createdAt: string;
+  cdn?: string | null;
+  sync?: string | null;
+  isTest?: boolean | null;
+} & Partial<Record<AirgapModuleName, string | null>>;
+
+/** Response from AIRGAP_BUNDLE_ROLLBACK_VERSIONS */
+export interface TranscendCliAirgapBundleRollbackVersionsResponse {
+  /** Version list */
+  airgapBundleVersions: {
+    /** Most recent versions first */
+    nodes: TranscendCliAirgapBundleRollbackVersionNode[];
+  };
+}
+
+export const AIRGAP_BUNDLE_ROLLBACK_VERSIONS = gql`
+  query TranscendCliAirgapBundleRollbackVersions(
+    $id: ID!
+    $first: Int!
+    $input: AirgapBundleVersionsInput!
+  ) {
+    airgapBundleVersions(id: $id, first: $first, input: $input) {
+      nodes {
+        version
+        createdAt
+        ${AIRGAP_BUNDLE_ROLLBACK_FIELDS.join('\n        ')}
+      }
+    }
+  }
+`;
+
+export const ROLLBACK_AIRGAP_BUNDLE = gql`
+  mutation TranscendCliRollbackAirgapBundle($id: ID!, $input: RollbackAirgapBundleInput!) {
+    rollbackAirgapBundle(id: $id, input: $input) {
+      success
     }
   }
 `;

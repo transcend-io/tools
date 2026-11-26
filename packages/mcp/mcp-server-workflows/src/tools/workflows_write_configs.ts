@@ -14,7 +14,7 @@ export const WriteWorkflowConfigsSchema = z.object({
     'DSR workflow configs in transcend.yml `workflow-configs` shape. Each needs `title` and ' +
       '`action-type`. Matched by internal-name, then title, action-type, data-subject-type, and ' +
       'region-list. See config_get_schema.',
-    50,
+    { codec: WorkflowConfigInput, max: 50 },
   ),
   publishToPrivacyCenter: z
     .boolean()

@@ -1,0 +1,41 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { describe, expect, test } from 'vitest';
+
+import packageJson from '../package.json' with { type: 'json' };
+
+const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+describe('@transcend-io/pulumi-transcend scaffold', () => {
+  test('package metadata matches the workspace layout', () => {
+    expect(packageJson.name).toBe('@transcend-io/pulumi-transcend');
+    expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(packageJson.scripts?.build).toBe('tsdown');
+  });
+
+  test('pulumi plugin manifest declares the transcend provider', () => {
+    const pluginYaml = readFileSync(
+      join(packageRoot, 'pulumi-resource-transcend/PulumiPlugin.yaml'),
+      'utf8',
+    );
+    expect(pluginYaml).toContain('name: transcend');
+    expect(pluginYaml).toContain('name: nodejs');
+  });
+
+  test('plugin shrinkwrap pins the plugin runtime dependencies', () => {
+    const pluginPackageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'pulumi-resource-transcend/package.json'), 'utf8'),
+    );
+    const shrinkwrap = JSON.parse(
+      readFileSync(join(packageRoot, 'pulumi-resource-transcend/npm-shrinkwrap.json'), 'utf8'),
+    );
+    expect(shrinkwrap.packages[''].dependencies).toEqual(pluginPackageJson.dependencies);
+  });
+
+  test('public entry file is present until SDK exports land', () => {
+    const source = readFileSync(join(packageRoot, 'src/index.ts'), 'utf8');
+    expect(source).toContain('plugin core');
+  });
+});

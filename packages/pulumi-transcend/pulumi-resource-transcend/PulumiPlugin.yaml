@@ -1,0 +1,6 @@
+name: transcend
+version: 0.0.0
+runtime:
+  name: nodejs
+  options:
+    typescript: false
