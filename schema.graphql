@@ -1133,6 +1133,12 @@ enum ConsentBundleType {
   TEST
 }
 
+enum ConsentUiUserFlow {
+  BANNER
+  MODAL
+  BANNER_AND_MODAL
+}
+
 enum AttributeKeyType {
   MULTI_SELECT
   SINGLE_SELECT
@@ -1207,6 +1213,12 @@ enum DataFlowScope {
   QUERY_PARAM
   REGEX
   CSP
+}
+
+enum DataFlowType {
+  URL
+  QUERY_PARAM
+  REGEX
 }
 
 enum PromptFilePurpose {
@@ -1374,6 +1386,12 @@ enum TranscendProduct {
   DATA_LINEAGE
   RULES_AUTOMATION
   POLICY_ENGINE
+}
+
+enum UiVariantStatus {
+  DRAFT
+  ACTIVE
+  PUBLISHED
 }
 
 enum PromptRunProductArea {
@@ -1627,10 +1645,26 @@ enum OnPremiseSombraCreationMethod {
   DIRECT_CONNECTION
 }
 
+enum CustomFunctionLifecycleState {
+  ACTIVE
+  ARCHIVED
+}
+
 enum CustomFunctionPayloadType {
   DATA_POINT
   REQUEST_ENRICHER
   MAESTRO
+}
+
+enum CustomFunctionType {
+  DSR
+  GENERAL
+}
+
+enum CustomFunctionVersionLifecycleState {
+  ACTIVE
+  DRAFT
+  INACTIVE
 }
 
 enum EmailOutboxStatus {
@@ -2174,12 +2208,6 @@ enum ConsentTrackerFilter {
   ALL
 }
 
-enum ConsentUiUserFlow {
-  BANNER
-  MODAL
-  BANNER_AND_MODAL
-}
-
 enum CookieOrderField {
   name
   createdAt
@@ -2201,12 +2229,6 @@ enum DataFlowOrderField {
   occurrences
   service
   lastDiscoveredAt
-}
-
-enum DataFlowType {
-  URL
-  QUERY_PARAM
-  REGEX
 }
 
 enum DateRange {
@@ -2269,12 +2291,6 @@ enum TranscendConsentManagerUI {
   ui
   tcfUi
   uiV2
-}
-
-enum UiVariantStatus {
-  DRAFT
-  ACTIVE
-  PUBLISHED
 }
 
 enum UsageMart {
@@ -3339,11 +3355,6 @@ enum VisualRequestDataSiloStatus {
   MANUAL
 }
 
-enum CollectDataSubjectRegions {
-  DO_NOT_COLLECT
-  COLLECT
-}
-
 enum MissingIdBehavior {
   SKIP
   CANCEL
@@ -3413,6 +3424,11 @@ enum WorkflowStepCompletionState {
 
 enum WorkflowTrigger {
   REQUEST
+}
+
+enum CollectDataSubjectRegions {
+  DO_NOT_COLLECT
+  COLLECT
 }
 
 enum WorkflowConfigType {
@@ -3515,11 +3531,6 @@ enum ContentClassificationStatus {
   CLASSIFIED
 }
 
-enum CustomFunctionLifecycleState {
-  ACTIVE
-  ARCHIVED
-}
-
 enum CustomFunctionRunFailureAttribution {
   CUSTOMER_EXECUTION_ERROR
   TRANSCEND_ERROR
@@ -3540,17 +3551,6 @@ enum CustomFunctionSource {
 
 enum CustomFunctionStatus {
   CUSTOM_FUNCTION_RETURNED
-}
-
-enum CustomFunctionType {
-  DSR
-  GENERAL
-}
-
-enum CustomFunctionVersionLifecycleState {
-  ACTIVE
-  DRAFT
-  INACTIVE
 }
 
 enum CustomSiloConnectionStrategy {
@@ -3954,6 +3954,17 @@ enum PrivacyCenterAccessTokenFormat {
   SHORT
 }
 
+enum PrivacyCenterFooterLayout {
+  DEFAULT
+  GRID
+}
+
+enum PolicyType {
+  PRIVACY_POLICY
+  COOKIE_POLICY
+  CUSTOM
+}
+
 enum AssetFileOrderField {
   createdAt
   updatedAt
@@ -3985,12 +3996,6 @@ enum PageType {
   SALE_OF_INFO
 }
 
-enum PolicyType {
-  PRIVACY_POLICY
-  COOKIE_POLICY
-  CUSTOM
-}
-
 enum PrivacyCenterAssetName {
   logo
   favicon
@@ -4002,11 +4007,6 @@ enum PrivacyCenterAssetName {
 
 enum PrivacyCenterEmailLoginState {
   SALES_OPT_OUT
-}
-
-enum PrivacyCenterFooterLayout {
-  DEFAULT
-  GRID
 }
 
 enum PrivacyCenterHostnameChangeStatus {
