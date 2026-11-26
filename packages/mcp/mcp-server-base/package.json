@@ -66,7 +66,7 @@
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "graphql": "^16.14.2",
-    "graphql-request": "^5.0.0",
+    "graphql-request": "^7.0.0",
     "open": "^11.0.0"
   },
   "devDependencies": {
