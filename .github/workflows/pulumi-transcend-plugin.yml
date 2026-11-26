@@ -12,8 +12,9 @@ permissions:
 jobs:
   build:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release' &&
+      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@'))
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -46,9 +47,12 @@ jobs:
 
   release:
     needs: build
+    # The job `if` only skips runs. The environment's deployment policy (main and
+    # protected plugin tags) is what stops a branch copy of this file from publishing.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release' &&
+      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@'))
     runs-on: ubuntu-24.04-arm
     environment: pulumi-transcend-plugin-release
     permissions:
@@ -56,11 +60,6 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@a6e8afba9972dfff3b18f49f0ee84700498942f9 # v7
-        with:
-          name: pulumi-transcend-plugin
-          path: artifacts
-
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           sparse-checkout: |
@@ -68,36 +67,63 @@ jobs:
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
+      - uses: actions/download-artifact@a6e8afba9972dfff3b18f49f0ee84700498942f9 # v7
+        with:
+          name: pulumi-transcend-plugin
+          path: ${{ runner.temp }}/plugin
+
+      - name: Verify plugin artifact
+        id: artifact
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./packages/pulumi-transcend/package.json').version")
+          shopt -s nullglob
+          TARBALLS=("${RUNNER_TEMP}/plugin/pulumi-resource-transcend-v${VERSION}-"*.tar.gz)
+          if [ "${#TARBALLS[@]}" -ne 1 ]; then
+            echo "Expected one plugin tarball for ${VERSION}, found ${#TARBALLS[@]}"
+            exit 1
+          fi
+          (cd "${RUNNER_TEMP}/plugin" && sha256sum --check --strict "$(basename "${TARBALLS[0]}").sha256")
+          {
+            echo "version=${VERSION}"
+            echo "tarball=${TARBALLS[0]}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Attest plugin tarball
+        uses: actions/attest-build-provenance@aafea3899c8e14a6f3b878bcb8b38f4c29e84c82 # v3
+        with:
+          subject-path: ${{ steps.artifact.outputs.tarball }}
+
+      # Environment-scoped app installed only on pulumi-transcend. Do not swap in the
+      # repo-level releaser key: every branch workflow can read repo secrets.
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
         with:
-          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
-          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.PULUMI_TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.PULUMI_TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
           owner: transcend-io
           repositories: pulumi-transcend
 
-      - name: Publish draft release with checksum
+      - name: Publish release with checksum
         env:
           GH_TOKEN: ${{ steps.release_app.outputs.token }}
+          VERSION: ${{ steps.artifact.outputs.version }}
+          FILE: ${{ steps.artifact.outputs.tarball }}
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./packages/pulumi-transcend/package.json').version")
           TAG="v${VERSION}"
-          FILE=$(find artifacts -name 'pulumi-resource-transcend-v*.tar.gz' | head -n 1)
-          CHECKSUM=$(find artifacts -name '*.sha256' | head -n 1)
           BASENAME=$(basename "$FILE")
-          NOTES="Transcend Pulumi provider plugin ${VERSION}"$'\n\n'"Built from transcend-io/tools@${GITHUB_SHA}"
+          printf -v NOTES '%s\n\n%s\n\n%s\n\n    %s\n' \
+            "Transcend Pulumi provider plugin ${VERSION}" \
+            "Built from transcend-io/tools@${GITHUB_SHA}" \
+            "Verify the tarball before you install it:" \
+            "gh attestation verify ${BASENAME} --repo transcend-io/tools --signer-workflow transcend-io/tools/.github/workflows/pulumi-transcend-plugin.yml --source-ref ${GITHUB_REF}"
           if ! gh release view "$TAG" --repo transcend-io/pulumi-transcend >/dev/null 2>&1; then
             gh release create "$TAG" --repo transcend-io/pulumi-transcend --draft --title "$TAG" --notes "$NOTES"
           elif gh release view "$TAG" --repo transcend-io/pulumi-transcend --json assets -q ".assets[]?.name" | grep -qxF "$BASENAME"; then
             echo "Release ${TAG} already has ${BASENAME}; refusing to replace it"
             exit 1
           fi
-          gh release upload "$TAG" "$FILE" "$CHECKSUM" --repo transcend-io/pulumi-transcend
+          gh release upload "$TAG" "$FILE" "${FILE}.sha256" --repo transcend-io/pulumi-transcend
           gh release edit "$TAG" --repo transcend-io/pulumi-transcend --draft=false
-
-      - name: Attest plugin tarball
-        uses: actions/attest-build-provenance@aafea3899c8e14a6f3b878bcb8b38f4c29e84c82 # v3
-        with:
-          subject-path: artifacts/*.tar.gz

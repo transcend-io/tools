@@ -3,21 +3,32 @@ import { execFileSync } from 'node:child_process';
 /**
  * Pack the Node provider plugin for `pulumi plugin install resource transcend`.
  *
- * The staged tarball includes an `npm-shrinkwrap.json` (copied from
- * `pulumi-resource-transcend/` when present, otherwise generated via
- * `npm install --omit=dev` + `npm shrinkwrap`) so plugin installs resolve
- * exact runtime dependency versions.
+ * The staged tarball includes the committed `pulumi-resource-transcend/npm-shrinkwrap.json`
+ * so plugin installs resolve the exact, reviewed runtime dependency tree.
  *
  * Usage: node scripts/pack-plugin.mjs [--out DIR]
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pluginSource = path.join(packageRoot, 'pulumi-resource-transcend');
 const pkg = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
 const version = pkg.version;
+
+const shrinkwrapPath = path.join(pluginSource, 'npm-shrinkwrap.json');
+if (!existsSync(shrinkwrapPath)) {
+  throw new Error(`Missing ${shrinkwrapPath}. Run node scripts/update-plugin-shrinkwrap.mjs.`);
+}
+const pluginPkg = JSON.parse(readFileSync(path.join(pluginSource, 'package.json'), 'utf8'));
+const shrinkwrap = JSON.parse(readFileSync(shrinkwrapPath, 'utf8'));
+if (!isDeepStrictEqual(shrinkwrap.packages?.['']?.dependencies, pluginPkg.dependencies)) {
+  throw new Error(
+    `${shrinkwrapPath} does not match package.json. Run node scripts/update-plugin-shrinkwrap.mjs.`,
+  );
+}
 
 const outArg = process.argv.indexOf('--out');
 const outDir =
@@ -37,16 +48,7 @@ const pluginYaml = readFileSync(path.join(pluginSource, 'PulumiPlugin.yaml'), 'u
 );
 writeFileSync(path.join(staging, 'PulumiPlugin.yaml'), pluginYaml);
 cpSync(path.join(pluginSource, 'package.json'), path.join(staging, 'package.json'));
-const shrinkwrap = path.join(pluginSource, 'npm-shrinkwrap.json');
-if (existsSync(shrinkwrap)) {
-  cpSync(shrinkwrap, path.join(staging, 'npm-shrinkwrap.json'));
-} else {
-  execFileSync('npm', ['install', '--omit=dev', '--package-lock-only'], {
-    cwd: staging,
-    stdio: 'inherit',
-  });
-  execFileSync('npm', ['shrinkwrap'], { cwd: staging, stdio: 'inherit' });
-}
+cpSync(shrinkwrapPath, path.join(staging, 'npm-shrinkwrap.json'));
 mkdirSync(path.join(staging, 'dist'), { recursive: true });
 cpSync(path.join(packageRoot, 'dist', 'plugin'), path.join(staging, 'dist', 'plugin'), {
   recursive: true,

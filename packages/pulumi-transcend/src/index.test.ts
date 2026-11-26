@@ -24,6 +24,16 @@ describe('@transcend-io/pulumi-transcend scaffold', () => {
     expect(pluginYaml).toContain('name: nodejs');
   });
 
+  test('plugin shrinkwrap pins the plugin runtime dependencies', () => {
+    const pluginPackageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'pulumi-resource-transcend/package.json'), 'utf8'),
+    );
+    const shrinkwrap = JSON.parse(
+      readFileSync(join(packageRoot, 'pulumi-resource-transcend/npm-shrinkwrap.json'), 'utf8'),
+    );
+    expect(shrinkwrap.packages[''].dependencies).toEqual(pluginPackageJson.dependencies);
+  });
+
   test('public entry file is present until SDK exports land', () => {
     const source = readFileSync(join(packageRoot, 'src/index.ts'), 'utf8');
     expect(source).toContain('plugin core');
