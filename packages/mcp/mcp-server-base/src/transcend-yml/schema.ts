@@ -96,7 +96,7 @@ export function ymlRecordSchema(codec: Codec, description: string) {
 /** Options for {@link ymlItemsSchema}. */
 export interface YmlItemsSchemaOptions {
   /** io-ts codec for one item. Its JSON schema is shown to the agent. */
-  codec?: Codec;
+  codec: Codec;
   /** Maximum items per call */
   max?: number;
 }
@@ -106,18 +106,18 @@ export interface YmlItemsSchemaOptions {
  * Real validation runs against the same io-ts codec the yaml uses.
  *
  * @param itemDescription - What one item looks like, in a sentence
- * @param options - Item codec and maximum items per call, or just the maximum
+ * @param options - Item codec and maximum items per call
  * @returns The zod array schema
  */
 export function ymlItemsSchema(
   itemDescription: string,
-  options: YmlItemsSchemaOptions | number = {},
+  { codec, max = MAX_SECTION_WRITE_ITEMS }: YmlItemsSchemaOptions,
 ) {
-  const { codec, max = MAX_SECTION_WRITE_ITEMS } =
-    typeof options === 'number' ? { max: options } : options;
-  const item = z.record(z.string(), z.unknown());
+  const item = z
+    .record(z.string(), z.unknown())
+    .meta(codecJsonSchema(codec) as Record<string, unknown>);
   return z
-    .array(codec ? item.meta(codecJsonSchema(codec) as Record<string, unknown>) : item)
+    .array(item)
     .min(1)
     .max(max)
     .describe(

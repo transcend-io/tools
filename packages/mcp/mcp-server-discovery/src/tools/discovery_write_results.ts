@@ -15,7 +15,7 @@ export const writeDiscoveryResultsSchema = z.object({
     'System discovery rows in transcend.yml `system-discovery` shape. Each needs `resourceId`, ' +
       '`plugin`, `suggestedCatalog`, `containsSensitiveData`, and `status`. Matched by ' +
       'resourceId and plugin. See config_get_schema.',
-    50,
+    { codec: SiloDiscoveryResultInput, max: 50 },
   ),
 });
 export type WriteDiscoveryResultsInput = z.infer<typeof writeDiscoveryResultsSchema>;

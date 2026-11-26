@@ -11,7 +11,7 @@ export const WritePoliciesSchema = z.object({
     'Policies to create or update, matched by title. Each needs title. Optional: type, content, ' +
       'effectiveOn, disableEffectiveOn, disabledLocales. Same shape as the policies section ' +
       'of transcend.yml; see config_get_schema.',
-    50,
+    { codec: PolicyInput, max: 50 },
   ),
 });
 export type WritePoliciesInput = z.infer<typeof WritePoliciesSchema>;
