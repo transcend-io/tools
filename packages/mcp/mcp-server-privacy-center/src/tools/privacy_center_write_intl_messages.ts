@@ -12,7 +12,7 @@ export const WriteIntlMessagesSchema = z.object({
     'Messages to create or update by id. Each needs id. Optional: defaultMessage, description, ' +
       'targetReactIntlId, translations (locale code to text). Same shape as the messages ' +
       'section of transcend.yml; see config_get_schema.',
-    MAX_SECTION_WRITE_MESSAGES,
+    { codec: IntlMessageInput, max: MAX_SECTION_WRITE_MESSAGES },
   ),
 });
 export type WriteIntlMessagesInput = z.infer<typeof WriteIntlMessagesSchema>;

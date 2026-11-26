@@ -72,14 +72,6 @@ import {
   TemplateProduct,
 } from './enums.js';
 
-export {
-  ConsentManageExperienceInput,
-  ConsentManagerInput,
-  ConsentManagerPrefixModuleInput,
-  RegionInput,
-  WebhookHeader,
-};
-
 const RequestActionCodec = valuesOf(RequestAction, 'RequestAction');
 const DataSubjectClassCodec = valuesOf(DataSubjectClass, 'DataSubjectClass');
 const ProcessingPurposeCodec = valuesOf(ProcessingPurpose, 'ProcessingPurpose');

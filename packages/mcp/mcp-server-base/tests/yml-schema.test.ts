@@ -84,11 +84,4 @@ describe('ymlRecordSchema and ymlItemsSchema', () => {
       }),
     ).not.toThrow();
   });
-
-  it('keeps the plain items schema when no codec is given', () => {
-    const json = toolInputSchema(z.object({ items: ymlItemsSchema('Items to write.') })) as {
-      properties: { items: { items: Node } };
-    };
-    expect(json.properties.items.items).not.toHaveProperty('properties');
-  });
 });

@@ -12,7 +12,7 @@ import {
 export const WriteOptionValuesSchema = z.object({
   optionValues: ymlItemsSchema(
     'Option values to create or update. Same shape as the transcend.yml preference-options section.',
-    200,
+    { codec: ConsentPreferenceTopicOptionValue, max: 200 },
   ),
 });
 export type WriteOptionValuesInput = z.infer<typeof WriteOptionValuesSchema>;
