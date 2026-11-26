@@ -860,6 +860,8 @@ type ConsentManagerUnsupportedLocaleKey =
   | 'GlEs'
   | 'Iw'
   | 'IwIl'
+  | 'Id'
+  | 'SrLatn'
   | 'No'
   | 'NoNo';
 
@@ -1015,6 +1017,8 @@ const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocale
     'GlEs',
     'Iw',
     'IwIl',
+    'Id',
+    'SrLatn',
     'No',
     'NoNo',
   ]);
