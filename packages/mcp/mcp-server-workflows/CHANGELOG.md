@@ -1,5 +1,18 @@
 # @transcend-io/mcp-server-workflows
 
+## 1.2.3
+
+### Patch Changes
+
+- b9c6b8e: Show the real transcend.yml JSON schema for the workflow write tools (workflow configs, email templates) and the preference write tools (option values, workflow configs, partitions).
+- Updated dependencies [6bd42eb]
+- Updated dependencies [aa5e8bb]
+- Updated dependencies [4d600ad]
+- Updated dependencies [29fbc06]
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/sdk@3.8.0
+  - @transcend-io/mcp-server-base@3.3.0
+
 ## 1.2.2
 
 ### Patch Changes
