@@ -47,7 +47,8 @@ export const LOCALE_KEY = {
   /** Hungarian */
   Hu: 'hu',
   /** Indonesian */
-  Id: 'id',
+  // TODO: https://linear.app/transcend/issue/GOOM-417/add-id-to-locale-key
+  // Id: 'id',
   /** Korean */
   Ko: 'ko',
   /** Lithuanian */
@@ -68,8 +69,6 @@ export const LOCALE_KEY = {
   Ro: 'ro',
   /** Serbian (unspecified script) */
   Sr: 'sr',
-  /** Serbian (Latin script) for IAB GVL purpose translations */
-  SrLatn: 'sr-latn',
   /** Swedish */
   Sv: 'sv',
   /** Tamil */
@@ -523,7 +522,8 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.El]: AWS_SUPPORTED_TRANSLATIONS.Greek,
   [LOCALE_KEY.Hi]: AWS_SUPPORTED_TRANSLATIONS.Hindi,
   [LOCALE_KEY.Hu]: AWS_SUPPORTED_TRANSLATIONS.Hungarian,
-  [LOCALE_KEY.Id]: AWS_SUPPORTED_TRANSLATIONS.Indonesian,
+  // TODO: https://linear.app/transcend/issue/GOOM-417/add-id-to-locale-key
+  // [LOCALE_KEY.Id]: AWS_SUPPORTED_TRANSLATIONS.Indonesian,
   [LOCALE_KEY.Ko]: AWS_SUPPORTED_TRANSLATIONS.Korean,
   [LOCALE_KEY.Lt]: AWS_SUPPORTED_TRANSLATIONS.Lithuanian,
   [LOCALE_KEY.Ms]: AWS_SUPPORTED_TRANSLATIONS.Malay,
@@ -534,7 +534,6 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Pt]: AWS_SUPPORTED_TRANSLATIONS.PortuguesePortugal,
   [LOCALE_KEY.Ro]: AWS_SUPPORTED_TRANSLATIONS.Romanian,
   [LOCALE_KEY.Sr]: AWS_SUPPORTED_TRANSLATIONS.Serbian,
-  [LOCALE_KEY.SrLatn]: AWS_SUPPORTED_TRANSLATIONS.Serbian,
   [LOCALE_KEY.Sv]: AWS_SUPPORTED_TRANSLATIONS.Swedish,
   [LOCALE_KEY.Ta]: AWS_SUPPORTED_TRANSLATIONS.Tamil,
   [LOCALE_KEY.Th]: AWS_SUPPORTED_TRANSLATIONS.Thai,
@@ -860,8 +859,6 @@ type ConsentManagerUnsupportedLocaleKey =
   | 'GlEs'
   | 'Iw'
   | 'IwIl'
-  | 'Id'
-  | 'SrLatn'
   | 'No'
   | 'NoNo';
 
@@ -1017,8 +1014,6 @@ const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocale
     'GlEs',
     'Iw',
     'IwIl',
-    'Id',
-    'SrLatn',
     'No',
     'NoNo',
   ]);
@@ -2286,7 +2281,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   /* Hungarian */
   [LOCALE_KEY.Hu]: 'Magyar',
   /* Indonesian */
-  [LOCALE_KEY.Id]: 'Bahasa Indonesia',
+  // TODO: https://linear.app/transcend/issue/GOOM-417/add-id-to-locale-key
+  // [LOCALE_KEY.Id]: 'Bahasa Indonesia',
   /* Korean */
   [LOCALE_KEY.Ko]: '한국어',
   /* Lithuanian */
@@ -2307,8 +2303,6 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Ro]: 'Română',
   /* Serbian (unspecified script) */
   [LOCALE_KEY.Sr]: 'Српски / Srpski',
-  /* Serbian (Latin script) for IAB GVL purpose translations */
-  [LOCALE_KEY.SrLatn]: 'Srpski (latinica)',
   /* Swedish */
   [LOCALE_KEY.Sv]: 'Svenska',
   /* Tamil */
@@ -2715,7 +2709,8 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.El]: 'Greek',
   [LOCALE_KEY.Hi]: 'Hindi',
   [LOCALE_KEY.Hu]: 'Hungarian',
-  [LOCALE_KEY.Id]: 'Indonesian',
+  // TODO: https://linear.app/transcend/issue/GOOM-417/add-id-to-locale-key
+  // [LOCALE_KEY.Id]: 'Indonesian',
   [LOCALE_KEY.Ko]: 'Korean',
   [LOCALE_KEY.Lt]: 'Lithuanian',
   [LOCALE_KEY.Ms]: 'Malay',
@@ -2726,7 +2721,6 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Pt]: 'Portuguese',
   [LOCALE_KEY.Ro]: 'Romanian',
   [LOCALE_KEY.Sr]: 'Serbian',
-  [LOCALE_KEY.SrLatn]: 'Serbian (Latin)',
   [LOCALE_KEY.Sv]: 'Swedish',
   [LOCALE_KEY.Ta]: 'Tamil',
   [LOCALE_KEY.Th]: 'Thai',
