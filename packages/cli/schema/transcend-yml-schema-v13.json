@@ -2970,6 +2970,9 @@
                   "hu": {
                     "type": "string"
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "ko": {
                     "type": "string"
                   },
@@ -2998,6 +3001,9 @@
                     "type": "string"
                   },
                   "sr": {
+                    "type": "string"
+                  },
+                  "sr-latn": {
                     "type": "string"
                   },
                   "sv": {
@@ -9872,6 +9878,7 @@
         "el",
         "hi",
         "hu",
+        "id",
         "ko",
         "lt",
         "ms",
@@ -9882,6 +9889,7 @@
         "pt",
         "ro",
         "sr",
+        "sr-latn",
         "sv",
         "ta",
         "th",
