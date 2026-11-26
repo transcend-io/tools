@@ -2,24 +2,21 @@ name: Pulumi Transcend plugin release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: npm version of @transcend-io/pulumi-transcend to pack (from package.json on main)
-        required: false
-        type: string
   release:
     types:
       - published
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  upload-plugin:
+  build:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.release.tag_name, 'pulumi-transcend')
+      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@')
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -31,8 +28,45 @@ jobs:
       - name: Build provider package
         run: pnpm --filter @transcend-io/pulumi-transcend build
 
-      - name: Pack darwin-arm64 plugin tarball
-        run: node packages/pulumi-transcend/scripts/pack-plugin.mjs --out packages/pulumi-transcend/artifacts
+      - name: Pack plugin tarball
+        id: pack
+        run: |
+          set -euo pipefail
+          TARBALL=$(node packages/pulumi-transcend/scripts/pack-plugin.mjs --out packages/pulumi-transcend/artifacts)
+          echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+          (cd "$(dirname "$TARBALL")" && sha256sum "$(basename "$TARBALL")" > "$(basename "$TARBALL").sha256")
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@e8574d8b36da36c5410733d03e8a6bbaced34839 # v6
+        with:
+          name: pulumi-transcend-plugin
+          path: |
+            packages/pulumi-transcend/artifacts/*.tar.gz
+            packages/pulumi-transcend/artifacts/*.sha256
+
+  release:
+    needs: build
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, '@transcend-io/pulumi-transcend@')
+    runs-on: ubuntu-24.04-arm
+    environment: pulumi-transcend-plugin-release
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@a6e8afba9972dfff3b18f49f0ee84700498942f9 # v7
+        with:
+          name: pulumi-transcend-plugin
+          path: artifacts
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          sparse-checkout: |
+            packages/pulumi-transcend/package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
@@ -43,13 +77,27 @@ jobs:
           owner: transcend-io
           repositories: pulumi-transcend
 
-      - name: Upload tarball to pulumi-transcend release
+      - name: Publish draft release with checksum
         env:
           GH_TOKEN: ${{ steps.release_app.outputs.token }}
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./packages/pulumi-transcend/package.json').version")
           TAG="v${VERSION}"
-          FILE="packages/pulumi-transcend/artifacts/pulumi-resource-transcend-v${VERSION}-darwin-arm64.tar.gz"
-          gh release view "$TAG" --repo transcend-io/pulumi-transcend >/dev/null 2>&1 \
-            || gh release create "$TAG" --repo transcend-io/pulumi-transcend --title "$TAG" --notes "Transcend Pulumi provider plugin ${VERSION}"
-          gh release upload "$TAG" "$FILE" --repo transcend-io/pulumi-transcend --clobber
+          FILE=$(find artifacts -name 'pulumi-resource-transcend-v*.tar.gz' | head -n 1)
+          CHECKSUM=$(find artifacts -name '*.sha256' | head -n 1)
+          BASENAME=$(basename "$FILE")
+          NOTES="Transcend Pulumi provider plugin ${VERSION}"$'\n\n'"Built from transcend-io/tools@${GITHUB_SHA}"
+          if ! gh release view "$TAG" --repo transcend-io/pulumi-transcend >/dev/null 2>&1; then
+            gh release create "$TAG" --repo transcend-io/pulumi-transcend --draft --title "$TAG" --notes "$NOTES"
+          elif gh release view "$TAG" --repo transcend-io/pulumi-transcend --json assets -q ".assets[]?.name" | grep -qxF "$BASENAME"; then
+            echo "Release ${TAG} already has ${BASENAME}; refusing to replace it"
+            exit 1
+          fi
+          gh release upload "$TAG" "$FILE" "$CHECKSUM" --repo transcend-io/pulumi-transcend
+          gh release edit "$TAG" --repo transcend-io/pulumi-transcend --draft=false
+
+      - name: Attest plugin tarball
+        uses: actions/attest-build-provenance@aafea3899c8e14a6f3b878bcb8b38f4c29e84c82 # v3
+        with:
+          subject-path: artifacts/*.tar.gz
