@@ -10,6 +10,7 @@ export const WriteCustomFieldsSchema = z.object({
   attributes: ymlItemsSchema(
     'Custom fields (attribute keys) to create or update, matched by `name`. Required: name, ' +
       'type. Other fields: description, resources, values.',
+    { codec: AttributeInput },
   ),
 });
 export type WriteCustomFieldsInput = z.infer<typeof WriteCustomFieldsSchema>;

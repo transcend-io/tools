@@ -10,6 +10,7 @@ export const WriteBusinessEntitiesSchema = z.object({
   businessEntities: ymlItemsSchema(
     'Business entities to create or update, matched by `title`. Other fields: description, ' +
       'address, headquarterCountry, dataProtectionOfficerName, owners, teams.',
+    { codec: BusinessEntityInput },
   ),
 });
 export type WriteBusinessEntitiesInput = z.infer<typeof WriteBusinessEntitiesSchema>;
