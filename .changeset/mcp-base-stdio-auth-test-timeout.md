@@ -1,5 +1,7 @@
 ---
 '@transcend-io/mcp-server-base': patch
+'@transcend-io/mcp': patch
+'@transcend-io/mcp-server-config': patch
 ---
 
-Raise the timeout on the stdio startup auth tests so they do not fail on a busy machine.
+MCP updates on this branch: optional per-call debug logging and confirmation progress in mcp-server-base, `TRANSCEND_MCP_SERVERS` allowlist wiring in the unified MCP package, and related config server surface.
