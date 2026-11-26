@@ -7,7 +7,7 @@ The agent loop uses the unified MCP server with both `config` and `consent` doma
 | `config`  | `@transcend-io/mcp-server-config`  | Pulls, previews, and pushes `transcend.yml`.                                |
 | `consent` | `@transcend-io/mcp-server-consent` | Lists unknown trackers, triages them, previews and deploys consent bundles. |
 
-Prefer one [`@transcend-io/mcp`](https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp#unified-server) entry per organization with `TRANSCEND_MCP_SERVERS=config,consent`. Use separate domain packages only when your client cannot run the unified server.
+Prefer one [`@transcend-io/mcp`](https://github.com/transcend-io/tools/tree/main/packages/mcp#unified-server) entry per organization with `TRANSCEND_MCP_SERVERS=config,consent`. Use separate domain packages only when your client cannot run the unified server.
 
 ## OAuth client
 
