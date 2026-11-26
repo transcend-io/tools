@@ -1,6 +1,7 @@
 ---
 '@transcend-io/privacy-types': minor
 '@transcend-io/airgap.js-types': minor
+'@transcend-io/mcp-server-consent': patch
 '@transcend-io/sdk': patch
 ---
 
