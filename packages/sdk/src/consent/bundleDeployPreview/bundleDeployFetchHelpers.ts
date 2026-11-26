@@ -1,12 +1,17 @@
+import {
+  CoreUIModuleName,
+  IABModuleName,
+  NativeAppModuleName,
+} from '@transcend-io/airgap.js-types';
 import got from 'got';
 
 import type { PendingConsentBundleConfig } from './types.js';
 
 /** CDN module names that are not locale message keys */
-export const KNOWN_COMPANION_MODULE_KEYS = new Set([
-  'tcfVendorsList',
-  'nativeAppConfig',
-  'stylesheet',
+export const KNOWN_COMPANION_MODULE_KEYS = new Set<string>([
+  IABModuleName.tcfVendorsList,
+  NativeAppModuleName.nativeAppConfig,
+  CoreUIModuleName.stylesheet,
 ]);
 
 /**

@@ -1,7 +1,10 @@
 name: Publish
 
 on:
-  pull_request:
+  # pull_request_target sets GITHUB_REF to refs/heads/main so the npm-publish
+  # environment main-only policy passes. The if guard and head.sha checkout
+  # still bind the job to the merged changeset-release/main tree.
+  pull_request_target:
     types:
       - closed
     branches:

@@ -24,7 +24,7 @@
     "check:changeset": "node ./scripts/check-changeset.ts",
     "check:new-packages": "node ./scripts/check-new-packages.ts",
     "check:pr-content": "node ./scripts/check-pr-content.ts",
-    "check:packages": "vitest run scripts/package-conventions.test.ts",
+    "check:packages": "vitest run scripts/package-conventions.test.ts scripts/package-layering.test.ts",
     "check:exports": "turbo run check:exports",
     "check:publint": "turbo run check:publint",
     "check:deps": "turbo run check:deps check:deps:root",
