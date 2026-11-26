@@ -1,5 +1,19 @@
 # @transcend-io/mcp-server-base
 
+## 3.3.0
+
+### Minor Changes
+
+- 29fbc06: Show the real transcend.yml JSON schema for the consent write tools (consent manager, sites, purposes). Enums over 100 values show as plain strings.
+
+### Patch Changes
+
+- 4d600ad: Show the real transcend.yml JSON schema for the privacy center write tools (policies, translated messages) and the discovery write tool (results). `ymlItemsSchema` now requires a codec.
+- Updated dependencies [6bd42eb]
+- Updated dependencies [aa5e8bb]
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/sdk@3.8.0
+
 ## 3.2.4
 
 ### Patch Changes

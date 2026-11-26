@@ -1,5 +1,16 @@
 # @transcend-io/airgap.js-types
 
+## 14.5.0
+
+### Minor Changes
+
+- 6bd42eb: Add `AirgapModuleName` and related consent manager airgap bundle module enums. These mirror the GraphQL `RollbackAirgapBundleInput` module fields shared with transcend-io/main.
+
+### Patch Changes
+
+- Updated dependencies [6bd42eb]
+  - @transcend-io/internationalization@4.3.0
+
 ## 14.4.0
 
 ### Minor Changes

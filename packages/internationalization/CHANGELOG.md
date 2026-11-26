@@ -1,5 +1,11 @@
 # @transcend-io/internationalization
 
+## 4.3.0
+
+### Minor Changes
+
+- 6bd42eb: Publish `IsoCountryCode` and `TCF_VENDOR_LIST_TRANSLATION_LOCALES` (IAB allowlist intersected with consent-manager locales) from `@transcend-io/internationalization` so downstream type packages can share them without layering violations.
+
 ## 4.2.0
 
 ### Minor Changes

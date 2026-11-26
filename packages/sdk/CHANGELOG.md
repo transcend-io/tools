@@ -1,5 +1,20 @@
 # @transcend-io/sdk
 
+## 3.8.0
+
+### Minor Changes
+
+- aa5e8bb: Add `transcend consent rollback` to roll Consent Manager bundles back to a prior airgap.js version. The SDK adds `rollbackConsentManager` and rollback lookup helpers.
+
+### Patch Changes
+
+- 6bd42eb: Add `AirgapModuleName` and related consent manager airgap bundle module enums. These mirror the GraphQL `RollbackAirgapBundleInput` module fields shared with transcend-io/main.
+- Updated dependencies [6bd42eb]
+- Updated dependencies [6bd42eb]
+  - @transcend-io/airgap.js-types@14.5.0
+  - @transcend-io/privacy-types@7.4.1
+  - @transcend-io/internationalization@4.3.0
+
 ## 3.7.1
 
 ### Patch Changes
