@@ -1,53 +1,17 @@
-import { CONSENT_MANAGER_SUPPORTED_LOCALES } from '@transcend-io/internationalization';
+import {
+  CONSENT_MANAGER_SUPPORTED_LOCALES,
+  TCF_VENDOR_LIST_TRANSLATION_LOCALES,
+} from '@transcend-io/internationalization';
 import { apply, fromEntries, getEntries } from '@transcend-io/type-utils';
 
+export {
+  TCF_VENDOR_LIST_TRANSLATION_LOCALES,
+  type TcfVendorListTranslationLocale,
+} from '@transcend-io/internationalization';
+
 /**
- * IAB Global Vendor List purpose translation locales bundled for TCF airgap modules.
- *
- * Only locales with both an IAB GVL translation and a Transcend TCF UI translation are included.
- *
  * Ship main's database migration and GraphQL schema before releasing a CLI or SDK that queries a new module field.
  */
-export const TCF_VENDOR_LIST_TRANSLATION_LOCALES = [
-  'ar',
-  'bg',
-  'bs',
-  'cs',
-  'da',
-  'de',
-  'el',
-  'en',
-  'es',
-  'fi',
-  'fr',
-  'he',
-  'hi',
-  'hr',
-  'hu',
-  'id',
-  'is',
-  'it',
-  'ja',
-  'ko',
-  'lt',
-  'ms',
-  'nl',
-  'no',
-  'pl',
-  'pt-br',
-  'ro',
-  'ru',
-  'sr-latn',
-  'sv',
-  'th',
-  'tr',
-  'uk',
-  'vi',
-  'zh',
-] as const;
-
-/** IAB GVL purpose translation locale */
-export type TcfVendorListTranslationLocale = (typeof TCF_VENDOR_LIST_TRANSLATION_LOCALES)[number];
 
 /**
  * Convert an IAB GVL translation locale to a PascalCase module suffix.
