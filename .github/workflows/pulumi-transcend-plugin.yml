@@ -1,0 +1,55 @@
+name: Pulumi Transcend plugin release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: npm version of @transcend-io/pulumi-transcend to pack (from package.json on main)
+        required: false
+        type: string
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  upload-plugin:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.release.tag_name, 'pulumi-transcend')
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build provider package
+        run: pnpm --filter @transcend-io/pulumi-transcend build
+
+      - name: Pack darwin-arm64 plugin tarball
+        run: node packages/pulumi-transcend/scripts/pack-plugin.mjs --out packages/pulumi-transcend/artifacts
+
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: release_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          owner: transcend-io
+          repositories: pulumi-transcend
+
+      - name: Upload tarball to pulumi-transcend release
+        env:
+          GH_TOKEN: ${{ steps.release_app.outputs.token }}
+        run: |
+          VERSION=$(node -p "require('./packages/pulumi-transcend/package.json').version")
+          TAG="v${VERSION}"
+          FILE="packages/pulumi-transcend/artifacts/pulumi-resource-transcend-v${VERSION}-darwin-arm64.tar.gz"
+          gh release view "$TAG" --repo transcend-io/pulumi-transcend >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo transcend-io/pulumi-transcend --title "$TAG" --notes "Transcend Pulumi provider plugin ${VERSION}"
+          gh release upload "$TAG" "$FILE" --repo transcend-io/pulumi-transcend --clobber
