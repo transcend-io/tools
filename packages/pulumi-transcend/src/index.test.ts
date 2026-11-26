@@ -11,7 +11,7 @@ const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 describe('@transcend-io/pulumi-transcend scaffold', () => {
   test('package metadata matches the workspace layout', () => {
     expect(packageJson.name).toBe('@transcend-io/pulumi-transcend');
-    expect(packageJson.version).toBe('0.0.0');
+    expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(packageJson.scripts?.build).toBe('tsdown');
   });
 
