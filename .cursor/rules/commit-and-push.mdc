@@ -44,7 +44,7 @@ See `/background-task` skill for the full worktree workflow.
 
 This repo uses husky pre-commit and pre-push hooks that run formatting, linting, typechecking, and tests via turbo. **Always let hooks run** — do not use `--no-verify` unless explicitly asked.
 
-The hooks pass `--affected --concurrency=4` to turbo, so they check only the packages the branch changed against `origin/main`, plus their dependents. Turbo ignores a `TURBO_CONCURRENCY` environment variable, so do not set one.
+The hooks pass `--affected --concurrency="${TURBO_CONCURRENCY:-4}"` to turbo, so they check only the packages the branch changed against `origin/main`, plus their dependents. Set `TURBO_CONCURRENCY=1` when laptop load makes parallel Vitest runs flaky.
 
 ## Cursor sandbox permissions
 

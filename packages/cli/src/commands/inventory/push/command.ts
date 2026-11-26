@@ -1,4 +1,5 @@
 import { buildCommand, numberParser } from '@stricli/core';
+import { TranscendPullResource } from '@transcend-io/sdk';
 
 import {
   createAuthParameter,
@@ -65,10 +66,26 @@ export const pushCommand = buildCommand({
         ...projectJsonParameter,
         brief: 'With --dryRun, print the plan as JSON on stdout',
       },
+      expectBundleId: {
+        kind: 'parsed',
+        parse: String,
+        brief:
+          'Stop before anything is previewed or pushed unless the consent manager bundle id of the organization matches this id. Protects CI from using the API key of the wrong organization. Cannot be used with a list of API keys.',
+        optional: true,
+      },
+      resources: {
+        kind: 'enum',
+        values: Object.values(TranscendPullResource),
+        brief:
+          'Push only these top-level sections of the YAML file, using the same names as `inventory pull --resources`. Every other section is ignored by the preview and the push.',
+        variadic: ',',
+        optional: true,
+      },
     },
   },
   docs: {
     brief: 'Push metadata from transcend.yml to Transcend',
-    fullDescription: 'Given a transcend.yml file, sync the contents up to your Transcend instance.',
+    fullDescription:
+      'Given a transcend.yml file, sync the contents up to your Transcend instance. Use `--dryRun` to preview changes without writing anything. Use `--resources` to push only some sections of the file, and `--expectBundleId` to stop when the API key belongs to the wrong organization.',
   },
 });
