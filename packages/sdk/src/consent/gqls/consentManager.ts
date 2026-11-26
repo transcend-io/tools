@@ -1,3 +1,5 @@
+import { AirgapModuleName } from '@transcend-io/airgap.js-types';
+import { getValues } from '@transcend-io/type-utils';
 import { gql } from 'graphql-request';
 
 // ---- FETCH_CONSENT_MANAGER_ID query ----
@@ -650,6 +652,58 @@ export const FETCH_CONSENT_MANAGER_DEPLOY_STATE = gql`
         deployError
         lastDeployedAt
       }
+    }
+  }
+`;
+
+/** GraphQL field names on airgap bundle version nodes used for rollback */
+export const AIRGAP_BUNDLE_ROLLBACK_FIELDS = [
+  'cdn',
+  'sync',
+  'isTest',
+  ...getValues(AirgapModuleName),
+] as const;
+
+/** One deployed bundle version that can be rolled back to */
+export type TranscendCliAirgapBundleRollbackVersionNode = {
+  /** airgap.js version string */
+  version: string | null;
+  /** When this version was deployed */
+  createdAt: string;
+  cdn?: string | null;
+  sync?: string | null;
+  isTest?: boolean | null;
+} & Partial<Record<AirgapModuleName, string | null>>;
+
+/** Response from AIRGAP_BUNDLE_ROLLBACK_VERSIONS */
+export interface TranscendCliAirgapBundleRollbackVersionsResponse {
+  /** Version list */
+  airgapBundleVersions: {
+    /** Most recent versions first */
+    nodes: TranscendCliAirgapBundleRollbackVersionNode[];
+  };
+}
+
+export const AIRGAP_BUNDLE_ROLLBACK_VERSIONS = gql`
+  query TranscendCliAirgapBundleRollbackVersions(
+    $id: ID!
+    $first: Int!
+    $input: AirgapBundleVersionsInput!
+  ) {
+    airgapBundleVersions(id: $id, first: $first, input: $input) {
+      nodes {
+        version
+        createdAt
+        ${AIRGAP_BUNDLE_ROLLBACK_FIELDS.join('\n        ')}
+      }
+    }
+  }
+`;
+
+export const ROLLBACK_AIRGAP_BUNDLE = gql`
+  mutation TranscendCliRollbackAirgapBundle($id: ID!, $input: RollbackAirgapBundleInput!) {
+    rollbackAirgapBundle(id: $id, input: $input) {
+      success
     }
   }
 `;
