@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/pulumi-transcend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pulumi provider for managing a Transcend organization from transcend.yml.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/pulumi-transcend",
   "license": "Apache-2.0",
