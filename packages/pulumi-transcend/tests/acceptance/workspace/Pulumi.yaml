@@ -1,0 +1,5 @@
+name: transcend-pulumi-acceptance
+runtime:
+  name: nodejs
+  options:
+    typescript: false
