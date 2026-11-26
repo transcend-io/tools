@@ -2,16 +2,21 @@
 
 Review Consent Manager changes in pull requests. Push them when the pull request merges.
 
-| Event               | Command                                                    |
-| ------------------- | ---------------------------------------------------------- |
-| Pull request opened | `transcend inventory push --file ./transcend.yml --dryRun` |
-| Merge to main       | `transcend inventory push --file ./transcend.yml`          |
+| Event               | Command                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Pull request opened | `transcend inventory check --file ./transcend.yml --rules '*'`                         |
+| Pull request opened | `transcend inventory push --file ./transcend.yml --dryRun`                             |
+| Merge to main       | `transcend inventory push --file ./transcend.yml --expectBundleId $EXPECTED_BUNDLE_ID` |
+
+Run `check` before the dry run. It needs no API credentials. It enforces schema decode plus opt-in rules such as `consentSitesInDomains` and `uniqueConsentSiteHosts`.
 
 A push does not deploy. Deploy by hand with the MCP tools, or with `transcend consent update-consent-manager --deploy` (this also upgrades airgap.js to the latest version).
 
 ## API keys
 
 Create one API key per organization with the scopes the yml sections need. Store it in the CI secret store. Pass it with `--auth`, or set `TRANSCEND_API_KEY`. Use a read-only key for the dry run if your scopes allow it.
+
+Store the consent manager bundle id as `EXPECTED_BUNDLE_ID`. `--expectBundleId` stops the push when the API key belongs to a different organization.
 
 ## GitHub Actions sketch
 
@@ -33,6 +38,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check YAML
+        if: github.event_name == 'pull_request'
+        run: npx -y -p @transcend-io/cli transcend inventory check --file ./transcend.yml --rules '*'
       - name: Preview
         if: github.event_name == 'pull_request'
         env:
@@ -42,10 +50,11 @@ jobs:
         if: github.event_name == 'push'
         env:
           TRANSCEND_API_KEY: ${{ secrets.TRANSCEND_API_KEY }}
-        run: npx -y -p @transcend-io/cli transcend inventory push --file ./transcend.yml
+          EXPECTED_BUNDLE_ID: ${{ secrets.EXPECTED_BUNDLE_ID }}
+        run: npx -y -p @transcend-io/cli transcend inventory push --file ./transcend.yml --expectBundleId "$EXPECTED_BUNDLE_ID"
 ```
 
-Check `transcend inventory push --help` for the exact auth flag and binary name in your CLI version.
+Check `transcend inventory push --help` and `transcend inventory check --help` for the exact auth flag and binary name in your CLI version.
 
 ## Tips
 

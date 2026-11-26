@@ -1,35 +1,29 @@
 # Setup
 
-The agent loop uses two MCP servers. Both run locally over stdio with OAuth.
+The agent loop uses the unified MCP server with both `config` and `consent` domains over stdio and OAuth.
 
-| Server                             | What it does                                                                |
-| ---------------------------------- | --------------------------------------------------------------------------- |
-| `@transcend-io/mcp-server-config`  | Pulls, previews, and pushes `transcend.yml`.                                |
-| `@transcend-io/mcp-server-consent` | Lists unknown trackers, triages them, previews and deploys consent bundles. |
+| Domain    | Package (standalone)               | What it does                                                                |
+| --------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `config`  | `@transcend-io/mcp-server-config`  | Pulls, previews, and pushes `transcend.yml`.                                |
+| `consent` | `@transcend-io/mcp-server-consent` | Lists unknown trackers, triages them, previews and deploys consent bundles. |
+
+Prefer one [`@transcend-io/mcp`](https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp#unified-server) entry per organization with `TRANSCEND_MCP_SERVERS=config,consent`. Use separate domain packages only when your client cannot run the unified server.
 
 ## OAuth client
 
-An organization admin creates the client.
+Create the OAuth client per the [MCP README OAuth client setup](https://github.com/transcend-io/tools/tree/main/packages/mcp#oauth-client-setup). An organization admin creates the client, registers `http://127.0.0.1:{port}/callback` for a port you choose, and sets `TRANSCEND_OAUTH_REDIRECT_PORT` to that same port. Use `127.0.0.1`, not `localhost`.
 
-1. Open the OAuth clients page in the Transcend admin dashboard.
-2. Create a client and copy the client ID and secret.
-3. Pick two free local ports, one per server.
-4. Register `http://127.0.0.1:{port}/callback` for each port on the client. Use `127.0.0.1`, not `localhost`.
-5. Set `TRANSCEND_OAUTH_REDIRECT_PORT` on each server to its own port.
-
-One OAuth client can hold many redirect URIs. Each server needs its own port.
-
-The first tool call opens a browser to sign in. Tokens live in memory only. Restarting the server means signing in again. The signed-in user needs the Consent Manager and data flow permissions listed in the [MCP README](https://github.com/transcend-io/tools/tree/main/packages/mcp#readme).
+The first tool call opens a browser to sign in. Tokens live in memory only. Restarting the server means signing in again.
 
 ## One org, one entry
 
-OAuth tokens belong to one organization. Add a separate pair of server entries for each organization. Name them by organization, such as `transcend-config-example` and `transcend-consent-example`. Give each entry its own OAuth client and its own ports.
+OAuth tokens belong to one organization. Add one MCP server entry per organization. Name each entry after the organization, such as `transcend-staging` and `transcend-production`.
 
-Never point one entry at several organizations. A push would go to whichever organization signed in.
+Never point one entry at several organizations. A push goes to whichever organization signed in.
 
 ## Resource allowlist
 
-Set `TRANSCEND_CONFIG_RESOURCES` on the config server. It narrows OAuth sign-in and rejects pull and push for other sections. Unknown names fail at startup.
+Set `TRANSCEND_CONFIG_RESOURCES` to narrow OAuth sign-in and reject pull and push for other sections. Unknown names fail at startup.
 
 For consent work, use:
 
@@ -44,23 +38,26 @@ With the allowlist set, `config_pull` pulls only these sections by default. A ym
 ```json
 {
   "mcpServers": {
-    "transcend-config-example": {
+    "transcend-staging": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server-config"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": {
-        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
-        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
-        "TRANSCEND_OAUTH_REDIRECT_PORT": "5591",
+        "TRANSCEND_OAUTH_CLIENT_ID": "staging-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "staging-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "4601",
+        "TRANSCEND_MCP_SERVERS": "config,consent",
         "TRANSCEND_CONFIG_RESOURCES": "consentManager,purposes,dataFlows,cookies,consentSites"
       }
     },
-    "transcend-consent-example": {
+    "transcend-production": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server-consent"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": {
-        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
-        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
-        "TRANSCEND_OAUTH_REDIRECT_PORT": "5592"
+        "TRANSCEND_OAUTH_CLIENT_ID": "production-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "production-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "4602",
+        "TRANSCEND_MCP_SERVERS": "config,consent",
+        "TRANSCEND_CONFIG_RESOURCES": "consentManager,purposes,dataFlows,cookies,consentSites"
       }
     }
   }
@@ -68,6 +65,8 @@ With the allowlist set, `config_pull` pulls only these sections by default. A ym
 ```
 
 Read secrets from the environment or a gitignored file. Do not paste real values into a committed config.
+
+Give each organization one entry. Tell the agent which organization to use by server name. Use a separate `filePath` per organization. See [One server entry per organization](https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-config#one-server-entry-per-organization) in the config server README.
 
 ## Approvals
 
