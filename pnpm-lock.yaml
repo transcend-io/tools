@@ -178,9 +178,6 @@ importers:
       '@transcend-io/internationalization':
         specifier: workspace:^
         version: link:../internationalization
-      '@transcend-io/privacy-types':
-        specifier: workspace:^
-        version: link:../privacy-types
       '@transcend-io/type-utils':
         specifier: workspace:^
         version: link:../type-utils
@@ -1251,6 +1248,9 @@ importers:
 
   packages/privacy-types:
     dependencies:
+      '@transcend-io/airgap.js-types':
+        specifier: workspace:^
+        version: link:../airgap.js-types
       '@transcend-io/internationalization':
         specifier: workspace:^
         version: link:../internationalization

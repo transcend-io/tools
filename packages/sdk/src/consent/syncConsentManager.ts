@@ -1,16 +1,7 @@
-import { InitialViewState, OnConsentExpiry, BrowserLanguage } from '@transcend-io/airgap.js-types';
+import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
 import {
-  ConsentBundleType,
-  ConsentPrecedenceOption,
-  IsoCountryCode,
-  IsoCountrySubdivisionCode,
-  RegionsOperator,
-  UnknownRequestPolicy,
-  TelemetryPartitionStrategy,
-  SignedIabAgreementOption,
-  BrowserTimeZone,
-  type ConsentThemeInput,
-  type ConsentVariantInput,
+  type ConsentManageExperienceInput,
+  type ConsentManagerInput,
 } from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
@@ -44,125 +35,6 @@ import {
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
-
-export interface ConsentManageExperienceInput {
-  /** Name of experience */
-  name: string;
-  /** Display name of experience */
-  displayName?: string;
-  /** Regions that define this regional experience */
-  regions?: {
-    /** Country */
-    country?: IsoCountryCode;
-    /** Country subdivision */
-    countrySubDivision?: IsoCountrySubdivisionCode;
-  }[];
-  /** How to handle consent expiry */
-  onConsentExpiry?: OnConsentExpiry;
-  /** Consent expiration value */
-  consentExpiry?: number;
-  /** In vs not in operator */
-  operator?: RegionsOperator;
-  /** Priority of experience */
-  displayPriority?: number;
-  /** View state to prompt when auto prompting is enabled */
-  viewState?: InitialViewState;
-  /** Purposes that can be opted out of in a particular experience */
-  purposes?: {
-    /** Slug of purpose */
-    trackingType: string;
-  }[];
-  /** Purposes that are opted out by default in a particular experience */
-  optedOutPurposes?: {
-    /** Slug of purpose */
-    trackingType: string;
-  }[];
-  /** Browser languages that define this regional experience */
-  browserLanguages?: BrowserLanguage[];
-  /** Browser time zones that define this regional experience */
-  browserTimeZones?: BrowserTimeZone[];
-  /** Slug of the consent UI variant assigned to this experience */
-  consentUiVariantSlug?: string;
-}
-
-export interface ConsentManagerInput {
-  /** Airgap version */
-  version?: string;
-  /** Bundle URLs per bundle type */
-  bundleUrls?: Partial<Record<ConsentBundleType, string>>;
-  /** The consent manager domains */
-  domains?: string[];
-  /** Key used to partition consent records */
-  partition?: string;
-  /** Precedence of signals vs user input */
-  consentPrecedence?: ConsentPrecedenceOption;
-  /** The consent manager unknown request policy */
-  unknownRequestPolicy?: UnknownRequestPolicy;
-  /** The consent manager unknown cookie policy */
-  unknownCookiePolicy?: UnknownRequestPolicy;
-  /** The XDI sync endpoint */
-  syncEndpoint?: string;
-  /** The telemetry partitioning strategy */
-  telemetryPartitioning?: TelemetryPartitionStrategy;
-  /** Whether the site owner has signed the IAB agreement */
-  signedIabAgreement?: SignedIabAgreementOption;
-  /** Regional experience configurations */
-  experiences?: ConsentManageExperienceInput[];
-  /** Theme configuration */
-  theme?: {
-    /** Primary color */
-    primaryColor?: string;
-    /** Font color */
-    fontColor?: string;
-    /** Privacy policy URL */
-    privacyPolicy?: string;
-    /** Auto-prompt setting */
-    prompt?: number;
-  };
-  /** The Shared XDI host sync groups config (JSON) */
-  syncGroups?: string;
-  /** Consent UI variant configurations */
-  consentVariants?: ConsentVariantInput[];
-  /** Consent UI theme configurations */
-  consentThemes?: ConsentThemeInput[];
-  /**
-   * Deployment webhook URL called when consent bundles are published.
-   *
-   * @example
-   * ```yaml
-   * consent-manager:
-   *   webhookUrl: https://example.<<parameters.domain>>/consent-deploy
-   * ```
-   */
-  webhookUrl?: string;
-  /**
-   * Custom headers sent with the deployment webhook request.
-   * Mark sensitive values with `isSecret: true`; inventory push preview treats
-   * `webhookHeaders` as write-only so resolved values are not logged.
-   *
-   * @example
-   * ```yaml
-   * consent-manager:
-   *   webhookHeaders:
-   *     - name: x-transcend-token
-   *       value: <<parameters.CONSENT_DEPLOY_TOKEN>>
-   *       isSecret: true
-   * ```
-   */
-  webhookHeaders?: {
-    /** Header name */
-    name: string;
-    /** Header value */
-    value: string;
-    /** Whether the header value is secret */
-    isSecret?: boolean;
-  }[];
-  /**
-   * When true, traffic is report-only (enforcement off).
-   * Maps to the dashboard "Reporting only" mode. Deploy the bundle after pushing to go live.
-   */
-  reportOnly?: boolean;
-}
 
 /**
  * Sync consent manager experiences up to Transcend
