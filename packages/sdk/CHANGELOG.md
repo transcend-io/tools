@@ -1,5 +1,14 @@
 # @transcend-io/sdk
 
+## 3.7.1
+
+### Patch Changes
+
+- 08e77a6: Move the consent-manager transcend.yml codec into privacy-types; it imports view state, browser language, and consent expiry enums from airgap.js-types. Drop the runtime privacy-types dependency from airgap.js-types (Region.country is typed as string). SDK and airgap.js-types import paths are unchanged.
+- Updated dependencies [08e77a6]
+  - @transcend-io/privacy-types@7.4.0
+  - @transcend-io/airgap.js-types@14.4.0
+
 ## 3.7.0
 
 ### Minor Changes

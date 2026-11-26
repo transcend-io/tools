@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import {
   buildTranscendGraphQLClient,
+  fetchConsentManagerId,
   mergeTranscendInputs,
   parseTranscendYaml,
   previewPush,
@@ -9,6 +10,7 @@ import {
   syncConfigurationToTranscend,
   TranscendInput,
   type PushPlan,
+  type TranscendPullResource,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -19,6 +21,7 @@ import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import { filterToResources } from './helpers.js';
 
 /**
  * Sync configuration to Transcend
@@ -108,6 +111,43 @@ async function previewConfiguration({
   return previewPush(client, contents, { pageSize, deleteExtraAttributeValues });
 }
 
+/**
+ * Stop unless the organization behind the API key has the expected consent manager bundle id.
+ * This protects CI from pushing a file with the API key of the wrong organization.
+ *
+ * @param options - Options
+ * @throws When the id differs, or the organization has no consent manager
+ */
+async function assertExpectedBundleId({
+  transcendUrl,
+  auth,
+  expectBundleId,
+}: {
+  /** Transcend URL */
+  transcendUrl: string;
+  /** API key */
+  auth: string;
+  /** The bundle id the organization must have */
+  expectBundleId: string;
+}): Promise<void> {
+  const client = buildTranscendGraphQLClient(transcendUrl, auth);
+  let actual: string;
+  try {
+    actual = await fetchConsentManagerId(client);
+  } catch (err) {
+    throw new Error(
+      `Could not read the consent manager bundle id for this API key, so --expectBundleId=${expectBundleId} cannot be checked. ` +
+        `The organization may have no consent manager. Nothing was pushed. Details: ${err.message}`,
+    );
+  }
+  if (actual !== expectBundleId) {
+    throw new Error(
+      `The consent manager bundle id of this organization is ${actual}, but --expectBundleId expects ${expectBundleId}. ` +
+        'The API key may belong to a different organization. Nothing was pushed.',
+    );
+  }
+}
+
 export interface PushCommandFlags {
   auth: string;
   file: string;
@@ -119,6 +159,8 @@ export interface PushCommandFlags {
   deleteExtraAttributeValues: boolean;
   dryRun: boolean;
   json: boolean;
+  expectBundleId?: string;
+  resources?: TranscendPullResource[];
 }
 
 export async function push(
@@ -134,12 +176,23 @@ export async function push(
     deleteExtraAttributeValues,
     dryRun,
     json,
+    expectBundleId,
+    resources,
   }: PushCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
   const apiKeyOrList = await validateTranscendAuth(auth, this);
+
+  if (expectBundleId !== undefined && typeof apiKeyOrList !== 'string') {
+    throw new Error(
+      '--expectBundleId cannot be used with a list of API keys, because one bundle id cannot match many organizations. Push to one organization at a time.',
+    );
+  }
+  if (resources && resources.length === 0) {
+    throw new Error('--resources needs at least one resource name.');
+  }
 
   const vars = parseVariablesFromString(variables);
 
@@ -200,7 +253,18 @@ export async function push(
   if (typeof apiKeyOrList === 'string') {
     // if passed multiple inputs, merge them together
     const [base, ...rest] = transcendInputs.map(({ content }) => content);
-    const contents = mergeTranscendInputs(base, ...rest);
+    let contents = mergeTranscendInputs(base, ...rest);
+    if (resources) {
+      contents = filterToResources(contents, resources);
+    }
+
+    if (expectBundleId !== undefined) {
+      await assertExpectedBundleId({
+        transcendUrl,
+        auth: apiKeyOrList,
+        expectBundleId,
+      });
+    }
 
     // preview only: show what would change and stop
     if (dryRun) {
@@ -273,7 +337,7 @@ export async function push(
       }
 
       // use the merged contents if 1 yml passed, else use the contents that map to that organization
-      const useContents =
+      let useContents =
         transcendInputs.length === 1
           ? transcendInputs[0].content
           : transcendInputs.find((input) => input.name === apiKey.organizationName)?.content;
@@ -287,6 +351,16 @@ export async function push(
         );
         encounteredErrors.push(apiKey.organizationName);
         return;
+      }
+
+      if (resources) {
+        try {
+          useContents = filterToResources(useContents, resources);
+        } catch (err) {
+          this.logger.error(colors.red(`${prefix}${err.message}`));
+          encounteredErrors.push(apiKey.organizationName);
+          return;
+        }
       }
 
       if (dryRun) {

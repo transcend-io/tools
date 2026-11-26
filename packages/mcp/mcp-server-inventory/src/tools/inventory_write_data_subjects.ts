@@ -10,6 +10,7 @@ export const WriteDataSubjectsSchema = z.object({
   dataSubjects: ymlItemsSchema(
     'Data subject types to create or update, matched by `type`. Optional: active, title, ' +
       'description.',
+    { codec: DataSubjectInput },
   ),
 });
 export type WriteDataSubjectsInput = z.infer<typeof WriteDataSubjectsSchema>;

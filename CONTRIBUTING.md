@@ -166,8 +166,9 @@ After a normal install from the repo root, Husky configures local Git hooks auto
 - `pre-commit`: runs `quality:fix` and aborts if it updates tracked files
 - `pre-push`: runs `test`
 
-Both hooks pass `--affected --concurrency=4` to Turbo. They check the packages your branch changed
-against `origin/main`, plus the packages that depend on them, four tasks at a time. Set
+Both hooks pass `--affected --concurrency="${TURBO_CONCURRENCY:-4}"` to Turbo. They check the packages your branch changed
+against `origin/main`, plus the packages that depend on them. Set `TURBO_CONCURRENCY` to run fewer
+tasks in parallel when local Vitest runs flake under load. Set
 `TURBO_SCM_BASE` to compare against another ref. When that ref does not exist locally, the hooks
 check the full workspace. Run `pnpm quality:fix` or `pnpm test` to check the full workspace
 yourself.
