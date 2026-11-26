@@ -3,7 +3,7 @@ import { decodeYmlRecord, pushYmlSection } from '@transcend-io/mcp-server-base/t
 import {
   ConsentManagerInput,
   type ConsentManagerInput as ConsentManagerSettings,
-} from '@transcend-io/sdk';
+} from '@transcend-io/privacy-types';
 
 export const WriteConsentManagerSchema = z.object({
   consentManager: z

@@ -1,4 +1,5 @@
-import { BusinessEntityInput, ConsentManagerInput } from '@transcend-io/sdk';
+import { ConsentManagerInput } from '@transcend-io/privacy-types';
+import { BusinessEntityInput } from '@transcend-io/sdk';
 
 /**
  * Combine multiple consent manager configurations into a list of business entity configurations

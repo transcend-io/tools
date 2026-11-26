@@ -17,6 +17,8 @@ Never add an edge that points upward (for example `airgap.js-types` → `privacy
 
 Each package has `package-dependencies.test.ts`. Update the allowlist when you intentionally add a downward dependency.
 
+`pnpm check:packages` also runs `scripts/package-layering.test.ts`, which asserts the same allowlists at the repo root.
+
 ## Where to put a new enum or codec
 
 Stop at the first yes:
