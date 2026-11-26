@@ -1,4 +1,4 @@
-import { makeEnum } from '@transcend-io/type-utils';
+import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 
 import { ISO_31661 } from './isoConstants/iso3166-1.js';
 import { ISO_31662 } from './isoConstants/iso3166-2.js';
@@ -35,3 +35,12 @@ export const IsoCountrySubdivisionCode = getDictFromKeys(ISO_31662);
 /** Type override */
 export type IsoCountrySubdivisionCode =
   (typeof IsoCountrySubdivisionCode)[keyof typeof IsoCountrySubdivisionCode];
+
+/** io-ts codec for {@link IsoCountryCode}, shared so JSON schema output can reference it once */
+export const IsoCountryCodeCodec = valuesOf(IsoCountryCode, 'IsoCountryCode');
+
+/** io-ts codec for {@link IsoCountrySubdivisionCode}, shared so JSON schema output can reference it once */
+export const IsoCountrySubdivisionCodeCodec = valuesOf(
+  IsoCountrySubdivisionCode,
+  'IsoCountrySubdivisionCode',
+);
