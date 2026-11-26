@@ -54,6 +54,16 @@ describe('checkConfig', () => {
   it('reads yaml wrapped as a secret', () => {
     expect(checkConfig({ yaml: { [SECRET_KEY]: SECRET_SIG, value: YAML } })).toEqual([]);
   });
+
+  it('does not echo substituted variable values in yaml parse failures', () => {
+    const secret = 'super-secret-webhook-header-value';
+    const [failure] = checkConfig({
+      yaml: 'data-subjects: [<<parameters.TOKEN>>\n',
+      variables: { TOKEN: secret },
+    });
+    expect(failure?.property).toBe('yaml');
+    expect(failure?.reason).not.toContain(secret);
+  });
 });
 
 describe('diffConfig', () => {
@@ -101,6 +111,21 @@ describe('applyConfig', () => {
       }),
     });
     await expect(applyConfig(deps, { yaml: YAML })).rejects.toThrow('data-subjects/customer: nope');
+  });
+
+  it('does not echo warn or error logs when the push fails', async () => {
+    const secret = 'super-secret-webhook-header-value';
+    const deps = buildDeps({
+      sync: vi.fn().mockResolvedValue({
+        success: false,
+        errors: [{ resource: 'data-silos', message: 'rejected' }],
+        logs: [{ level: 'warn', message: `GraphQL failed with variables ${secret}` }],
+      }),
+    });
+    const error = await applyConfig(deps, { yaml: YAML }).catch((caught) => caught);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/rejected/);
+    expect((error as Error).message).not.toContain(secret);
   });
 
   it('keeps secret inputs secret in the outputs', async () => {

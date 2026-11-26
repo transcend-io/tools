@@ -37,13 +37,39 @@ describe('CredentialStore', () => {
   });
 
   it('falls back to the environment and then the EU API', () => {
-    expect(new CredentialStore({ TRANSCEND_API_KEY: 'env' }).resolve()).toEqual({
+    const store = new CredentialStore({ TRANSCEND_API_KEY: 'env' });
+    store.setSettings({});
+    expect(store.resolve()).toEqual({
       apiKey: 'env',
       url: 'https://api.transcend.io',
     });
   });
 
+  it('ignores TRANSCEND_API_URL when the stack supplies the API key', () => {
+    const store = new CredentialStore({ TRANSCEND_API_URL: 'https://env' });
+    store.setSettings({ apiKey: 'config' });
+    expect(store.resolve().url).toBe('https://api.transcend.io');
+  });
+
+  it('throws when Configure was not received', () => {
+    expect(() => new CredentialStore({ TRANSCEND_API_KEY: 'env' }).resolve()).toThrow(/Configure/);
+  });
+
   it('throws when no key is set', () => {
-    expect(() => new CredentialStore({}).resolve()).toThrow(/API key/);
+    const store = new CredentialStore({});
+    store.setSettings({});
+    expect(() => store.resolve()).toThrow(/API key/);
+  });
+
+  it('rejects a second Configure with different credentials', () => {
+    const store = new CredentialStore({});
+    store.setSettings({ apiKey: 'first' });
+    expect(() => store.setSettings({ apiKey: 'second' })).toThrow(/cannot change/);
+  });
+
+  it('requires https for the API URL', () => {
+    const store = new CredentialStore({});
+    store.setSettings({ apiKey: 'config', url: 'http://api.example.com' });
+    expect(() => store.resolve()).toThrow(/https/);
   });
 });
