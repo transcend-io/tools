@@ -1,39 +1,47 @@
 name: Publish
 
 on:
-  # pull_request_target sets GITHUB_REF to refs/heads/main so the npm-publish
-  # environment main-only policy passes. The if guard and head.sha checkout
-  # still bind the job to the merged changeset-release/main tree.
-  pull_request_target:
-    types:
-      - closed
+  push:
     branches:
       - main
+    # Only Version Packages commits write changelogs. This is a skip filter,
+    # not a security control. The npm-publish environment is the control.
+    paths:
+      - 'packages/**/CHANGELOG.md'
   workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   publish:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.merged == true &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'changeset-release/main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04-arm
     environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          # Publish the release PR tree, not the merge-queue commit that may
-          # include newer changesets for the next release. Manual reruns use main.
-          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.event.pull_request.head.sha }}
           persist-credentials: false
+
+      - name: Refuse to publish while changesets are pending
+        run: |
+          set -euo pipefail
+          pending="$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' -print)"
+          if [ -n "$pending" ]; then
+            echo "::error::main has unreleased changesets. Merge the next Version Packages PR to publish."
+            echo "$pending"
+            exit 1
+          fi
 
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
@@ -78,7 +86,7 @@ jobs:
           permission-contents: write
 
       - name: Publish packages
-        uses: changesets/action@v1
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
           publish: pnpm release
         env:
