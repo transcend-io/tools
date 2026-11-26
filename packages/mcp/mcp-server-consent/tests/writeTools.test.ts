@@ -41,6 +41,37 @@ beforeEach(() => {
   sdk.sync.mockResolvedValue({ success: true, errors: [] });
 });
 
+describe('consent write tool input schemas', () => {
+  it('advertises the consent manager codec, including reportOnly', async () => {
+    const { toolInputSchema } = await import('@transcend-io/mcp-server-base');
+    const schema = toolInputSchema(tool('consent_write_consent_manager').zodSchema) as {
+      properties: {
+        consentManager: {
+          properties: Record<string, { type?: string }>;
+        };
+      };
+    };
+    const properties = schema.properties.consentManager.properties;
+
+    expect(properties.reportOnly).toEqual({ type: 'boolean' });
+    expect(properties).toHaveProperty('experiences');
+    expect(JSON.stringify(schema).length).toBeLessThan(20_000);
+  });
+
+  it('shows purposes and sites with their fields', async () => {
+    const { toolInputSchema } = await import('@transcend-io/mcp-server-base');
+    const purposes = toolInputSchema(tool('consent_write_purposes').zodSchema) as {
+      properties: { purposes: { items: { properties: Record<string, unknown> } } };
+    };
+    const sites = toolInputSchema(tool('consent_write_sites').zodSchema) as {
+      properties: { sites: { items: { properties: Record<string, unknown> } } };
+    };
+
+    expect(purposes.properties.purposes.items.properties).toHaveProperty('trackingType');
+    expect(sites.properties.sites.items.properties).toHaveProperty('host');
+  });
+});
+
 describe('consent_write_consent_manager', () => {
   it('syncs a valid consent manager through the inventory push pipeline', async () => {
     const result = await tool('consent_write_consent_manager').handler({

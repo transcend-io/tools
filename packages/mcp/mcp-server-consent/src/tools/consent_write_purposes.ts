@@ -9,8 +9,8 @@ import { ConsentPurpose, type ConsentPurpose as ConsentPurposeInput } from '@tra
 export const WritePurposesSchema = z.object({
   purposes: ymlItemsSchema(
     'Purposes, same shape as the purposes section of transcend.yml. Each needs trackingType, ' +
-      'title and name. Optional: description, is-active, configurable, display-order, ' +
-      'preference-topics. Use config_get_schema for the full schema.',
+      'title and name.',
+    { codec: ConsentPurpose },
   ),
 });
 export type WritePurposesInput = z.infer<typeof WritePurposesSchema>;
