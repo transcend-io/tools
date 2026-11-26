@@ -3,6 +3,11 @@ import { execFileSync } from 'node:child_process';
 /**
  * Pack the Node provider plugin for `pulumi plugin install resource transcend`.
  *
+ * The staged tarball includes an `npm-shrinkwrap.json` (copied from
+ * `pulumi-resource-transcend/` when present, otherwise generated via
+ * `npm install --omit=dev` + `npm shrinkwrap`) so plugin installs resolve
+ * exact runtime dependency versions.
+ *
  * Usage: node scripts/pack-plugin.mjs [--out DIR]
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
