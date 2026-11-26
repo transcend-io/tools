@@ -10,6 +10,7 @@ export const WriteEmailTemplatesSchema = z.object({
   templates: ymlItemsSchema(
     'Email templates in the transcend.yml `templates` format, e.g. [{ "title": "Request received" }]. ' +
       'Use config_get_schema for the full format.',
+    { codec: TemplateInput },
   ),
 });
 export type WriteEmailTemplatesInput = z.infer<typeof WriteEmailTemplatesSchema>;
