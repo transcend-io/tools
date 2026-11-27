@@ -69,9 +69,11 @@ export function createFallbackCredentialStore(
 
   const loadFromBoth = async (key: string): Promise<StoredOAuthTokens | null> => {
     let keychain: StoredOAuthTokens | null = null;
+    let keychainError: unknown;
     try {
       keychain = await primary.load(key);
     } catch (error) {
+      keychainError = error;
       warnAndFallBack('read the saved login', error);
     }
 
@@ -86,7 +88,10 @@ export function createFallbackCredentialStore(
     }
 
     if (keychain && file) return preferNewerLogin(keychain, file);
-    return keychain ?? file;
+    if (keychain) return keychain;
+    if (file) return file;
+    if (keychainError !== undefined) throw keychainError;
+    return null;
   };
 
   return {
@@ -122,13 +127,13 @@ export function createFallbackCredentialStore(
       await fallback.clear(key);
       if (primaryError !== undefined) throw primaryError;
     },
-    // The file is listed on its own by the caller, so list it here only when the keychain fails.
+    // The file is listed on its own by the caller, so do not hide a keychain listing failure.
     keys: async () => {
       try {
         return await primary.keys();
       } catch (error) {
         warnAndFallBack('list the saved logins', error);
-        return fallback.keys();
+        throw error;
       }
     },
     withRefreshLock,
