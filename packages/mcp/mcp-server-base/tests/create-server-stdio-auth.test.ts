@@ -68,4 +68,33 @@ describe('createMCPServer stdio optional startup auth', { timeout: 30_000 }, () 
     expect(auth).toBeNull();
     expect(connect).toHaveBeenCalledTimes(1);
   });
+
+  it('runs a login command instead of starting the server', async () => {
+    const originalArgv = process.argv;
+    const originalExitCode = process.exitCode;
+    process.argv = [...originalArgv.slice(0, 2), 'status'];
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const getTools = vi.fn(() => []);
+    try {
+      const { createMCPServer } = await import('../src/server/create-server.js');
+      await createMCPServer({
+        name: 'test-stdio-auth',
+        version: '0.0.0-test',
+        oauthScopes: [],
+        getTools,
+      });
+
+      expect(stdout.mock.calls.map(([line]) => line)).toEqual([
+        'Credential store: memory (process memory (not saved))\n',
+        'Not signed in.\n',
+      ]);
+      expect(process.exitCode).toBe(0);
+      expect(getTools).not.toHaveBeenCalled();
+      expect(connect).not.toHaveBeenCalled();
+    } finally {
+      stdout.mockRestore();
+      process.argv = originalArgv;
+      process.exitCode = originalExitCode;
+    }
+  });
 });

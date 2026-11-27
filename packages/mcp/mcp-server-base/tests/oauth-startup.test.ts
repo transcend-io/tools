@@ -130,4 +130,21 @@ describe('ensureOAuthStartupReady', () => {
 
     await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(getOAuthClientsAdminUrl());
   });
+
+  it('throws before client verification when the credential store names no store', async () => {
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+    vi.stubEnv('TRANSCEND_MCP_CREDENTIAL_STORE', 'keychain');
+    const verifySpy = vi.spyOn(clientVerify, 'resolveRegionalOAuthIssuer');
+
+    try {
+      await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(
+        /TRANSCEND_MCP_CREDENTIAL_STORE must be one of auto, keyring, file, memory; got "keychain"/,
+      );
+      expect(verifySpy).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
