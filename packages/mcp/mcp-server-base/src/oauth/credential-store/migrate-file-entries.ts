@@ -1,4 +1,5 @@
 import type { Logger } from '../../clients/graphql/base.js';
+import { withFallbackRefreshLock } from './fallback-store.js';
 import type { CredentialStore } from './types.js';
 
 export interface MigrateFileEntriesOptions {
@@ -8,6 +9,11 @@ export interface MigrateFileEntriesOptions {
   keyringStore: CredentialStore;
   /** Logger for a migration that fails */
   logger: Logger;
+  /**
+   * When true, hold the keychain and file refresh locks together so a file-only
+   * process cannot spend the token while migration runs.
+   */
+  lockBothStores?: boolean;
 }
 
 /**
@@ -26,7 +32,7 @@ export interface MigrateFileEntriesOptions {
 export async function migrateFileEntriesToKeyring(
   options: MigrateFileEntriesOptions,
 ): Promise<void> {
-  const { fileStore, keyringStore, logger } = options;
+  const { fileStore, keyringStore, logger, lockBothStores = false } = options;
   let keys: string[];
   try {
     keys = await fileStore.keys();
@@ -37,15 +43,19 @@ export async function migrateFileEntriesToKeyring(
 
   for (const key of keys) {
     try {
-      await keyringStore.withRefreshLock(key, async () => {
-        const fileTokens = await fileStore.load(key);
-        if (!fileTokens) return;
-        const keyringTokens = await keyringStore.load(key);
-        if (keyringTokens === null || fileTokens.expiresAt > keyringTokens.expiresAt) {
-          await keyringStore.save(key, fileTokens);
-        }
-        await fileStore.clear(key);
-      });
+      await withFallbackRefreshLock(
+        { primary: keyringStore, fallback: fileStore, lockBothStores },
+        key,
+        async () => {
+          const fileTokens = await fileStore.load(key);
+          if (!fileTokens) return;
+          const keyringTokens = await keyringStore.load(key);
+          if (keyringTokens === null || fileTokens.expiresAt > keyringTokens.expiresAt) {
+            await keyringStore.save(key, fileTokens);
+          }
+          await fileStore.clear(key);
+        },
+      );
     } catch (error) {
       logger.warn('Could not move a saved MCP login from the file into the OS keychain', {
         error: describe(error),

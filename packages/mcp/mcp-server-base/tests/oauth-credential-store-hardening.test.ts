@@ -525,6 +525,55 @@ describe('credential store hardening', () => {
       );
     });
 
+    it('returns the file login when the keychain still holds the spent refresh token', async () => {
+      const keyring = createFakeKeyring();
+      const keyringStore = createKeyringCredentialStore({
+        keyring,
+        lockDirectory: directory,
+        logger,
+      });
+      await keyringStore.save(KEY, makeTokens({ refreshToken: 'refresh-old', expiresAt: 1_000 }));
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+      keyring.set = async () => {
+        throw new Error('keychain is locked');
+      };
+
+      await active.save(
+        KEY,
+        makeTokens({ accessToken: 'access-new', refreshToken: 'refresh-new', expiresAt: 2_000 }),
+      );
+
+      expect((await active.load(KEY))?.refreshToken).toBe('refresh-new');
+    });
+
+    it('removes the file copy after the keychain accepts a save again', async () => {
+      const keyring = createFakeKeyring();
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const originalSet = keyring.set;
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+      keyring.set = async () => {
+        throw new Error('keychain is locked');
+      };
+      await active.save(KEY, makeTokens({ accessToken: 'access-file-only' }));
+      expect(await fileStore.keys()).toEqual([KEY]);
+
+      keyring.set = originalSet;
+      await active.save(KEY, makeTokens({ accessToken: 'access-keychain' }));
+
+      expect(await fileStore.keys()).toEqual([]);
+      expect((await active.load(KEY))?.accessToken).toBe('access-keychain');
+    });
+
     it('reads the file when the keychain fails to read', async () => {
       const fileStore = createFileCredentialStore({ directory, logger });
       const keyring = createFakeKeyring();
@@ -627,6 +676,34 @@ describe('credential store hardening', () => {
       await waiter;
 
       expect(events).toEqual(['file store out', 'keychain store in']);
+    });
+
+    it('holds the file lock too when the keychain and file use different lock directories', async () => {
+      const lockDirectory = join(directory, 'user-locks');
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: lockDirectory,
+        loadKeyring: async () => createFakeKeyring(),
+      });
+      let autoEntered = false;
+      const autoPromise = active.withRefreshLock(KEY, async () => {
+        autoEntered = true;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      });
+      await vi.waitFor(() => expect(autoEntered).toBe(true));
+
+      const filePromise = fileStore.withRefreshLock(KEY, async () => 'file');
+      let fileDone = false;
+      void filePromise.then(() => {
+        fileDone = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      expect(fileDone).toBe(false);
+
+      await autoPromise;
+      await expect(filePromise).resolves.toBe('file');
     });
   });
 
