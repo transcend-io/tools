@@ -7,4 +7,4 @@ The MCP servers now save your OAuth login, so restarting your MCP client no long
 
 - The login is saved in the OS keychain, or in a file only your user can read when no keychain is available. Set `TRANSCEND_MCP_CREDENTIAL_STORE` to `auto`, `keyring`, `file`, or `memory` to choose.
 - Run `npx -y @transcend-io/mcp status` to see where the login is saved, and `npx -y @transcend-io/mcp logout` to sign out. Restart the MCP client after logout so the server reloads from the store.
-- A network error while renewing the login no longer signs you out. The tool call fails with a retryable error and the login is kept.
+- A network error while renewing the login no longer signs you out; the tool call fails with a retryable error and the login is kept.
