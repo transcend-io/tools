@@ -40,7 +40,12 @@ export function createInventoryWriteCategoryTool(clients: ToolClients) {
       'Use returned IDs when assigning categories via inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteCategorySchema,
     handler: async (input) => {
       const { category, created } = await graphql.writeDataCategory({

@@ -62,7 +62,12 @@ export function createConfigGetSchemaTool(_clients: ToolClients) {
       'includeFullSchema when you truly need every section at once.',
     category: 'Config',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ConfigGetSchemaSchema,
     handler: async ({ resources = [], includeFullSchema = false }) => {
       const keyBySection = buildKeyBySection(resources);

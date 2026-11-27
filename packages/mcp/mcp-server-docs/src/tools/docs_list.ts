@@ -350,7 +350,12 @@ export function createDocsListTool(_clients?: ToolClients) {
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     zodSchema: DocsListSchema,
     handler: async ({ section, query, route, product, integration }) => {
       if (section !== undefined && (route !== undefined || product !== undefined)) {

@@ -1,5 +1,20 @@
 # @transcend-io/mcp-server-base
 
+## 3.4.0
+
+### Minor Changes
+
+- adf2a3e: Public HTTP MCP transport now rejects unauthenticated requests and verifies OAuth access tokens through the authorization server before opening a session. Hosted public mode also refuses Sombra tools for organizations that self-host Sombra, so the server does not read data that stays end-to-end encrypted.
+- 281045c: When public HTTP mode is enabled (`TRANSCEND_MCP_PUBLIC_URL` or `--public-url`), the server now verifies OAuth access tokens through the authorization server's introspection endpoint before handling MCP requests. Set `TRANSCEND_MCP_INTROSPECTION_CLIENT_ID` and `TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET` with a client allowed to call introspection; startup fails if the public URL is configured without them.
+- d9e212f: Add opt-in public hosted mode to the MCP HTTP transport. Set `TRANSCEND_MCP_PUBLIC_URL` (or `--public-url`) to serve OAuth Protected Resource Metadata (RFC 9728) at `/.well-known/oauth-protected-resource`, answer unauthenticated MCP requests with `401` plus a `WWW-Authenticate` challenge, and ignore the `TRANSCEND_API_KEY` environment fallback. Behavior is unchanged when unset.
+- 94c3666: Add the MCP `openWorldHint` tool annotation. `defineTool` defaults it to `false`, and every tool now sets it explicitly (`true` for tools that email data subjects or assignees, trigger downstream integrations, run user code, or read external documentation).
+
+### Patch Changes
+
+- Updated dependencies [792e187]
+  - @transcend-io/privacy-types@7.5.0
+  - @transcend-io/sdk@3.8.2
+
 ## 3.3.0
 
 ### Minor Changes

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import {
   assertMcpSombraAiSettings,
+  assertMultiTenantSombra,
   assertOrganizationMcpSombraEnabled,
   resolveSombraUrl,
   readSombraEnvConfig,
@@ -192,6 +193,64 @@ describe('assertOrganizationMcpSombraEnabled', () => {
     await expect(assertOrganizationMcpSombraEnabled(graphql)).rejects.toThrow(
       /MCP × Sombra is disabled/,
     );
+  });
+});
+
+describe('assertMultiTenantSombra', () => {
+  it('passes for the multi-tenant Sombra', () => {
+    expect(() => assertMultiTenantSombra('MULTI_TENANT')).not.toThrow();
+  });
+
+  it.each(['SINGLE_TENANT', 'ON_PREMISE', 'multi_tenant', '', null, undefined])(
+    'refuses hosting type %j and points to the local server',
+    (hostedMethod) => {
+      expect(() => assertMultiTenantSombra(hostedMethod)).toThrow(
+        /self-hosts Sombra.*npx @transcend-io\/mcp/,
+      );
+    },
+  );
+});
+
+describe('assertOrganizationMcpSombraEnabled with requireMultiTenantSombra', () => {
+  const graphqlFor = (sombra: Record<string, unknown>, isMcpSombraEnabled = true) =>
+    ({
+      makeRequest: vi.fn().mockResolvedValue({
+        organization: {
+          sombra: { customerUrl: 'https://from-gql.example.com', ...sombra },
+          aiSetting: { isAiEnabled: true, isMcpSombraEnabled },
+        },
+      }),
+    }) as unknown as TranscendGraphQLBase;
+
+  it('passes for an organization on the multi-tenant Sombra', async () => {
+    await expect(
+      assertOrganizationMcpSombraEnabled(graphqlFor({ hostedMethod: 'MULTI_TENANT' }), {
+        requireMultiTenantSombra: true,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it.each([[{ hostedMethod: 'ON_PREMISE' }], [{ hostedMethod: 'SINGLE_TENANT' }], [{}]])(
+    'refuses a Sombra reported as %j',
+    async (sombra) => {
+      await expect(
+        assertOrganizationMcpSombraEnabled(graphqlFor(sombra), { requireMultiTenantSombra: true }),
+      ).rejects.toThrow(/self-hosts Sombra/);
+    },
+  );
+
+  it('still enforces AiSettings for the multi-tenant Sombra', async () => {
+    await expect(
+      assertOrganizationMcpSombraEnabled(graphqlFor({ hostedMethod: 'MULTI_TENANT' }, false), {
+        requireMultiTenantSombra: true,
+      }),
+    ).rejects.toThrow(/MCP × Sombra is disabled/);
+  });
+
+  it('ignores the hosting type when the option is off', async () => {
+    await expect(
+      assertOrganizationMcpSombraEnabled(graphqlFor({ hostedMethod: 'ON_PREMISE' })),
+    ).resolves.toBeUndefined();
   });
 });
 

@@ -17,7 +17,12 @@ export function createConsentListPurposesTool(clients: ToolClients) {
     description: 'List all tracking purposes configured for consent management.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListPurposesSchema,
     handler: async ({ limit, offset }) => {
       const data = await clients.graphql.makeRequest<TranscendCliPurposesResponse>(PURPOSES, {

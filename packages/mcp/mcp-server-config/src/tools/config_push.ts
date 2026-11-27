@@ -85,7 +85,12 @@ export function createConfigPushTool(clients: ToolClients) {
         return summarizePushPlan(plan);
       },
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ConfigPushSchema,
     handler: async ({
       filePath,

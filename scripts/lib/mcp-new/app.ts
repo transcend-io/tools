@@ -216,7 +216,12 @@ export function ${factory}(_clients?: ToolClients) {
     category: 'TODO',
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ${schema},
     // Baseline, used by every host that cannot render a view.
     handler: async ({ message }) => ${payload}(message),

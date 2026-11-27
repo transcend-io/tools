@@ -20,7 +20,12 @@ export function createInventoryListIdentifiersTool(clients: ToolClients) {
       '`totalCount` is the full match count, not the size of this page.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListIdentifiersSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listIdentifiers({

@@ -26,7 +26,12 @@ export function createPreferencesWriteOptionValuesTool(clients: ToolClients) {
       'push`. Returns success and any errors.',
     category: 'Preference Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteOptionValuesSchema,
     handler: async ({ optionValues }) => {
       const items = decodeYmlItems<OptionValueInput>(

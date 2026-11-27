@@ -15,7 +15,12 @@ export function createAdminTestConnectionTool(clients: ToolClients) {
     description: 'Test connectivity to both Transcend REST and GraphQL APIs',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: EmptySchema,
     handler: async (_args) => {

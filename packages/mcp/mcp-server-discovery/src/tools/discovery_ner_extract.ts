@@ -19,7 +19,12 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
       'Extract named entities (PII, organizations, locations, etc.) from text using NER. Requires at least one entity type label.',
     category: 'Data Discovery',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: NerExtractSchema,
     handler: async ({ text, entityTypes }) => {

@@ -62,7 +62,12 @@ export function createConsentListCookiesTool(clients: ToolClients) {
 
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListCookiesSchema,
     handler: async ({
       limit,
