@@ -107,11 +107,18 @@ export async function resolveCredentialStores(
       return { active: keyringStore, all: [keyringStore, fileStore] };
     }
 
-    await migrateFileEntriesToKeyring({ fileStore, keyringStore, logger });
+    const lockBothStores = keyringLockDirectory !== directory;
+    await migrateFileEntriesToKeyring({
+      fileStore,
+      keyringStore,
+      logger,
+      lockBothStores,
+    });
     const active = createFallbackCredentialStore({
       primary: keyringStore,
       fallback: fileStore,
       logger,
+      lockBothStores,
     });
     return { active, all: [active, fileStore] };
   } catch (error) {
