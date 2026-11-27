@@ -158,7 +158,7 @@ describe('createOAuthTokenManager', () => {
       expect(await openStore().load(KEY)).toBeNull();
     });
 
-    it('means "no login" when the store cannot be read at startup', async () => {
+    it('fails with a retryable error when the store cannot be read at startup', async () => {
       const store: CredentialStore = {
         ...createMemoryCredentialStore(),
         load: async () => {
@@ -166,7 +166,10 @@ describe('createOAuthTokenManager', () => {
         },
       };
 
-      await expect(startProcess(store).getValidCredentials(CLIENT, logger)).resolves.toBeNull();
+      await expect(startProcess(store).getValidCredentials(CLIENT, logger)).rejects.toMatchObject({
+        code: McpToolErrorCode.ApiError,
+        retryable: true,
+      } satisfies Partial<ToolError>);
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Could not read the saved Transcend sign-in'),
         { error: 'keychain is locked' },
@@ -362,7 +365,7 @@ describe('createOAuthTokenManager', () => {
       expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-1' });
     });
 
-    it('keeps the rotated token in memory when the lock is lost after the request', async () => {
+    it('saves the rotated token when the lock is lost but the store holds the spent one', async () => {
       const store = createMemoryCredentialStore();
       const manager = startProcess(store);
       await manager.saveTokens(CLIENT, server.signIn(nowMs), logger);
@@ -372,11 +375,65 @@ describe('createOAuthTokenManager', () => {
       const credentials = await manager.getValidCredentials(CLIENT, logger);
 
       expect(credentials).toMatchObject({ accessToken: 'access-2', refreshToken: 'refresh-2' });
-      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-1' });
+      // Another process that read the store would otherwise spend the spent token.
+      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-2' });
+      expect(server.isGrantRevoked()).toBe(false);
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('refresh lock was lost'),
         expect.anything(),
       );
+
+      const secondProcess = await startProcess(store).getValidCredentials(CLIENT, logger);
+      expect(secondProcess?.refreshToken).toBe('refresh-2');
+      expect(server.refreshRequestCount()).toBe(1);
+    });
+
+    it('keeps the rotated token in memory when the lock is lost and a newer login is saved', async () => {
+      const store = createMemoryCredentialStore();
+      const manager = startProcess(store);
+      await manager.saveTokens(CLIENT, server.signIn(nowMs), logger);
+      nowMs += ACCESS_TOKEN_LIFETIME_MS;
+      const withLock = store.withRefreshLock.bind(store);
+      vi.spyOn(store, 'withRefreshLock').mockImplementation((key, task) =>
+        withLock(key, (assertHeld) => {
+          let checks = 0;
+          return task(async () => {
+            checks += 1;
+            if (checks < 2) return assertHeld();
+            // The new holder of the lock refreshed and saved first.
+            const saved = await store.load(key);
+            await store.save(key, { ...saved!, refreshToken: 'refresh-from-new-holder' });
+            throw new LockLostError('lock');
+          });
+        }),
+      );
+
+      const credentials = await manager.getValidCredentials(CLIENT, logger);
+
+      expect(credentials).toMatchObject({ refreshToken: 'refresh-2' });
+      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-from-new-holder' });
+    });
+  });
+
+  describe('a rejected refresh token in a login that is only in memory', () => {
+    it('adopts the newer saved login instead of clearing it', async () => {
+      const store = createMemoryCredentialStore();
+      const manager = startProcess(store);
+      vi.spyOn(store, 'save').mockRejectedValueOnce(new Error('keychain denied the write'));
+      const signedIn = server.signIn(nowMs);
+      await manager.saveTokens(CLIENT, signedIn, logger);
+      nowMs += ACCESS_TOKEN_LIFETIME_MS;
+      // Another process signed in again and saved a login of its own.
+      await store.save(KEY, { ...signedIn, refreshToken: 'refresh-newer', expiresAt: nowMs + 1e6 });
+      server.revokeGrant();
+
+      await expect(manager.getValidCredentials(CLIENT, logger)).rejects.toMatchObject({
+        code: McpToolErrorCode.ApiError,
+        retryable: true,
+      } satisfies Partial<ToolError>);
+
+      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-newer' });
+      expect(manager.getActiveStoredTokens()).toMatchObject({ refreshToken: 'refresh-newer' });
     });
   });
 

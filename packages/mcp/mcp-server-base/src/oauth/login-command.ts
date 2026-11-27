@@ -35,6 +35,8 @@ export interface RunOAuthLoginCommandOptions {
    * environment selects. In `auto` mode that is the keychain and the file.
    */
   stores?: readonly CredentialStore[];
+  /** Why the keychain was not checked, for a `stores` list passed in by the caller */
+  keychainUnavailable?: string;
   /** OAuth client identifier; defaults to `TRANSCEND_OAUTH_CLIENT_ID` */
   clientId?: string;
   /** OAuth client secret; defaults to `TRANSCEND_OAUTH_CLIENT_SECRET` */
@@ -53,6 +55,8 @@ export interface RunOAuthLoginCommandOptions {
 interface LoginCommandContext {
   /** Every store that may hold a saved login */
   stores: readonly CredentialStore[];
+  /** Why the keychain was skipped, when `auto` could not use it */
+  keychainUnavailable: string | undefined;
   /** OAuth client identifier, when configured */
   clientId: string | undefined;
   /** OAuth client secret, when configured */
@@ -116,8 +120,16 @@ async function printStoreStatus(
   }
 }
 
+/** Says that the keychain was not checked, so a login saved there is not listed or removed. */
+function skippedKeychainLine(reason: string): string {
+  return `OS keychain skipped: ${reason}. Logins saved there are not listed or removed.`;
+}
+
 /** Prints the saved logins of every store. Never prints a token. */
 async function runStatus(context: LoginCommandContext): Promise<number> {
+  if (context.keychainUnavailable !== undefined) {
+    context.write(skippedKeychainLine(context.keychainUnavailable));
+  }
   for (const store of context.stores) {
     await printStoreStatus(store, context);
   }
@@ -149,6 +161,16 @@ async function revokeLogin(
 }
 
 /**
+ * Warns that the keychain was skipped. A logout that could not reach the keychain
+ * did not finish, so this returns a failing exit code.
+ */
+function reportSkippedKeychain(context: LoginCommandContext): number {
+  if (context.keychainUnavailable === undefined) return 0;
+  context.write(skippedKeychainLine(context.keychainUnavailable));
+  return 1;
+}
+
+/**
  * Removes every saved login. Nothing is revoked, so no client secret is needed.
  *
  * Each key goes under its refresh lock, so a running server cannot save a
@@ -167,15 +189,14 @@ async function runLogoutAll(context: LoginCommandContext): Promise<number> {
     removed += keys.length;
     locations.push(store.location);
   }
-  if (removed === 0) {
-    write('Not signed in.');
-    return 0;
+  if (removed === 0) write('Not signed in.');
+  else {
+    write(
+      `Removed ${removed} saved login(s) from ${locations.join(' and ')}. ` +
+        'They were not revoked at Transcend and stay valid until they expire.',
+    );
   }
-  write(
-    `Removed ${removed} saved login(s) from ${locations.join(' and ')}. ` +
-      'They were not revoked at Transcend and stay valid until they expire.',
-  );
-  return 0;
+  return reportSkippedKeychain(context);
 }
 
 /**
@@ -223,7 +244,7 @@ async function runLogout(context: LoginCommandContext): Promise<number> {
     }
   }
   if (!found) write('Not signed in.');
-  return exitCode;
+  return Math.max(exitCode, reportSkippedKeychain(context));
 }
 
 /**
@@ -240,8 +261,12 @@ export async function runOAuthLoginCommand(
     return undefined;
   }
 
+  const resolved = options.stores
+    ? { all: options.stores, keychainUnavailable: options.keychainUnavailable }
+    : await resolveCredentialStores({ logger: new SimpleLogger() });
   const context: LoginCommandContext = {
-    stores: options.stores ?? (await resolveCredentialStores({ logger: new SimpleLogger() })).all,
+    stores: resolved.all,
+    keychainUnavailable: resolved.keychainUnavailable,
     clientId: options.clientId ?? getOAuthClientIdFromEnv(),
     clientSecret: options.clientSecret ?? getOAuthClientSecret(),
     issuers: (options.issuers ?? getOAuthIssuerCandidates()).map(normalizeIssuer),

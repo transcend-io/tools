@@ -23,8 +23,10 @@ import {
   formatOAuthSignInLinkMessage,
   formatOAuthSignInPrompt,
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
+  OAUTH_CALLBACK_TIMEOUT_MS,
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
   OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS,
+  OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE,
   OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
   OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE,
   OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS,
@@ -233,20 +235,27 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
   ): Promise<PendingLogin | null> => {
     if (!hasCapability(McpClientCapability.ElicitationUrl)) return null;
     throwIfRequestAbandoned();
-    const login = await (pendingLogin ?? startLogin(client, logger));
+    // A fresh login, so the link in the prompt has the whole callback window. A
+    // login started by an earlier call may be close to expiry.
+    await discardLogin();
+    const login = await startLogin(client, logger);
     let answer: Awaited<ReturnType<typeof requestUrlElicitation>>;
     try {
       answer = await elicitUrl(
         formatOAuthSignInPrompt(authorizationHost, toolCallContext.getStore()?.toolName),
         login.authorizationUrl,
-        { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
+        // The link in the prompt stops working with its login, so the prompt must not outlive it.
+        { timeout: Math.min(OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS, OAUTH_CALLBACK_TIMEOUT_MS) },
       );
     } catch (error) {
-      if (getMcpSession()?.request?.signal.aborted !== true) {
-        logger.warn('Host failed to show the sign-in link prompt', {
-          error: error instanceof Error ? error.message : String(error),
-        });
+      if (getMcpSession()?.request?.signal.aborted === true) {
+        // The caller gave up. Nobody will use this login, so close its listener.
+        await discardLogin();
+        throwIfRequestAbandoned();
       }
+      logger.warn('Host failed to show the sign-in link prompt', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
     if (!answer) return null;
@@ -274,7 +283,11 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     }
 
     const answer = await requestSignIn({ authorizationHost, elicit, now, logger });
-    if (answer === SignInAnswer.Unasked) return promptWithUrl(client, logger, authorizationHost);
+    if (answer === SignInAnswer.Unasked) {
+      // A prompt that ended because the caller gave up asked nobody.
+      throwIfRequestAbandoned();
+      return promptWithUrl(client, logger, authorizationHost);
+    }
     if (answer === SignInAnswer.Declined) return declineSignIn();
 
     const linked = await currentLogin();
@@ -293,7 +306,16 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     const current = await currentLogin();
     let login = current?.isUnderway ? current : null;
     if (!login && openPrompt) {
-      login = await waitUnlessRequestAbandoned(openPrompt);
+      try {
+        login = await waitUnlessRequestAbandoned(openPrompt);
+      } catch (error) {
+        // The call that opened the prompt was cancelled. This call was not, so it
+        // asks again instead of failing with someone else's cancellation.
+        const isOwnerAbandoned =
+          error instanceof ToolError && error.message === OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE;
+        if (!isOwnerAbandoned || getMcpSession()?.request?.signal.aborted === true) throw error;
+        return signIn(client, logger);
+      }
     } else if (!login) {
       // A declined prompt stays declined for the cooldown: no new prompt, no new
       // callback listener, and no link for the agent to hand over instead.

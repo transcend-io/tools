@@ -18,6 +18,7 @@ import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
 import {
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
+  OAUTH_CALLBACK_TIMEOUT_MS,
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
   OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE,
   OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS,
@@ -599,6 +600,24 @@ describe('createLazyOAuth', () => {
       expect(openBrowser).toHaveBeenCalledTimes(1);
     });
 
+    it('asks again for a call that waited on a prompt whose caller gave up', async () => {
+      const { callTool, prompts, logins } = startProcess();
+      const owner = new AbortController();
+
+      const ownerCall = callTool({ signal: owner.signal });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      const waiterCall = callTool();
+      owner.abort();
+      prompts[0]!.fail(new Error('request cancelled'));
+
+      await expect(ownerCall).rejects.toMatchObject(abandoned);
+      await vi.waitFor(() => expect(prompts).toHaveLength(2));
+      prompts[1]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(1));
+      logins[0]!.completeInBrowser();
+      await waiterCall;
+    });
+
     it('ends a sign-in that timed out, and the next call asks again', async () => {
       const { callTool, prompts, logins, elicit, openBrowser } = startProcess();
 
@@ -699,9 +718,59 @@ describe('createLazyOAuth', () => {
       expect(elicitUrl).toHaveBeenCalledWith(
         formatOAuthSignInPrompt(new URL(client.issuer).host, TOOL_NAME),
         logins[0]!.authorizationUrl,
-        { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
+        // The prompt must not outlive the login its link belongs to.
+        { timeout: OAUTH_CALLBACK_TIMEOUT_MS },
       );
+      expect(OAUTH_CALLBACK_TIMEOUT_MS).toBeLessThan(OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS);
       expect(openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('starts a new login for the prompt instead of reusing an older link', async () => {
+      const { callTool, logins, elicitUrl } = startProcess({
+        canPrompt: false,
+        urlAnswer: 'accept',
+      });
+      // The host does not answer the first link prompt, so the agent gets that link.
+      elicitUrl.mockResolvedValueOnce(undefined);
+      await expect(callTool()).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=1`),
+      );
+      expect(logins).toHaveLength(1);
+
+      const call = callTool();
+      await vi.waitFor(() => expect(logins).toHaveLength(2));
+      logins[1]!.completeInBrowser();
+      await call;
+
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
+      expect(elicitUrl).toHaveBeenLastCalledWith(
+        expect.any(String),
+        logins[1]!.authorizationUrl,
+        expect.anything(),
+      );
+    });
+
+    it('closes the login when the caller gives up while the link prompt is open', async () => {
+      const { callTool, logins, elicitUrl } = startProcess({
+        canPrompt: false,
+        urlAnswer: 'accept',
+      });
+      const controller = new AbortController();
+      elicitUrl.mockImplementationOnce(
+        (_message, _url, options) =>
+          new Promise((_resolve, reject) => {
+            options?.signal?.addEventListener('abort', () => reject(new Error('cancelled')));
+            controller.signal.addEventListener('abort', () => reject(new Error('cancelled')));
+          }),
+      );
+
+      const call = callTool({ signal: controller.signal });
+      await vi.waitFor(() => expect(elicitUrl).toHaveBeenCalledTimes(1));
+      controller.abort();
+
+      await expect(call).rejects.toMatchObject(abandoned);
+      expect(logins).toHaveLength(1);
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
     });
 
     it('treats a refused link as a decline, closes the login, and holds the cooldown', async () => {
@@ -720,13 +789,16 @@ describe('createLazyOAuth', () => {
   });
 
   describe('when nobody can be asked', () => {
-    it('names the host the link goes to', async () => {
+    it('names the host the link goes to in the link text', async () => {
       const { callTool } = startProcess({ canPrompt: false });
 
       await expect(callTool()).rejects.toMatchObject({
-        message: expect.stringContaining(`It goes to ${new URL(client.issuer).host}.`),
+        message: expect.stringContaining(
+          `[Sign in to Transcend at ${new URL(client.issuer).host}](`,
+        ),
       });
     });
+
     it('returns a sign-in link, keeps the callback server open, and the retry succeeds', async () => {
       const { callTool, logins, openBrowser, lazyOAuth } = startProcess({ canPrompt: false });
 
@@ -734,7 +806,7 @@ describe('createLazyOAuth', () => {
         signInLink(`${client.issuer}/oauth/authorize?login=1`),
       );
       expect(formatOAuthSignInLinkMessage(logins[0]!.authorizationUrl)).toContain(
-        `[Sign in to Transcend](${logins[0]!.authorizationUrl})`,
+        `[Sign in to Transcend at ${new URL(client.issuer).host}](${logins[0]!.authorizationUrl})`,
       );
       expect(logins[0]!.close).not.toHaveBeenCalled();
 

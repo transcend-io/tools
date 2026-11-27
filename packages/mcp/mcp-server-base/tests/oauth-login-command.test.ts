@@ -129,6 +129,32 @@ describe('runOAuthLoginCommand', () => {
       },
     );
 
+    it('revokes the token another process rotated after the logins were listed', async () => {
+      const signedIn = server.signIn(NOW_MS);
+      await store.save(KEY, signedIn);
+      const withLock = store.withRefreshLock.bind(store);
+      vi.spyOn(store, 'withRefreshLock').mockImplementation(async (key, task) => {
+        // A running server refreshes between the listing and the lock.
+        await store.save(key, { ...signedIn, refreshToken: 'refresh-rotated' });
+        return withLock(key, task);
+      });
+
+      const exitCode = await run(['logout']);
+
+      expect(exitCode).toBe(0);
+      expect(server.revokedTokens()).toEqual(['refresh-rotated']);
+      expect(await store.load(KEY)).toBeNull();
+    });
+
+    it('fails and says so when the keychain was skipped', async () => {
+      await store.save(KEY, server.signIn(NOW_MS));
+
+      const exitCode = await run(['logout'], { keychainUnavailable: 'no keychain' });
+
+      expect(exitCode).toBe(1);
+      expect(output.join('\n')).toContain('OS keychain skipped: no keychain');
+    });
+
     it('never sends a token to an issuer the server does not sign in with', async () => {
       await store.save(KEY, server.signIn(NOW_MS));
       const fetchSpy = vi.spyOn(server, 'fetch');
@@ -259,6 +285,12 @@ describe('runOAuthLoginCommand', () => {
   });
 
   describe('status', () => {
+    it('says when the keychain was skipped', async () => {
+      await run(['status'], { keychainUnavailable: 'no keychain' });
+
+      expect(output[0]).toContain('OS keychain skipped: no keychain');
+    });
+
     it('prints the store, issuer, client ID, and expiry, and never a token', async () => {
       const tokens = server.signIn(NOW_MS);
       await store.save(KEY, tokens);

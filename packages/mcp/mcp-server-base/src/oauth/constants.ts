@@ -136,10 +136,10 @@ export function formatOAuthSignInLinkMessage(authorizationUrl: string): string {
   // A bare parenthesis would end the markdown link early.
   const linkTarget = authorizationUrl.replaceAll('(', '%28').replaceAll(')', '%29');
   const minutes = OAUTH_CALLBACK_TIMEOUT_MS / 60_000;
+  const host = new URL(authorizationUrl).host;
   return (
     'This tool needs a Transcend sign-in. Show the user this link: ' +
-    `[Sign in to Transcend](${linkTarget}). ` +
-    `It goes to ${new URL(authorizationUrl).host}. ` +
+    `[Sign in to Transcend at ${host}](${linkTarget}). ` +
     'Wait until the user says they signed in, then retry once. Do not retry before that. ' +
     `The link expires within ${minutes} minutes.`
   );

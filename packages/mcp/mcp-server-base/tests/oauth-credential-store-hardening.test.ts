@@ -10,8 +10,8 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
-import { hostname, tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { homedir, hostname, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -301,10 +301,12 @@ describe('credential store hardening', () => {
     });
 
     it('refuses a directory outside the user profile on Windows', async () => {
-      await expect(ensurePrivateDirectory(directory, 'win32')).rejects.toThrow(
+      // Outside the profile on every host, including a Windows host whose temp folder is inside it.
+      const outside = resolve(homedir(), '..', 'outside-profile');
+      await expect(ensurePrivateDirectory(outside, 'win32')).rejects.toThrow(
         /outside your user profile/,
       );
-      await expect(stat(directory)).rejects.toMatchObject({ code: 'ENOENT' });
+      await expect(stat(outside)).rejects.toMatchObject({ code: 'ENOENT' });
     });
 
     it('does not read the override for the memory store', async () => {
@@ -359,6 +361,7 @@ describe('credential store hardening', () => {
       const { active, all } = await resolveCredentialStores({
         logger,
         env: env(),
+        keyringLockDirectory: directory,
         loadKeyring: async () => keyring,
       });
 
@@ -382,6 +385,7 @@ describe('credential store hardening', () => {
       const { active } = await resolveCredentialStores({
         logger,
         env: env(),
+        keyringLockDirectory: directory,
         loadKeyring: async () => keyring,
       });
 
@@ -401,12 +405,13 @@ describe('credential store hardening', () => {
       const { active } = await resolveCredentialStores({
         logger,
         env: env(),
+        keyringLockDirectory: directory,
         loadKeyring: async () => keyring,
       });
 
       expect(active.kind).toBe(CredentialStoreKind.Keyring);
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Could not move the saved MCP login'),
+        expect.stringContaining('Could not move a saved MCP login'),
         { error: 'keychain is locked' },
       );
       expect(await createFileCredentialStore({ directory, logger }).keys()).toEqual([KEY]);
@@ -416,6 +421,7 @@ describe('credential store hardening', () => {
       const { active, all } = await resolveCredentialStores({
         logger,
         env: env(),
+        keyringLockDirectory: directory,
         loadKeyring: async () => {
           throw new Error('no keychain');
         },
@@ -428,6 +434,199 @@ describe('credential store hardening', () => {
         expect.stringContaining('a file in your user profile'),
         expect.anything(),
       );
+    });
+  });
+
+  describe('file store housekeeping without a file', () => {
+    it('removes a temporary file that a killed first write left behind', async () => {
+      await mkdir(directory, { recursive: true });
+      const abandonedPath = join(directory, 'credentials.json.abandoned.tmp');
+      await writeFile(abandonedPath, JSON.stringify({ [KEY]: makeTokens() }), { mode: 0o600 });
+
+      await createFileCredentialStore({ directory, logger }).clear(KEY);
+
+      expect(await readdir(directory)).toEqual([]);
+    });
+  });
+
+  describe('migration choices', () => {
+    const env = (): NodeJS.ProcessEnv => ({ TRANSCEND_MCP_CONFIG_DIR: directory });
+
+    it('keeps the file login when it expires later than the keychain login', async () => {
+      const fileStore = createFileCredentialStore({ directory, logger });
+      await fileStore.save(KEY, makeTokens({ accessToken: 'access-file', expiresAt: 2_000 }));
+      const keyring = createFakeKeyring();
+      await createKeyringCredentialStore({ keyring, lockDirectory: directory, logger }).save(
+        KEY,
+        makeTokens({ accessToken: 'access-keychain', expiresAt: 1_000 }),
+      );
+
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+
+      expect((await active.load(KEY))?.accessToken).toBe('access-file');
+      expect(await fileStore.keys()).toEqual([]);
+    });
+
+    it('moves the other logins when one key fails', async () => {
+      const otherKey = credentialStoreKey({
+        issuer: ISSUER,
+        clientId: 'client-other',
+        scopes: SCOPES,
+      });
+      const fileStore = createFileCredentialStore({ directory, logger });
+      await fileStore.save(KEY, makeTokens());
+      await fileStore.save(otherKey, makeTokens({ clientId: 'client-other' }));
+      const keyring = createFakeKeyring();
+      const originalSet = keyring.set;
+      keyring.set = async (service, account, secret) => {
+        if (account === KEY) throw new Error('keychain is locked');
+        await originalSet(service, account, secret);
+      };
+
+      await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+
+      expect(await fileStore.keys()).toEqual([KEY]);
+      expect([...keyring.secrets.keys()]).toEqual([otherKey]);
+    });
+  });
+
+  describe('keychain that fails after startup', () => {
+    const env = (): NodeJS.ProcessEnv => ({ TRANSCEND_MCP_CONFIG_DIR: directory });
+
+    it('saves a rotated login to the file instead of losing it', async () => {
+      const keyring = createFakeKeyring();
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+      keyring.set = async () => {
+        throw new Error('keychain is locked');
+      };
+
+      await active.save(KEY, makeTokens({ accessToken: 'access-rotated' }));
+
+      expect((await active.load(KEY))?.accessToken).toBe('access-rotated');
+      expect(await createFileCredentialStore({ directory, logger }).keys()).toEqual([KEY]);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('The OS keychain failed to save the login'),
+        expect.anything(),
+      );
+    });
+
+    it('reads the file when the keychain fails to read', async () => {
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const keyring = createFakeKeyring();
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+      await fileStore.save(KEY, makeTokens({ accessToken: 'access-file' }));
+      keyring.get = async () => {
+        throw new Error('keychain is locked');
+      };
+
+      expect((await active.load(KEY))?.accessToken).toBe('access-file');
+    });
+
+    it('clears both stores even when the keychain fails', async () => {
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const keyring = createFakeKeyring();
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: directory,
+        loadKeyring: async () => keyring,
+      });
+      await fileStore.save(KEY, makeTokens());
+      keyring.delete = async () => {
+        throw new Error('keychain is locked');
+      };
+
+      await expect(active.clear(KEY)).rejects.toThrow('keychain is locked');
+
+      expect(await fileStore.keys()).toEqual([]);
+    });
+  });
+
+  describe('store selection', () => {
+    const env = (): NodeJS.ProcessEnv => ({ TRANSCEND_MCP_CONFIG_DIR: directory });
+
+    it('says why the keychain was skipped', async () => {
+      const resolved = await resolveCredentialStores({
+        logger,
+        env: env(),
+        loadKeyring: async () => {
+          throw new Error('no keychain');
+        },
+      });
+
+      expect(resolved.keychainUnavailable).toBe('no keychain');
+    });
+
+    it('lists the file in keyring mode so logout can clear a login left there', async () => {
+      const { active, all } = await resolveCredentialStores({
+        logger,
+        env: { ...env(), TRANSCEND_MCP_CREDENTIAL_STORE: 'keyring' },
+        keyringLockDirectory: directory,
+        loadKeyring: async () => createFakeKeyring(),
+      });
+
+      expect(active.kind).toBe(CredentialStoreKind.Keyring);
+      expect(all.map((store) => store.kind)).toEqual([
+        CredentialStoreKind.Keyring,
+        CredentialStoreKind.File,
+      ]);
+    });
+
+    it('locks the keychain in the per-user directory, whatever the override says', async () => {
+      const lockDirectory = join(directory, 'user-locks');
+      const { active } = await resolveCredentialStores({
+        logger,
+        env: env(),
+        keyringLockDirectory: lockDirectory,
+        loadKeyring: async () => createFakeKeyring(),
+      });
+
+      await active.withRefreshLock(KEY, async () => {
+        expect((await readdir(lockDirectory)).some((name) => name.endsWith('.lock'))).toBe(true);
+      });
+      expect(await readdir(directory)).not.toContain('refresh.lock');
+    });
+
+    it('shares one lock between the file and keychain stores in one directory', async () => {
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const keyringStore = createKeyringCredentialStore({
+        keyring: createFakeKeyring(),
+        lockDirectory: directory,
+        logger,
+      });
+      const events: string[] = [];
+      let waiter!: Promise<void>;
+
+      await fileStore.withRefreshLock(KEY, async () => {
+        waiter = keyringStore.withRefreshLock(KEY, async () => {
+          events.push('keychain store in');
+        });
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        events.push('file store out');
+      });
+      await waiter;
+
+      expect(events).toEqual(['file store out', 'keychain store in']);
     });
   });
 
@@ -444,6 +643,7 @@ describe('credential store hardening', () => {
       await resolveCredentialStores({
         logger,
         env: { TRANSCEND_MCP_CONFIG_DIR: directory },
+        keyringLockDirectory: directory,
         loadKeyring: async () => {
           throw new Error('no keychain');
         },
