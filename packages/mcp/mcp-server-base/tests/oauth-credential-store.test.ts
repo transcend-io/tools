@@ -10,7 +10,7 @@ import {
   utimes,
   writeFile,
 } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -198,9 +198,11 @@ describe('credential store', () => {
         scopes: SCOPES,
       });
       await store.save(KEY, makeTokens());
-      await writeFile(credentialsPath, JSON.stringify({ [otherClientKey]: makeTokens() }), {
-        mode: 0o600,
-      });
+      await writeFile(
+        credentialsPath,
+        JSON.stringify({ [otherClientKey]: { ...makeTokens(), key: otherClientKey } }),
+        { mode: 0o600 },
+      );
 
       expect(await store.load(otherClientKey)).toBeNull();
     });
@@ -272,7 +274,7 @@ describe('credential store', () => {
 
       await store.save(KEY, tokens);
 
-      expect(await keyring.get(KEYRING_SERVICE, KEY)).toBe(JSON.stringify(tokens));
+      expect(await keyring.get(KEYRING_SERVICE, KEY)).toBe(JSON.stringify({ ...tokens, key: KEY }));
       expect(await store.load(KEY)).toEqual(tokens);
       expect(await store.keys()).toEqual([KEY]);
 
@@ -388,9 +390,9 @@ describe('credential store', () => {
     });
 
     /** Writes a lock as another holder would have left it. */
-    async function plantLock(pid: number, ageMs = 0): Promise<void> {
+    async function plantLock(pid: number, ageMs = 0, host = hostname()): Promise<void> {
       await mkdir(directory, { recursive: true });
-      await writeFile(lockPath, JSON.stringify({ pid, ownerId: 'another-holder' }));
+      await writeFile(lockPath, JSON.stringify({ pid, hostname: host, ownerId: 'another-holder' }));
       const renewedAt = new Date(Date.now() - ageMs);
       await utimes(lockPath, renewedAt, renewedAt);
     }
