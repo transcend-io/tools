@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { ensurePrivateDirectory, isErrnoException, readFileIfExists } from './config-directory.js';
 
-/** A lock its holder has not renewed for this long is treated as abandoned. */
+/** A lock a waiter watched go unrenewed for this long is treated as abandoned. */
 export const REFRESH_LOCK_STALE_MS = 30_000;
 
 /** How often a holder renews its lock. Several renewals fit in the stale window. */
@@ -22,6 +22,12 @@ const LOCK_WAIT_TIMEOUT_MS = 45_000;
 
 /** A takeover marker older than this was left by a process that died mid-takeover. */
 const TAKEOVER_MARKER_STALE_MS = 5_000;
+
+/** How long a holder waits for the takeover marker before it treats its lock as lost. */
+const TAKEOVER_MARKER_WAIT_MS = TAKEOVER_MARKER_STALE_MS + 1_000;
+
+/** How often a process retries the takeover marker. */
+const MARKER_RETRY_MS = 10;
 
 const LockRecordSchema = z.object({
   pid: z.number().int().positive(),
@@ -62,8 +68,10 @@ export interface LockFileOptions {
 interface ObservedLock {
   /** Exact file content, used to recognize the same lock again */
   raw: string;
-  /** Whether its holder is presumed gone */
-  isStale: boolean;
+  /** Modification time, which changes each time the holder renews */
+  modifiedAtMs: number;
+  /** Whether the pid in the lock is gone on this host */
+  isHolderGone: boolean;
 }
 
 /** Path of the lock that serializes refreshes of one saved login. */
@@ -119,49 +127,83 @@ async function modifiedAt(path: string): Promise<number | null> {
 }
 
 /**
- * Reads a lock and judges whether its holder is gone.
+ * Reads a lock and checks whether its holder's process is gone.
  *
- * A live holder renews the file's modification time, so a slow holder (one
- * waiting on a keychain prompt, say) is never mistaken for a dead one. The pid
- * check only shortens the wait after a crash, and only for a lock written on
- * this host; a reused pid still ages out.
+ * The pid check only shortens the wait after a crash, and only for a lock
+ * written on this host; a reused pid is caught by the renewal watch instead.
  */
-async function observeLock(lockPath: string, staleMs: number): Promise<ObservedLock | null> {
+async function observeLock(lockPath: string): Promise<ObservedLock | null> {
   const raw = await readFileIfExists(lockPath);
-  const renewedAt = raw === null ? null : await modifiedAt(lockPath);
-  if (raw === null || renewedAt === null) return null;
+  const modifiedAtMs = raw === null ? null : await modifiedAt(lockPath);
+  if (raw === null || modifiedAtMs === null) return null;
 
   const record = parseLockRecord(raw);
   const isHolderGone =
     record !== null && record.hostname === hostname() && !isProcessAlive(record.pid);
-  return { raw, isStale: isHolderGone || Date.now() - renewedAt > staleMs };
+  return { raw, modifiedAtMs, isHolderGone };
+}
+
+/** Whether `observed` is the same lock, at the same renewal, as `before`. */
+function isSameRenewal(observed: ObservedLock, before: ObservedLock): boolean {
+  return observed.raw === before.raw && observed.modifiedAtMs === before.modifiedAtMs;
+}
+
+/**
+ * Runs `run` while holding the takeover marker, so that checking a lock and
+ * changing it happen as one step. Resolves `NOT_ACQUIRED` when the marker stays
+ * busy for `waitMs`.
+ *
+ * The marker holds a random ID. Only the process that wrote it removes it, so a
+ * holder that stalled past the stale limit cannot delete the next process's marker.
+ */
+const NOT_ACQUIRED = Symbol('not acquired');
+
+async function withTakeoverMarker<T>(
+  lockPath: string,
+  waitMs: number,
+  run: () => Promise<T>,
+): Promise<T | typeof NOT_ACQUIRED> {
+  const markerPath = `${lockPath}.takeover`;
+  const markerId = randomUUID();
+  const waitStartedAt = performance.now();
+  while (!(await createExclusive(markerPath, markerId))) {
+    const seen = await readFileIfExists(markerPath);
+    const seenModifiedAt = seen === null ? null : await modifiedAt(markerPath);
+    const isOrphaned =
+      seenModifiedAt !== null && Date.now() - seenModifiedAt > TAKEOVER_MARKER_STALE_MS;
+    // Remove it only if it is still the marker that was judged orphaned.
+    if (isOrphaned && (await readFileIfExists(markerPath)) === seen) {
+      await rm(markerPath, { force: true });
+      continue;
+    }
+    if (performance.now() - waitStartedAt >= waitMs) return NOT_ACQUIRED;
+    await sleep(MARKER_RETRY_MS);
+  }
+
+  try {
+    return await run();
+  } finally {
+    if ((await readFileIfExists(markerPath)) === markerId) {
+      await rm(markerPath, { force: true });
+    }
+  }
 }
 
 /**
  * Removes an abandoned lock.
  *
- * Two waiters can judge the same lock stale. Without the marker, the slower one
- * would delete the lock the faster one just took. The marker lets one process at
- * a time look again and delete the lock only if it is the same one, still stale.
+ * Two waiters can judge the same lock abandoned. The marker lets one process at
+ * a time look again, and it deletes the lock only if it is the same lock, at the
+ * same renewal, or its process is gone. A holder that renews, checks, or
+ * releases takes the same marker, so none of them is cut in half by a takeover.
  */
-async function removeStaleLock(lockPath: string, staleRaw: string, staleMs: number): Promise<void> {
-  const markerPath = `${lockPath}.takeover`;
-  if (!(await createExclusive(markerPath, ''))) {
-    const markerModifiedAt = await modifiedAt(markerPath);
-    if (markerModifiedAt !== null && Date.now() - markerModifiedAt > TAKEOVER_MARKER_STALE_MS) {
-      await rm(markerPath, { force: true });
-    }
-    return;
-  }
-
-  try {
-    const current = await observeLock(lockPath, staleMs);
-    if (current?.isStale && current.raw === staleRaw) {
+async function removeStaleLock(lockPath: string, judged: ObservedLock): Promise<void> {
+  await withTakeoverMarker(lockPath, 0, async () => {
+    const current = await observeLock(lockPath);
+    if (current && isSameRenewal(current, judged)) {
       await rm(lockPath, { force: true });
     }
-  } finally {
-    await rm(markerPath, { force: true });
-  }
+  });
 }
 
 async function acquireLock(
@@ -172,12 +214,28 @@ async function acquireLock(
 ): Promise<void> {
   const record = JSON.stringify({ pid: process.pid, hostname: hostname(), ownerId });
   const waitStartedAt = performance.now();
+  /**
+   * The lock this waiter is watching, and when it first saw that renewal.
+   *
+   * Staleness is the time this waiter watched the lock go unrenewed, on the
+   * monotonic clock. The file's modification time is compared only with itself,
+   * never with the wall clock: after a sleep or a clock step, every live lock
+   * would otherwise look abandoned.
+   */
+  let watched: { lock: ObservedLock; since: number } | null = null;
   for (;;) {
     if (await createExclusive(lockPath, record)) return;
 
-    const observed = await observeLock(lockPath, staleMs);
-    if (observed?.isStale) {
-      await removeStaleLock(lockPath, observed.raw, staleMs);
+    const observed = await observeLock(lockPath);
+    if (!observed) {
+      watched = null;
+    } else {
+      if (!watched || !isSameRenewal(observed, watched.lock)) {
+        watched = { lock: observed, since: performance.now() };
+      }
+      if (observed.isHolderGone || performance.now() - watched.since >= staleMs) {
+        await removeStaleLock(lockPath, observed);
+      }
     }
     if (performance.now() - waitStartedAt >= timeoutMs) {
       throw new LockTimeoutError(lockPath);
@@ -193,8 +251,13 @@ async function isLockHeldBy(lockPath: string, ownerId: string): Promise<boolean>
 
 async function releaseLock(lockPath: string, ownerId: string): Promise<void> {
   // A lock that went unrenewed may have been taken over; leave that one alone.
-  if (await isLockHeldBy(lockPath, ownerId)) {
-    await rm(lockPath, { force: true });
+  const remove = async (): Promise<void> => {
+    if (await isLockHeldBy(lockPath, ownerId)) await rm(lockPath, { force: true });
+  };
+  // If the marker stays busy, release without it: a lock left behind would block
+  // every waiter until it aged out.
+  if ((await withTakeoverMarker(lockPath, TAKEOVER_MARKER_WAIT_MS, remove)) === NOT_ACQUIRED) {
+    await remove();
   }
 }
 
@@ -204,8 +267,8 @@ async function releaseLock(lockPath: string, ownerId: string): Promise<void> {
  * The file records the pid and a random owner ID. The owner ID, not the pid,
  * decides who holds the lock, so two holders in one process still exclude each
  * other. The holder renews the lock while `task` runs. A lock is taken over only
- * when its process is gone or it has gone {@link REFRESH_LOCK_STALE_MS} without
- * a renewal.
+ * when its process is gone or a waiter has watched it go
+ * {@link REFRESH_LOCK_STALE_MS} without a renewal.
  *
  * A holder that was suspended (a sleeping laptop) can lose its lock without
  * knowing. `task` receives {@link AssertLockHeld}; call it right before any
@@ -235,7 +298,14 @@ export async function withLockFile<T>(
   renewal.unref();
 
   const assertHeld: AssertLockHeld = async () => {
-    if (!(await isLockHeldBy(lockPath, ownerId))) throw new LockLostError(lockPath);
+    // Under the marker, so no waiter can remove the lock between the check and the
+    // renewal. The fresh renewal also resets every waiter's watch.
+    const isHeld = await withTakeoverMarker(lockPath, TAKEOVER_MARKER_WAIT_MS, async () => {
+      if (!(await isLockHeldBy(lockPath, ownerId))) return false;
+      await utimes(lockPath, new Date(), new Date());
+      return true;
+    });
+    if (isHeld !== true) throw new LockLostError(lockPath);
   };
 
   try {
