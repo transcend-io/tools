@@ -6,11 +6,12 @@ import type { AuthorizationServerMetadata } from './types.js';
  */
 export async function fetchAuthorizationServerMetadata(
   issuer: string,
+  fetchMetadata: typeof fetch = fetch,
 ): Promise<AuthorizationServerMetadata> {
   const base = normalizeIssuer(issuer);
   const url = `${base}/.well-known/oauth-authorization-server`;
 
-  const response = await fetch(url);
+  const response = await fetchMetadata(url);
   if (!response.ok) {
     throw new Error(
       `Failed to fetch OAuth authorization server metadata from ${url}: HTTP ${response.status}`,
@@ -43,5 +44,8 @@ export async function fetchAuthorizationServerMetadata(
     authorizationEndpoint,
     tokenEndpoint,
     codeChallengeMethodsSupported,
+    ...(typeof body.introspection_endpoint === 'string' && {
+      introspectionEndpoint: body.introspection_endpoint,
+    }),
   };
 }
