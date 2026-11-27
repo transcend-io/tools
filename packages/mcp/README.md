@@ -241,7 +241,7 @@ One login is saved per OAuth issuer, client ID, and set of requested scopes. Two
 What to know about the keychain:
 
 - macOS can show a one-time dialog that asks whether `node` may use your keychain.
-- Any script run by the same `node` binary can read the saved login without a prompt.
+- Any script run by the same `node` binary can read the saved login without a prompt. An AI agent with shell access can run `security` (macOS) or `secret-tool` (Linux) to read it too.
 - Set `TRANSCEND_MCP_CREDENTIAL_STORE=file` to keep the login out of the keychain, or `memory` to save nothing.
 - On Windows the `file` store relies on your user profile folder permissions, not on a `0600` mode.
 - In `auto` mode, a login that an earlier run saved to the file moves into the keychain at the next start. `status` and `logout` also check the file.
@@ -253,6 +253,8 @@ npx -y @transcend-io/mcp status        # where the login is saved and when the a
 npx -y @transcend-io/mcp logout        # revoke the login at Transcend and remove it
 npx -y @transcend-io/mcp logout --all  # remove every saved login without revoking it; needs no OAuth variables
 ```
+
+A running server keeps its login in memory. Restart it after `logout` so it asks you to sign in again.
 
 Every domain server accepts the same subcommands, for example `npx -y @transcend-io/mcp-server-consent status`.
 
