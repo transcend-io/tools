@@ -29,7 +29,10 @@ export function createMemoryCredentialStore(): CredentialStore {
     },
     keys: async () => [...entries.keys()],
     withRefreshLock: (key, task) => {
-      const run = (lockQueues.get(key) ?? Promise.resolve()).then(task);
+      // In one process nobody else can take the lock, so the holder never loses it.
+      const run = (lockQueues.get(key) ?? Promise.resolve()).then(() =>
+        task(async () => undefined),
+      );
       const tail = run.then(
         () => undefined,
         () => undefined,
