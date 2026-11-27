@@ -27,7 +27,12 @@ export function createInventoryWriteProcessingActivitiesTool(clients: ToolClient
       'per-item errors.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteProcessingActivitiesSchema,
     handler: async ({ processingActivities }) => {
       const decoded = decodeYmlItems<ProcessingActivity>(

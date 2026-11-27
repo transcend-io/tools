@@ -13,7 +13,12 @@ export function createDiscoveryListResultsTool(clients: ToolClients) {
       'Same data as `transcend inventory pull --resources=systemDiscovery`.',
     category: 'Discovery',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: listDiscoveryResultsSchema,
     handler: async () => listAllYmlSection(clients, TranscendPullResource.SystemDiscovery),
   });

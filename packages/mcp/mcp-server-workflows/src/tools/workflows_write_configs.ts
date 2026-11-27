@@ -34,7 +34,12 @@ export function createWorkflowsWriteConfigsTool(clients: ToolClients) {
       'item. `workflows_update_config` remains for title, subtitle, and description only.',
     category: 'Workflows',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteWorkflowConfigsSchema,
     handler: async ({ workflowConfigs, publishToPrivacyCenter = false }) => {
       const decoded = decodeYmlItems<WorkflowConfigSettings>(

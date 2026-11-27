@@ -43,7 +43,12 @@ export function createDsrListRequestDataSilosTool(clients: ToolClients) {
       'Filter with status=["ERROR"] for failures.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: listRequestDataSilosSchema,
     handler: async ({ requestId, status, visualStatus, text, limit, offset }) => {
       const result = await graphql.listRequestDataSilos({

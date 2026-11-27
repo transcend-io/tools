@@ -74,7 +74,12 @@ export function createConsentGetInventoryStatsTool(clients: ToolClients) {
       'consent_get_timeseries_analytics for opt-in/out and signal metrics.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetInventoryStatsSchema,
     handler: async () => inventoryStatsPayload(clients),
     variants: {

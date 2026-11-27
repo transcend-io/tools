@@ -37,7 +37,12 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
       'of this page.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListDataSilosSchema,
     handler: async ({ text, titles, customSiloConnectionStrategy, limit, offset }) => {
       const result = await graphql.listDataSilos({

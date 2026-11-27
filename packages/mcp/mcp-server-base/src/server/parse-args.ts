@@ -2,6 +2,14 @@ import { parseArgs } from 'node:util';
 
 import { McpTransport } from './transport.js';
 
+/** OAuth client the server uses to authenticate to the token introspection endpoint. */
+export interface IntrospectionClientCredentials {
+  /** Client ID sent with `client_secret_basic` */
+  clientId: string;
+  /** Client secret sent with `client_secret_basic` */
+  clientSecret: string;
+}
+
 export interface TransportConfig {
   /** Transport type: stdio (default) or http */
   transport: McpTransport;
@@ -17,11 +25,14 @@ export interface TransportConfig {
   sessionTtlMs: number;
   /**
    * Public base URL this server is reachable at (e.g. `https://mcp.transcend.io`).
-   * Opt-in: when set, the HTTP transport serves OAuth Protected Resource Metadata
-   * and rejects unauthenticated MCP requests with a `401` + `WWW-Authenticate`
-   * challenge. When unset, the transport behaves exactly as before.
+   * Opt-in: when set, the HTTP transport serves OAuth Protected Resource Metadata,
+   * accepts only verified OAuth access tokens, and rejects every other MCP request
+   * with a `401` + `WWW-Authenticate` challenge. When unset, the transport behaves
+   * exactly as before.
    */
   publicUrl?: string;
+  /** Credentials for token introspection. Always set when `publicUrl` is set on the HTTP transport. */
+  introspectionClient?: IntrospectionClientCredentials;
 }
 
 const DEFAULT_PORT = 3000;
@@ -58,12 +69,32 @@ function normalizePublicUrl(raw: string | undefined): string | undefined {
 }
 
 /**
+ * Reads the introspection client credentials from the environment. Throws when either
+ * is missing, so a public endpoint never starts without a way to verify tokens.
+ */
+function readIntrospectionClientFromEnv(): IntrospectionClientCredentials {
+  const clientId = process.env.TRANSCEND_MCP_INTROSPECTION_CLIENT_ID?.trim();
+  const clientSecret = process.env.TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET?.trim();
+  const missing = [
+    !clientId && 'TRANSCEND_MCP_INTROSPECTION_CLIENT_ID',
+    !clientSecret && 'TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET',
+  ].filter(Boolean);
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      `A public URL is configured, so the server must verify OAuth access tokens. Set ${missing.join(' and ')}.`,
+    );
+  }
+  return { clientId, clientSecret };
+}
+
+/**
  * Parses CLI flags and environment variables for transport configuration.
  *
  * Flags: --transport stdio|http, --port, --host, --mcp-path, --cors-origin (repeatable),
  *        --public-url
  * Env:   TRANSCEND_HTTP_PORT, TRANSCEND_HTTP_HOST, TRANSCEND_MCP_CORS_ORIGINS (comma-separated),
- *        TRANSCEND_MCP_SESSION_TTL_MS, TRANSCEND_MCP_PUBLIC_URL
+ *        TRANSCEND_MCP_SESSION_TTL_MS, TRANSCEND_MCP_PUBLIC_URL,
+ *        TRANSCEND_MCP_INTROSPECTION_CLIENT_ID, TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET
  */
 export function parseTransportArgs(): TransportConfig {
   const { values } = parseArgs({
@@ -114,5 +145,7 @@ export function parseTransportArgs(): TransportConfig {
     corsOrigins,
     sessionTtlMs,
     ...(publicUrl && { publicUrl }),
+    ...(publicUrl &&
+      transport === McpTransport.Http && { introspectionClient: readIntrospectionClientFromEnv() }),
   };
 }

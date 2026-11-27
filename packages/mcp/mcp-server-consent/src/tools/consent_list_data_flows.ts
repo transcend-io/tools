@@ -67,7 +67,12 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       'Filter via unmappedOnly, type, trackingTypes, minOccurrences, lastDiscoveredAtBefore/After.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListDataFlowsSchema,
     handler: async ({
       limit,

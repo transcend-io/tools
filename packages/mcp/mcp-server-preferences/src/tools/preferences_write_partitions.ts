@@ -24,7 +24,12 @@ export function createPreferencesWritePartitionsTool(clients: ToolClients) {
       'success and any errors. Use preferences_list_partitions to read the current partitions.',
     category: 'Preference Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WritePartitionsSchema,
     handler: async ({ partitions }) => {
       const items = decodeYmlItems<PartitionInput>(PartitionInput, partitions, 'partitions', {

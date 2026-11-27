@@ -21,7 +21,12 @@ export function createWorkflowsListTool(clients: ToolClients) {
       'ERASURE (and subject class) without guessing.',
     category: 'Workflows',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListWorkflowsSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listWorkflows({

@@ -25,7 +25,12 @@ export function createAdminWriteActionItemCollectionsTool(clients: ToolClients) 
       'Create or update `action-item-collections` rows in transcend.yml shape, matched by title.',
     category: 'Admin',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: writeActionItemCollectionsSchema,
     handler: async ({ actionItemCollections }) => {
       const decoded = decodeYmlItems<ActionItemCollectionSettings>(

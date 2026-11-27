@@ -14,7 +14,12 @@ export function createInventoryListProcessingActivitiesTool(clients: ToolClients
       'pull`. Returns the full set. Pass items back to inventory_write_processing_activities.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListProcessingActivitiesSchema,
     handler: async () => listAllYmlSection(clients, TranscendPullResource.ProcessingActivities),
   });

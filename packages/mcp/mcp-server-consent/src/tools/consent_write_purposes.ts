@@ -24,7 +24,12 @@ export function createConsentWritePurposesTool(clients: ToolClients) {
       'from the list are not deleted. Returns success and errors.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WritePurposesSchema,
     handler: async ({ purposes }) => {
       const decoded = decodeYmlItems<ConsentPurposeInput>(ConsentPurpose, purposes, 'purposes', {

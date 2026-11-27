@@ -24,7 +24,12 @@ export function createInventoryWriteCustomFieldsTool(clients: ToolClients) {
       'not listed are kept. Returns success, count, and per-item errors.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteCustomFieldsSchema,
     handler: async ({ attributes }) => {
       const decoded = decodeYmlItems<Attribute>(AttributeInput, attributes, 'attributes', {

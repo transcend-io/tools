@@ -262,6 +262,7 @@ export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
 
 export {
   assertMcpSombraAiSettings,
+  assertMultiTenantSombra,
   assertOrganizationMcpSombraEnabled,
   createTranscendRestClient,
   fetchOrganizationSombraContext,

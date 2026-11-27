@@ -23,7 +23,12 @@ export function createInventoryListVendorsTool(clients: ToolClients) {
       'count, not the size of this page.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListVendorsSchema,
     handler: async ({ text, limit, offset }) => {
       const result = await graphql.listVendors({
