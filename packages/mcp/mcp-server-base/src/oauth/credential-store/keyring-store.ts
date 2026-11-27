@@ -1,10 +1,20 @@
+import type { EntryOptions } from '@napi-rs/keyring';
+
 import type { Logger } from '../../clients/graphql/base.js';
 import { refreshLockPath, withLockFile } from './refresh-lock.js';
-import { parseSerializedOAuthTokens } from './stored-tokens.js';
+import { parseSerializedOAuthTokens, toStoredOAuthTokensEntry } from './stored-tokens.js';
 import { CredentialStoreKind, type CredentialStore, type Keyring } from './types.js';
 
 /** Keychain service name every saved login is filed under. */
 export const KEYRING_SERVICE = 'transcend-mcp';
+
+/**
+ * Pins Linux entries to Secret Service. Without this the library silently falls
+ * back to the kernel keyring for reads and writes, while listing still needs
+ * Secret Service, so `logout` could not see a saved login. Pinned, an
+ * unavailable Secret Service throws, and `auto` falls back to the owner-only file.
+ */
+const ENTRY_OPTIONS: EntryOptions = { linux: { store: 'secret-service' } };
 
 export interface KeyringCredentialStoreOptions {
   /** Keychain to read and write */
@@ -25,10 +35,11 @@ export interface KeyringCredentialStoreOptions {
 export async function loadOsKeyring(): Promise<Keyring> {
   const { AsyncEntry, findCredentialsAsync } = await import('@napi-rs/keyring');
   return {
-    get: (service, account) => new AsyncEntry(service, account).getPassword(),
-    set: (service, account, secret) => new AsyncEntry(service, account).setPassword(secret),
+    get: (service, account) => new AsyncEntry(service, account, ENTRY_OPTIONS).getPassword(),
+    set: (service, account, secret) =>
+      new AsyncEntry(service, account, ENTRY_OPTIONS).setPassword(secret),
     delete: async (service, account) => {
-      await new AsyncEntry(service, account).deleteCredential();
+      await new AsyncEntry(service, account, ENTRY_OPTIONS).deleteCredential();
     },
     accounts: async (service) =>
       (await findCredentialsAsync(service)).map(({ account }) => account),
@@ -53,7 +64,8 @@ export function createKeyringCredentialStore(
       }
       return tokens;
     },
-    save: (key, tokens) => keyring.set(KEYRING_SERVICE, key, JSON.stringify(tokens)),
+    save: (key, tokens) =>
+      keyring.set(KEYRING_SERVICE, key, JSON.stringify(toStoredOAuthTokensEntry(tokens, key))),
     clear: (key) => keyring.delete(KEYRING_SERVICE, key),
     keys: () => keyring.accounts(KEYRING_SERVICE),
     withRefreshLock: (key, task) => withLockFile(refreshLockPath(lockDirectory, key), task),
