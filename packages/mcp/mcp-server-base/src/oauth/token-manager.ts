@@ -174,12 +174,15 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
       const tokens = await store.load(key);
       active = tokens && { tokens, key, isSaved: true };
     } catch (error) {
-      // Nothing is held in memory, so nothing can be spent twice. Signing in
-      // again starts a new grant.
-      logger.warn('Could not read the saved Transcend sign-in; a new sign-in is needed', {
-        error: describeError(error),
-      });
-      active = null;
+      // A saved login may exist. Treating the failure as "no login" would send the
+      // user to sign in again and replace a grant that is still good.
+      logger.warn('Could not read the saved Transcend sign-in', { error: describeError(error) });
+      throw new ToolError(
+        McpToolErrorCode.ApiError,
+        `Could not read the saved Transcend sign-in: ${describeError(error)}. ` +
+          'The saved login was kept. Retry in a moment.',
+        true,
+      );
     }
     return active?.tokens ?? null;
   };
@@ -234,6 +237,18 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
         const isRefreshTokenRejected =
           error instanceof OAuthTokenRequestError && error.oauthError === OAUTH_INVALID_GRANT_ERROR;
         if (!isRefreshTokenRejected) throw error;
+        // The login in this process may be older than the saved one: another process
+        // can have refreshed it after a lost lock. Only drop the saved login when it
+        // is the one that was just rejected.
+        const saved = await store.load(key);
+        if (saved && saved.refreshToken !== current.refreshToken) {
+          active = { tokens: saved, key, isSaved: true };
+          throw new ToolError(
+            McpToolErrorCode.ApiError,
+            'Another process saved a newer Transcend sign-in. Retry in a moment.',
+            true,
+          );
+        }
         logger.warn('The saved Transcend sign-in is no longer valid; a new sign-in is needed');
         await signOut(key);
         return null;
@@ -242,14 +257,19 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
       try {
         await assertHeld();
       } catch (error) {
-        // The old refresh token is spent, so the new one must not be lost. Keep it
-        // in this process; the saved entry is left for the lock's new holder.
-        active = { tokens: refreshed, key, isSaved: false };
-        logger.warn(
-          'The refresh lock was lost during the token refresh. The new sign-in is kept ' +
-            'in this process only.',
-          { error: describeError(error) },
-        );
+        // The old refresh token is spent, so the new one must not be lost.
+        logger.warn('The refresh lock was lost during the token refresh', {
+          error: describeError(error),
+        });
+        // If the store still holds the spent token, the next process would spend it
+        // again and get the whole grant revoked. Replace it. If the lock's new holder
+        // already saved a newer login, keep that one and hold the new tokens in memory.
+        const saved = await store.load(key).catch(() => null);
+        if (saved?.refreshToken === current.refreshToken) {
+          await save(key, refreshed, logger);
+        } else {
+          active = { tokens: refreshed, key, isSaved: false };
+        }
         return storedOAuthTokensToAuth(refreshed);
       }
       await save(key, refreshed, logger);
