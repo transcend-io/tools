@@ -2,9 +2,16 @@ import { McpToolErrorCode } from '@transcend-io/privacy-types';
 
 import { getRequestAuth } from '../auth-context.js';
 import type { OAuthTokenAuth } from '../auth.js';
+import { McpClientCapability } from '../capabilities/types.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { ToolError } from '../errors.js';
-import { requestElicitation } from '../mcp-session-context.js';
+import {
+  getMcpSession,
+  hasCapability,
+  requestElicitation,
+  requestUrlElicitation,
+} from '../mcp-session-context.js';
+import { toolCallContext } from '../tool-call-context.js';
 import { withProgressHeartbeat } from '../tools/confirmation/progress-heartbeat.js';
 import {
   getOAuthClientIdFromEnv,
@@ -14,11 +21,13 @@ import {
 } from './config.js';
 import {
   formatOAuthSignInLinkMessage,
+  formatOAuthSignInPrompt,
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
   OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS,
   OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
   OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE,
+  OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS,
 } from './constants.js';
 import { isErrnoException } from './credential-store/config-directory.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
@@ -61,6 +70,8 @@ export interface LazyOAuthOptions {
   openBrowser?: typeof openBrowser;
   /** Shows the sign-in prompt in the host; defaults to MCP elicitation */
   elicit?: typeof requestElicitation;
+  /** Asks the host to open the consent link; defaults to MCP URL-mode elicitation */
+  elicitUrl?: typeof requestUrlElicitation;
   /** OAuth client for this process, or `null` when OAuth mode is off; defaults to the environment */
   resolveClient?: () => OAuthClientCredentials | null;
   /** Clock; defaults to `Date.now` */
@@ -122,6 +133,7 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
   const open: typeof openBrowser = (url, logger) =>
     (options.openBrowser ?? openBrowser)(url, logger);
   const elicit = options.elicit ?? requestElicitation;
+  const elicitUrl = options.elicitUrl ?? requestUrlElicitation;
 
   let sessionReady = false;
   let authorizationGrant: OAuthAuthorizationGrant | null = null;
@@ -200,6 +212,49 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     await login?.close().catch(() => undefined);
   };
 
+  const declineSignIn = async (): Promise<never> => {
+    declinedAt = now();
+    await discardLogin();
+    throw new ToolError(McpToolErrorCode.AuthError, OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE, false);
+  };
+
+  /**
+   * Asks the host to open the consent link, for a host that cannot show the form
+   * prompt but declares URL-mode elicitation. The host names the link's host to
+   * the user and opens it on accept, so no link reaches the model.
+   *
+   * Resolves with the login to wait on once they accept, or `null` when the host
+   * cannot ask. Rejects when they decline.
+   */
+  const promptWithUrl = async (
+    client: OAuthClientCredentials,
+    logger: Logger,
+    authorizationHost: string,
+  ): Promise<PendingLogin | null> => {
+    if (!hasCapability(McpClientCapability.ElicitationUrl)) return null;
+    throwIfRequestAbandoned();
+    const login = await (pendingLogin ?? startLogin(client, logger));
+    let answer: Awaited<ReturnType<typeof requestUrlElicitation>>;
+    try {
+      answer = await elicitUrl(
+        formatOAuthSignInPrompt(authorizationHost, toolCallContext.getStore()?.toolName),
+        login.authorizationUrl,
+        { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
+      );
+    } catch (error) {
+      if (getMcpSession()?.request?.signal.aborted !== true) {
+        logger.warn('Host failed to show the sign-in link prompt', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return null;
+    }
+    if (!answer) return null;
+    if (answer.action !== 'accept') return declineSignIn();
+    login.isUnderway = true;
+    return login;
+  };
+
   /**
    * Asks the user to sign in. Resolves with the login to wait on once they
    * accept, or `null` when nobody was asked. Rejects when they decline.
@@ -208,13 +263,19 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     client: OAuthClientCredentials,
     logger: Logger,
   ): Promise<PendingLogin | null> => {
-    const answer = await requestSignIn({ elicit, now, logger });
-    if (answer === SignInAnswer.Unasked) return null;
-    if (answer === SignInAnswer.Declined) {
-      declinedAt = now();
-      await discardLogin();
-      throw new ToolError(McpToolErrorCode.AuthError, OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE, false);
+    // The prompt names the host the browser opens, so read it from the same
+    // metadata the authorization URL is built from.
+    let authorizationHost: string;
+    try {
+      const metadata = await fetchAuthorizationServerMetadata(client.issuer);
+      authorizationHost = new URL(metadata.authorizationEndpoint).host;
+    } catch (error) {
+      throw toSignInError(error);
     }
+
+    const answer = await requestSignIn({ authorizationHost, elicit, now, logger });
+    if (answer === SignInAnswer.Unasked) return promptWithUrl(client, logger, authorizationHost);
+    if (answer === SignInAnswer.Declined) return declineSignIn();
 
     const linked = await currentLogin();
     if (linked?.isUnderway) return linked;
@@ -233,10 +294,16 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     let login = current?.isUnderway ? current : null;
     if (!login && openPrompt) {
       login = await waitUnlessRequestAbandoned(openPrompt);
-    } else if (
-      !login &&
-      (declinedAt === null || now() - declinedAt >= OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS)
-    ) {
+    } else if (!login) {
+      // A declined prompt stays declined for the cooldown: no new prompt, no new
+      // callback listener, and no link for the agent to hand over instead.
+      if (declinedAt !== null && now() - declinedAt < OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS) {
+        throw new ToolError(
+          McpToolErrorCode.AuthError,
+          OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
+          false,
+        );
+      }
       openPrompt = promptToSignIn(client, logger).finally(() => {
         openPrompt = null;
       });

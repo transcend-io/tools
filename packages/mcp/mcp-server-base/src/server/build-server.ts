@@ -575,9 +575,11 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
       const result = await mcpSessionContext.run(session, () =>
         toolCallContext.run(callContext, async () => {
-          // Inside the session, so a sign-in prompt is bound to this call.
+          // Inside the session, so a sign-in prompt is bound to this call. Only a stdio
+          // server runs for the person who saved the login. An HTTP server serves other
+          // callers, who must bring their own credentials.
           let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
-          if (toolRequiresAuth) {
+          if (toolRequiresAuth && options.transport === McpTransport.Stdio) {
             const authStartedAt = Date.now();
             await ensureLazyOAuthAuth(logger);
             oauthCredentials = getLazyOAuthCredentials();

@@ -6,13 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HUMAN_RESPONSE_FLOOR_MS } from '../src/capabilities/cursor-decline-quirk.js';
 import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
 import { SimpleLogger } from '../src/clients/graphql/base.js';
-import { DEFAULT_DASHBOARD_URL } from '../src/defaults.js';
 import { ToolError } from '../src/errors.js';
 import {
   mcpSessionContext,
   NO_ELICITATION_FIELDS,
   type McpSession,
   type requestElicitation,
+  type requestUrlElicitation,
 } from '../src/mcp-session-context.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
@@ -296,6 +296,8 @@ describe('createLazyOAuth', () => {
       canPrompt?: boolean;
       /** Credential store, to share one between processes */
       store?: CredentialStore;
+      /** How a host that declares URL-mode elicitation answers; absent when it does not */
+      urlAnswer?: ElicitResult['action'];
     } = {},
   ) {
     const server = createFakeAuthorizationServer(client);
@@ -310,6 +312,10 @@ describe('createLazyOAuth', () => {
         prompts.push({ message, answer: (action) => resolve({ action }), fail: reject });
       });
     });
+
+    const elicitUrl = vi.fn<typeof requestUrlElicitation>(async () => ({
+      action: options.urlAnswer ?? 'cancel',
+    }));
 
     const startLoginSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockImplementation(async () => {
       const authorizationUrl = `${client.issuer}/oauth/authorize?login=${logins.length + 1}`;
@@ -349,6 +355,7 @@ describe('createLazyOAuth', () => {
       tokenManager: manager,
       openBrowser,
       elicit,
+      elicitUrl,
       resolveClient: () => client,
       now: () => clock.nowMs,
     });
@@ -364,7 +371,10 @@ describe('createLazyOAuth', () => {
     ): Promise<void> => {
       const session: McpSession = {
         client: {
-          capabilities: new Set([McpClientCapability.Elicitation]),
+          capabilities: new Set([
+            McpClientCapability.Elicitation,
+            ...(options.urlAnswer ? [McpClientCapability.ElicitationUrl] : []),
+          ]),
           host: call.host ?? McpHostClient.Claude,
         },
         server: {} as Server,
@@ -384,6 +394,7 @@ describe('createLazyOAuth', () => {
       prompts,
       logins,
       elicit,
+      elicitUrl,
       openBrowser,
       startLoginSpy,
       server,
@@ -431,12 +442,14 @@ describe('createLazyOAuth', () => {
       await vi.waitFor(() => expect(prompts).toHaveLength(1));
 
       expect(elicit).toHaveBeenCalledWith(
-        `Sign in to Transcend (${new URL(DEFAULT_DASHBOARD_URL).host}) to run ${TOOL_NAME}. ` +
+        `Sign in to Transcend (${new URL(client.issuer).host}) to run ${TOOL_NAME}. ` +
           'Accept opens your browser.',
         NO_ELICITATION_FIELDS,
         { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
       );
-      expect(prompts[0]!.message).toBe(formatOAuthSignInPrompt(TOOL_NAME));
+      expect(prompts[0]!.message).toBe(
+        formatOAuthSignInPrompt(new URL(client.issuer).host, TOOL_NAME),
+      );
       expect(openBrowser).not.toHaveBeenCalled();
       expect(logins).toHaveLength(0);
 
@@ -500,7 +513,7 @@ describe('createLazyOAuth', () => {
       expect(elicit).toHaveBeenCalledTimes(1);
     });
 
-    it('hands out the link with no prompt for 60 seconds after a decline, then asks again', async () => {
+    it('fails calls with the declined error for 60 seconds after a decline and starts no login, then asks again', async () => {
       const { callTool, prompts, logins, elicit, openBrowser, clock } = startProcess();
 
       const first = callTool();
@@ -510,12 +523,11 @@ describe('createLazyOAuth', () => {
       await expect(first).rejects.toMatchObject(declined);
 
       clock.nowMs += OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS - 1;
-      const link = signInLink(`${client.issuer}/oauth/authorize?login=1`);
-      await expect(callTool()).rejects.toMatchObject(link);
-      await expect(callTool()).rejects.toMatchObject(link);
+      await expect(callTool()).rejects.toMatchObject(declined);
+      await expect(callTool()).rejects.toMatchObject(declined);
       expect(elicit).toHaveBeenCalledTimes(1);
       expect(openBrowser).not.toHaveBeenCalled();
-      expect(logins).toHaveLength(1);
+      expect(logins).toHaveLength(0);
 
       clock.nowMs += 1;
       const afterCooldown = callTool();
@@ -523,11 +535,8 @@ describe('createLazyOAuth', () => {
       prompts[1]!.answer('accept');
       await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
 
-      // The accepted login replaces the one behind the link, so the user gets
-      // the whole callback window.
-      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
-      expect(openBrowser).toHaveBeenCalledWith(logins[1]!.authorizationUrl, logger);
-      logins[1]!.completeInBrowser();
+      expect(openBrowser).toHaveBeenCalledWith(logins[0]!.authorizationUrl, logger);
+      logins[0]!.completeInBrowser();
       await afterCooldown;
     });
 
@@ -674,7 +683,50 @@ describe('createLazyOAuth', () => {
     });
   });
 
+  describe('when the host can open a link but not show a form', () => {
+    it('asks the host to open the consent link, and the sign-in completes without the agent', async () => {
+      const { callTool, logins, elicitUrl, openBrowser } = startProcess({
+        canPrompt: false,
+        urlAnswer: 'accept',
+      });
+
+      const call = callTool();
+      await vi.waitFor(() => expect(logins).toHaveLength(1));
+      logins[0]!.completeInBrowser();
+      await call;
+
+      expect(elicitUrl).toHaveBeenCalledTimes(1);
+      expect(elicitUrl).toHaveBeenCalledWith(
+        formatOAuthSignInPrompt(new URL(client.issuer).host, TOOL_NAME),
+        logins[0]!.authorizationUrl,
+        { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
+      );
+      expect(openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('treats a refused link as a decline, closes the login, and holds the cooldown', async () => {
+      const { callTool, logins, elicitUrl } = startProcess({
+        canPrompt: false,
+        urlAnswer: 'decline',
+      });
+
+      await expect(callTool()).rejects.toMatchObject(declined);
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
+
+      await expect(callTool()).rejects.toMatchObject(declined);
+      expect(elicitUrl).toHaveBeenCalledTimes(1);
+      expect(logins).toHaveLength(1);
+    });
+  });
+
   describe('when nobody can be asked', () => {
+    it('names the host the link goes to', async () => {
+      const { callTool } = startProcess({ canPrompt: false });
+
+      await expect(callTool()).rejects.toMatchObject({
+        message: expect.stringContaining(`It goes to ${new URL(client.issuer).host}.`),
+      });
+    });
     it('returns a sign-in link, keeps the callback server open, and the retry succeeds', async () => {
       const { callTool, logins, openBrowser, lazyOAuth } = startProcess({ canPrompt: false });
 

@@ -1,4 +1,5 @@
 import type { StoredOAuthTokens } from '../types.js';
+import type { AssertLockHeld } from './refresh-lock.js';
 
 /** Where the OAuth login is saved, as accepted by `TRANSCEND_MCP_CREDENTIAL_STORE`. */
 export enum CredentialStoreKind {
@@ -33,8 +34,11 @@ export interface CredentialStore {
   /**
    * Runs `task` while no other process sharing this store can refresh `key`.
    * Refresh tokens rotate, so two processes must never spend the same one.
+   *
+   * `task` receives {@link AssertLockHeld}. Call it before the token request and
+   * before the save, because a holder that was suspended can lose its lock.
    */
-  withRefreshLock: <T>(key: string, task: () => Promise<T>) => Promise<T>;
+  withRefreshLock: <T>(key: string, task: (assertHeld: AssertLockHeld) => Promise<T>) => Promise<T>;
 }
 
 /** The slice of an OS keychain the store uses. */

@@ -131,3 +131,35 @@ export async function requestElicitation(
 
   return await session.server.elicitInput({ mode: 'form', message, requestedSchema }, sendOptions);
 }
+
+/**
+ * Asks the host to send the user to `url`, through URL-mode elicitation.
+ *
+ * The host shows the user where the link goes and opens it only on their accept,
+ * so the link never passes through the model. Returns `undefined` when the host
+ * did not declare URL-mode support. Like {@link requestElicitation}, it can reject
+ * when the host errors or never answers within the timeout.
+ */
+export async function requestUrlElicitation(
+  /** Prompt explaining to the user why the link is being opened */
+  message: string,
+  /** Link the host opens for the user */
+  url: string,
+  /** Overrides for the outbound request; set `timeout` when a person has to answer */
+  options?: RequestOptions,
+): Promise<ElicitResult | undefined> {
+  const session = getMcpSession();
+  if (!session || !session.client.capabilities.has(McpClientCapability.ElicitationUrl)) {
+    return undefined;
+  }
+
+  const { request } = session;
+  const sendOptions: RequestOptions | undefined = request
+    ? { relatedRequestId: request.id, signal: request.signal, ...options }
+    : options;
+
+  return await session.server.elicitInput(
+    { mode: 'url', message, url, elicitationId: crypto.randomUUID() },
+    sendOptions,
+  );
+}

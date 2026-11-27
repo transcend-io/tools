@@ -119,12 +119,13 @@ export function formatOAuthClientConfigError(detail: string): string {
  * Returns the text of the sign-in prompt the host shows before a browser opens.
  */
 export function formatOAuthSignInPrompt(
+  /** Host of the authorization URL the browser opens, so the prompt names where it goes */
+  authorizationHost: string,
   /** Tool waiting on the sign-in, when the call came through a tool */
   toolName?: string,
 ): string {
-  const dashboardHost = new URL(resolveMcpDashboardUrl()).host;
   const purpose = toolName ? ` to run ${toolName}` : '';
-  return `Sign in to Transcend (${dashboardHost})${purpose}. Accept opens your browser.`;
+  return `Sign in to Transcend (${authorizationHost})${purpose}. Accept opens your browser.`;
 }
 
 /**
@@ -138,6 +139,7 @@ export function formatOAuthSignInLinkMessage(authorizationUrl: string): string {
   return (
     'This tool needs a Transcend sign-in. Show the user this link: ' +
     `[Sign in to Transcend](${linkTarget}). ` +
+    `It goes to ${new URL(authorizationUrl).host}. ` +
     'Wait until the user says they signed in, then retry once. Do not retry before that. ' +
     `The link expires within ${minutes} minutes.`
   );

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { constants, lstat, open, rename, rm } from 'node:fs/promises';
+import { constants, lstat, open, readdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { z } from 'zod';
@@ -8,10 +8,12 @@ import type { Logger } from '../../clients/graphql/base.js';
 import type { StoredOAuthTokens } from '../types.js';
 import { ensurePrivateDirectory, isErrnoException } from './config-directory.js';
 import { refreshLockPath, withLockFile } from './refresh-lock.js';
-import { parseStoredOAuthTokens } from './stored-tokens.js';
+import { parseStoredOAuthTokens, toStoredOAuthTokensEntry } from './stored-tokens.js';
 import { CredentialStoreKind, type CredentialStore } from './types.js';
 
 const CREDENTIALS_FILE_NAME = 'credentials.json';
+
+const TEMPORARY_FILE_SUFFIX = '.tmp';
 
 const CredentialsFileSchema = z.record(z.string(), z.unknown());
 
@@ -92,7 +94,7 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
 
   const writeEntries = async (entries: Record<string, unknown>): Promise<void> => {
     await ensurePrivateDirectory(directory);
-    const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
+    const temporaryPath = `${filePath}.${randomUUID()}${TEMPORARY_FILE_SUFFIX}`;
     try {
       const handle = await open(temporaryPath, 'wx', 0o600);
       try {
@@ -108,9 +110,30 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
     }
   };
 
+  /**
+   * Deletes temporary files that a killed write left behind. Every writer holds
+   * the write lock, so any temporary file seen under the lock is abandoned.
+   */
+  const removeAbandonedTemporaryFiles = async (): Promise<void> => {
+    let names: string[];
+    try {
+      names = await readdir(directory);
+    } catch (error) {
+      if (isErrnoException(error, 'ENOENT')) return;
+      throw error;
+    }
+    const prefix = `${CREDENTIALS_FILE_NAME}.`;
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(prefix) && name.endsWith(TEMPORARY_FILE_SUFFIX))
+        .map((name) => rm(join(directory, name), { force: true })),
+    );
+  };
+
   /** Serializes read-modify-write cycles, so two processes cannot drop each other's entry. */
   const updateEntries = (change: (entries: Record<string, unknown>) => void): Promise<void> =>
     withLockFile(writeLockPath, async () => {
+      await removeAbandonedTemporaryFiles();
       const entries = await readEntries();
       change(entries);
       await writeEntries(entries);
@@ -149,7 +172,7 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
     },
     save: (key, tokens) =>
       updateEntries((entries) => {
-        entries[key] = tokens;
+        entries[key] = toStoredOAuthTokensEntry(tokens, key);
       }),
     clear,
     keys: async () => Object.keys(await readEntries()),

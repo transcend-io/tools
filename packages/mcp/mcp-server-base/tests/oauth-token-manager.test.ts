@@ -9,6 +9,7 @@ import { SimpleLogger } from '../src/clients/graphql/base.js';
 import type { ToolError } from '../src/errors.js';
 import { createFileCredentialStore } from '../src/oauth/credential-store/file-store.js';
 import { createMemoryCredentialStore } from '../src/oauth/credential-store/memory-store.js';
+import { LockLostError } from '../src/oauth/credential-store/refresh-lock.js';
 import { credentialStoreKey } from '../src/oauth/credential-store/stored-tokens.js';
 import type { CredentialStore } from '../src/oauth/credential-store/types.js';
 import { configureOAuthScopes, resetConfiguredOAuthScopes } from '../src/oauth/scopes.js';
@@ -326,6 +327,56 @@ describe('createOAuthTokenManager', () => {
 
       const retried = await manager.getValidCredentials(CLIENT, logger);
       expect(retried?.accessToken).toBe('access-2');
+    });
+  });
+
+  describe('a lost refresh lock', () => {
+    /** Makes the store report that the lock is lost from the `lostAtCall`-th check on. */
+    const loseLockFromCheck = (store: CredentialStore, lostAtCall: number): void => {
+      const withLock = store.withRefreshLock.bind(store);
+      vi.spyOn(store, 'withRefreshLock').mockImplementation((key, task) => {
+        let checks = 0;
+        return withLock(key, (assertHeld) =>
+          task(async () => {
+            checks += 1;
+            if (checks >= lostAtCall) throw new LockLostError('lock');
+            await assertHeld();
+          }),
+        );
+      });
+    };
+
+    it('does not spend the refresh token when the lock is lost before the request', async () => {
+      const store = createMemoryCredentialStore();
+      const manager = startProcess(store);
+      await manager.saveTokens(CLIENT, server.signIn(nowMs), logger);
+      nowMs += ACCESS_TOKEN_LIFETIME_MS;
+      loseLockFromCheck(store, 1);
+
+      await expect(manager.getValidCredentials(CLIENT, logger)).rejects.toMatchObject({
+        code: McpToolErrorCode.ApiError,
+        retryable: true,
+      } satisfies Partial<ToolError>);
+
+      expect(server.refreshRequestCount()).toBe(0);
+      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-1' });
+    });
+
+    it('keeps the rotated token in memory when the lock is lost after the request', async () => {
+      const store = createMemoryCredentialStore();
+      const manager = startProcess(store);
+      await manager.saveTokens(CLIENT, server.signIn(nowMs), logger);
+      nowMs += ACCESS_TOKEN_LIFETIME_MS;
+      loseLockFromCheck(store, 2);
+
+      const credentials = await manager.getValidCredentials(CLIENT, logger);
+
+      expect(credentials).toMatchObject({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+      expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-1' });
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('refresh lock was lost'),
+        expect.anything(),
+      );
     });
   });
 

@@ -40,6 +40,7 @@ export {
   hasCapability,
   mcpSessionContext,
   requestElicitation,
+  requestUrlElicitation,
 } from './mcp-session-context.js';
 export type { McpSession } from './mcp-session-context.js';
 

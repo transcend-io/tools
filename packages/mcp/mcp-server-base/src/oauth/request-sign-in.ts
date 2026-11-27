@@ -26,6 +26,8 @@ export enum SignInAnswer {
 }
 
 export interface RequestSignInOptions {
+  /** Host of the authorization URL the browser opens, named in the prompt */
+  authorizationHost: string;
   /** Shows the prompt in the host; resolves `undefined` when the host cannot show one */
   elicit: typeof requestElicitation;
   /** Clock used to time the host's answer */
@@ -41,12 +43,12 @@ export interface RequestSignInOptions {
  * a hijack, so the caller opens one only on {@link SignInAnswer.Accepted}.
  */
 export async function requestSignIn(options: RequestSignInOptions): Promise<SignInAnswer> {
-  const { elicit, now, logger } = options;
+  const { authorizationHost, elicit, now, logger } = options;
   const askedAt = now();
   let answer: Awaited<ReturnType<typeof requestElicitation>>;
   try {
     answer = await elicit(
-      formatOAuthSignInPrompt(toolCallContext.getStore()?.toolName),
+      formatOAuthSignInPrompt(authorizationHost, toolCallContext.getStore()?.toolName),
       NO_ELICITATION_FIELDS,
       { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
     );

@@ -232,20 +232,24 @@ The server saves the login after you sign in. Restarting the MCP client, or the 
 
 `TRANSCEND_MCP_CREDENTIAL_STORE` picks where the login is saved:
 
-| Value            | Where the login is saved                                                                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `auto` (default) | The OS keychain: macOS Keychain, Windows Credential Manager, or the Linux Secret Service. When no keychain is available, the `file` store |
-| `keyring`        | The OS keychain only. Tool calls fail with an error when no keychain is available                                                         |
-| `file`           | `~/.transcend/mcp/credentials.json`, readable only by your user (mode `0600`). `TRANSCEND_MCP_CONFIG_DIR` changes the directory           |
-| `memory`         | Nowhere. Every restart asks you to sign in again                                                                                          |
+| Value            | Where the login is saved                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto` (default) | The OS keychain: macOS Keychain, Windows Credential Manager, or the Linux Secret Service. When no keychain is available, the `file` store          |
+| `keyring`        | The OS keychain only. Tool calls fail with an error when no keychain is available                                                                  |
+| `file`           | `~/.transcend/mcp/credentials.json`, readable only by your user (mode `0600`) on macOS and Linux. `TRANSCEND_MCP_CONFIG_DIR` changes the directory |
+| `memory`         | Nowhere. Every restart asks you to sign in again                                                                                                   |
+
+Only a server run over stdio uses the saved login. A server run over HTTP never signs in for itself, so each caller brings their own credentials.
 
 One login is saved per OAuth issuer, client ID, and set of requested scopes. Two servers that share an OAuth client but request different scopes each sign in once.
 
 What to know about the keychain:
 
 - macOS can show a one-time dialog that asks whether `node` may use your keychain.
-- Any script run by the same `node` binary can read the saved login without a prompt.
+- Any script run by the same `node` binary can read the saved login without a prompt. An AI agent with shell access can run `security` (macOS) or `secret-tool` (Linux) to read it too.
 - Set `TRANSCEND_MCP_CREDENTIAL_STORE=file` to keep the login out of the keychain, or `memory` to save nothing.
+- On Windows the `file` store relies on your user profile folder permissions, not on a `0600` mode.
+- In `auto` mode, a login that an earlier run saved to the file moves into the keychain at the next start. `status` and `logout` also check the file.
 
 Check or remove the saved login from a terminal. The commands read the same environment variables as the server:
 
@@ -254,6 +258,8 @@ npx -y @transcend-io/mcp status        # where the login is saved and when the a
 npx -y @transcend-io/mcp logout        # revoke the login at Transcend and remove it
 npx -y @transcend-io/mcp logout --all  # remove every saved login without revoking it; needs no OAuth variables
 ```
+
+A running server keeps its login in memory. Restart it after `logout` so it asks you to sign in again.
 
 Every domain server accepts the same subcommands, for example `npx -y @transcend-io/mcp-server-consent status`.
 
