@@ -7,11 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import type { ToolError } from '../src/errors.js';
+import { createFallbackCredentialStore } from '../src/oauth/credential-store/fallback-store.js';
 import { createFileCredentialStore } from '../src/oauth/credential-store/file-store.js';
+import { createKeyringCredentialStore } from '../src/oauth/credential-store/keyring-store.js';
 import { createMemoryCredentialStore } from '../src/oauth/credential-store/memory-store.js';
 import { LockLostError } from '../src/oauth/credential-store/refresh-lock.js';
 import { credentialStoreKey } from '../src/oauth/credential-store/stored-tokens.js';
-import type { CredentialStore } from '../src/oauth/credential-store/types.js';
+import type { CredentialStore, Keyring } from '../src/oauth/credential-store/types.js';
 import { configureOAuthScopes, resetConfiguredOAuthScopes } from '../src/oauth/scopes.js';
 import {
   createOAuthTokenManager,
@@ -434,6 +436,61 @@ describe('createOAuthTokenManager', () => {
 
       expect(await store.load(KEY)).toMatchObject({ refreshToken: 'refresh-newer' });
       expect(manager.getActiveStoredTokens()).toMatchObject({ refreshToken: 'refresh-newer' });
+    });
+  });
+
+  describe('a keychain that rejects saves', () => {
+    /** An in-memory keychain. */
+    function createFakeKeyring(): Keyring & { secrets: Map<string, string> } {
+      const secrets = new Map<string, string>();
+      return {
+        secrets,
+        get: async (_service, account) => secrets.get(account) ?? null,
+        set: async (_service, account, secret) => {
+          secrets.set(account, secret);
+        },
+        delete: async (_service, account) => {
+          secrets.delete(account);
+        },
+        accounts: async () => [...secrets.keys()],
+      };
+    }
+
+    it('rotates through the file without revoking the grant across two processes', async () => {
+      const keyring = createFakeKeyring();
+      const fileStore = createFileCredentialStore({ directory, logger });
+      const keyringStore = createKeyringCredentialStore({
+        keyring,
+        lockDirectory: directory,
+        logger,
+      });
+      await keyringStore.save(KEY, server.signIn(nowMs));
+      const store = createFallbackCredentialStore({
+        primary: keyringStore,
+        fallback: fileStore,
+        logger,
+      });
+      const first = createOAuthTokenManager({ store, now: () => nowMs, fetch: server.fetch });
+      const second = createOAuthTokenManager({ store, now: () => nowMs, fetch: server.fetch });
+      nowMs += ACCESS_TOKEN_LIFETIME_MS;
+      keyring.set = async () => {
+        throw new Error('keychain is locked');
+      };
+
+      const firstCredentials = await first.getValidCredentials(CLIENT, logger);
+      const secondCredentials = await second.getValidCredentials(CLIENT, logger);
+
+      expect(firstCredentials).toMatchObject({
+        accessToken: 'access-2',
+        refreshToken: 'refresh-2',
+      });
+      expect(secondCredentials).toMatchObject({
+        accessToken: 'access-2',
+        refreshToken: 'refresh-2',
+      });
+      expect(server.refreshRequestCount()).toBe(1);
+      expect(server.isGrantRevoked()).toBe(false);
+      expect((await fileStore.load(KEY))?.refreshToken).toBe('refresh-2');
     });
   });
 
