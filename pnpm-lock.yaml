@@ -744,7 +744,7 @@ importers:
         version: 4.6.6
     optionalDependencies:
       '@napi-rs/keyring':
-        specifier: ^2.1.2
+        specifier: 2.1.2
         version: 2.1.2
 
   packages/mcp/mcp-server-config:
