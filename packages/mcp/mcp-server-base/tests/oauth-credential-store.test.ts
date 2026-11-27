@@ -22,16 +22,15 @@ import {
   createKeyringCredentialStore,
   KEYRING_SERVICE,
 } from '../src/oauth/credential-store/keyring-store.js';
-import {
-  LockTimeoutError,
-  REFRESH_LOCK_STALE_MS,
-  withLockFile,
-} from '../src/oauth/credential-store/refresh-lock.js';
+import { LockTimeoutError, withLockFile } from '../src/oauth/credential-store/refresh-lock.js';
 import {
   parseCredentialStoreKind,
   resolveCredentialStore,
 } from '../src/oauth/credential-store/resolve-credential-store.js';
-import { credentialStoreKey } from '../src/oauth/credential-store/stored-tokens.js';
+import {
+  credentialStoreKey,
+  toStoredOAuthTokensEntry,
+} from '../src/oauth/credential-store/stored-tokens.js';
 import { CredentialStoreKind, type Keyring } from '../src/oauth/credential-store/types.js';
 import type { StoredOAuthTokens } from '../src/oauth/types.js';
 
@@ -227,12 +226,19 @@ describe('credential store', () => {
       const store = createFileCredentialStore({ directory, logger });
       await store.save(KEY, makeTokens());
       const targetPath = join(directory, 'elsewhere.json');
-      const targetContent = JSON.stringify({ [KEY]: makeTokens({ accessToken: 'planted' }) });
+      // A valid entry, so a null load can only come from refusing the symlink.
+      const targetContent = JSON.stringify({
+        [KEY]: toStoredOAuthTokensEntry(makeTokens({ accessToken: 'planted' }), KEY),
+      });
       await writeFile(targetPath, targetContent, { mode: 0o600 });
       await rm(credentialsPath);
       await symlink(targetPath, credentialsPath);
 
       expect(await store.load(KEY)).toBeNull();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('the credentials file is a symlink'),
+        expect.anything(),
+      );
 
       await store.save(KEY, makeTokens({ accessToken: 'access-2' }));
       expect(await readFile(targetPath, 'utf8')).toBe(targetContent);
@@ -439,12 +445,20 @@ describe('credential store', () => {
       ).resolves.toBe('took over');
     });
 
-    it('takes over a lock that went unrenewed past the stale window', async () => {
-      await plantLock(process.pid, REFRESH_LOCK_STALE_MS + 1_000);
+    it('takes over a lock that it watched go unrenewed for the stale window', async () => {
+      await plantLock(process.pid);
 
       await expect(
-        withLockFile(lockPath, async () => 'took over', { timeoutMs: 2_000 }),
+        withLockFile(lockPath, async () => 'took over', { timeoutMs: 2_000, staleMs: 300 }),
       ).resolves.toBe('took over');
+    });
+
+    it('does not take over a lock only because its file looks old', async () => {
+      await plantLock(process.pid, 24 * 60 * 60 * 1_000);
+
+      await expect(
+        withLockFile(lockPath, async () => 'took over', { timeoutMs: 300 }),
+      ).rejects.toBeInstanceOf(LockTimeoutError);
     });
 
     it('times out instead of taking a lock from a live, recent holder', async () => {
@@ -464,10 +478,10 @@ describe('credential store', () => {
         lockPath,
         async () => {
           events.push('slow holder started');
-          await sleep(500);
+          await sleep(1_000);
           events.push('slow holder finished');
         },
-        { staleMs: 150, renewMs: 30 },
+        { staleMs: 500, renewMs: 50 },
       );
       await vi.waitFor(() => expect(events).toEqual(['slow holder started']));
 
@@ -476,7 +490,7 @@ describe('credential store', () => {
         async () => {
           events.push('waiter started');
         },
-        { staleMs: 150 },
+        { staleMs: 500 },
       );
       await slowHolder;
 
