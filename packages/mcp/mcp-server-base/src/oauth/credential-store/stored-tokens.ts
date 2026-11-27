@@ -38,8 +38,20 @@ export interface CredentialStoreKeyParts {
   scopes: readonly string[];
 }
 
+/** Separates the parts of a store key. */
+const KEY_DELIMITER = '|';
+
+/**
+ * Escapes the delimiter, and the escape character, in one part of a key. Without
+ * it, an issuer or client ID that contains `|` could build the key of a different
+ * issuer and client pair.
+ */
+function escapeKeyPart(part: string): string {
+  return part.replaceAll('%', '%25').replaceAll(KEY_DELIMITER, '%7C');
+}
+
 function credentialStoreKeyPrefix(issuer: string, clientId: string): string {
-  return `${normalizeIssuer(issuer)}|${clientId}|`;
+  return [escapeKeyPart(normalizeIssuer(issuer)), escapeKeyPart(clientId), ''].join(KEY_DELIMITER);
 }
 
 /**
