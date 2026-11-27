@@ -1,4 +1,6 @@
 import type { Logger } from '../../clients/graphql/base.js';
+import type { StoredOAuthTokens } from '../types.js';
+import type { AssertLockHeld } from './refresh-lock.js';
 import type { CredentialStore } from './types.js';
 
 export interface FallbackCredentialStoreOptions {
@@ -8,10 +10,37 @@ export interface FallbackCredentialStoreOptions {
   fallback: CredentialStore;
   /** Logger for the switch to the fallback */
   logger: Logger;
+  /**
+   * When true, take the keychain lock and the file lock before a refresh or a
+   * migration step. Set when the two stores use different lock directories.
+   */
+  lockBothStores?: boolean;
 }
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Returns the login with the later `expiresAt`, or the keychain copy on a tie. */
+function preferNewerLogin(keychain: StoredOAuthTokens, file: StoredOAuthTokens): StoredOAuthTokens {
+  return file.expiresAt > keychain.expiresAt ? file : keychain;
+}
+
+async function withBothRefreshLocks<T>(
+  primary: CredentialStore,
+  fallback: CredentialStore,
+  key: string,
+  task: (assertHeld: AssertLockHeld) => Promise<T>,
+): Promise<T> {
+  return primary.withRefreshLock(key, async (assertPrimary) =>
+    fallback.withRefreshLock(key, async (assertFallback) => {
+      const assertHeld: AssertLockHeld = async () => {
+        await assertPrimary();
+        await assertFallback();
+      };
+      return task(assertHeld);
+    }),
+  );
 }
 
 /**
@@ -25,7 +54,7 @@ function describe(error: unknown): string {
 export function createFallbackCredentialStore(
   options: FallbackCredentialStoreOptions,
 ): CredentialStore {
-  const { primary, fallback, logger } = options;
+  const { primary, fallback, logger, lockBothStores = false } = options;
   const warnAndFallBack = (action: string, error: unknown): void => {
     logger.warn(`The OS keychain failed to ${action}; using the owner-only file instead`, {
       error: describe(error),
@@ -33,24 +62,54 @@ export function createFallbackCredentialStore(
     });
   };
 
+  const withRefreshLock = <T>(key: string, task: (assertHeld: AssertLockHeld) => Promise<T>) =>
+    lockBothStores
+      ? withBothRefreshLocks(primary, fallback, key, task)
+      : primary.withRefreshLock(key, task);
+
+  const loadFromBoth = async (key: string): Promise<StoredOAuthTokens | null> => {
+    let keychain: StoredOAuthTokens | null = null;
+    try {
+      keychain = await primary.load(key);
+    } catch (error) {
+      warnAndFallBack('read the saved login', error);
+    }
+
+    let file: StoredOAuthTokens | null = null;
+    try {
+      file = await fallback.load(key);
+    } catch (error) {
+      logger.warn('Could not read the saved login from the owner-only file', {
+        error: describe(error),
+        filePath: fallback.location,
+      });
+    }
+
+    if (keychain && file) return preferNewerLogin(keychain, file);
+    return keychain ?? file;
+  };
+
   return {
     kind: primary.kind,
     location: primary.location,
-    load: async (key) => {
-      try {
-        const tokens = await primary.load(key);
-        if (tokens) return tokens;
-      } catch (error) {
-        warnAndFallBack('read the saved login', error);
-      }
-      return fallback.load(key);
-    },
+    load: loadFromBoth,
     save: async (key, tokens) => {
       try {
         await primary.save(key, tokens);
+        await fallback.clear(key).catch((error: unknown) => {
+          logger.warn('Could not remove the saved login from the owner-only file', {
+            error: describe(error),
+            filePath: fallback.location,
+          });
+        });
       } catch (error) {
         warnAndFallBack('save the login', error);
         await fallback.save(key, tokens);
+        await primary.clear(key).catch((clearError: unknown) => {
+          logger.warn('Could not remove the outdated login from the OS keychain', {
+            error: describe(clearError),
+          });
+        });
       }
     },
     clear: async (key) => {
@@ -72,6 +131,18 @@ export function createFallbackCredentialStore(
         return fallback.keys();
       }
     },
-    withRefreshLock: (key, task) => primary.withRefreshLock(key, task),
+    withRefreshLock,
   };
+}
+
+/** Runs `task` under the same refresh locks the fallback store would use. */
+export async function withFallbackRefreshLock<T>(
+  options: Pick<FallbackCredentialStoreOptions, 'primary' | 'fallback' | 'lockBothStores'>,
+  key: string,
+  task: (assertHeld: AssertLockHeld) => Promise<T>,
+): Promise<T> {
+  const { primary, fallback, lockBothStores = false } = options;
+  return lockBothStores
+    ? withBothRefreshLocks(primary, fallback, key, task)
+    : primary.withRefreshLock(key, task);
 }
