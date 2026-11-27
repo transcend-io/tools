@@ -9,7 +9,7 @@ import {
   TRANSCEND_OAUTH_CLIENT_ID_ENV,
   TRANSCEND_OAUTH_CLIENT_SECRET_ENV,
 } from './constants.js';
-import { resolveCredentialStore } from './credential-store/resolve-credential-store.js';
+import { resolveCredentialStores } from './credential-store/resolve-credential-store.js';
 import type { CredentialStore } from './credential-store/types.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { normalizeIssuer } from './normalize-issuer.js';
@@ -30,8 +30,11 @@ const LOGOUT_ALL_FLAG = '--all';
 export interface RunOAuthLoginCommandOptions {
   /** Command-line arguments after the executable; defaults to `process.argv.slice(2)` */
   argv?: readonly string[];
-  /** Where saved logins live; defaults to the store the environment selects */
-  store?: CredentialStore;
+  /**
+   * Every store that may hold a saved login; defaults to the stores the
+   * environment selects. In `auto` mode that is the keychain and the file.
+   */
+  stores?: readonly CredentialStore[];
   /** OAuth client identifier; defaults to `TRANSCEND_OAUTH_CLIENT_ID` */
   clientId?: string;
   /** OAuth client secret; defaults to `TRANSCEND_OAUTH_CLIENT_SECRET` */
@@ -48,8 +51,8 @@ export interface RunOAuthLoginCommandOptions {
 
 /** What the commands need, with every default applied. */
 interface LoginCommandContext {
-  /** Where saved logins live */
-  store: CredentialStore;
+  /** Every store that may hold a saved login */
+  stores: readonly CredentialStore[];
   /** OAuth client identifier, when configured */
   clientId: string | undefined;
   /** OAuth client secret, when configured */
@@ -86,15 +89,18 @@ async function loadSavedLogins(
   return logins;
 }
 
-/** Prints the saved logins. Never prints a token. */
-async function runStatus(context: LoginCommandContext): Promise<number> {
-  const { store, clientId, now, write } = context;
+/** Prints the saved logins of one store. Never prints a token. */
+async function printStoreStatus(
+  store: CredentialStore,
+  context: LoginCommandContext,
+): Promise<void> {
+  const { clientId, now, write } = context;
   write(`Credential store: ${store.kind} (${store.location})`);
 
   const logins = await loadSavedLogins(store, clientId);
   if (logins.length === 0) {
     write('Not signed in.');
-    return 0;
+    return;
   }
 
   for (const { tokens } of logins) {
@@ -107,6 +113,13 @@ async function runStatus(context: LoginCommandContext): Promise<number> {
     write(`  Issuer: ${tokens.issuer}`);
     write(`  Client ID: ${tokens.clientId}`);
     write(`  Access token: ${isExpired ? 'expired' : 'expires'} ${expiry} (${renewal})`);
+  }
+}
+
+/** Prints the saved logins of every store. Never prints a token. */
+async function runStatus(context: LoginCommandContext): Promise<number> {
+  for (const store of context.stores) {
+    await printStoreStatus(store, context);
   }
   return 0;
 }
@@ -135,19 +148,31 @@ async function revokeLogin(
   });
 }
 
-/** Removes every saved login. Nothing is revoked, so no client secret is needed. */
+/**
+ * Removes every saved login. Nothing is revoked, so no client secret is needed.
+ *
+ * Each key goes under its refresh lock, so a running server cannot save a
+ * rotated token between the listing and the removal.
+ */
 async function runLogoutAll(context: LoginCommandContext): Promise<number> {
-  const { store, write } = context;
-  const keys = await store.keys();
-  if (keys.length === 0) {
+  const { stores, write } = context;
+  let removed = 0;
+  const locations: string[] = [];
+  for (const store of stores) {
+    const keys = await store.keys();
+    if (keys.length === 0) continue;
+    for (const key of keys) {
+      await store.withRefreshLock(key, () => store.clear(key));
+    }
+    removed += keys.length;
+    locations.push(store.location);
+  }
+  if (removed === 0) {
     write('Not signed in.');
     return 0;
   }
-  for (const key of keys) {
-    await store.clear(key);
-  }
   write(
-    `Removed ${keys.length} saved login(s) from ${store.location}. ` +
+    `Removed ${removed} saved login(s) from ${locations.join(' and ')}. ` +
       'They were not revoked at Transcend and stay valid until they expire.',
   );
   return 0;
@@ -160,7 +185,7 @@ async function runLogoutAll(context: LoginCommandContext): Promise<number> {
  * always asks for a new sign-in. The failure is reported through the exit code.
  */
 async function runLogout(context: LoginCommandContext): Promise<number> {
-  const { store, clientId, clientSecret, write } = context;
+  const { stores, clientId, clientSecret, write } = context;
   if (!clientId || !clientSecret) {
     write(
       `logout needs ${TRANSCEND_OAUTH_CLIENT_ID_ENV} and ${TRANSCEND_OAUTH_CLIENT_SECRET_ENV} ` +
@@ -169,36 +194,35 @@ async function runLogout(context: LoginCommandContext): Promise<number> {
     return 1;
   }
 
-  const logins = await loadSavedLogins(store, clientId);
-  if (logins.length === 0) {
-    write('Not signed in.');
-    return 0;
-  }
-
   let exitCode = 0;
-  for (const { key, tokens } of logins) {
-    // Under the refresh lock, and after a re-read, so a running server cannot
-    // rotate the token between the revocation and the removal.
-    const revocationError = await store.withRefreshLock(key, async () => {
-      const current = (await store.load(key)) ?? tokens;
-      const error = await revokeLogin(current, clientSecret, context).then(
-        () => null,
-        (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)),
-      );
-      await store.clear(key);
-      return error;
-    });
+  let found = false;
+  for (const store of stores) {
+    for (const { key, tokens } of await loadSavedLogins(store, clientId)) {
+      found = true;
+      // Under the refresh lock, and after a re-read, so a running server cannot
+      // rotate the token between the revocation and the removal.
+      const revocationError = await store.withRefreshLock(key, async () => {
+        const current = (await store.load(key)) ?? tokens;
+        const error = await revokeLogin(current, clientSecret, context).then(
+          () => null,
+          (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)),
+        );
+        await store.clear(key);
+        return error;
+      });
 
-    if (revocationError === null) {
-      write(`Signed out of ${tokens.issuer}.`);
-      continue;
+      if (revocationError === null) {
+        write(`Signed out of ${tokens.issuer}.`);
+        continue;
+      }
+      exitCode = 1;
+      write(
+        `Removed the saved login for ${tokens.issuer}, but could not revoke it at Transcend: ` +
+          `${revocationError}. It stays valid until it expires.`,
+      );
     }
-    exitCode = 1;
-    write(
-      `Removed the saved login for ${tokens.issuer}, but could not revoke it at Transcend: ` +
-        `${revocationError}. It stays valid until it expires.`,
-    );
   }
+  if (!found) write('Not signed in.');
   return exitCode;
 }
 
@@ -217,7 +241,7 @@ export async function runOAuthLoginCommand(
   }
 
   const context: LoginCommandContext = {
-    store: options.store ?? (await resolveCredentialStore({ logger: new SimpleLogger() })),
+    stores: options.stores ?? (await resolveCredentialStores({ logger: new SimpleLogger() })).all,
     clientId: options.clientId ?? getOAuthClientIdFromEnv(),
     clientSecret: options.clientSecret ?? getOAuthClientSecret(),
     issuers: (options.issuers ?? getOAuthIssuerCandidates()).map(normalizeIssuer),

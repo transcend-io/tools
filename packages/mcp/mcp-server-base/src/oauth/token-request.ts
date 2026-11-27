@@ -24,6 +24,17 @@ export class OAuthTokenRequestError extends Error {
   }
 }
 
+/** Longest piece of a token endpoint error body that goes into an error message. */
+const MAX_ERROR_DETAIL_LENGTH = 200;
+
+/** Single-line, length-capped error body, so a proxy HTML page cannot flood the logs. */
+function summarizeErrorBody(responseBody: string): string {
+  const oneLine = responseBody.replace(/\s+/g, ' ').trim();
+  return oneLine.length > MAX_ERROR_DETAIL_LENGTH
+    ? `${oneLine.slice(0, MAX_ERROR_DETAIL_LENGTH)}...`
+    : oneLine;
+}
+
 function readOAuthErrorCode(responseBody: string): string | undefined {
   try {
     const parsed: unknown = JSON.parse(responseBody);
@@ -58,8 +69,9 @@ export async function postOAuthTokenRequest(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
+    const summary = summarizeErrorBody(detail);
     throw new OAuthTokenRequestError(
-      `${errorPrefix}: HTTP ${response.status}${detail ? ` — ${detail}` : ''}`,
+      `${errorPrefix}: HTTP ${response.status}${summary ? ` — ${summary}` : ''}`,
       response.status,
       readOAuthErrorCode(detail),
     );

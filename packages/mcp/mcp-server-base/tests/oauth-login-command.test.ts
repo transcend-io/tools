@@ -44,7 +44,7 @@ describe('runOAuthLoginCommand', () => {
   ): Promise<number | undefined> =>
     runOAuthLoginCommand({
       argv,
-      store,
+      stores: [store],
       clientId: CLIENT.clientId,
       clientSecret: CLIENT.clientSecret,
       issuers: [ISSUER],
@@ -202,6 +202,59 @@ describe('runOAuthLoginCommand', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(output.join('\n')).toContain('Removed 2 saved login(s)');
       expect(output.join('\n')).toContain('not revoked');
+    });
+  });
+
+  describe('with logins in more than one store', () => {
+    let otherDirectory: string;
+    let otherStore: CredentialStore;
+
+    beforeEach(async () => {
+      otherDirectory = await mkdtemp(join(tmpdir(), 'mcp-login-command-other-'));
+      otherStore = createFileCredentialStore({ directory: otherDirectory, logger });
+    });
+
+    afterEach(async () => {
+      await rm(otherDirectory, { recursive: true, force: true });
+    });
+
+    it('status lists every store', async () => {
+      await store.save(KEY, server.signIn(NOW_MS));
+      await otherStore.save(KEY, server.signIn(NOW_MS));
+
+      await run(['status'], { stores: [store, otherStore] });
+
+      expect(output.filter((line) => line.startsWith('Credential store:'))).toEqual([
+        `Credential store: file (${store.location})`,
+        `Credential store: file (${otherStore.location})`,
+      ]);
+      expect(output.filter((line) => line === 'Signed in:')).toHaveLength(2);
+    });
+
+    it('logout revokes and removes the login in every store', async () => {
+      await store.save(KEY, server.signIn(NOW_MS));
+      await otherStore.save(KEY, server.signIn(NOW_MS));
+
+      const exitCode = await run(['logout'], { stores: [store, otherStore] });
+
+      expect(exitCode).toBe(0);
+      expect(await store.keys()).toEqual([]);
+      expect(await otherStore.keys()).toEqual([]);
+      expect(server.revokedTokens()).toHaveLength(2);
+    });
+
+    it('logout --all removes the logins in every store, each under its lock', async () => {
+      await store.save(KEY, server.signIn(NOW_MS));
+      await otherStore.save(KEY, server.signIn(NOW_MS));
+      const lockSpy = vi.spyOn(otherStore, 'withRefreshLock');
+
+      const exitCode = await run(['logout', '--all'], { stores: [store, otherStore] });
+
+      expect(exitCode).toBe(0);
+      expect(lockSpy).toHaveBeenCalledWith(KEY, expect.any(Function));
+      expect(await store.keys()).toEqual([]);
+      expect(await otherStore.keys()).toEqual([]);
+      expect(output.join('\n')).toContain('Removed 2 saved login(s)');
     });
   });
 

@@ -82,6 +82,28 @@ describe('refreshOAuthTokens', () => {
     ).rejects.toThrow(/requires a refresh token/i);
   });
 
+  it('keeps a long error body to one short line in the message', async () => {
+    const stored = storedTokensFromTokenResponse({
+      response: { access_token: 'access', refresh_token: 'refresh-token', expires_in: 60 },
+      issuer: 'https://yo.com:4001',
+      clientId: 'client-xyz',
+    });
+    const body = `<html>\n${'proxy error '.repeat(200)}\n</html>`;
+
+    const error = await refreshOAuthTokens({
+      tokenEndpoint: 'https://yo.com:4001/oauth/token',
+      stored,
+      clientSecret: 'client-secret',
+      fetch: async () => new Response(body, { status: 502 }),
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(OAuthTokenRequestError);
+    const { message } = error as OAuthTokenRequestError;
+    expect(message).not.toContain('\n');
+    expect(message.length).toBeLessThan(300);
+    expect(message).toMatch(/^OAuth token refresh failed: HTTP 502 — <html> proxy error .*\.\.\.$/);
+  });
+
   it.each([
     {
       answer: 'an OAuth error body',

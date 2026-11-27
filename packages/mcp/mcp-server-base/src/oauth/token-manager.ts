@@ -4,6 +4,7 @@ import type { OAuthTokenAuth } from '../auth.js';
 import { SimpleLogger, type Logger } from '../clients/graphql/base.js';
 import { ToolError } from '../errors.js';
 import { getOAuthClientIdFromEnv, getOAuthClientSecret } from './config.js';
+import type { AssertLockHeld } from './credential-store/refresh-lock.js';
 import { resolveCredentialStore } from './credential-store/resolve-credential-store.js';
 import { credentialStoreKey, isCredentialStoreKeyFor } from './credential-store/stored-tokens.js';
 import type { CredentialStore } from './credential-store/types.js';
@@ -192,7 +193,7 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
     const metadata = await fetchAuthorizationServerMetadata(client.issuer, options.fetch);
     const store = await getStore();
 
-    return store.withRefreshLock(key, async () => {
+    return store.withRefreshLock(key, async (assertHeld: AssertLockHeld) => {
       let current = expired;
       if (active?.isSaved) {
         // A read failure propagates: without the store's answer, the refresh
@@ -216,6 +217,10 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
         return null;
       }
 
+      // A holder that was suspended can lose its lock. Spending the refresh token
+      // then could race the new holder and get the whole grant revoked.
+      await assertHeld();
+
       let refreshed: StoredOAuthTokens;
       try {
         refreshed = await refreshOAuthTokens({
@@ -234,6 +239,19 @@ export function createOAuthTokenManager(options: OAuthTokenManagerOptions): OAut
         return null;
       }
 
+      try {
+        await assertHeld();
+      } catch (error) {
+        // The old refresh token is spent, so the new one must not be lost. Keep it
+        // in this process; the saved entry is left for the lock's new holder.
+        active = { tokens: refreshed, key, isSaved: false };
+        logger.warn(
+          'The refresh lock was lost during the token refresh. The new sign-in is kept ' +
+            'in this process only.',
+          { error: describeError(error) },
+        );
+        return storedOAuthTokensToAuth(refreshed);
+      }
       await save(key, refreshed, logger);
       return storedOAuthTokensToAuth(refreshed);
     });
