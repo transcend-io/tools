@@ -63,6 +63,12 @@ export const OAUTH_CALLBACK_SUCCESS_MESSAGE =
 export const OAUTH_CALLBACK_ERROR_MESSAGE =
   'The Transcend MCP authentication failed. Return to your host application and try again.';
 
+/** Environment variable that selects where the OAuth login is saved. */
+export const TRANSCEND_MCP_CREDENTIAL_STORE_ENV = 'TRANSCEND_MCP_CREDENTIAL_STORE';
+
+/** Environment variable that overrides the directory for the credentials file and refresh locks. */
+export const TRANSCEND_MCP_CONFIG_DIR_ENV = 'TRANSCEND_MCP_CONFIG_DIR';
+
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 
