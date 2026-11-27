@@ -1,16 +1,21 @@
-import type { ElicitRequestFormParams, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
+import type { ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
+import { declineCameFromUndeliveredPrompt } from '../../capabilities/cursor-decline-quirk.js';
 import { McpClientCapability, type ClientCapabilityReport } from '../../capabilities/types.js';
 import { SimpleLogger } from '../../clients/graphql/base.js';
 import { getCallRef, isMcpDebugLogEnabled, logMcpDebugEvent } from '../../debug-log.js';
-import { getMcpSession, hasCapability, requestElicitation } from '../../mcp-session-context.js';
+import {
+  getMcpSession,
+  hasCapability,
+  NO_ELICITATION_FIELDS,
+  requestElicitation,
+} from '../../mcp-session-context.js';
 import { skipConfirmation } from '../../oauth/env.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from '../approval-tokens.js';
 import { describeArgs, type ConfirmationSummary } from '../describe-args.js';
 import { createToolResult } from '../helpers.js';
 import { assertConfirmableSchema, type ToolDefinition } from '../types.js';
-import { declineCameFromUndeliveredPrompt } from './cursor-decline-quirk.js';
 import { withProgressHeartbeat } from './progress-heartbeat.js';
 import {
   ConfirmationCode,
@@ -129,23 +134,6 @@ export function canObtainApproval(
       return false;
   }
 }
-
-/**
- * No fields: the decision is the host's own accept and decline buttons, read off
- * `ElicitResult.action`.
- *
- * Asking for a field on top of them cost us twice. As a titled select, Cursor
- * answered with a value matching neither option's `const`; as a checkbox, a host
- * that answers `true` as a string would fare no better, because the SDK validates
- * the answer against the schema it sent and a rejected answer reaches the gate as
- * "nobody was asked" — a rendered, approved form reported as a refusal. Requesting
- * nothing leaves no shape to get wrong, and spares the user a second gesture after
- * the button they already pressed.
- */
-const NO_FIELDS: ElicitRequestFormParams['requestedSchema'] = {
-  type: 'object',
-  properties: {},
-};
 
 /** Hint plus arg recap for the elicitation form. */
 export function renderConfirmationPrompt(
@@ -272,7 +260,7 @@ async function askForConfirmation(
   let answer: ElicitResult | undefined;
   logMcpDebugEvent('confirmation.form.sent', { promptChars: prompt.length });
   try {
-    answer = await requestElicitation(prompt, NO_FIELDS, {
+    answer = await requestElicitation(prompt, NO_ELICITATION_FIELDS, {
       timeout: CONFIRMATION_TIMEOUT_MS,
     });
   } catch (error) {
@@ -314,11 +302,8 @@ async function askForConfirmation(
   }
   if (answer.action === 'decline') {
     if (
-      declineCameFromUndeliveredPrompt(
-        toolName,
-        Date.now() - askedAt,
-        options.softConfirmationAvailable,
-      )
+      options.softConfirmationAvailable &&
+      declineCameFromUndeliveredPrompt(`the confirmation for ${toolName}`, Date.now() - askedAt)
     ) {
       return { outcome: 'unasked', reason: UnaskedReason.Undelivered };
     }

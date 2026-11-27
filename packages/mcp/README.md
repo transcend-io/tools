@@ -10,7 +10,7 @@
 2. **Register a redirect URI** — choose an available localhost port number, then add `http://127.0.0.1:{port}/callback` (use `127.0.0.1`, not `localhost`; path must be `/callback`; `{port}` is the number you chose). See [OAuth client setup](#oauth-client-setup) for IPv6 and multi-server ports.
 3. **Configure your MCP client** — paste the JSON example below into Cursor (`.cursor/mcp.json`), Claude Desktop, or VS Code with your credentials.
 4. **Restart the MCP client** — the server verifies your OAuth client at startup; connection errors usually mean a redirect URI or secret mismatch.
-5. **Invoke any tool** — on the first tool call the server opens a browser for login. Complete consent and return to your agent.
+5. **Invoke any tool** — on the first tool call your MCP client asks you to sign in. Accept the prompt, complete consent in the browser that opens, and return to your agent.
 6. **Use tools normally** — the server saves the login, so a restart does not ask you to sign in again. See [Saved login](#saved-login).
 
 ## Prerequisites
@@ -39,9 +39,13 @@ For example, if you choose port `4567` and set `TRANSCEND_OAUTH_REDIRECT_PORT=45
 
 **Multiple domain servers:** use a **different** `TRANSCEND_OAUTH_REDIRECT_PORT` (and matching redirect URI) for each server. One OAuth client can register **multiple** redirect URIs on the same client (e.g. `:your-client-redirect-port/callback` and `:your-other-redirect-port/callback`).
 
-**Startup vs browser login:** at startup the server verifies client ID, secret, and redirect URI via Transcend's API. If verification fails, the MCP server will not connect — fix credentials first. After startup succeeds, the **browser** opens on the first tool call to complete user consent.
+**Startup vs browser login:** at startup the server verifies client ID, secret, and redirect URI via Transcend's API. If verification fails, the MCP server will not connect — fix credentials first. After startup succeeds, the first tool call asks you to sign in.
 
-On first tool call, the server opens a browser for login. The login is saved and reused after a restart; see [Saved login](#saved-login).
+**Sign-in prompt:** the server never opens a browser on its own. On the first tool call, your MCP client shows a prompt: "Sign in to Transcend". The browser opens only after you accept. If you decline, the tool call fails and the server shows no new prompt for 60 seconds. Parallel tool calls share one prompt and one browser window.
+
+Some MCP clients cannot show a prompt. There the tool call returns a sign-in link, and the agent shows it to you. Open the link, sign in, then tell the agent to retry. The link works for 5 minutes.
+
+The login is saved and reused after a restart; see [Saved login](#saved-login).
 
 ### OAuth scopes
 
@@ -67,14 +71,15 @@ Canonical scope lists live in each package's `src/scopes.ts`.
 
 ### Troubleshooting
 
-| Symptom                                          | Likely cause                               | Fix                                                                                                                                                                                    |
-| ------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MCP server fails to connect / start              | Startup client verification failed         | Check client ID, secret, and that the registered redirect URI **exactly** matches `http://127.0.0.1:{port}/callback` (`{port}` is an available port number you chose; not `localhost`) |
-| OAuth login fails after browser redirect         | Redirect URI mismatch                      | Ensure host (`127.0.0.1` or `::1`), port, and `/callback` path match between dashboard and env vars                                                                                    |
-| `EADDRINUSE` / port in use                       | Two servers share a redirect port          | Assign a unique `TRANSCEND_OAUTH_REDIRECT_PORT` per server and register each URI                                                                                                       |
-| Browser opened but tool still fails              | Consent denied, timed out, or closed early | Complete consent in the browser; if timed out, restart the MCP client and try again (do not retry automatically)                                                                       |
-| Login works but a tool returns permission errors | User lacks required OAuth scopes           | Sign in as a user with the scopes listed above, or use a domain server with narrower scope requirements                                                                                |
-| Must re-login after every restart                | The login is not being saved               | Run `npx -y @transcend-io/mcp status` to see where the login is saved. Check the server log for a keychain warning, or set `TRANSCEND_MCP_CREDENTIAL_STORE=file`                       |
+| Symptom                                            | Likely cause                                                                    | Fix                                                                                                                                                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MCP server fails to connect / start                | Startup client verification failed                                              | Check client ID, secret, and that the registered redirect URI **exactly** matches `http://127.0.0.1:{port}/callback` (`{port}` is an available port number you chose; not `localhost`) |
+| OAuth login fails after browser redirect           | Redirect URI mismatch                                                           | Ensure host (`127.0.0.1` or `::1`), port, and `/callback` path match between dashboard and env vars                                                                                    |
+| "Sign-in is in progress in another window"         | Another MCP process holds the redirect port                                     | Finish the sign-in in the other window, then retry. If two different servers share a port, assign a unique `TRANSCEND_OAUTH_REDIRECT_PORT` per server and register each URI            |
+| Browser opened but tool still fails                | Consent denied, timed out, or closed early                                      | Call the tool again and accept the sign-in prompt, then complete consent in the browser within 5 minutes                                                                               |
+| The agent shows a sign-in link instead of a prompt | The MCP client cannot show a prompt, or you declined one in the last 60 seconds | Open the link, sign in, then tell the agent to retry                                                                                                                                   |
+| Login works but a tool returns permission errors   | User lacks required OAuth scopes                                                | Sign in as a user with the scopes listed above, or use a domain server with narrower scope requirements                                                                                |
+| Must re-login after every restart                  | The login is not being saved                                                    | Run `npx -y @transcend-io/mcp status` to see where the login is saved. Check the server log for a keychain warning, or set `TRANSCEND_MCP_CREDENTIAL_STORE=file`                       |
 
 ## Choosing a server
 
@@ -219,7 +224,7 @@ For external consumers (Claude Enterprise, Cursor, etc.) using stdio transport, 
 - `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host for the OAuth callback (`127.0.0.1` default, or `::1` for IPv6 format)
 - `TRANSCEND_OAUTH_ISSUER` — optional; **auto-detected in production** by probing regional backends (`api.transcend.io`, `api.us.transcend.io`). Only needed in test environments.
 
-OAuth mode activates when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. At startup the server verifies credentials and redirect URI; on first tool call it opens a browser for user consent. The login is then saved and reused after a restart.
+OAuth mode activates when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. At startup the server verifies credentials and redirect URI; on first tool call it asks you to sign in, and opens a browser for user consent after you accept. The login is then saved and reused after a restart.
 
 #### Saved login
 

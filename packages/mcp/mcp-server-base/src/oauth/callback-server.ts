@@ -109,8 +109,10 @@ export function startCallbackServer(
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
-      rejectStart(err);
-      rejectCallback(err);
+      // Nobody holds the callback promise until the server listens, so rejecting
+      // it for a failed listen (a taken port) would be an unhandled rejection.
+      if (server.listening) rejectCallback(err);
+      else rejectStart(err);
     });
 
     const listenPort = getOAuthRedirectPort();

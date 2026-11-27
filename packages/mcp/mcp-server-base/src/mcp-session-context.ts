@@ -73,6 +73,23 @@ export function hasCapability(
 }
 
 /**
+ * No fields: the decision is the host's own accept and decline buttons, read off
+ * `ElicitResult.action`.
+ *
+ * Asking for a field on top of them cost us twice. As a titled select, Cursor
+ * answered with a value matching neither option's `const`; as a checkbox, a host
+ * that answers `true` as a string would fare no better, because the SDK validates
+ * the answer against the schema it sent and a rejected answer reaches the caller as
+ * "nobody was asked" — a rendered, approved form reported as a refusal. Requesting
+ * nothing leaves no shape to get wrong, and spares the user a second gesture after
+ * the button they already pressed.
+ */
+export const NO_ELICITATION_FIELDS: ElicitRequestFormParams['requestedSchema'] = {
+  type: 'object',
+  properties: {},
+};
+
+/**
  * Asks the host to collect input from the user via a form.
  *
  * Returns `undefined` when the host cannot show one, so callers must handle that

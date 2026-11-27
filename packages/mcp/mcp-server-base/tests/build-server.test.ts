@@ -5,11 +5,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { McpClientCapability } from '../src/capabilities/types.js';
 import { MCP_SESSION_ID_HEADER } from '../src/http-header-names.js';
+import { getMcpSession, type McpSession } from '../src/mcp-session-context.js';
 import * as lazyAuth from '../src/oauth/lazy-auth.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
 import { McpTransport } from '../src/server/transport.js';
+import { toolCallContext } from '../src/tool-call-context.js';
 import { defineToolWithCapabilities } from '../src/tools/define-tool-with-capabilities.js';
 import { defineTool, type ToolDefinition } from '../src/tools/types.js';
 import {
@@ -244,6 +246,22 @@ describe('buildMcpServer per-tool requireAuth', () => {
     const sessionId = await initSession(baseUrl);
     await callTool(baseUrl, sessionId, 'protected_echo', 3);
     expect(ensureLazyOAuthAuthSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs lazy OAuth inside the call, so a sign-in prompt reaches the caller', async () => {
+    let session: McpSession | undefined;
+    let toolName: string | undefined;
+    ensureLazyOAuthAuthSpy.mockImplementation(async () => {
+      session = getMcpSession();
+      toolName = toolCallContext.getStore()?.toolName;
+    });
+
+    const sessionId = await initSession(baseUrl);
+    await callTool(baseUrl, sessionId, 'protected_echo', 4);
+
+    expect(session?.request?.id).toBe(4);
+    expect(session?.request?.signal).toBeInstanceOf(AbortSignal);
+    expect(toolName).toBe('protected_echo');
   });
 });
 

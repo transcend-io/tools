@@ -39,11 +39,11 @@ export const OAUTH_CLIENT_VERIFY_TIMEOUT_MS = 5_000;
 /** Maximum time to wait for the browser OAuth callback. */
 export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 
-/** Elapsed time before a late joiner nudges the user with the consent URL. */
-export const OAUTH_LOGIN_SILENT_ATTACH_MS = 5_000;
+/** Maximum time the sign-in prompt stays open in the host. */
+export const OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS = 10 * 60 * 1000;
 
-/** Elapsed time before a late joiner reopens the browser in addition to the URL nudge. */
-export const OAUTH_LOGIN_REOPEN_MS = 60_000;
+/** Time after a declined sign-in prompt during which the host shows no new prompt. */
+export const OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS = 60_000;
 
 /** Instruction appended to agent-facing OAuth callback failures that require user action. */
 const OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION =
@@ -55,11 +55,16 @@ export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE = `OAuth sign-in timed out. ${
 /** Agent-facing message when the user denies OAuth consent in the browser. */
 export const OAUTH_CALLBACK_DENIED_AGENT_MESSAGE = `OAuth sign-in was denied. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
 
-/** Agent-facing message when an in-flight OAuth login has not completed yet. */
-export const OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE =
-  'OAuth sign-in from an earlier request is still in progress and has not completed. ' +
-  'If the user closed the consent window, ask them to open this URL to continue: {authorizationUrl}. ' +
-  'Wait for the user to complete sign-in before proceeding. Do not retry automatically.';
+/** Agent-facing message when the user declines the sign-in prompt. */
+export const OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE = `The user declined sign-in. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
+
+/** Agent-facing message when another MCP process on this machine holds the callback port. */
+export const OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE =
+  'Sign-in is in progress in another window. Finish it, then retry.';
+
+/** Agent-facing message when the caller gives up before the user signs in. */
+export const OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE =
+  'The request was cancelled before sign-in finished.';
 
 /** Browser callback page message shown after successful OAuth authentication. */
 export const OAUTH_CALLBACK_SUCCESS_MESSAGE =
@@ -111,8 +116,29 @@ export function formatOAuthClientConfigError(detail: string): string {
 }
 
 /**
- * Returns the agent-facing message for an in-flight OAuth login that has not completed.
+ * Returns the text of the sign-in prompt the host shows before a browser opens.
  */
-export function formatOAuthLoginPendingNudgeMessage(authorizationUrl: string): string {
-  return OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE.replace('{authorizationUrl}', authorizationUrl);
+export function formatOAuthSignInPrompt(
+  /** Tool waiting on the sign-in, when the call came through a tool */
+  toolName?: string,
+): string {
+  const dashboardHost = new URL(resolveMcpDashboardUrl()).host;
+  const purpose = toolName ? ` to run ${toolName}` : '';
+  return `Sign in to Transcend (${dashboardHost})${purpose}. Accept opens your browser.`;
+}
+
+/**
+ * Returns the agent-facing message that hands the user a sign-in link, for
+ * when no sign-in prompt can be shown.
+ */
+export function formatOAuthSignInLinkMessage(authorizationUrl: string): string {
+  // A bare parenthesis would end the markdown link early.
+  const linkTarget = authorizationUrl.replaceAll('(', '%28').replaceAll(')', '%29');
+  const minutes = OAUTH_CALLBACK_TIMEOUT_MS / 60_000;
+  return (
+    'This tool needs a Transcend sign-in. Show the user this link: ' +
+    `[Sign in to Transcend](${linkTarget}). ` +
+    'Wait until the user says they signed in, then retry once. Do not retry before that. ' +
+    `The link expires within ${minutes} minutes.`
+  );
 }

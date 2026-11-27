@@ -48,7 +48,7 @@ OAuth stdio is the recommended path for MCP clients. Requires **org admin** acce
 2. Choose an available localhost port number, then register `http://127.0.0.1:{port}/callback` on the OAuth client (`{port}` is the number you chose). Use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`.
 3. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the same port number.
 
-At startup the server verifies client ID, secret, and redirect URI against Transcend's API. On first tool call it opens a browser for login. The login is saved and reused after a restart. Run `npx -y @transcend-io/mcp status` to see where it is saved, and `npx -y @transcend-io/mcp logout` to sign out. See [Saved login](../README.md#saved-login) for the storage options.
+At startup the server verifies client ID, secret, and redirect URI against Transcend's API. On first tool call your MCP client asks you to sign in, and a browser opens for login after you accept. A client that cannot show a prompt returns a sign-in link instead. The login is saved and reused after a restart. Run `npx -y @transcend-io/mcp status` to see where it is saved, and `npx -y @transcend-io/mcp logout` to sign out. See [Saved login](../README.md#saved-login) for the storage options.
 
 **OAuth scopes:** this server requests the union of all domain scopes (see the [scopes table](../README.md#oauth-scopes) in the MCP root README). The signed-in user must hold these permissions.
 

@@ -558,21 +558,10 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       }
 
       const toolRequiresAuth = tool.requireAuth !== false;
-      let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
-      if (toolRequiresAuth) {
-        const authStartedAt = Date.now();
-        await ensureLazyOAuthAuth(logger);
-        oauthCredentials = getLazyOAuthCredentials();
-        logMcpDebugEvent(
-          'auth.ensured',
-          { elapsedMs: Date.now() - authStartedAt, hasCredentials: oauthCredentials !== null },
-          callContext,
-        );
-      }
 
-      // The id and signal are what let a confirmation form reach whoever made this
-      // call, and be torn down if they give up. The token and sender let a long wait
-      // tell the host the call is alive. See McpSession.request.
+      // The id and signal are what let a sign-in prompt or a confirmation form reach
+      // whoever made this call, and be torn down if they give up. The token and sender
+      // let a long wait tell the host the call is alive. See McpSession.request.
       const session = {
         client,
         server,
@@ -586,6 +575,18 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
       const result = await mcpSessionContext.run(session, () =>
         toolCallContext.run(callContext, async () => {
+          // Inside the session, so a sign-in prompt is bound to this call.
+          let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
+          if (toolRequiresAuth) {
+            const authStartedAt = Date.now();
+            await ensureLazyOAuthAuth(logger);
+            oauthCredentials = getLazyOAuthCredentials();
+            logMcpDebugEvent('auth.ensured', {
+              elapsedMs: Date.now() - authStartedAt,
+              hasCredentials: oauthCredentials !== null,
+            });
+          }
+
           const handlerStartedAt = Date.now();
           logMcpDebugEvent('handler.start');
           const execute = async () => {

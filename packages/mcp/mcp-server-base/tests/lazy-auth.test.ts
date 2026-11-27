@@ -1,16 +1,34 @@
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import { McpToolErrorCode } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { HUMAN_RESPONSE_FLOOR_MS } from '../src/capabilities/cursor-decline-quirk.js';
+import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
 import { SimpleLogger } from '../src/clients/graphql/base.js';
+import { DEFAULT_DASHBOARD_URL } from '../src/defaults.js';
 import { ToolError } from '../src/errors.js';
+import {
+  mcpSessionContext,
+  NO_ELICITATION_FIELDS,
+  type McpSession,
+  type requestElicitation,
+} from '../src/mcp-session-context.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
 import {
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
-  formatOAuthLoginPendingNudgeMessage,
+  OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE,
+  OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS,
+  OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
+  OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE,
+  OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS,
+  formatOAuthSignInLinkMessage,
+  formatOAuthSignInPrompt,
 } from '../src/oauth/constants.js';
 import { createMemoryCredentialStore } from '../src/oauth/credential-store/memory-store.js';
+import type { CredentialStore } from '../src/oauth/credential-store/types.js';
 import {
   createLazyOAuth,
   ensureLazyOAuthAuth,
@@ -28,6 +46,7 @@ import * as tokenManager from '../src/oauth/token-manager.js';
 import * as tokenRefresh from '../src/oauth/token-refresh.js';
 import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 import type { PendingOAuthSession } from '../src/oauth/types.js';
+import { toolCallContext } from '../src/tool-call-context.js';
 import { createFakeAuthorizationServer } from './helpers/fake-authorization-server.js';
 
 describe('ensureLazyOAuthAuth', () => {
@@ -201,39 +220,26 @@ describe('ensureLazyOAuthAuth', () => {
     });
   });
 
-  it('runs OAuth login once, exchanges tokens, and marks the session ready', async () => {
+  it('returns a sign-in link and opens no browser when no host can be asked', async () => {
     enableLazyOAuthTestEnv();
+    mockAuthorizationMetadataAndExchange();
+    const { session, resolveCallback } = createPendingOAuthSession();
+    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue(session);
+    const openBrowserSpy = vi.spyOn(openBrowserModule, 'openBrowser');
 
-    const waitForCallback = vi.fn().mockResolvedValue({ code: 'abc', state: 'xyz' });
-    const close = vi.fn().mockResolvedValue(undefined);
-    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
-      authorizationUrl: TEST_AUTHORIZATION_URL,
-      redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: 'client-abc',
-      codeVerifier: 'verifier',
-      waitForCallback,
-      close,
-    });
-    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
-      issuer: 'https://yo.com:4001',
-      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
-      tokenEndpoint: 'https://yo.com:4001/oauth/token',
-      codeChallengeMethodsSupported: ['S256'],
-    });
-    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
-      storedTokensFromTokenResponse({
-        response: {
-          access_token: 'new-access',
-          refresh_token: 'new-refresh',
-          expires_in: 3600,
-        },
-        issuer: 'https://yo.com:4001',
-        clientId: 'client-abc',
-      }),
-    );
+    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
+      name: 'ToolError',
+      code: McpToolErrorCode.AuthError,
+      message: formatOAuthSignInLinkMessage(TEST_AUTHORIZATION_URL),
+      retryable: false,
+    } satisfies Partial<ToolError>);
+    expect(openBrowserSpy).not.toHaveBeenCalled();
+    expect(isLazyOAuthSessionReady()).toBe(false);
 
+    resolveCallback();
+    await vi.waitFor(() => expect(isLazyOAuthSessionReady()).toBe(true));
     await ensureLazyOAuthAuth(logger);
-    expect(isLazyOAuthSessionReady()).toBe(true);
+
     expect(startSpy).toHaveBeenCalledTimes(1);
     expect(getStoredAuthorizationGrant()).toEqual({
       code: 'abc',
@@ -242,219 +248,7 @@ describe('ensureLazyOAuthAuth', () => {
       redirectUri: 'http://127.0.0.1:1/callback',
       clientId: 'client-abc',
     });
-    expect(getLazyOAuthCredentials()).toMatchObject({
-      type: 'oauthToken',
-      accessToken: 'new-access',
-      refreshToken: 'new-refresh',
-    });
-
-    await ensureLazyOAuthAuth(logger);
-    expect(startSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('surfaces OAuth callback timeouts as non-retryable AUTH_ERROR tool errors', async () => {
-    enableLazyOAuthTestEnv();
-
-    vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(new Error('OAuth callback timed out'));
-
-    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
-      name: 'ToolError',
-      code: McpToolErrorCode.AuthError,
-      message: OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
-      retryable: false,
-    } satisfies Partial<ToolError>);
-    expect(isLazyOAuthSessionReady()).toBe(false);
-    expect(getStoredAuthorizationGrant()).toBeNull();
-    expect(getLazyOAuthCredentials()).toBeNull();
-  });
-
-  it('surfaces OAuth consent denial as non-retryable AUTH_ERROR tool errors', async () => {
-    enableLazyOAuthTestEnv();
-
-    vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(
-      new Error('OAuth authorization failed: access_denied — User denied'),
-    );
-
-    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
-      name: 'ToolError',
-      code: McpToolErrorCode.AuthError,
-      message: OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
-      retryable: false,
-    } satisfies Partial<ToolError>);
-    expect(isLazyOAuthSessionReady()).toBe(false);
-    expect(getStoredAuthorizationGrant()).toBeNull();
-    expect(getLazyOAuthCredentials()).toBeNull();
-  });
-
-  it('surfaces non-timeout OAuth failures as non-retryable AUTH_ERROR tool errors', async () => {
-    enableLazyOAuthTestEnv();
-
-    vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(
-      new Error('OAuth authorization failed'),
-    );
-
-    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
-      name: 'ToolError',
-      code: McpToolErrorCode.AuthError,
-      message: 'OAuth authorization failed',
-      retryable: false,
-    } satisfies Partial<ToolError>);
-  });
-
-  it('deduplicates concurrent login attempts', async () => {
-    enableLazyOAuthTestEnv();
-
-    let resolveCallback: (() => void) | undefined;
-    const waitForCallback = vi.fn(
-      () =>
-        new Promise<{ code: string; state: string }>((resolve) => {
-          resolveCallback = () => resolve({ code: 'abc', state: 'xyz' });
-        }),
-    );
-    const close = vi.fn().mockResolvedValue(undefined);
-    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
-      authorizationUrl: TEST_AUTHORIZATION_URL,
-      redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: 'client-abc',
-      codeVerifier: 'verifier',
-      waitForCallback,
-      close,
-    });
-    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
-      issuer: 'https://yo.com:4001',
-      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
-      tokenEndpoint: 'https://yo.com:4001/oauth/token',
-      codeChallengeMethodsSupported: ['S256'],
-    });
-    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
-      storedTokensFromTokenResponse({
-        response: { access_token: 'access', expires_in: 3600 },
-        issuer: 'https://yo.com:4001',
-        clientId: 'client-abc',
-      }),
-    );
-
-    const first = ensureLazyOAuthAuth(logger);
-    const second = ensureLazyOAuthAuth(logger);
-    await vi.waitFor(() => expect(resolveCallback).toBeDefined());
-    resolveCallback!();
-    await Promise.all([first, second]);
-
-    expect(startSpy).toHaveBeenCalledTimes(1);
-  });
-
-  describe('late joiner nudges', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('nudges with URL after silent attach window without reopening the browser', async () => {
-      vi.useFakeTimers();
-      enableLazyOAuthTestEnv();
-      mockAuthorizationMetadataAndExchange();
-
-      const { session, resolveCallback } = createPendingOAuthSession();
-      vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue(session);
-      const openBrowserSpy = vi
-        .spyOn(openBrowserModule, 'openBrowser')
-        .mockResolvedValue(undefined);
-      const warnSpy = vi.spyOn(logger, 'warn');
-
-      const first = ensureLazyOAuthAuth(logger);
-      await vi.waitFor(() => expect(session.waitForCallback).toHaveBeenCalled());
-
-      vi.advanceTimersByTime(10_000);
-      const second = ensureLazyOAuthAuth(logger);
-      await vi.waitFor(() =>
-        expect(warnSpy).toHaveBeenCalledWith(
-          formatOAuthLoginPendingNudgeMessage(TEST_AUTHORIZATION_URL),
-          { authorizationUrl: TEST_AUTHORIZATION_URL },
-        ),
-      );
-      expect(openBrowserSpy).not.toHaveBeenCalled();
-
-      resolveCallback();
-      await Promise.all([first, second]);
-      expect(isLazyOAuthSessionReady()).toBe(true);
-    });
-
-    it('reopens the browser and nudges after the reopen threshold', async () => {
-      vi.useFakeTimers();
-      enableLazyOAuthTestEnv();
-      mockAuthorizationMetadataAndExchange();
-
-      const { session, resolveCallback } = createPendingOAuthSession();
-      vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue(session);
-      const openBrowserSpy = vi
-        .spyOn(openBrowserModule, 'openBrowser')
-        .mockResolvedValue(undefined);
-      const warnSpy = vi.spyOn(logger, 'warn');
-
-      const first = ensureLazyOAuthAuth(logger);
-      await vi.waitFor(() => expect(session.waitForCallback).toHaveBeenCalled());
-
-      vi.advanceTimersByTime(65_000);
-      const second = ensureLazyOAuthAuth(logger);
-      await vi.waitFor(() =>
-        expect(openBrowserSpy).toHaveBeenCalledWith(TEST_AUTHORIZATION_URL, logger),
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        formatOAuthLoginPendingNudgeMessage(TEST_AUTHORIZATION_URL),
-        { authorizationUrl: TEST_AUTHORIZATION_URL },
-      );
-
-      resolveCallback();
-      await Promise.all([first, second]);
-      expect(isLazyOAuthSessionReady()).toBe(true);
-    });
-
-    it('silently attaches when authorizationUrl is not yet available', async () => {
-      vi.useFakeTimers();
-      enableLazyOAuthTestEnv();
-      mockAuthorizationMetadataAndExchange();
-
-      const { session, resolveCallback } = createPendingOAuthSession();
-      let resolveStartOAuthLogin: ((value: PendingOAuthSession) => void) | undefined;
-      const startOAuthLoginPromise = new Promise<PendingOAuthSession>((resolve) => {
-        resolveStartOAuthLogin = resolve;
-      });
-      vi.spyOn(oauthFlow, 'startOAuthLogin').mockReturnValue(startOAuthLoginPromise);
-      const warnSpy = vi.spyOn(logger, 'warn');
-
-      const first = ensureLazyOAuthAuth(logger);
-      vi.advanceTimersByTime(10_000);
-      const second = ensureLazyOAuthAuth(logger);
-
-      expect(warnSpy).not.toHaveBeenCalled();
-
-      resolveStartOAuthLogin!(session);
-      await vi.waitFor(() => expect(session.waitForCallback).toHaveBeenCalled());
-      resolveCallback();
-      await Promise.all([first, second]);
-    });
-
-    it('deduplicates URL nudges for multiple late joiners in the same open window', async () => {
-      vi.useFakeTimers();
-      enableLazyOAuthTestEnv();
-      mockAuthorizationMetadataAndExchange();
-
-      const { session, resolveCallback } = createPendingOAuthSession();
-      vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue(session);
-      const warnSpy = vi.spyOn(logger, 'warn');
-
-      const first = ensureLazyOAuthAuth(logger);
-      await vi.waitFor(() => expect(session.waitForCallback).toHaveBeenCalled());
-
-      vi.advanceTimersByTime(10_000);
-      const second = ensureLazyOAuthAuth(logger);
-      vi.advanceTimersByTime(5_000);
-      const third = ensureLazyOAuthAuth(logger);
-
-      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledTimes(1));
-
-      resolveCallback();
-      await Promise.all([first, second, third]);
-    });
+    expect(getLazyOAuthCredentials()).toMatchObject({ type: 'oauthToken', accessToken: 'access' });
   });
 });
 
@@ -466,32 +260,75 @@ describe('createLazyOAuth', () => {
     clientSecret: 'secret',
     scopes: ['ViewRequests', 'offline_access'],
   };
+  const TOOL_NAME = 'dsr_list_requests';
+  /** Longer than any host takes to refuse a prompt it never showed. */
+  const HUMAN_SPEED_MS = HUMAN_RESPONSE_FLOOR_MS * 8;
 
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-  });
+  /** One sign-in prompt the fake host is showing. */
+  interface OpenPrompt {
+    /** Text the host shows */
+    message: string;
+    /** Answers the prompt as the user */
+    answer: (action: ElicitResult['action']) => void;
+    /** Fails the prompt as a host that could not show it */
+    fail: (error: Error) => void;
+  }
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  /** One login the fake callback server is waiting on. */
+  interface StartedLogin {
+    /** Consent URL of this login */
+    authorizationUrl: string;
+    /** Delivers the browser redirect */
+    completeInBrowser: () => void;
+    /** Ends the wait the way the callback server does */
+    failCallback: (error: Error) => void;
+    /** Spy on the callback server shutdown */
+    close: ReturnType<typeof vi.fn>;
+  }
 
-  it('saves the login after sign-in, so a restarted process needs no browser', async () => {
+  /**
+   * One MCP process with no saved login: a fake host that shows prompts, a fake
+   * browser, and a fake callback server per login.
+   */
+  function startProcess(
+    options: {
+      /** Whether the host can show a prompt */
+      canPrompt?: boolean;
+      /** Credential store, to share one between processes */
+      store?: CredentialStore;
+    } = {},
+  ) {
     const server = createFakeAuthorizationServer(client);
-    const store = createMemoryCredentialStore();
-    const startProcess = (): ReturnType<typeof createLazyOAuth> =>
-      createLazyOAuth({
-        tokenManager: tokenManager.createOAuthTokenManager({ store, fetch: server.fetch }),
-        resolveClient: () => client,
+    const store = options.store ?? createMemoryCredentialStore();
+    const clock = { nowMs: 1_700_000_000_000 };
+    const prompts: OpenPrompt[] = [];
+    const logins: StartedLogin[] = [];
+    const openBrowser = vi.fn().mockResolvedValue(undefined);
+    const elicit = vi.fn<typeof requestElicitation>(async (message) => {
+      if (options.canPrompt === false) return undefined;
+      return new Promise<ElicitResult>((resolve, reject) => {
+        prompts.push({ message, answer: (action) => resolve({ action }), fail: reject });
       });
-    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
-      authorizationUrl: `${client.issuer}/oauth/authorize`,
-      redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: client.clientId,
-      codeVerifier: 'verifier',
-      waitForCallback: async () => ({ code: 'abc', state: 'xyz' }),
-      close: async () => undefined,
+    });
+
+    const startLoginSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockImplementation(async () => {
+      const authorizationUrl = `${client.issuer}/oauth/authorize?login=${logins.length + 1}`;
+      let completeInBrowser!: () => void;
+      let failCallback!: (error: Error) => void;
+      const callback = new Promise<{ code: string; state: string }>((resolve, reject) => {
+        completeInBrowser = () => resolve({ code: 'abc', state: 'xyz' });
+        failCallback = reject;
+      });
+      const close = vi.fn().mockResolvedValue(undefined);
+      logins.push({ authorizationUrl, completeInBrowser, failCallback, close });
+      return {
+        authorizationUrl,
+        redirectUri: 'http://127.0.0.1:1/callback',
+        clientId: client.clientId,
+        codeVerifier: 'verifier',
+        waitForCallback: () => callback,
+        close,
+      };
     });
     vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
       issuer: client.issuer,
@@ -499,45 +336,468 @@ describe('createLazyOAuth', () => {
       tokenEndpoint: `${client.issuer}/oauth/token`,
       codeChallengeMethodsSupported: ['S256'],
     });
-    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
-      server.signIn(Date.now()),
+    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockImplementation(async () =>
+      server.signIn(clock.nowMs),
     );
 
-    await startProcess().ensureAuth(logger);
-    expect(startSpy).toHaveBeenCalledTimes(1);
+    const manager = tokenManager.createOAuthTokenManager({
+      store,
+      now: () => clock.nowMs,
+      fetch: server.fetch,
+    });
+    const lazyOAuth = createLazyOAuth({
+      tokenManager: manager,
+      openBrowser,
+      elicit,
+      resolveClient: () => client,
+      now: () => clock.nowMs,
+    });
 
-    const restarted = startProcess();
-    await restarted.ensureAuth(logger);
+    /** Runs the auth step of one tool call, as the server does. */
+    const callTool = (
+      call: {
+        /** Host the call comes from */
+        host?: McpHostClient;
+        /** Aborts when the caller cancels or times out */
+        signal?: AbortSignal;
+      } = {},
+    ): Promise<void> => {
+      const session: McpSession = {
+        client: {
+          capabilities: new Set([McpClientCapability.Elicitation]),
+          host: call.host ?? McpHostClient.Claude,
+        },
+        server: {} as Server,
+        request: { id: 1, signal: call.signal ?? new AbortController().signal },
+      };
+      return mcpSessionContext.run(session, () =>
+        toolCallContext.run({ toolName: TOOL_NAME, correlationId: 'correlation' }, () =>
+          lazyOAuth.ensureAuth(logger),
+        ),
+      );
+    };
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
-    expect(restarted.isSessionReady()).toBe(true);
-    expect(restarted.getCredentials()).toMatchObject({ accessToken: 'access-1' });
+    return {
+      lazyOAuth,
+      callTool,
+      clock,
+      prompts,
+      logins,
+      elicit,
+      openBrowser,
+      startLoginSpy,
+      server,
+      manager,
+    };
+  }
+
+  const declined = {
+    name: 'ToolError',
+    code: McpToolErrorCode.AuthError,
+    message: OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
+    retryable: false,
+  } satisfies Partial<ToolError>;
+
+  const abandoned = {
+    code: McpToolErrorCode.AuthError,
+    message: OAUTH_SIGN_IN_ABANDONED_AGENT_MESSAGE,
+  } satisfies Partial<ToolError>;
+
+  function signInLink(authorizationUrl: string): Partial<ToolError> {
+    return {
+      name: 'ToolError',
+      code: McpToolErrorCode.AuthError,
+      message: formatOAuthSignInLinkMessage(authorizationUrl),
+      retryable: false,
+    };
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('with a host that can show a prompt', () => {
+    it('opens no browser until the user accepts the prompt', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser, lazyOAuth } = startProcess();
+
+      const call = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+
+      expect(elicit).toHaveBeenCalledWith(
+        `Sign in to Transcend (${new URL(DEFAULT_DASHBOARD_URL).host}) to run ${TOOL_NAME}. ` +
+          'Accept opens your browser.',
+        NO_ELICITATION_FIELDS,
+        { timeout: OAUTH_SIGN_IN_PROMPT_TIMEOUT_MS },
+      );
+      expect(prompts[0]!.message).toBe(formatOAuthSignInPrompt(TOOL_NAME));
+      expect(openBrowser).not.toHaveBeenCalled();
+      expect(logins).toHaveLength(0);
+
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
+      expect(openBrowser).toHaveBeenCalledWith(logins[0]!.authorizationUrl, logger);
+
+      logins[0]!.completeInBrowser();
+      await call;
+
+      expect(lazyOAuth.isSessionReady()).toBe(true);
+      expect(lazyOAuth.getCredentials()).toMatchObject({ accessToken: 'access-1' });
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['decline', 'cancel'] as const)(
+      'fails the call and opens no browser when the user answers %s',
+      async (action) => {
+        const { callTool, prompts, logins, openBrowser, clock } = startProcess();
+
+        const call = callTool();
+        await vi.waitFor(() => expect(prompts).toHaveLength(1));
+        clock.nowMs += HUMAN_SPEED_MS;
+        prompts[0]!.answer(action);
+
+        await expect(call).rejects.toMatchObject(declined);
+        expect(openBrowser).not.toHaveBeenCalled();
+        expect(logins).toHaveLength(0);
+      },
+    );
+
+    it('shows one prompt and one browser window for parallel calls, and all succeed', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser } = startProcess();
+
+      const calls = [callTool(), callTool(), callTool()];
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
+
+      // A call that arrives while the browser is open waits too.
+      calls.push(callTool());
+      logins[0]!.completeInBrowser();
+      await Promise.all(calls);
+
+      expect(elicit).toHaveBeenCalledTimes(1);
+      expect(openBrowser).toHaveBeenCalledTimes(1);
+      expect(logins).toHaveLength(1);
+    });
+
+    it('fails every waiting call when the user declines the one prompt', async () => {
+      const { callTool, prompts, elicit, clock } = startProcess();
+
+      const calls = [callTool(), callTool()];
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      clock.nowMs += HUMAN_SPEED_MS;
+      prompts[0]!.answer('decline');
+
+      const outcomes = await Promise.allSettled(calls);
+      expect(outcomes.map((outcome) => outcome.status)).toEqual(['rejected', 'rejected']);
+      await expect(calls[1]).rejects.toMatchObject(declined);
+      expect(elicit).toHaveBeenCalledTimes(1);
+    });
+
+    it('hands out the link with no prompt for 60 seconds after a decline, then asks again', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser, clock } = startProcess();
+
+      const first = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      clock.nowMs += HUMAN_SPEED_MS;
+      prompts[0]!.answer('decline');
+      await expect(first).rejects.toMatchObject(declined);
+
+      clock.nowMs += OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS - 1;
+      const link = signInLink(`${client.issuer}/oauth/authorize?login=1`);
+      await expect(callTool()).rejects.toMatchObject(link);
+      await expect(callTool()).rejects.toMatchObject(link);
+      expect(elicit).toHaveBeenCalledTimes(1);
+      expect(openBrowser).not.toHaveBeenCalled();
+      expect(logins).toHaveLength(1);
+
+      clock.nowMs += 1;
+      const afterCooldown = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(2));
+      prompts[1]!.answer('accept');
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
+
+      // The accepted login replaces the one behind the link, so the user gets
+      // the whole callback window.
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
+      expect(openBrowser).toHaveBeenCalledWith(logins[1]!.authorizationUrl, logger);
+      logins[1]!.completeInBrowser();
+      await afterCooldown;
+    });
+
+    it('stops a waiting call when its request is cancelled, and the sign-in still completes', async () => {
+      const { callTool, prompts, logins, elicit } = startProcess();
+      const cancelled = new AbortController();
+
+      const asker = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      const joiner = callTool({ signal: cancelled.signal });
+      cancelled.abort();
+      await expect(joiner).rejects.toMatchObject(abandoned);
+
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(1));
+      logins[0]!.completeInBrowser();
+      await asker;
+      expect(elicit).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts no login when the asking call is cancelled, and the next call asks again', async () => {
+      const { callTool, prompts, logins, elicit } = startProcess();
+      const cancelled = new AbortController();
+
+      const call = callTool({ signal: cancelled.signal });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      cancelled.abort();
+      // The SDK rejects the open elicitation when its request is aborted.
+      prompts[0]!.fail(new Error('This operation was aborted'));
+
+      await expect(call).rejects.toMatchObject(abandoned);
+      expect(logins).toHaveLength(0);
+
+      const next = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(2));
+      expect(elicit).toHaveBeenCalledTimes(2);
+      prompts[1]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(1));
+      logins[0]!.completeInBrowser();
+      await next;
+    });
+
+    it('finishes the sign-in in the background when the accepting call times out', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser, lazyOAuth } = startProcess();
+      const hostTimeout = new AbortController();
+
+      const call = callTool({ signal: hostTimeout.signal });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
+      hostTimeout.abort();
+      await expect(call).rejects.toMatchObject(abandoned);
+      expect(logins[0]!.close).not.toHaveBeenCalled();
+
+      logins[0]!.completeInBrowser();
+      await vi.waitFor(() => expect(lazyOAuth.isSessionReady()).toBe(true));
+      await callTool();
+
+      expect(elicit).toHaveBeenCalledTimes(1);
+      expect(openBrowser).toHaveBeenCalledTimes(1);
+    });
+
+    it('ends a sign-in that timed out, and the next call asks again', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser } = startProcess();
+
+      const call = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(openBrowser).toHaveBeenCalledTimes(1));
+      logins[0]!.failCallback(new Error('OAuth callback timed out after 300000ms'));
+
+      await expect(call).rejects.toMatchObject({
+        code: McpToolErrorCode.AuthError,
+        message: OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
+        retryable: false,
+      } satisfies Partial<ToolError>);
+      expect(logins[0]!.close).toHaveBeenCalledTimes(1);
+
+      const next = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(2));
+      expect(elicit).toHaveBeenCalledTimes(2);
+      expect(openBrowser).toHaveBeenCalledTimes(1);
+      prompts[1]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(2));
+      logins[1]!.completeInBrowser();
+      await next;
+    });
+
+    it.each([
+      {
+        failure: 'OAuth authorization failed: access_denied — User denied',
+        message: OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
+      },
+      { failure: 'OAuth authorization failed', message: 'OAuth authorization failed' },
+    ])('reports "$failure" from the browser as a non-retryable AuthError', async (testCase) => {
+      const { callTool, prompts, logins, lazyOAuth } = startProcess();
+
+      const call = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(1));
+      logins[0]!.failCallback(new Error(testCase.failure));
+
+      await expect(call).rejects.toMatchObject({
+        name: 'ToolError',
+        code: McpToolErrorCode.AuthError,
+        message: testCase.message,
+        retryable: false,
+      } satisfies Partial<ToolError>);
+      expect(lazyOAuth.isSessionReady()).toBe(false);
+      expect(lazyOAuth.getAuthorizationGrant()).toBeNull();
+      expect(lazyOAuth.getCredentials()).toBeNull();
+    });
+
+    it('says a sign-in is open in another window when the callback port is taken', async () => {
+      const store = createMemoryCredentialStore();
+      const { callTool, prompts, elicit, openBrowser, startLoginSpy, server, clock } = startProcess(
+        { store },
+      );
+      startLoginSpy.mockRejectedValue(
+        Object.assign(new Error('listen EADDRINUSE: address already in use 127.0.0.1:4567'), {
+          code: 'EADDRINUSE',
+        }),
+      );
+
+      const call = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('accept');
+
+      await expect(call).rejects.toMatchObject({
+        code: McpToolErrorCode.AuthError,
+        message: OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE,
+        retryable: false,
+      } satisfies Partial<ToolError>);
+      expect(openBrowser).not.toHaveBeenCalled();
+
+      // The other window finishes its sign-in and saves the login.
+      const otherWindow = tokenManager.createOAuthTokenManager({ store, fetch: server.fetch });
+      await otherWindow.saveTokens(client, server.signIn(clock.nowMs), logger);
+
+      await callTool();
+      expect(elicit).toHaveBeenCalledTimes(1);
+      expect(openBrowser).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when nobody can be asked', () => {
+    it('returns a sign-in link, keeps the callback server open, and the retry succeeds', async () => {
+      const { callTool, logins, openBrowser, lazyOAuth } = startProcess({ canPrompt: false });
+
+      await expect(callTool()).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=1`),
+      );
+      expect(formatOAuthSignInLinkMessage(logins[0]!.authorizationUrl)).toContain(
+        `[Sign in to Transcend](${logins[0]!.authorizationUrl})`,
+      );
+      expect(logins[0]!.close).not.toHaveBeenCalled();
+
+      // A call before the user signed in gets the same link, not a second login.
+      await expect(callTool()).rejects.toMatchObject(signInLink(logins[0]!.authorizationUrl));
+      expect(logins).toHaveLength(1);
+
+      logins[0]!.completeInBrowser();
+      await vi.waitFor(() => expect(lazyOAuth.isSessionReady()).toBe(true));
+      await callTool();
+
+      expect(openBrowser).not.toHaveBeenCalled();
+      expect(lazyOAuth.getCredentials()).toMatchObject({ accessToken: 'access-1' });
+    });
+
+    it('returns the link when the host fails to show the prompt', async () => {
+      const { callTool, prompts, logins, openBrowser } = startProcess();
+
+      const call = callTool();
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.fail(new Error('MCP error -32603: elicitation failed'));
+
+      await expect(call).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=1`),
+      );
+      expect(logins[0]!.close).not.toHaveBeenCalled();
+      expect(openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('returns the link when Cursor declines faster than a person could', async () => {
+      const { callTool, prompts, logins, elicit, openBrowser } = startProcess();
+
+      const call = callTool({ host: McpHostClient.Cursor });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      prompts[0]!.answer('decline');
+
+      await expect(call).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=1`),
+      );
+      expect(logins[0]!.close).not.toHaveBeenCalled();
+      expect(openBrowser).not.toHaveBeenCalled();
+
+      // Nobody declined, so there is no cooldown: the next call may ask again.
+      const next = callTool({ host: McpHostClient.Cursor });
+      await vi.waitFor(() => expect(prompts).toHaveLength(2));
+      expect(elicit).toHaveBeenCalledTimes(2);
+      prompts[1]!.answer('accept');
+      await vi.waitFor(() => expect(logins).toHaveLength(2));
+      logins[1]!.completeInBrowser();
+      await next;
+    });
+
+    it('treats a decline at human speed on Cursor as a decline', async () => {
+      const { callTool, prompts, logins, clock } = startProcess();
+
+      const call = callTool({ host: McpHostClient.Cursor });
+      await vi.waitFor(() => expect(prompts).toHaveLength(1));
+      clock.nowMs += HUMAN_RESPONSE_FLOOR_MS;
+      prompts[0]!.answer('decline');
+
+      await expect(call).rejects.toMatchObject(declined);
+      expect(logins).toHaveLength(0);
+    });
+
+    it('ends a link sign-in that timed out, and the next call gets a new link', async () => {
+      const { callTool, logins } = startProcess({ canPrompt: false });
+
+      await expect(callTool()).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=1`),
+      );
+      logins[0]!.failCallback(new Error('OAuth callback timed out after 300000ms'));
+      await vi.waitFor(() => expect(logins[0]!.close).toHaveBeenCalledTimes(1));
+
+      await expect(callTool()).rejects.toMatchObject(
+        signInLink(`${client.issuer}/oauth/authorize?login=2`),
+      );
+    });
+  });
+
+  it('saves the login after sign-in, so a restarted process needs no prompt and no browser', async () => {
+    const store = createMemoryCredentialStore();
+    const first = startProcess({ store });
+
+    const call = first.callTool();
+    await vi.waitFor(() => expect(first.prompts).toHaveLength(1));
+    first.prompts[0]!.answer('accept');
+    await vi.waitFor(() => expect(first.logins).toHaveLength(1));
+    first.logins[0]!.completeInBrowser();
+    await call;
+
+    const restarted = startProcess({ store });
+    await restarted.callTool();
+
+    expect(restarted.elicit).not.toHaveBeenCalled();
+    expect(restarted.openBrowser).not.toHaveBeenCalled();
+    expect(restarted.logins).toHaveLength(0);
+    expect(restarted.lazyOAuth.isSessionReady()).toBe(true);
+    expect(restarted.lazyOAuth.getCredentials()).toMatchObject({ accessToken: 'access-1' });
   });
 
   it('does not start a sign-in when a refresh fails for a passing reason', async () => {
-    const server = createFakeAuthorizationServer(client);
-    const store = createMemoryCredentialStore();
-    let nowMs = Date.now();
-    const manager = tokenManager.createOAuthTokenManager({
-      store,
-      now: () => nowMs,
-      fetch: server.fetch,
-    });
-    await manager.saveTokens(client, server.signIn(nowMs), logger);
-    nowMs += 3_600_000;
+    const { callTool, manager, server, clock, elicit, startLoginSpy, lazyOAuth } = startProcess();
+    await manager.saveTokens(client, server.signIn(clock.nowMs), logger);
+    clock.nowMs += 3_600_000;
     server.failNextRefresh(() => new Response('', { status: 503 }));
-    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin');
 
-    const lazyOAuth = createLazyOAuth({ tokenManager: manager, resolveClient: () => client });
-
-    await expect(lazyOAuth.ensureAuth(logger)).rejects.toMatchObject({
+    await expect(callTool()).rejects.toMatchObject({
       code: McpToolErrorCode.ApiError,
       retryable: true,
     } satisfies Partial<ToolError>);
-    expect(startSpy).not.toHaveBeenCalled();
+    expect(elicit).not.toHaveBeenCalled();
+    expect(startLoginSpy).not.toHaveBeenCalled();
 
-    await lazyOAuth.ensureAuth(logger);
+    await callTool();
     expect(lazyOAuth.getCredentials()).toMatchObject({ accessToken: 'access-2' });
-    expect(startSpy).not.toHaveBeenCalled();
+    expect(elicit).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,8 @@
 /**
  * Cursor's elicitation implementation is bugged when having multiple windows
  * open: the MCP bridge is hosted on one of the windows, causing elicitation to
- * fall through and fast decline under 250ms. This is a HACK to allow confirmation
- * behavior for Cursor.
+ * fall through and fast decline under 250ms. This is a HACK to let a prompt
+ * fall back to another route on Cursor.
  *
  * Its own log shows the drop and the decline a millisecond apart:
  *
@@ -14,15 +14,15 @@
  * TODO: https://linear.app/transcend/issue/ZEL-8311 - remove when Cursor's
  * multi-window elicitation support is ready.
  *
- * Deleting this file is the whole removal. Its only caller is the decline branch
- * of the gate, and `UnaskedReason.Undelivered` plus the `HOST_QUIRKS` entry go
- * with it.
+ * Deleting this file is the whole removal. Its callers are the decline branches
+ * of the confirmation gate and of the sign-in prompt, and
+ * `UnaskedReason.Undelivered` plus the `HOST_QUIRKS` entry go with it.
  */
 
-import { quirksFor } from '../../capabilities/client-detection.js';
-import { McpHostClient } from '../../capabilities/types.js';
-import { SimpleLogger } from '../../clients/graphql/base.js';
-import { getMcpSession } from '../../mcp-session-context.js';
+import { SimpleLogger } from '../clients/graphql/base.js';
+import { getMcpSession } from '../mcp-session-context.js';
+import { quirksFor } from './client-detection.js';
+import { McpHostClient } from './types.js';
 
 const logger = new SimpleLogger();
 
@@ -37,23 +37,21 @@ export const HUMAN_RESPONSE_FLOOR_MS = 250;
  * shown it to anybody.
  */
 export function declineCameFromUndeliveredPrompt(
-  /** Tool being gated, for the log line */
-  toolName: string,
+  /** What the host was asked, for the log line */
+  prompt: string,
   /** How long the host took to answer */
   elapsedMs: number,
-  /** Whether an approval token can carry the decision instead */
-  softConfirmationAvailable: boolean,
 ): boolean {
-  if (!softConfirmationAvailable || elapsedMs >= HUMAN_RESPONSE_FLOOR_MS) return false;
+  if (elapsedMs >= HUMAN_RESPONSE_FLOOR_MS) return false;
 
   const session = getMcpSession();
-  // Check if the host is Cursor, if so, return true to allow confirmation behavior for Cursor.
+  // Check if the host is Cursor, if so, return true so the caller takes its fallback.
   const host = session?.client.host ?? McpHostClient.Unknown;
   if (quirksFor(host).mayDeclineWithoutAsking !== true) return false;
 
   logger.warn(
-    `Host declined the confirmation for ${toolName} in ${elapsedMs}ms, too fast to have ` +
-      'shown it to anybody; asking for approval through the caller instead',
+    `Host declined ${prompt} in ${elapsedMs}ms, too fast to have shown it to anybody; ` +
+      'falling back to asking through the caller instead',
     { host, clientName: session?.client.clientInfo?.name, elapsed: elapsedMs },
   );
   return true;

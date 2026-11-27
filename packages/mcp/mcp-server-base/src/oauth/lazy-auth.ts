@@ -4,6 +4,8 @@ import { getRequestAuth } from '../auth-context.js';
 import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { ToolError } from '../errors.js';
+import { requestElicitation } from '../mcp-session-context.js';
+import { withProgressHeartbeat } from '../tools/confirmation/progress-heartbeat.js';
 import {
   getOAuthClientIdFromEnv,
   getOAuthClientSecret,
@@ -11,15 +13,23 @@ import {
   isOAuthModeEnabled,
 } from './config.js';
 import {
+  formatOAuthSignInLinkMessage,
   OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
-  OAUTH_LOGIN_REOPEN_MS,
-  OAUTH_LOGIN_SILENT_ATTACH_MS,
-  formatOAuthLoginPendingNudgeMessage,
+  OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS,
+  OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE,
+  OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE,
 } from './constants.js';
+import { isErrnoException } from './credential-store/config-directory.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { startOAuthLogin, waitForAuthorizationGrant } from './oauth-flow.js';
 import { openBrowser } from './open-browser.js';
+import {
+  requestSignIn,
+  SignInAnswer,
+  throwIfRequestAbandoned,
+  waitUnlessRequestAbandoned,
+} from './request-sign-in.js';
 import { getOAuthScopes } from './scopes.js';
 import { exchangeAuthorizationCode } from './token-exchange.js';
 import {
@@ -27,17 +37,21 @@ import {
   type OAuthClientCredentials,
   type OAuthTokenManager,
 } from './token-manager.js';
-import type { OAuthAuthorizationGrant } from './types.js';
+import type { OAuthAuthorizationGrant, PendingOAuthSession } from './types.js';
 
-interface InFlightOAuthLogin {
-  /** Shared login lifecycle promise */
-  promise: Promise<void>;
-  /** Authorization URL for nudges/reopens */
+/** A login whose callback server is listening for the browser redirect. */
+interface PendingLogin {
+  /** Consent URL that redirects to this login's callback server */
   authorizationUrl: string;
-  /** Timestamp when browser was last opened (initial open or reopen) */
-  browserOpenedAt: number;
-  /** Whether the URL-only nudge has been emitted for the current open window */
-  urlNudgeSent: boolean;
+  /** Settles when the login is saved or has failed */
+  completion: Promise<void>;
+  /**
+   * Whether calls wait for this login instead of handing out its link: the user
+   * accepted the prompt, or the browser redirect already arrived.
+   */
+  isUnderway: boolean;
+  /** Stops the callback server */
+  close: () => Promise<void>;
 }
 
 export interface LazyOAuthOptions {
@@ -45,6 +59,8 @@ export interface LazyOAuthOptions {
   tokenManager: OAuthTokenManager;
   /** Opens the consent URL; defaults to the system browser */
   openBrowser?: typeof openBrowser;
+  /** Shows the sign-in prompt in the host; defaults to MCP elicitation */
+  elicit?: typeof requestElicitation;
   /** OAuth client for this process, or `null` when OAuth mode is off; defaults to the environment */
   resolveClient?: () => OAuthClientCredentials | null;
   /** Clock; defaults to `Date.now` */
@@ -55,8 +71,9 @@ export interface LazyOAuthOptions {
 export interface LazyOAuth {
   /**
    * Ensures OAuth tokens are available before a tool call when stdio OAuth mode
-   * is active. Uses the saved login and refreshes expired tokens when possible;
-   * otherwise opens the browser.
+   * is active. Uses the saved login and refreshes expired tokens when possible.
+   * Otherwise asks the user to sign in, and opens the browser only after they
+   * accept. Throws a sign-in link for the agent to show when the host cannot ask.
    */
   ensureAuth: (logger: Logger) => Promise<void>;
   /** Credentials after login, a saved login, or a refresh */
@@ -79,6 +96,21 @@ function resolveOAuthClientFromEnv(): OAuthClientCredentials | null {
   };
 }
 
+function toSignInError(error: unknown): ToolError {
+  if (error instanceof ToolError) return error;
+  const message = error instanceof Error ? error.message : String(error);
+  if (isErrnoException(error, 'EADDRINUSE')) {
+    return new ToolError(McpToolErrorCode.AuthError, OAUTH_SIGN_IN_ELSEWHERE_AGENT_MESSAGE, false);
+  }
+  if (/timed out/i.test(message)) {
+    return new ToolError(McpToolErrorCode.AuthError, OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE, false);
+  }
+  if (/access_denied/i.test(message)) {
+    return new ToolError(McpToolErrorCode.AuthError, OAUTH_CALLBACK_DENIED_AGENT_MESSAGE, false);
+  }
+  return new ToolError(McpToolErrorCode.AuthError, message, false);
+}
+
 /**
  * Creates the lazy sign-in flow over a token manager.
  */
@@ -89,53 +121,26 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
   // Resolved per call, so a test that replaces the module export is honored.
   const open: typeof openBrowser = (url, logger) =>
     (options.openBrowser ?? openBrowser)(url, logger);
+  const elicit = options.elicit ?? requestElicitation;
 
   let sessionReady = false;
   let authorizationGrant: OAuthAuthorizationGrant | null = null;
-  let inFlightLogin: InFlightOAuthLogin | null = null;
+  let pendingLogin: Promise<PendingLogin> | null = null;
+  let openPrompt: Promise<PendingLogin | null> | null = null;
+  let declinedAt: number | null = null;
 
-  const maybeHandleLateJoiner = async (
-    state: InFlightOAuthLogin,
-    logger: Logger,
-  ): Promise<void> => {
-    if (!state.authorizationUrl) {
-      return;
-    }
+  const currentLogin = async (): Promise<PendingLogin | null> =>
+    (await pendingLogin?.catch(() => null)) ?? null;
 
-    const elapsed = now() - state.browserOpenedAt;
-    if (elapsed < OAUTH_LOGIN_SILENT_ATTACH_MS) {
-      return;
-    }
-
-    if (elapsed >= OAUTH_LOGIN_REOPEN_MS) {
-      await open(state.authorizationUrl, logger);
-      state.browserOpenedAt = now();
-      state.urlNudgeSent = false;
-    }
-
-    if (!state.urlNudgeSent) {
-      logger.warn(formatOAuthLoginPendingNudgeMessage(state.authorizationUrl), {
-        authorizationUrl: state.authorizationUrl,
-      });
-      state.urlNudgeSent = true;
-    }
-  };
-
-  const performLogin = async (
-    state: InFlightOAuthLogin,
+  const completeLogin = async (
+    login: PendingLogin,
+    session: PendingOAuthSession,
     client: OAuthClientCredentials,
     logger: Logger,
   ): Promise<void> => {
-    logger.info('OAuth required — opening browser for consent');
-
-    let session: Awaited<ReturnType<typeof startOAuthLogin>> | undefined;
     try {
-      session = await startOAuthLogin({ issuer: client.issuer, logger, openBrowser: open });
-      state.authorizationUrl = session.authorizationUrl;
-      state.browserOpenedAt = now();
-
       const grant = await waitForAuthorizationGrant(session);
-      authorizationGrant = grant;
+      login.isUnderway = true;
 
       const metadata = await fetchAuthorizationServerMetadata(client.issuer);
       const tokens = await exchangeAuthorizationCode({
@@ -145,45 +150,113 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
         clientSecret: client.clientSecret,
       });
       await tokenManager.saveTokens(client, tokens, logger);
+      authorizationGrant = grant;
       sessionReady = true;
-
       logger.info('OAuth token exchange succeeded');
     } catch (error) {
       sessionReady = false;
       authorizationGrant = null;
-
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('OAuth login failed', { error: message });
-      if (/timed out/i.test(message)) {
-        throw new ToolError(
-          McpToolErrorCode.AuthError,
-          OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
-          false,
-        );
-      }
-      if (/access_denied/i.test(message)) {
-        throw new ToolError(McpToolErrorCode.AuthError, OAUTH_CALLBACK_DENIED_AGENT_MESSAGE, false);
-      }
-      throw new ToolError(McpToolErrorCode.AuthError, message, false);
+      const signInError = toSignInError(error);
+      // Nothing restarts a login that ran out of time, so the next call asks again.
+      logger.warn('OAuth sign-in did not complete', { error: signInError.message });
+      throw signInError;
     } finally {
-      await session?.close().catch(() => undefined);
+      await session.close().catch(() => undefined);
     }
   };
 
-  const startInFlightLogin = (
+  const startLogin = (client: OAuthClientCredentials, logger: Logger): Promise<PendingLogin> => {
+    const starting = (async (): Promise<PendingLogin> => {
+      let session: PendingOAuthSession;
+      try {
+        session = await startOAuthLogin({ issuer: client.issuer, logger });
+      } catch (error) {
+        throw toSignInError(error);
+      }
+      const login: PendingLogin = {
+        authorizationUrl: session.authorizationUrl,
+        completion: Promise.resolve(),
+        isUnderway: false,
+        close: session.close,
+      };
+      login.completion = completeLogin(login, session, client, logger).finally(() => {
+        if (pendingLogin === starting) pendingLogin = null;
+      });
+      // A login reached through a link has no call waiting on its outcome.
+      login.completion.catch(() => undefined);
+      return login;
+    })();
+    pendingLogin = starting;
+    starting.catch(() => {
+      if (pendingLogin === starting) pendingLogin = null;
+    });
+    return starting;
+  };
+
+  const discardLogin = async (): Promise<void> => {
+    const discarded = pendingLogin;
+    pendingLogin = null;
+    const login = await discarded?.catch(() => null);
+    await login?.close().catch(() => undefined);
+  };
+
+  /**
+   * Asks the user to sign in. Resolves with the login to wait on once they
+   * accept, or `null` when nobody was asked. Rejects when they decline.
+   */
+  const promptToSignIn = async (
     client: OAuthClientCredentials,
     logger: Logger,
-  ): InFlightOAuthLogin => {
-    const state: InFlightOAuthLogin = {
-      promise: Promise.resolve(),
-      authorizationUrl: '',
-      browserOpenedAt: 0,
-      urlNudgeSent: false,
-    };
-    state.promise = performLogin(state, client, logger).finally(() => {
-      inFlightLogin = null;
-    });
-    return state;
+  ): Promise<PendingLogin | null> => {
+    const answer = await requestSignIn({ elicit, now, logger });
+    if (answer === SignInAnswer.Unasked) return null;
+    if (answer === SignInAnswer.Declined) {
+      declinedAt = now();
+      await discardLogin();
+      throw new ToolError(McpToolErrorCode.AuthError, OAUTH_SIGN_IN_DECLINED_AGENT_MESSAGE, false);
+    }
+
+    const linked = await currentLogin();
+    if (linked?.isUnderway) return linked;
+    // A link handed out earlier may be close to expiry. A new login gives the
+    // user the whole callback window.
+    await discardLogin();
+    const login = await startLogin(client, logger);
+    login.isUnderway = true;
+    logger.info('Opening browser for OAuth consent', { authorizationUrl: login.authorizationUrl });
+    await open(login.authorizationUrl, logger);
+    return login;
+  };
+
+  const signIn = async (client: OAuthClientCredentials, logger: Logger): Promise<void> => {
+    const current = await currentLogin();
+    let login = current?.isUnderway ? current : null;
+    if (!login && openPrompt) {
+      login = await waitUnlessRequestAbandoned(openPrompt);
+    } else if (
+      !login &&
+      (declinedAt === null || now() - declinedAt >= OAUTH_SIGN_IN_DECLINE_COOLDOWN_MS)
+    ) {
+      openPrompt = promptToSignIn(client, logger).finally(() => {
+        openPrompt = null;
+      });
+      login = await openPrompt;
+    }
+    if (login) {
+      await waitUnlessRequestAbandoned(login.completion);
+      return;
+    }
+
+    // Nobody could be asked, so the agent shows the link. Every call until the
+    // callback arrives gets the same one, with no wait: an agent cannot show a
+    // link while its other calls are still pending.
+    throwIfRequestAbandoned();
+    const linked = await (pendingLogin ?? startLogin(client, logger));
+    throw new ToolError(
+      McpToolErrorCode.AuthError,
+      formatOAuthSignInLinkMessage(linked.authorizationUrl),
+      false,
+    );
   };
 
   return {
@@ -202,13 +275,9 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
         return;
       }
 
-      if (!inFlightLogin) {
-        inFlightLogin = startInFlightLogin(client, logger);
-      } else {
-        await maybeHandleLateJoiner(inFlightLogin, logger);
-      }
-
-      await inFlightLogin.promise;
+      // The host counts the prompt and the browser sign-in against its call
+      // timeout. Heartbeats tell it the call is alive while a person signs in.
+      await withProgressHeartbeat('Waiting for sign-in', () => signIn(client, logger));
     },
     getCredentials: () => tokenManager.getActiveCredentials(),
     getAuthorizationGrant: () => authorizationGrant,
@@ -216,7 +285,9 @@ export function createLazyOAuth(options: LazyOAuthOptions): LazyOAuth {
     reset: () => {
       sessionReady = false;
       authorizationGrant = null;
-      inFlightLogin = null;
+      openPrompt = null;
+      declinedAt = null;
+      void discardLogin();
       tokenManager.reset();
     },
   };
@@ -257,8 +328,8 @@ export function isLazyOAuthSessionReady(): boolean {
 
 /**
  * Ensures OAuth tokens are available before a tool call when stdio OAuth mode
- * is active. Uses the saved login and refreshes expired tokens when possible;
- * otherwise opens the browser.
+ * is active. Uses the saved login and refreshes expired tokens when possible.
+ * Otherwise asks the user to sign in, and opens the browser only after they accept.
  */
 export async function ensureLazyOAuthAuth(logger: Logger): Promise<void> {
   await defaultLazyOAuth.ensureAuth(logger);
