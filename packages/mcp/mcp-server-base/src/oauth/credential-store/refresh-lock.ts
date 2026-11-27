@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { open, rm, stat, utimes } from 'node:fs/promises';
+import { hostname } from 'node:os';
 import { dirname, join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -24,6 +25,8 @@ const TAKEOVER_MARKER_STALE_MS = 5_000;
 
 const LockRecordSchema = z.object({
   pid: z.number().int().positive(),
+  /** Host that wrote the lock. A pid means nothing on another host. */
+  hostname: z.string().min(1),
   ownerId: z.string().min(1),
 });
 
@@ -34,6 +37,17 @@ export class LockTimeoutError extends Error {
     this.name = 'LockTimeoutError';
   }
 }
+
+/** Raised when the holder finds its lock was taken over while it worked. */
+export class LockLostError extends Error {
+  constructor(lockPath: string) {
+    super(`Lost the lock at ${lockPath} while holding it`);
+    this.name = 'LockLostError';
+  }
+}
+
+/** Throws {@link LockLostError} unless the caller still holds the lock. */
+export type AssertLockHeld = () => Promise<void>;
 
 export interface LockFileOptions {
   /** How long to wait for the lock before throwing {@link LockTimeoutError} */
@@ -109,7 +123,8 @@ async function modifiedAt(path: string): Promise<number | null> {
  *
  * A live holder renews the file's modification time, so a slow holder (one
  * waiting on a keychain prompt, say) is never mistaken for a dead one. The pid
- * check only shortens the wait after a crash; a reused pid still ages out.
+ * check only shortens the wait after a crash, and only for a lock written on
+ * this host; a reused pid still ages out.
  */
 async function observeLock(lockPath: string, staleMs: number): Promise<ObservedLock | null> {
   const raw = await readFileIfExists(lockPath);
@@ -117,7 +132,8 @@ async function observeLock(lockPath: string, staleMs: number): Promise<ObservedL
   if (raw === null || renewedAt === null) return null;
 
   const record = parseLockRecord(raw);
-  const isHolderGone = record !== null && !isProcessAlive(record.pid);
+  const isHolderGone =
+    record !== null && record.hostname === hostname() && !isProcessAlive(record.pid);
   return { raw, isStale: isHolderGone || Date.now() - renewedAt > staleMs };
 }
 
@@ -154,7 +170,7 @@ async function acquireLock(
   timeoutMs: number,
   staleMs: number,
 ): Promise<void> {
-  const record = JSON.stringify({ pid: process.pid, ownerId });
+  const record = JSON.stringify({ pid: process.pid, hostname: hostname(), ownerId });
   const waitStartedAt = performance.now();
   for (;;) {
     if (await createExclusive(lockPath, record)) return;
@@ -170,10 +186,14 @@ async function acquireLock(
   }
 }
 
-async function releaseLock(lockPath: string, ownerId: string): Promise<void> {
+async function isLockHeldBy(lockPath: string, ownerId: string): Promise<boolean> {
   const raw = await readFileIfExists(lockPath);
+  return raw !== null && parseLockRecord(raw)?.ownerId === ownerId;
+}
+
+async function releaseLock(lockPath: string, ownerId: string): Promise<void> {
   // A lock that went unrenewed may have been taken over; leave that one alone.
-  if (raw !== null && parseLockRecord(raw)?.ownerId === ownerId) {
+  if (await isLockHeldBy(lockPath, ownerId)) {
     await rm(lockPath, { force: true });
   }
 }
@@ -186,10 +206,14 @@ async function releaseLock(lockPath: string, ownerId: string): Promise<void> {
  * other. The holder renews the lock while `task` runs. A lock is taken over only
  * when its process is gone or it has gone {@link REFRESH_LOCK_STALE_MS} without
  * a renewal.
+ *
+ * A holder that was suspended (a sleeping laptop) can lose its lock without
+ * knowing. `task` receives {@link AssertLockHeld}; call it right before any
+ * step that must not run twice, such as spending a refresh token.
  */
 export async function withLockFile<T>(
   lockPath: string,
-  task: () => Promise<T>,
+  task: (assertHeld: AssertLockHeld) => Promise<T>,
   options: LockFileOptions = {},
 ): Promise<T> {
   const {
@@ -202,14 +226,20 @@ export async function withLockFile<T>(
   await acquireLock(lockPath, ownerId, timeoutMs, staleMs);
 
   const renewal = setInterval(() => {
-    const renewedAt = new Date();
     // A missed renewal is not fatal: the next one lands well inside the stale window.
-    utimes(lockPath, renewedAt, renewedAt).catch(() => undefined);
+    // Renew only our own lock, never a file another process put at this path.
+    isLockHeldBy(lockPath, ownerId)
+      .then((isHeld) => (isHeld ? utimes(lockPath, new Date(), new Date()) : undefined))
+      .catch(() => undefined);
   }, renewMs);
   renewal.unref();
 
+  const assertHeld: AssertLockHeld = async () => {
+    if (!(await isLockHeldBy(lockPath, ownerId))) throw new LockLostError(lockPath);
+  };
+
   try {
-    return await task();
+    return await task(assertHeld);
   } finally {
     clearInterval(renewal);
     await releaseLock(lockPath, ownerId);
