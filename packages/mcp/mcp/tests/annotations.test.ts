@@ -88,6 +88,7 @@ describe('MCP Tool Annotations', () => {
         'assessments_update_assignees',
         'custom_functions_test_run',
         'docs_fetch',
+        'docs_integration_lookup',
         'docs_list',
         'dsr_cancel',
         'dsr_enrich_identifiers',

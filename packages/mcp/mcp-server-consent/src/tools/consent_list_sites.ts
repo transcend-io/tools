@@ -19,7 +19,12 @@ export function createConsentListSitesTool(clients: ToolClients) {
       'the consent-sites section of transcend.yml.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListSitesSchema,
     handler: async ({ limit, offset }) =>
       listYmlSection(clients, TranscendPullResource.ConsentSites, { limit, offset }),

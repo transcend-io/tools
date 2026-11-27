@@ -26,7 +26,12 @@ export function createPrivacyCenterListPoliciesTool(clients: ToolClients) {
       'the policy_* tools for those. Policy text is left out unless includeContent is true.',
     category: 'Privacy Center',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListPoliciesSchema,
     handler: async ({ limit, offset, includeContent = false }) => {
       const { logger } = createCollectedLogger();

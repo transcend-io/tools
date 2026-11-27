@@ -35,7 +35,12 @@ export function createPrivacyCenterWriteTool(clients: ToolClients) {
         'Updates the live privacy center settings. When footerLinks is included, any link not ' +
         'listed is deleted from the privacy center. Review the fields before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WritePrivacyCenterSchema,
     handler: async ({ privacyCenter, publishToPrivacyCenter = false }) => {
       const input = decodeYmlRecord<PrivacyCenterSettings>(

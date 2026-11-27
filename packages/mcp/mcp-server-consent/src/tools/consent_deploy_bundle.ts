@@ -60,7 +60,12 @@ export function createConsentDeployBundleTool(clients: ToolClients) {
         return summarizeConsentBundleDeployDiff(diff, environment);
       },
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: DeployBundleSchema,
     handler: async ({ environment }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

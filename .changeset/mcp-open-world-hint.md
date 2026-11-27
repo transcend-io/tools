@@ -2,6 +2,7 @@
 '@transcend-io/mcp-server-base': minor
 '@transcend-io/mcp-server-admin': minor
 '@transcend-io/mcp-server-assessment': minor
+'@transcend-io/mcp-server-config': minor
 '@transcend-io/mcp-server-consent': minor
 '@transcend-io/mcp-server-custom-functions': minor
 '@transcend-io/mcp-server-discovery': minor
@@ -10,6 +11,7 @@
 '@transcend-io/mcp-server-inventory': minor
 '@transcend-io/mcp-server-policy': minor
 '@transcend-io/mcp-server-preferences': minor
+'@transcend-io/mcp-server-privacy-center': minor
 '@transcend-io/mcp-server-workflows': minor
 '@transcend-io/mcp': minor
 ---

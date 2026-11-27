@@ -30,7 +30,12 @@ export function createPrivacyCenterListIntlMessagesTool(clients: ToolClients) {
       'unless includeTranslations is true.',
     category: 'Privacy Center',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListIntlMessagesSchema,
     handler: async ({ limit, offset, text, includeTranslations = false }) => {
       const { logger } = createCollectedLogger();

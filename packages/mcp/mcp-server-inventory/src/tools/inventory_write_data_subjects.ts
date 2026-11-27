@@ -23,7 +23,12 @@ export function createInventoryWriteDataSubjectsTool(clients: ToolClients) {
       'section of `transcend inventory push`. Returns success, count, and per-item errors.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteDataSubjectsSchema,
     handler: async ({ dataSubjects }) => {
       const decoded = decodeYmlItems<DataSubject>(DataSubjectInput, dataSubjects, 'data-subjects', {

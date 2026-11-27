@@ -30,7 +30,12 @@ export function createDsrWriteEnrichersTool(clients: ToolClients) {
       '`transcend inventory push` for that section. Returns success and per-item errors.',
     category: 'DSR Automation',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: writeEnrichersSchema,
     handler: async ({ enrichers, publishToPrivacyCenter = false }) => {
       const decoded = decodeYmlItems<EnricherSettings>(EnricherInput, enrichers, 'preflights', {
