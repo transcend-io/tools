@@ -6,6 +6,8 @@ export interface AuthorizationServerMetadata {
   authorizationEndpoint: string;
   /** Token endpoint URL */
   tokenEndpoint: string;
+  /** Token revocation endpoint URL (RFC 7009), when the server has one */
+  revocationEndpoint?: string;
   /** Supported PKCE code challenge methods */
   codeChallengeMethodsSupported: string[];
 }
@@ -54,7 +56,7 @@ export interface OAuthTokenResponse {
   scope?: string;
 }
 
-/** Persisted OAuth tokens for a single issuer. */
+/** Saved OAuth tokens for one issuer and client. */
 export interface StoredOAuthTokens {
   /** OAuth access token */
   accessToken: string;

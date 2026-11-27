@@ -5,9 +5,10 @@ import { isOAuthModeEnabled, requireOAuthStartupEnv } from './config.js';
 /**
  * Resolves stdio startup credentials.
  *
- * When OAuth mode is enabled (issuer set, no API key), always returns `null` so
- * the server can connect immediately and run browser login lazily on first tool
- * use. OAuth tokens are session-only and are not loaded from disk at startup.
+ * When OAuth mode is enabled (client ID set, no API key), always returns `null` so
+ * the server can connect immediately. The first tool call that needs auth loads
+ * the saved login from the credential store, and runs browser login only when
+ * there is none.
  */
 export function resolveStdioStartupAuth(): AuthCredentials | null {
   if (isOAuthModeEnabled()) {

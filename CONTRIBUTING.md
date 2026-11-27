@@ -329,7 +329,7 @@ pnpm -F @transcend-io/mcp-server-consent typecheck
 
 MCP servers support three authentication modes:
 
-- **OAuth (stdio, recommended)** — set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Browser login runs on first tool call; tokens are session-only (in-memory). The issuer is auto-detected in production (`api.transcend.io`, `api.us.transcend.io`).
+- **OAuth (stdio, recommended)** — set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Browser login runs on first tool call; the login is saved and reused after a restart (see [Saved login](./packages/mcp/README.md#saved-login)). The issuer is auto-detected in production (`api.transcend.io`, `api.us.transcend.io`).
 - **API key** — set `TRANSCEND_API_KEY` for stdio (alternative to OAuth) or as HTTP default auth. When both API key and OAuth client ID are set, the API key takes precedence.
 - **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
 

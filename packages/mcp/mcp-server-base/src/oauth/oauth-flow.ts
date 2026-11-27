@@ -12,6 +12,8 @@ export interface StartOAuthLoginOptions {
   issuer: string;
   /** Logger for progress (must write to stderr in stdio mode) */
   logger: Logger;
+  /** Opens the consent URL; defaults to the system browser */
+  openBrowser?: typeof openBrowser;
 }
 
 /**
@@ -78,7 +80,7 @@ export async function startOAuthLogin(
     });
 
     logger.info('Opening browser for OAuth consent', { authorizationUrl });
-    await openBrowser(authorizationUrl, logger);
+    await (options.openBrowser ?? openBrowser)(authorizationUrl, logger);
 
     return {
       authorizationUrl,

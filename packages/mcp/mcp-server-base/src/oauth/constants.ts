@@ -6,6 +6,12 @@ export enum OAuthGrantType {
   RefreshToken = 'refresh_token',
 }
 
+/** OAuth 2.0 `token_type_hint` values for token revocation (RFC 7009). */
+export enum OAuthTokenTypeHint {
+  RefreshToken = 'refresh_token',
+  AccessToken = 'access_token',
+}
+
 /** Environment variable for the OAuth issuer URL (test-only; requires ALLOW_TEST_OVERRIDES=1). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
@@ -68,6 +74,12 @@ export const TRANSCEND_MCP_CREDENTIAL_STORE_ENV = 'TRANSCEND_MCP_CREDENTIAL_STOR
 
 /** Environment variable that overrides the directory for the credentials file and refresh locks. */
 export const TRANSCEND_MCP_CONFIG_DIR_ENV = 'TRANSCEND_MCP_CONFIG_DIR';
+
+/**
+ * Maximum time to wait for the token or revocation endpoint. A refresh holds
+ * the refresh lock, so a request that never answers must not hold it forever.
+ */
+export const OAUTH_TOKEN_REQUEST_TIMEOUT_MS = 15_000;
 
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;

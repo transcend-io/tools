@@ -559,7 +559,9 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
       const toolRequiresAuth = tool.requireAuth !== false;
       let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
-      if (toolRequiresAuth) {
+      // Only a stdio server runs for the person who saved the login. An HTTP server
+      // serves other callers, who must bring their own credentials.
+      if (toolRequiresAuth && options.transport === McpTransport.Stdio) {
         const authStartedAt = Date.now();
         await ensureLazyOAuthAuth(logger);
         oauthCredentials = getLazyOAuthCredentials();

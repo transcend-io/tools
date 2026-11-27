@@ -10,6 +10,10 @@ export interface RefreshOAuthTokensOptions {
   stored: StoredOAuthTokens;
   /** OAuth client secret for confidential client authentication */
   clientSecret: string;
+  /** Fetch implementation; defaults to the global `fetch` */
+  fetch?: typeof fetch;
+  /** Time the refresh happens at, used to compute the new expiry */
+  nowMs?: number;
 }
 
 /**
@@ -18,7 +22,7 @@ export interface RefreshOAuthTokensOptions {
 export async function refreshOAuthTokens(
   options: RefreshOAuthTokensOptions,
 ): Promise<StoredOAuthTokens> {
-  const { tokenEndpoint, stored, clientSecret } = options;
+  const { tokenEndpoint, stored, clientSecret, nowMs } = options;
   if (!stored.refreshToken) {
     throw new Error('OAuth token refresh requires a refresh token');
   }
@@ -34,10 +38,12 @@ export async function refreshOAuthTokens(
     tokenEndpoint,
     body,
     'OAuth token refresh failed',
+    options.fetch,
   );
 
   return storedTokensFromRefreshResponse({
     response: tokenResponse,
     previous: stored,
+    nowMs,
   });
 }

@@ -1,3 +1,4 @@
+import { OAUTH_TOKEN_REQUEST_TIMEOUT_MS } from './constants.js';
 import { normalizeIssuer } from './normalize-issuer.js';
 import type { AuthorizationServerMetadata } from './types.js';
 
@@ -6,11 +7,14 @@ import type { AuthorizationServerMetadata } from './types.js';
  */
 export async function fetchAuthorizationServerMetadata(
   issuer: string,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<AuthorizationServerMetadata> {
   const base = normalizeIssuer(issuer);
   const url = `${base}/.well-known/oauth-authorization-server`;
 
-  const response = await fetch(url);
+  const response = await fetchImpl(url, {
+    signal: AbortSignal.timeout(OAUTH_TOKEN_REQUEST_TIMEOUT_MS),
+  });
   if (!response.ok) {
     throw new Error(
       `Failed to fetch OAuth authorization server metadata from ${url}: HTTP ${response.status}`,
@@ -42,6 +46,8 @@ export async function fetchAuthorizationServerMetadata(
     issuer: typeof body.issuer === 'string' ? body.issuer : base,
     authorizationEndpoint,
     tokenEndpoint,
+    revocationEndpoint:
+      typeof body.revocation_endpoint === 'string' ? body.revocation_endpoint : undefined,
     codeChallengeMethodsSupported,
   };
 }

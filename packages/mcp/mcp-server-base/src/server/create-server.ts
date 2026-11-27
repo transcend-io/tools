@@ -2,6 +2,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger, TranscendGraphQLBase } from '../clients/graphql/base.js';
+import { runOAuthLoginCommand } from '../oauth/login-command.js';
 import {
   resolveStdioStartupAuth,
   resolveStdioStartupAuthOptional,
@@ -87,11 +88,20 @@ function buildClients(
 /**
  * Bootstraps a Transcend MCP server using either stdio or HTTP transport.
  *
+ * A first argument of `status` or `logout` manages the saved OAuth login instead
+ * of starting the server.
+ *
  * Transport is selected via `--transport stdio|http` CLI flag (default: stdio).
  * In HTTP mode, each client session gets its own Server and transport instance,
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
+  const loginCommandExitCode = await runOAuthLoginCommand();
+  if (loginCommandExitCode !== undefined) {
+    process.exitCode = loginCommandExitCode;
+    return;
+  }
+
   const requireStartupAuth = options.requireStartupAuth !== false;
   configureOAuthScopes(options.oauthScopes);
 
