@@ -33,7 +33,12 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
         'settings take effect for compliance and downstream systems. Check partition, ' +
         'identifiers, mergeRecordsOnConflict, and purpose values in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: UpsertPreferencesSchema,
     handler: async ({ records, skipWorkflowTriggers }) => {

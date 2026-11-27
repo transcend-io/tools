@@ -28,7 +28,12 @@ export function createDsrWriteActionsTool(clients: ToolClients) {
       'behavior as `transcend inventory push` for that section. Returns success and per-item errors.',
     category: 'DSR Automation',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: writeActionsSchema,
     handler: async ({ actions, publishToPrivacyCenter = false }) => {
       const decoded = decodeYmlItems<ActionSettings>(ActionInput, actions, 'actions', {

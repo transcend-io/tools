@@ -19,7 +19,12 @@ export function createConsentListRegimesTool(clients: ToolClients) {
       'Returns experience name, regions, purposes, opted-out purposes, and view state.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListRegimesSchema,
     handler: async ({ limit, offset }) => {
       const data = await clients.graphql.makeRequest<TranscendCliExperiencesResponse>(EXPERIENCES, {

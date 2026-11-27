@@ -51,7 +51,12 @@ export function createAssessmentsGetTool(clients: ToolClients) {
       'verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetAssessmentSchema,
     handler: async ({ assessmentId, sectionIds, questionText }) => {
       const search = questionText !== undefined && questionText.length > 0;

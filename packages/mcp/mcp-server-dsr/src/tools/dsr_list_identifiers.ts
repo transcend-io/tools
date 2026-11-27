@@ -19,7 +19,12 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     description: 'List decrypted identifiers attached to a Data Subject Request.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: listIdentifiersSchema,
     handler: async ({ requestId, limit, offset }) => {

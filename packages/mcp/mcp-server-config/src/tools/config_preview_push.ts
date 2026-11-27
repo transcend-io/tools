@@ -46,7 +46,12 @@ export function createConfigPreviewPushTool(clients: ToolClients) {
     category: 'Config',
     readOnly: true,
     requireLocalFilesystem: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ConfigPreviewPushSchema,
     handler: async ({ filePath, variables = {}, pageSize = 50 }) => {
       const { input } = loadConfigFile(filePath, variables);

@@ -45,7 +45,12 @@ export function createConsentGetTimeseriesAnalyticsTool(clients: ToolClients) {
       'Requires ViewConsentManager API key scope.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetTimeseriesAnalyticsSchema,
     handler: async ({ metric, start, end, days, bin_interval }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

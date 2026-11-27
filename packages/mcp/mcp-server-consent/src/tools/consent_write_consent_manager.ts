@@ -28,7 +28,12 @@ export function createConsentWriteConsentManagerTool(clients: ToolClients) {
       'Returns success and errors.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteConsentManagerSchema,
     handler: async ({ consentManager }) => {
       const input = decodeYmlRecord<ConsentManagerSettings>(
