@@ -18,6 +18,6 @@ export function createMemoryCredentialStore(): CredentialStore {
       entries.delete(key);
     },
     keys: async () => [...entries.keys()],
-    withRefreshLock: (_key, task) => task(),
+    withRefreshLock: (_key, task) => task(async () => undefined),
   };
 }

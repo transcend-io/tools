@@ -733,6 +733,9 @@ importers:
       tsdown:
         specifier: 0.21.10
         version: 0.21.10(@arethetypeswrong/core@0.18.3)(publint@0.3.21)(typescript@6.0.3)
+      tsx:
+        specifier: 4.22.4
+        version: 4.22.4
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -744,7 +747,7 @@ importers:
         version: 4.6.6
     optionalDependencies:
       '@napi-rs/keyring':
-        specifier: ^2.1.2
+        specifier: 2.1.2
         version: 2.1.2
 
   packages/mcp/mcp-server-config:
