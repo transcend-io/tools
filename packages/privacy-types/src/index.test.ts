@@ -7,12 +7,19 @@ import {
   PrivacyCenterAccessTokenFormat,
   McpToolErrorCode,
   RequestAction,
+  TranscendMcpServer,
 } from './index.js';
 
 describe('@transcend-io/privacy-types', () => {
   it('exports seven stable MCP tool error codes', () => {
     expect(Object.values(McpToolErrorCode)).toHaveLength(7);
     expect(McpToolErrorCode.PermissionError).toBe('PERMISSION_ERROR');
+  });
+
+  it('exports twelve domain MCP server identifiers', () => {
+    expect(Object.values(TranscendMcpServer)).toHaveLength(12);
+    expect(TranscendMcpServer.Config).toBe('config');
+    expect(TranscendMcpServer.PrivacyCenter).toBe('privacyCenter');
   });
 
   it('exports ACCESS as a request action', () => {
