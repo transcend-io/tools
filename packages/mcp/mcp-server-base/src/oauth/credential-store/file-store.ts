@@ -150,8 +150,12 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
   };
 
   const clear = async (key: string): Promise<void> => {
+    if (!(await fileExists())) {
+      // No file to rewrite, but a killed write may have left a temporary copy of a login.
+      await withLockFile(writeLockPath, removeAbandonedTemporaryFiles);
+      return;
+    }
     // Rewrites any file that exists, so an untrusted or corrupt one is replaced too.
-    if (!(await fileExists())) return;
     await updateEntries((entries) => {
       delete entries[key];
     });

@@ -1,6 +1,7 @@
 import type { Logger } from '../../clients/graphql/base.js';
 import { TRANSCEND_MCP_CREDENTIAL_STORE_ENV } from '../constants.js';
 import { resolveMcpConfigDirectory } from './config-directory.js';
+import { createFallbackCredentialStore } from './fallback-store.js';
 import { createFileCredentialStore } from './file-store.js';
 import { createKeyringCredentialStore, KEYRING_SERVICE, loadOsKeyring } from './keyring-store.js';
 import { createMemoryCredentialStore } from './memory-store.js';
@@ -19,6 +20,12 @@ export interface ResolveCredentialStoreOptions {
   loadKeyring?: () => Promise<Keyring>;
   /** Platform that decides how the file fallback is described */
   platform?: NodeJS.Platform;
+  /**
+   * Directory for the keychain's refresh locks. Defaults to the per-user
+   * directory and ignores the config directory override: the keychain is shared
+   * by every process of this user, so its lock must be too.
+   */
+  keyringLockDirectory?: string;
 }
 
 /** The store this process uses, and every store that may hold a login. */
@@ -26,11 +33,13 @@ export interface ResolvedCredentialStores {
   /** Store this process loads from and saves to */
   active: CredentialStore;
   /**
-   * Every store that may hold a login, starting with `active`. In `auto` mode
-   * the file is listed even when the keychain is active, so `status` and
-   * `logout` cover a login that the file still holds.
+   * Every store that may hold a login, starting with `active`. In `auto` and
+   * `keyring` mode the file is listed even when the keychain is active, so
+   * `status` and `logout` cover a login that the file still holds.
    */
   all: CredentialStore[];
+  /** Why `auto` mode did not use the keychain; unset when it did or was not asked to */
+  keychainUnavailable?: string;
 }
 
 /**
@@ -58,7 +67,8 @@ export function parseCredentialStoreKind(raw: string | undefined): CredentialSto
  * and otherwise a file in the config directory. `keyring` never falls back:
  * asking for the keychain and silently getting a file would be a weaker store
  * than requested. When `auto` picks the keychain, logins that an earlier run
- * saved to the file move into the keychain.
+ * saved to the file move into the keychain, and a keychain that fails later
+ * falls back to the file for that read or save.
  */
 export async function resolveCredentialStores(
   options: ResolveCredentialStoreOptions,
@@ -68,6 +78,7 @@ export async function resolveCredentialStores(
     env = process.env,
     loadKeyring = loadOsKeyring,
     platform = process.platform,
+    keyringLockDirectory = resolveMcpConfigDirectory({}),
   } = options;
   const kind = parseCredentialStoreKind(env[TRANSCEND_MCP_CREDENTIAL_STORE_ENV]);
 
@@ -85,11 +96,23 @@ export async function resolveCredentialStores(
   try {
     const keyring = await loadKeyring();
     await keyring.get(KEYRING_SERVICE, KEYRING_PROBE_ACCOUNT);
-    const active = createKeyringCredentialStore({ keyring, lockDirectory: directory, logger });
-    if (kind === CredentialStoreKind.Keyring) return { active, all: [active] };
-
+    const keyringStore = createKeyringCredentialStore({
+      keyring,
+      lockDirectory: keyringLockDirectory,
+      logger,
+    });
     const fileStore = createFileCredentialStore({ directory, logger });
-    await migrateFileEntriesToKeyring({ fileStore, keyringStore: active, logger });
+    // `keyring` never writes the file, but `logout` must still clear a login left in it.
+    if (kind === CredentialStoreKind.Keyring) {
+      return { active: keyringStore, all: [keyringStore, fileStore] };
+    }
+
+    await migrateFileEntriesToKeyring({ fileStore, keyringStore, logger });
+    const active = createFallbackCredentialStore({
+      primary: keyringStore,
+      fallback: fileStore,
+      logger,
+    });
     return { active, all: [active, fileStore] };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -107,7 +130,7 @@ export async function resolveCredentialStores(
       error: detail,
       filePath: fileStore.location,
     });
-    return { active: fileStore, all: [fileStore] };
+    return { active: fileStore, all: [fileStore], keychainUnavailable: detail };
   }
 }
 
