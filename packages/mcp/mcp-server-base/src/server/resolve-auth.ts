@@ -32,15 +32,9 @@ export function extractApiKeyFromHeaders(
  * 3. API key from TRANSCEND_API_KEY env var (stdio transport fallback)
  *
  * @param headers - Inbound HTTP request headers (omit for stdio mode)
- * @param options - Set `ignoreEnvApiKey` to skip the env fallback (step 3). Public hosted
- *   mode uses this so a server-side key never authenticates anonymous callers.
  */
 export function tryResolveAuth(
   headers?: Record<string, string | string[] | undefined>,
-  options?: {
-    /** Skip the TRANSCEND_API_KEY env fallback */
-    ignoreEnvApiKey?: boolean;
-  },
 ): AuthCredentials | null {
   if (headers) {
     const cookie = headers.cookie;
@@ -55,7 +49,7 @@ export function tryResolveAuth(
     }
   }
 
-  const envKey = options?.ignoreEnvApiKey ? undefined : process.env.TRANSCEND_API_KEY;
+  const envKey = process.env.TRANSCEND_API_KEY;
   if (envKey) {
     return { type: 'apiKey', apiKey: envKey };
   }
