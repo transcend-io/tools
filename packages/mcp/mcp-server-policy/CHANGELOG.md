@@ -1,5 +1,27 @@
 # @transcend-io/mcp-server-policy
 
+## 0.4.0
+
+### Minor Changes
+
+- 11136a9: When you run an MCP server with public HTTP mode (`--public-url` or `TRANSCEND_MCP_PUBLIC_URL`), the CLI now enforces multi-tenant Sombra only. Self-hosted Sombra organizations are refused so the hosted endpoint does not read data behind a customer-managed Sombra.
+
+### Patch Changes
+
+- 2eb3a57: Public hosted mode of the MCP HTTP transport (`TRANSCEND_MCP_PUBLIC_URL`) now accepts verified OAuth access tokens only. The server checks each `Authorization: Bearer` token with the authorization server (OAuth 2.0 Token Introspection) and requires the token to be active, unexpired, and issued for this server. API keys and session cookies are not accepted in this mode.
+  - Set `TRANSCEND_MCP_INTROSPECTION_CLIENT_ID` and `TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET` when you set a public URL. The server does not start without them.
+  - A missing or invalid token gets `401` with a `WWW-Authenticate` challenge. If the authorization server cannot be reached, the request gets `503`.
+  - Sombra-backed tools run only for organizations on the multi-tenant Sombra. Organizations that self-host Sombra get an error that points them to the locally installed server (`npx @transcend-io/mcp`).
+
+  Nothing changes when no public URL is set.
+
+- Updated dependencies [ba3f495]
+- Updated dependencies [793e0b7]
+- Updated dependencies [2eb3a57]
+- Updated dependencies [564d964]
+- Updated dependencies [2093f0e]
+  - @transcend-io/mcp-server-base@3.6.0
+
 ## 0.3.0
 
 ### Minor Changes

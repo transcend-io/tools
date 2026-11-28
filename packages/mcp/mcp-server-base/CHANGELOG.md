@@ -1,5 +1,24 @@
 # @transcend-io/mcp-server-base
 
+## 3.6.0
+
+### Minor Changes
+
+- ba3f495: Add file and OS keychain credential stores for MCP OAuth, with migration from file to keychain and a file fallback when the keychain fails after startup.
+- 2eb3a57: Public hosted mode of the MCP HTTP transport (`TRANSCEND_MCP_PUBLIC_URL`) now accepts verified OAuth access tokens only. The server checks each `Authorization: Bearer` token with the authorization server (OAuth 2.0 Token Introspection) and requires the token to be active, unexpired, and issued for this server. API keys and session cookies are not accepted in this mode.
+  - Set `TRANSCEND_MCP_INTROSPECTION_CLIENT_ID` and `TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET` when you set a public URL. The server does not start without them.
+  - A missing or invalid token gets `401` with a `WWW-Authenticate` challenge. If the authorization server cannot be reached, the request gets `503`.
+  - Sombra-backed tools run only for organizations on the multi-tenant Sombra. Organizations that self-host Sombra get an error that points them to the locally installed server (`npx @transcend-io/mcp`).
+
+  Nothing changes when no public URL is set.
+
+- 564d964: Add shared OAuth token HTTP helpers for the MCP credential store: structured errors from the token endpoint, refresh and exchange calls, and RFC 7009 token revocation.
+
+### Patch Changes
+
+- 793e0b7: Add a credential store that can save an OAuth login in the OS keychain or in a file that only your user can read on macOS and Linux. Nothing uses it yet. The OS keychain comes from the optional `@napi-rs/keyring` dependency, which some platforms do not install.
+- 2093f0e: Hosted public MCP mode refuses Sombra-backed tools for organizations that self-host Sombra, so the server does not read data that stays end-to-end encrypted on a customer Sombra instance.
+
 ## 3.5.0
 
 ### Minor Changes
