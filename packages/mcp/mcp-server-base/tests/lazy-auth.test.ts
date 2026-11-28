@@ -20,6 +20,7 @@ import {
 import * as metadata from '../src/oauth/metadata.js';
 import * as oauthFlow from '../src/oauth/oauth-flow.js';
 import * as openBrowserModule from '../src/oauth/open-browser.js';
+import { configureOAuthScopes, resetConfiguredOAuthScopes } from '../src/oauth/scopes.js';
 import * as tokenExchange from '../src/oauth/token-exchange.js';
 import * as tokenManager from '../src/oauth/token-manager.js';
 import * as tokenRefresh from '../src/oauth/token-refresh.js';
@@ -35,14 +36,17 @@ describe('ensureLazyOAuthAuth', () => {
   const originalClientId = process.env.TRANSCEND_OAUTH_CLIENT_ID;
   const originalClientSecret = process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+  const originalCredentialStore = process.env.TRANSCEND_MCP_CREDENTIAL_STORE;
 
   function enableLazyOAuthTestEnv(): void {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+    process.env.TRANSCEND_MCP_CREDENTIAL_STORE = 'memory';
     setResolvedOAuthIssuer('https://yo.com:4001');
     setResolvedTranscendApiUrl('https://yo.com:4001');
+    configureOAuthScopes(['ViewRequests', 'offline_access']);
   }
 
   function mockAuthorizationMetadataAndExchange(): void {
@@ -56,7 +60,7 @@ describe('ensureLazyOAuthAuth', () => {
       storedTokensFromTokenResponse({
         response: { access_token: 'access', expires_in: 3600 },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
       }),
     );
   }
@@ -89,17 +93,20 @@ describe('ensureLazyOAuthAuth', () => {
   beforeEach(() => {
     resetLazyOAuthState();
     resetOAuthClientState();
+    resetConfiguredOAuthScopes();
     vi.restoreAllMocks();
     delete process.env.TRANSCEND_API_KEY;
     delete process.env.TRANSCEND_OAUTH_ISSUER;
     delete process.env.TRANSCEND_OAUTH_CLIENT_ID;
     delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+    delete process.env.TRANSCEND_MCP_CREDENTIAL_STORE;
   });
 
   afterEach(() => {
     resetLazyOAuthState();
     resetOAuthClientState();
+    resetConfiguredOAuthScopes();
     if (originalApiKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = originalApiKey;
 
@@ -114,6 +121,9 @@ describe('ensureLazyOAuthAuth', () => {
 
     if (originalRedirectPort === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
     else process.env.TRANSCEND_OAUTH_REDIRECT_PORT = originalRedirectPort;
+
+    if (originalCredentialStore === undefined) delete process.env.TRANSCEND_MCP_CREDENTIAL_STORE;
+    else process.env.TRANSCEND_MCP_CREDENTIAL_STORE = originalCredentialStore;
   });
 
   it('no-ops when OAuth mode is disabled', async () => {
@@ -132,7 +142,7 @@ describe('ensureLazyOAuthAuth', () => {
         expires_in: 60,
       },
       issuer: 'https://yo.com:4001',
-      clientId: 'client',
+      clientId: 'client-abc',
       nowMs: now,
     });
     tokenManager.setActiveStoredOAuthTokens(expired);
@@ -151,7 +161,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
         nowMs: expired.expiresAt + 1,
       }),
     );
@@ -178,7 +188,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
         nowMs: now,
       }),
     );
@@ -222,7 +232,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
       }),
     );
 
