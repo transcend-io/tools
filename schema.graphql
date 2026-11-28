@@ -3312,6 +3312,12 @@ enum RequestIdentifierSource {
   DATA_SILO
 }
 
+enum RequestIdentityEnrichmentJobOrderField {
+  STATUS
+  SCHEDULED_AT
+  SOURCE_MODEL_TITLE
+}
+
 enum RequestOrderField {
   createdAt
   updatedAt
@@ -4628,6 +4634,11 @@ enum TableId {
   MAESTRO_RULES
   ACTION_ITEMS
   CUSTOM_FUNCTION_ACTIVITY
+  REQUEST_DETAIL_IDENTIFIERS
+  REQUEST_DETAIL_PREFLIGHT_JOBS
+  REQUEST_DETAIL_ATTACHMENTS
+  REQUEST_DETAIL_DOWNLOAD_ACTIVITY
+  REQUEST_DETAIL_INTEGRATIONS
 }
 
 enum TeamOrderField {
@@ -5299,6 +5310,26 @@ enum PrivacyCenterIntlMessageType {
   ATTRIBUTE_VALUE_NAME
 }
 
+enum OAuthClientMcpServer {
+  admin
+  assessment
+  config
+  consent
+  customFunctions
+  discovery
+  dsr
+  inventory
+  policy
+  preferences
+  privacyCenter
+  workflows
+}
+
+enum OAuthConsentAction {
+  allow
+  deny
+}
+
 type Query {
   actionItemRunLocks(input: ActionItemRunLocksInput!): ActionItemRunLocksPayload!
   actionItemSubscriptions(input: QueryActionItemSubscriptionInput!): [ActionItemSubscription!]!
@@ -5501,7 +5532,7 @@ type Query {
   requestFilesToken(first: Int, offset: Int = 0, last: Int, filterBy: RequestFileTokenFiltersInput!, orderBy: [RequestFileOrder!], input: TokenInput): RequestFilesTokenPayload!
   requestHistory(first: Int, offset: Int = 0, last: Int, dhEncrypted: String, filterBy: RequestHistoryFiltersInput, orderBy: [RequestHistoryOrder!], lookup: PrivacyCenterLookupInput): RequestHistoryPayload!
   requestIdentifiers(first: Int, last: Int, before: String, after: String, offset: Int = 0, useMaster: Boolean, isExportCsv: Boolean, filterBy: RequestIdentifiersFiltersInput, orderBy: [RequestIdentifierOrder!], input: RequestIdentifiersInput!): RequestIdentifiersPayload!
-  requestIdentityEnrichmentJobs(first: Int, offset: Int = 0, last: Int, filterBy: RequestIdentityEnrichmentJobFiltersInput, input: RequestIdentityEnrichmentJobInput!): RequestIdentityEnrichmentJobsPayload!
+  requestIdentityEnrichmentJobs(first: Int, offset: Int = 0, last: Int, filterBy: RequestIdentityEnrichmentJobFiltersInput, orderBy: [RequestIdentityEnrichmentJobOrder!], input: RequestIdentityEnrichmentJobInput!): RequestIdentityEnrichmentJobsPayload!
   requests(first: Int, last: Int, before: String, after: String, offset: Int = 0, filterBy: RequestFiltersInput, orderBy: [RequestOrder!], useMaster: Boolean, isExportCsv: Boolean): RequestsPayload!
   requestsForDataSilo(first: Int, offset: Int = 0, last: Int, filterBy: RequestFiltersForDataSiloInput): RequestsForDataSiloPayload!
   requestsProcessedDisclosureStats(lookup: PrivacyCenterLookupInput, input: RequestsProcessedDisclosureStatsInput): [RequestsProcessedDisclosureStatsByYear!]!
@@ -6705,6 +6736,7 @@ type AiSetting {
   id: ID!
   isAiEnabled: Boolean!
   isMcpSombraEnabled: Boolean!
+  isMcpSignInEnabled: Boolean!
 }
 
 type AiUsageEvidenceItemPreview {
@@ -10730,6 +10762,7 @@ type CreatedOauthClient implements OauthClientInterface {
   redirectUris: [String!]!
   expiresAt: Date
   isMcp: Boolean!
+  mcpServer: OAuthClientMcpServer
 }
 
 type CreateEmailSenderAddressPayload {
@@ -10846,6 +10879,7 @@ input CreateOauthClientInput {
   redirectUris: [String!]!
   expiresAt: Date
   isMcp: Boolean
+  mcpServer: OAuthClientMcpServer
 }
 
 type CreateOnPremiseSombraPayload {
@@ -15726,6 +15760,7 @@ type OauthClient implements OauthClientInterface {
   redirectUris: [String!]!
   expiresAt: Date
   isMcp: Boolean!
+  mcpServer: OAuthClientMcpServer
 }
 
 input OauthClientFiltersInput {
@@ -15741,6 +15776,7 @@ interface OauthClientInterface {
   redirectUris: [String!]!
   expiresAt: Date
   isMcp: Boolean!
+  mcpServer: OAuthClientMcpServer
 }
 
 type OauthClientsPayload {
@@ -17751,6 +17787,7 @@ input RequestAttachmentFiltersInput {
   ids: [ID!]
   status: [RequestAttachmentStatus!]
   source: [RequestAttachmentSource!]
+  text: String
 }
 
 input RequestAttachmentOrder {
@@ -18292,10 +18329,18 @@ type RequestIdentityEnrichmentJob {
 
 input RequestIdentityEnrichmentJobFiltersInput {
   text: String
+  statuses: [String!]
+  scheduledAtAfter: String
+  scheduledAtBefore: String
 }
 
 input RequestIdentityEnrichmentJobInput {
   requestId: ID!
+}
+
+input RequestIdentityEnrichmentJobOrder {
+  field: RequestIdentityEnrichmentJobOrderField!
+  direction: OrderDirection!
 }
 
 type RequestIdentityEnrichmentJobsPayload {
@@ -21278,6 +21323,7 @@ type UpdateAiSettingPayload {
 input UpdateAiSettingInput {
   isAiEnabled: Boolean
   isMcpSombraEnabled: Boolean
+  isMcpSignInEnabled: Boolean
 }
 
 type UpdateApiKeyPayload {
@@ -22301,6 +22347,7 @@ input UpdateOauthClientInput {
   redirectUris: [String!]!
   expiresAt: Date
   isMcp: Boolean
+  mcpServer: OAuthClientMcpServer
 }
 
 input UpdateOrCreateCookieInput {
