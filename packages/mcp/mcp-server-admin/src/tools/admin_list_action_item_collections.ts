@@ -13,7 +13,12 @@ export function createAdminListActionItemCollectionsTool(clients: ToolClients) {
       'Same data as `transcend inventory pull --resources=actionItemCollections`.',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: listActionItemCollectionsSchema,
     handler: async () => listAllYmlSection(clients, TranscendPullResource.ActionItemCollections),
   });

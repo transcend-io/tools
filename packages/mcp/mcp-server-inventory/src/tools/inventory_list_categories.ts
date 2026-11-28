@@ -31,7 +31,12 @@ export function createInventoryListCategoriesTool(clients: ToolClients) {
       'inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListCategoriesSchema,
     handler: async ({ text, limit, offset }) => {
       const result = await graphql.listDataCategories({

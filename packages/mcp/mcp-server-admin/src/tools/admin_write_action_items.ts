@@ -23,7 +23,12 @@ export function createAdminWriteActionItemsTool(clients: ToolClients) {
       'inventory push for that section.',
     category: 'Admin',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: writeActionItemsSchema,
     handler: async ({ actionItems }) => {
       const decoded = decodeYmlItems<ActionItemSettings>(

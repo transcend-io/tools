@@ -86,7 +86,12 @@ export function createConfigPullTool(clients: ToolClients) {
     category: 'Config',
     readOnly: false,
     requireLocalFilesystem: true,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ConfigPullSchema,
     handler: async ({
       filePath,

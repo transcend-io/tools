@@ -33,7 +33,12 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
       'List the blank assessment templates. Only `PUBLISHED` ones can build new assessments.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListTemplatesSchema,
     handler: async ({ limit, offset, text, ids, statuses }) => {
       const result = await graphql.listAssessmentTemplates({

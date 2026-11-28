@@ -22,8 +22,18 @@ function describe(error: unknown): string {
 }
 
 /** Returns the login with the later `expiresAt`, or the keychain copy on a tie. */
-function preferNewerLogin(keychain: StoredOAuthTokens, file: StoredOAuthTokens): StoredOAuthTokens {
-  return file.expiresAt > keychain.expiresAt ? file : keychain;
+function preferNewerLogin(
+  key: string,
+  keychain: StoredOAuthTokens,
+  file: StoredOAuthTokens,
+  logger: Logger,
+): StoredOAuthTokens {
+  if (file.expiresAt <= keychain.expiresAt) return keychain;
+  logger.warn(
+    'The saved MCP login in the owner-only file has a later expiry than the OS keychain copy; using the file',
+    { credentialStoreKey: key },
+  );
+  return file;
 }
 
 async function withBothRefreshLocks<T>(
@@ -87,7 +97,7 @@ export function createFallbackCredentialStore(
       });
     }
 
-    if (keychain && file) return preferNewerLogin(keychain, file);
+    if (keychain && file) return preferNewerLogin(key, keychain, file, logger);
     if (keychain) return keychain;
     if (file) return file;
     if (keychainError !== undefined) throw keychainError;

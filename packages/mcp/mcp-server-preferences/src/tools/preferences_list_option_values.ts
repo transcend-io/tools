@@ -14,7 +14,12 @@ export function createPreferencesListOptionValuesTool(clients: ToolClients) {
       '`transcend inventory pull`.',
     category: 'Preference Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListOptionValuesSchema,
     handler: async () => listAllYmlSection(clients, TranscendPullResource.PreferenceOptions),
   });

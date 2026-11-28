@@ -29,7 +29,12 @@ export function createCustomFunctionsListTool(clients: ToolClients) {
       'results before upsert when choosing a silo or gateway.',
     category: 'Custom Functions',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: CustomFunctionsListSchema,
     handler: async ({ type, lifecycleState, dataSiloId, text, limit, offset }) => {
       const result = await graphql.listCustomFunctions({

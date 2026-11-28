@@ -27,7 +27,12 @@ export function createPreferencesWriteWorkflowConfigsTool(clients: ToolClients) 
       'inventory push`. Returns success and any errors.',
     category: 'Preference Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteWorkflowConfigsSchema,
     handler: async ({ workflowConfigs }) => {
       const items = decodeYmlItems<WorkflowConfigInput>(

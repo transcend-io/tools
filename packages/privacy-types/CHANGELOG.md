@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 7.5.0
+
+### Minor Changes
+
+- 792e187: Publish `TranscendMcpServer` from privacy-types so transcend-io/main can import domain MCP server IDs without the full SDK or a local oauth-types shim. SDK imports the enum from privacy-types; its public export path is unchanged.
+
 ## 7.4.1
 
 ### Patch Changes

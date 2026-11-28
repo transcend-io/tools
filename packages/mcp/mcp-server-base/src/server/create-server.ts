@@ -37,6 +37,11 @@ export interface CreateClientsArgs {
    * Sent as `X-Sombra-Authorization` when present.
    */
   sombraCustomerKey?: string;
+  /**
+   * True when Transcend hosts this server. The REST client must then refuse
+   * organizations that self-host Sombra, whose data stays end-to-end encrypted.
+   */
+  requireMultiTenantSombra: boolean;
   /** Transcend GraphQL API URL */
   graphqlUrl: string;
   /** Resolved admin-dashboard URL for deep links */
@@ -79,6 +84,7 @@ function buildClients(
     rest: createTranscendRestClient(args.auth, graphql, {
       sombraUrl: args.sombraUrl,
       sombraCustomerKey: args.sombraCustomerKey,
+      requireMultiTenantSombra: args.requireMultiTenantSombra,
     }),
     graphql,
     dashboardUrl: args.dashboardUrl,
@@ -129,7 +135,14 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             hasSombraCustomerKey: Boolean(sombraCustomerKey),
           });
           const clients = buildClients(
-            { auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl },
+            {
+              auth,
+              sombraUrl,
+              sombraCustomerKey,
+              requireMultiTenantSombra: Boolean(config.publicUrl),
+              graphqlUrl,
+              dashboardUrl,
+            },
             options.createClients,
           );
           const tools = options.getTools(clients);
@@ -152,7 +165,14 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   // stdio mode — single process, single Server
   const auth = requireStartupAuth ? resolveStdioStartupAuth() : resolveStdioStartupAuthOptional();
   const clients = buildClients(
-    { auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl },
+    {
+      auth,
+      sombraUrl,
+      sombraCustomerKey,
+      requireMultiTenantSombra: false,
+      graphqlUrl,
+      dashboardUrl,
+    },
     options.createClients,
   );
   const tools = options.getTools(clients);

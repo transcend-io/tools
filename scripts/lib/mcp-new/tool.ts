@@ -52,7 +52,12 @@ export function ${factory}(_clients?: ToolClients) {
     // annotations are hints a host may show. Flip them together for a mutating tool.
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ${schema},
     handler: async ({ query }) =>
       createToolResult(true, {

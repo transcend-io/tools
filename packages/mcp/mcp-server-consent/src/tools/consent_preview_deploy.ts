@@ -29,7 +29,12 @@ export function createConsentPreviewDeployTool(clients: ToolClients) {
       'Show patch output in chat before deploying.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: PreviewDeploySchema,
     handler: async ({ environment }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

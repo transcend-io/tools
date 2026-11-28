@@ -39,6 +39,7 @@ describe('consent_deploy_bundle', () => {
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     });
   });
 

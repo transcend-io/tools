@@ -8,6 +8,12 @@ import type { StoredOAuthTokens } from '../types.js';
 /** Latest time a JavaScript `Date` can represent, in milliseconds since the epoch. */
 const MAX_EXPIRES_AT_MS = 8.64e15;
 
+/**
+ * Longest ahead an access-token `expiresAt` may sit after load. Rejects disk edits
+ * that pick an implausible expiry to win keychain-vs-file merges.
+ */
+export const MAX_ACCESS_TOKEN_EXPIRES_AHEAD_MS = 90 * 24 * 60 * 60 * 1000;
+
 /** Length of the scope digest at the end of a store key. */
 const SCOPES_DIGEST_LENGTH = 16;
 
@@ -98,16 +104,25 @@ export function toStoredOAuthTokensEntry(
  * (so a login for one scope set is never reused for another), and for an entry
  * whose issuer and client do not match `key`.
  */
-export function parseStoredOAuthTokens(value: unknown, key: string): StoredOAuthTokens | null {
+export function parseStoredOAuthTokens(
+  value: unknown,
+  key: string,
+  nowMs: number = Date.now(),
+): StoredOAuthTokens | null {
   const parsed = StoredOAuthTokensSchema.safeParse(value);
   if (!parsed.success) return null;
   const { key: savedKey, ...tokens } = parsed.data;
   if (savedKey !== key) return null;
+  if (tokens.expiresAt > nowMs + MAX_ACCESS_TOKEN_EXPIRES_AHEAD_MS) return null;
   return isCredentialStoreKeyFor(key, tokens) ? tokens : null;
 }
 
 /** Parses a serialized entry, treating malformed JSON as no entry. */
-export function parseSerializedOAuthTokens(raw: string, key: string): StoredOAuthTokens | null {
+export function parseSerializedOAuthTokens(
+  raw: string,
+  key: string,
+  nowMs?: number,
+): StoredOAuthTokens | null {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -115,5 +130,5 @@ export function parseSerializedOAuthTokens(raw: string, key: string): StoredOAut
     if (error instanceof SyntaxError) return null;
     throw error;
   }
-  return parseStoredOAuthTokens(value, key);
+  return parseStoredOAuthTokens(value, key, nowMs);
 }

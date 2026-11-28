@@ -1,9 +1,11 @@
+import { createServer as createHttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { describe, it, expect, beforeAll, afterAll, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi, type Mock } from 'vitest';
 
 import { getRequestAuth } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
+import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import {
   MCP_SESSION_ID_HEADER,
   TRANSCEND_ACTIVE_ORG_ID_HEADER,
@@ -11,6 +13,7 @@ import {
 } from '../src/http-header-names.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
+import { createTranscendRestClient } from '../src/server/resolve-sombra-url.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
 import { McpTransport } from '../src/server/transport.js';
 import type { ToolDefinition } from '../src/tools/types.js';
@@ -569,9 +572,94 @@ describe('HTTP Transport', () => {
   });
 });
 
-describe('HTTP Transport — public hosted mode (OAuth protected resource metadata)', () => {
+/**
+ * One local HTTP server that plays every upstream of the public endpoint: the OAuth
+ * authorization server (metadata and token introspection), the GraphQL API, and Sombra.
+ */
+async function startFakeBackend() {
+  const state = {
+    /** Introspection response per access token. Unknown tokens are inactive. */
+    tokens: new Map<string, Record<string, unknown>>(),
+    /** `organization` GraphQL payload per credential */
+    organizations: new Map<string, Record<string, unknown>>(),
+    /** Every token sent to the introspection endpoint, in order */
+    introspectedTokens: [] as string[],
+    /** `Authorization` header of the latest introspection call */
+    introspectionAuthorization: undefined as string | undefined,
+    /** When true, the introspection endpoint answers 500 */
+    introspectionDown: false,
+    /** Calls that reached Sombra */
+    sombraCalls: 0,
+  };
+
+  const server = createHttpServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = Buffer.concat(chunks).toString();
+    const origin = `http://${req.headers.host}`;
+    const bearer = req.headers.authorization?.replace(/^Bearer /, '') ?? '';
+    const json = (status: number, payload: unknown): void => {
+      res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(payload));
+    };
+
+    switch (`${req.method} ${req.url}`) {
+      case 'GET /.well-known/oauth-authorization-server':
+        json(200, {
+          issuer: origin,
+          authorization_endpoint: `${origin}/oauth/authorize`,
+          token_endpoint: `${origin}/oauth/token`,
+          introspection_endpoint: `${origin}/oauth/introspect`,
+          code_challenge_methods_supported: ['S256'],
+        });
+        return;
+      case 'POST /oauth/introspect': {
+        const token = new URLSearchParams(body).get('token') ?? '';
+        state.introspectedTokens.push(token);
+        state.introspectionAuthorization = req.headers.authorization;
+        if (state.introspectionDown) json(500, { error: 'server_error' });
+        else json(200, state.tokens.get(token) ?? { active: false });
+        return;
+      }
+      case 'POST /graphql':
+        json(200, { data: { organization: state.organizations.get(bearer) } });
+        return;
+      case 'GET /public-keys/sombra-general-signing-key':
+        state.sombraCalls += 1;
+        json(200, { key: 'sombra-public-key' });
+        return;
+      default:
+        json(404, { error: 'not_found' });
+    }
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
+
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    reset(): void {
+      state.tokens.clear();
+      state.organizations.clear();
+      state.introspectedTokens.length = 0;
+      state.introspectionAuthorization = undefined;
+      state.introspectionDown = false;
+      state.sombraCalls = 0;
+    },
+    state,
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      }),
+  };
+}
+
+describe('HTTP Transport in public hosted mode', () => {
   const PUBLIC_URL = 'https://mcp.example.com';
-  const AUTH_SERVER_URL = 'https://api.example.com/graphql';
+  const RESOURCE = `${PUBLIC_URL}/mcp`;
+  const RESOURCE_METADATA = `resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/mcp"`;
+  const INTROSPECTION_CLIENT = { clientId: 'mcp-resource-server', clientSecret: 's3cret:/+ value' };
+  const START_MS = Date.parse('2026-01-01T00:00:00Z');
+  const START_SECONDS = START_MS / 1000;
   const INIT_BODY = JSON.stringify({
     jsonrpc: '2.0',
     method: 'initialize',
@@ -584,180 +672,611 @@ describe('HTTP Transport — public hosted mode (OAuth protected resource metada
   });
 
   const serversToClose: McpHttpServer[] = [];
+  let backend: Awaited<ReturnType<typeof startFakeBackend>>;
+  let nowMs: number;
   let previousEnvKey: string | undefined;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     previousEnvKey = process.env.TRANSCEND_API_KEY;
+    backend = await startFakeBackend();
+  });
+
+  beforeEach(() => {
+    delete process.env.TRANSCEND_API_KEY;
+    backend.reset();
+    nowMs = START_MS;
   });
 
   afterAll(async () => {
     for (const server of serversToClose) await server.shutdown();
+    await backend.close();
     if (previousEnvKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = previousEnvKey;
   });
 
+  /** Registers an access token that the authorization server reports as active. */
+  function issueToken(token: string, claims: Record<string, unknown> = {}): void {
+    backend.state.tokens.set(token, {
+      active: true,
+      exp: START_SECONDS + 3600,
+      aud: RESOURCE,
+      client_id: 'chat-client',
+      sub: 'user-1',
+      scope: 'read:things',
+      ...claims,
+    });
+  }
+
+  /** Sets the organization that a credential belongs to, as the GraphQL API reports it. */
+  function setOrganization(
+    credential: string,
+    sombra: Record<string, unknown>,
+    aiSetting = { isAiEnabled: true, isMcpSombraEnabled: true },
+  ): void {
+    backend.state.organizations.set(credential, {
+      sombra: { customerUrl: backend.url, ...sombra },
+      aiSetting,
+    });
+  }
+
+  const bearer = (token: string): Record<string, string> => ({ Authorization: `Bearer ${token}` });
+
   async function start(
     publicUrl: string | undefined,
     extra: Partial<TransportConfig> = {},
-  ): Promise<{ baseUrl: string; authSeen: Array<AuthCredentials | null> }> {
+  ): Promise<{
+    /** Local URL of the started MCP server */
+    baseUrl: string;
+    /** Credentials each new session was created with */
+    authSeen: Array<AuthCredentials | null>;
+  }> {
     const authSeen: Array<AuthCredentials | null> = [];
     const server = await runMcpHttp(
       {
         name: 'test-server',
         version: '0.0.1',
-        authorizationServerUrl: AUTH_SERVER_URL,
+        authorizationServerUrl: backend.url,
         scopesSupported: ['read:things', 'write:things'],
+        now: () => nowMs,
         createServer: (auth) => {
           authSeen.push(auth);
+          const graphql = new TranscendGraphQLBase(auth, backend.url);
+          const rest = createTranscendRestClient(auth, graphql, {
+            requireMultiTenantSombra: Boolean(publicUrl),
+          });
+          const sombraTool: ToolDefinition = {
+            name: 'sombra_public_key',
+            description: 'Reads a key from Sombra',
+            category: 'test',
+            readOnly: true,
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+            zodSchema: z.object({}),
+            handler: () => rest.getSombraPublicKey(),
+          };
           return buildMcpServer({
             name: 'test-server',
             version: '0.0.1',
-            tools: [echoTool],
+            tools: [echoTool, sombraTool],
             transport: 'http',
           });
         },
       },
-      { ...testConfig(0), ...(publicUrl && { publicUrl }), ...extra },
+      {
+        ...testConfig(0),
+        ...(publicUrl && { publicUrl, introspectionClient: INTROSPECTION_CLIENT }),
+        ...extra,
+      },
     );
     serversToClose.push(server);
     const addr = server.httpServer.address() as AddressInfo;
     return { baseUrl: `http://127.0.0.1:${addr.port}`, authSeen };
   }
 
-  it('serves RFC 9728 metadata at the bare and path-suffixed well-known URLs', async () => {
-    const { baseUrl } = await start(`${PUBLIC_URL}/`);
-    for (const path of [
-      '/.well-known/oauth-protected-resource',
-      '/.well-known/oauth-protected-resource/mcp',
-    ]) {
-      const res = await fetch(`${baseUrl}${path}`);
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({
-        resource: `${PUBLIC_URL}/mcp`,
-        authorization_servers: ['https://api.example.com'],
-        bearer_methods_supported: ['header'],
-        scopes_supported: ['read:things', 'write:things'],
-      });
-    }
-  });
-
-  it('honors a custom mcpPath in the metadata and challenge', async () => {
-    const { baseUrl } = await start(PUBLIC_URL, { mcpPath: '/v1/mcp' });
-    const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource/v1/mcp`);
-    expect((await meta.json()).resource).toBe(`${PUBLIC_URL}/v1/mcp`);
-
-    const res = await fetch(`${baseUrl}/v1/mcp`, {
+  function initialize(baseUrl: string, headers: Record<string, string> = {}): Promise<Response> {
+    return fetch(`${baseUrl}/mcp`, {
       method: 'POST',
-      headers: MCP_HEADERS,
+      headers: { ...MCP_HEADERS, ...headers },
       body: INIT_BODY,
     });
-    expect(res.status).toBe(401);
-    expect(res.headers.get('www-authenticate')).toBe(
-      `Bearer resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/v1/mcp"`,
-    );
-  });
+  }
 
-  it('answers 401 with a WWW-Authenticate challenge on POST, GET and DELETE without auth', async () => {
-    const { baseUrl } = await start(PUBLIC_URL);
-    const expectedChallenge = `Bearer resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/mcp"`;
+  /** Opens a session and returns its ID. */
+  async function openSession(baseUrl: string, headers: Record<string, string>): Promise<string> {
+    const res = await initialize(baseUrl, headers);
+    expect(res.status).toBe(200);
+    const sessionId = res.headers.get(MCP_SESSION_ID_HEADER)!;
+    await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, ...headers, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+    });
+    return sessionId;
+  }
 
-    for (const method of ['POST', 'GET', 'DELETE']) {
-      const res = await fetch(`${baseUrl}/mcp`, {
-        method,
+  /** Calls a tool on an open session. `text` is the tool output when the call got through. */
+  async function callTool(
+    baseUrl: string,
+    sessionId: string,
+    headers: Record<string, string>,
+    name: string,
+    args: Record<string, unknown> = {},
+  ): Promise<{
+    /** HTTP status of the call */
+    status: number;
+    /** `WWW-Authenticate` header of the response */
+    challenge: string | null;
+    /** Text of the tool result */
+    text?: string;
+  }> {
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, ...headers, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name, arguments: args },
+        id: 2,
+      }),
+    });
+    const challenge = res.headers.get('www-authenticate');
+    if (res.status !== 200) return { status: res.status, challenge };
+    const response = parseSseData(await res.text()).find((d: any) => d.id === 2) as any;
+    return { status: res.status, challenge, text: response.result.content[0].text };
+  }
+
+  describe('protected resource metadata', () => {
+    it('serves RFC 9728 metadata at the bare and path-suffixed well-known URLs', async () => {
+      const { baseUrl } = await start(`${PUBLIC_URL}/`);
+      for (const path of [
+        '/.well-known/oauth-protected-resource',
+        '/.well-known/oauth-protected-resource/mcp',
+      ]) {
+        const res = await fetch(`${baseUrl}${path}`);
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({
+          resource: RESOURCE,
+          authorization_servers: [backend.url],
+          bearer_methods_supported: ['header'],
+          scopes_supported: ['read:things', 'write:things'],
+        });
+      }
+    });
+
+    it('honors a custom mcpPath in the metadata and challenge', async () => {
+      const { baseUrl } = await start(PUBLIC_URL, { mcpPath: '/v1/mcp' });
+      const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource/v1/mcp`);
+      expect((await meta.json()).resource).toBe(`${PUBLIC_URL}/v1/mcp`);
+
+      const res = await fetch(`${baseUrl}/v1/mcp`, {
+        method: 'POST',
         headers: MCP_HEADERS,
-        ...(method === 'POST' && { body: INIT_BODY }),
+        body: INIT_BODY,
       });
-      expect(res.status, method).toBe(401);
-      expect(res.headers.get('www-authenticate'), method).toBe(expectedChallenge);
-      expect(await res.json()).toMatchObject({ jsonrpc: '2.0', error: { code: -32001 }, id: null });
-    }
-  });
-
-  it('does not let the TRANSCEND_API_KEY env fallback authenticate public callers', async () => {
-    process.env.TRANSCEND_API_KEY = 'server-side-key-must-be-ignored';
-    const { baseUrl, authSeen } = await start(PUBLIC_URL);
-    const res = await fetch(`${baseUrl}/mcp`, {
-      method: 'POST',
-      headers: MCP_HEADERS,
-      body: INIT_BODY,
+      expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).toBe(
+        `Bearer resource_metadata="${PUBLIC_URL}/.well-known/oauth-protected-resource/v1/mcp"`,
+      );
     });
-    expect(res.status).toBe(401);
-    expect(authSeen).toEqual([]);
-  });
 
-  it('leaves /health public', async () => {
-    const { baseUrl } = await start(PUBLIC_URL);
-    const res = await fetch(`${baseUrl}/health`);
-    expect(res.status).toBe(200);
-  });
-
-  it('initializes with a Bearer token and forwards it as the caller credential', async () => {
-    delete process.env.TRANSCEND_API_KEY;
-    const { baseUrl, authSeen } = await start(PUBLIC_URL);
-    const res = await fetch(`${baseUrl}/mcp`, {
-      method: 'POST',
-      headers: { ...MCP_HEADERS, Authorization: 'Bearer oauth-access-token' },
-      body: INIT_BODY,
+    it('leaves /health public', async () => {
+      const { baseUrl } = await start(PUBLIC_URL);
+      const res = await fetch(`${baseUrl}/health`);
+      expect(res.status).toBe(200);
     });
-    expect(res.status).toBe(200);
-    expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
-    expect(authSeen).toEqual([{ type: 'apiKey', apiKey: 'oauth-access-token' }]);
-  });
 
-  it('exposes WWW-Authenticate to browser clients via CORS', async () => {
-    const { baseUrl } = await start(PUBLIC_URL, { corsOrigins: ['https://client.example.com'] });
-    const res = await fetch(`${baseUrl}/mcp`, {
-      method: 'POST',
-      headers: { ...MCP_HEADERS, Origin: 'https://client.example.com' },
-      body: INIT_BODY,
+    it('exposes WWW-Authenticate to browser clients via CORS', async () => {
+      const { baseUrl } = await start(PUBLIC_URL, { corsOrigins: ['https://client.example.com'] });
+      const res = await initialize(baseUrl, { Origin: 'https://client.example.com' });
+      expect(res.status).toBe(401);
+      expect(res.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
     });
-    expect(res.status).toBe(401);
-    expect(res.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
   });
 
-  it('requires an authorization server when a public URL is configured', async () => {
-    await expect(
-      runMcpHttp(
-        {
+  describe('startup', () => {
+    const serverOptions = {
+      name: 'test-server',
+      version: '0.0.1',
+      createServer: () =>
+        buildMcpServer({
           name: 'test-server',
           version: '0.0.1',
-          createServer: () =>
-            buildMcpServer({
-              name: 'test-server',
-              version: '0.0.1',
-              tools: [echoTool],
-              transport: 'http',
-            }),
-        },
-        { ...testConfig(0), publicUrl: PUBLIC_URL },
-      ),
-    ).rejects.toThrow(/authorizationServerUrl/);
+          tools: [echoTool],
+          transport: 'http' as const,
+        }),
+    };
+
+    it('requires an authorization server when a public URL is configured', async () => {
+      await expect(
+        runMcpHttp(serverOptions, {
+          ...testConfig(0),
+          publicUrl: PUBLIC_URL,
+          introspectionClient: INTROSPECTION_CLIENT,
+        }),
+      ).rejects.toThrow(/authorizationServerUrl/);
+    });
+
+    it('requires introspection credentials when a public URL is configured', async () => {
+      await expect(
+        runMcpHttp(
+          { ...serverOptions, authorizationServerUrl: backend.url },
+          { ...testConfig(0), publicUrl: PUBLIC_URL },
+        ),
+      ).rejects.toThrow(/introspectionClient/);
+    });
   });
 
-  it('is unchanged when the public URL is unset: no metadata, no challenge, env key still works', async () => {
-    process.env.TRANSCEND_API_KEY = 'env-key';
-    const { baseUrl, authSeen } = await start(undefined);
+  describe('token verification', () => {
+    it('answers 401 with a WWW-Authenticate challenge on every method without credentials', async () => {
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
 
-    const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
-    expect(meta.status).toBe(404);
+      const head = await fetch(`${baseUrl}/mcp`, { method: 'HEAD' });
+      expect(head.status).toBe(401);
+      expect(head.headers.get('www-authenticate')).toBe(`Bearer ${RESOURCE_METADATA}`);
 
-    const withEnvKey = await fetch(`${baseUrl}/mcp`, {
-      method: 'POST',
-      headers: MCP_HEADERS,
-      body: INIT_BODY,
+      for (const method of ['POST', 'GET', 'DELETE']) {
+        const res = await fetch(`${baseUrl}/mcp`, {
+          method,
+          headers: MCP_HEADERS,
+          ...(method === 'POST' && { body: INIT_BODY }),
+        });
+        expect(res.status, method).toBe(401);
+        expect(res.headers.get('www-authenticate'), method).toBe(`Bearer ${RESOURCE_METADATA}`);
+        expect(await res.json()).toMatchObject({
+          jsonrpc: '2.0',
+          error: { code: -32001 },
+          id: null,
+        });
+      }
+      expect(authSeen).toEqual([]);
     });
-    expect(withEnvKey.status).toBe(200);
-    expect(withEnvKey.headers.get('www-authenticate')).toBeNull();
-    expect(authSeen).toEqual([{ type: 'apiKey', apiKey: 'env-key' }]);
 
-    // Sidecar case: no credentials anywhere still initializes (auth-free handshake).
-    delete process.env.TRANSCEND_API_KEY;
-    const sidecar = await fetch(`${baseUrl}/mcp`, {
-      method: 'POST',
-      headers: MCP_HEADERS,
-      body: INIT_BODY,
+    it('accepts an active token issued for this server and forwards it as the caller credential', async () => {
+      issueToken('good-token');
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, bearer('good-token'));
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
+      expect(authSeen).toEqual([
+        { type: 'oauthToken', accessToken: 'good-token', expiresAt: START_MS + 3_600_000 },
+      ]);
     });
-    expect(sidecar.status).toBe(200);
-    expect(authSeen[1]).toBeNull();
+
+    it('authenticates to the introspection endpoint with client_secret_basic', async () => {
+      issueToken('good-token');
+      const { baseUrl } = await start(PUBLIC_URL);
+
+      await initialize(baseUrl, bearer('good-token'));
+
+      const [scheme, credentials] = backend.state.introspectionAuthorization!.split(' ');
+      expect(scheme).toBe('Basic');
+      expect(Buffer.from(credentials!, 'base64').toString()).toBe(
+        `mcp-resource-server:${encodeURIComponent(INTROSPECTION_CLIENT.clientSecret)}`,
+      );
+    });
+
+    it('accepts a token whose audience list includes this server', async () => {
+      issueToken('multi-audience-token', { aud: ['https://other.example.com', RESOURCE] });
+      const { baseUrl } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, bearer('multi-audience-token'));
+
+      expect(res.status).toBe(200);
+    });
+
+    it.each([
+      ['inactive', { active: false }],
+      ['expired', { exp: START_SECONDS - 1 }],
+      ['expiring this instant', { exp: START_SECONDS }],
+      ['missing an expiry', { exp: undefined }],
+      ['issued for another server', { aud: 'https://other.example.com/mcp' }],
+      ['issued for a list of other servers', { aud: ['https://other.example.com/mcp'] }],
+      ['issued for a URL that only starts like this server', { aud: `${RESOURCE}/` }],
+      ['missing an audience', { aud: undefined }],
+    ])('answers 401 invalid_token for a token that is %s', async (_label, claims) => {
+      issueToken('bad-token', claims);
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, bearer('bad-token'));
+
+      expect(res.status).toBe(401);
+      const challenge = res.headers.get('www-authenticate');
+      expect(challenge).toContain('Bearer error="invalid_token"');
+      expect(challenge).toContain(RESOURCE_METADATA);
+      expect(await res.json()).toMatchObject({ jsonrpc: '2.0', error: { code: -32001 }, id: null });
+      expect(authSeen).toEqual([]);
+    });
+
+    it('answers 503 during an introspection outage and never lets the request through', async () => {
+      issueToken('good-token');
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+      backend.state.introspectionDown = true;
+
+      const during = await initialize(baseUrl, bearer('good-token'));
+
+      expect(during.status).toBe(503);
+      expect(during.headers.get('www-authenticate')).toBeNull();
+      expect(await during.json()).toMatchObject({ jsonrpc: '2.0', error: { code: -32603 } });
+      expect(authSeen).toEqual([]);
+
+      backend.state.introspectionDown = false;
+      const after = await initialize(baseUrl, bearer('good-token'));
+      expect(after.status).toBe(200);
+    });
+
+    it('answers 503 for a token it verified before, once the cached result is too old', async () => {
+      issueToken('good-token');
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('good-token'));
+
+      backend.state.introspectionDown = true;
+      nowMs += 60_000;
+      const res = await callTool(baseUrl, sessionId, bearer('good-token'), 'echo', {
+        message: 'hi',
+      });
+
+      expect(res.status).toBe(503);
+    });
+  });
+
+  describe('verification cache', () => {
+    it('trusts a verified token for 60 seconds, then asks the authorization server again', async () => {
+      issueToken('long-lived-token');
+      const { baseUrl } = await start(PUBLIC_URL);
+      const headers = bearer('long-lived-token');
+      const sessionId = await openSession(baseUrl, headers);
+      expect(backend.state.introspectedTokens).toHaveLength(1);
+
+      nowMs += 59_999;
+      const cached = await callTool(baseUrl, sessionId, headers, 'echo', { message: 'hi' });
+      expect(cached.status).toBe(200);
+      expect(backend.state.introspectedTokens).toHaveLength(1);
+
+      // The token is revoked while its verification is cached.
+      backend.state.tokens.set('long-lived-token', { active: false });
+      nowMs += 1;
+      const revoked = await callTool(baseUrl, sessionId, headers, 'echo', { message: 'hi' });
+      expect(revoked.status).toBe(401);
+      expect(revoked.challenge).toContain('error="invalid_token"');
+      expect(backend.state.introspectedTokens).toHaveLength(2);
+    });
+
+    it('stops trusting a cached token the instant it expires', async () => {
+      issueToken('short-lived-token', { exp: START_SECONDS + 30 });
+      const { baseUrl } = await start(PUBLIC_URL);
+      const headers = bearer('short-lived-token');
+      const sessionId = await openSession(baseUrl, headers);
+
+      nowMs += 29_999;
+      const beforeExpiry = await callTool(baseUrl, sessionId, headers, 'echo', { message: 'hi' });
+      expect(beforeExpiry.status).toBe(200);
+      expect(backend.state.introspectedTokens).toHaveLength(1);
+
+      nowMs += 1;
+      const atExpiry = await callTool(baseUrl, sessionId, headers, 'echo', { message: 'hi' });
+      expect(atExpiry.status).toBe(401);
+      expect(atExpiry.challenge).toContain('error="invalid_token"');
+    });
+
+    it('never caches a refused token', async () => {
+      const { baseUrl } = await start(PUBLIC_URL);
+
+      await initialize(baseUrl, bearer('unknown-token'));
+      issueToken('unknown-token');
+      const res = await initialize(baseUrl, bearer('unknown-token'));
+
+      expect(res.status).toBe(200);
+      expect(backend.state.introspectedTokens).toEqual(['unknown-token', 'unknown-token']);
+    });
+  });
+
+  describe('OAuth tokens only', () => {
+    it('does not let the TRANSCEND_API_KEY env fallback authenticate public callers', async () => {
+      process.env.TRANSCEND_API_KEY = 'server-side-key-must-be-ignored';
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl);
+
+      expect(res.status).toBe(401);
+      expect(authSeen).toEqual([]);
+    });
+
+    it.each([
+      ['an API key header', { [TRANSCEND_API_KEY_HEADER]: TEST_API_KEY }],
+      [
+        'a session cookie',
+        { Cookie: 'laravel_session=abc', [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-123' },
+      ],
+      ['a non-Bearer Authorization header', { Authorization: `Basic ${TEST_API_KEY}` }],
+    ])('challenges %s without asking the authorization server', async (_label, headers) => {
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, headers);
+
+      expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).toBe(`Bearer ${RESOURCE_METADATA}`);
+      expect(backend.state.introspectedTokens).toEqual([]);
+      expect(authSeen).toEqual([]);
+    });
+
+    it('rejects an API key sent as a Bearer token', async () => {
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, bearer(TEST_API_KEY));
+
+      expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).toContain('error="invalid_token"');
+      expect(backend.state.introspectedTokens).toEqual([TEST_API_KEY]);
+      expect(authSeen).toEqual([]);
+    });
+
+    it('ignores an API key and a cookie sent next to a verified token', async () => {
+      issueToken('good-token');
+      const { baseUrl, authSeen } = await start(PUBLIC_URL);
+
+      const res = await initialize(baseUrl, {
+        ...bearer('good-token'),
+        [TRANSCEND_API_KEY_HEADER]: TEST_API_KEY,
+        Cookie: 'laravel_session=abc',
+        [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(authSeen).toEqual([
+        { type: 'oauthToken', accessToken: 'good-token', expiresAt: START_MS + 3_600_000 },
+      ]);
+    });
+  });
+
+  describe('session ownership', () => {
+    it('keeps a session usable after the same user refreshes the token', async () => {
+      issueToken('first-token', { sub: 'alice' });
+      issueToken('refreshed-token', { sub: 'alice' });
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('first-token'));
+
+      const res = await callTool(baseUrl, sessionId, bearer('refreshed-token'), 'echo', {
+        message: 'hi',
+      });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('binds a session to the exact token when the token names no user', async () => {
+      issueToken('first-token', { sub: undefined });
+      issueToken('second-token', { sub: undefined });
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('first-token'));
+
+      const sameClient = await callTool(baseUrl, sessionId, bearer('second-token'), 'echo', {
+        message: 'hi',
+      });
+      const sameToken = await callTool(baseUrl, sessionId, bearer('first-token'), 'echo', {
+        message: 'hi',
+      });
+
+      expect(sameClient.status).toBe(400);
+      expect(sameToken.status).toBe(200);
+    });
+
+    it.each([
+      ['another user', { sub: 'bob' }],
+      ['another OAuth client', { sub: 'alice', client_id: 'other-client' }],
+    ])('hides a session from %s', async (_label, claims) => {
+      issueToken('alice-token', { sub: 'alice' });
+      issueToken('intruder-token', claims);
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('alice-token'));
+      const intruderHeaders = { ...bearer('intruder-token'), [MCP_SESSION_ID_HEADER]: sessionId };
+
+      const call = await callTool(baseUrl, sessionId, bearer('intruder-token'), 'echo', {
+        message: 'hi',
+      });
+      expect(call.status).toBe(400);
+      for (const method of ['GET', 'DELETE']) {
+        const res = await fetch(`${baseUrl}/mcp`, {
+          method,
+          headers: { ...MCP_HEADERS, ...intruderHeaders },
+        });
+        expect(res.status, method).toBe(400);
+      }
+
+      // The intruder's DELETE did not close the session.
+      const owner = await callTool(baseUrl, sessionId, bearer('alice-token'), 'echo', {
+        message: 'hi',
+      });
+      expect(owner.status).toBe(200);
+    });
+  });
+
+  describe('Sombra tools', () => {
+    it('runs a Sombra tool for an organization on the multi-tenant Sombra', async () => {
+      issueToken('good-token');
+      setOrganization('good-token', { hostedMethod: 'MULTI_TENANT' });
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('good-token'));
+
+      const res = await callTool(baseUrl, sessionId, bearer('good-token'), 'sombra_public_key');
+
+      expect(res.text).toContain('sombra-public-key');
+      expect(backend.state.sombraCalls).toBe(1);
+    });
+
+    it.each([
+      ['is self-hosted on premise', { hostedMethod: 'ON_PREMISE' }],
+      ['is single tenant', { hostedMethod: 'SINGLE_TENANT' }],
+      ['has no hosting type', {}],
+    ])('refuses a Sombra tool when the Sombra %s', async (_label, sombra) => {
+      issueToken('good-token');
+      setOrganization('good-token', sombra);
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('good-token'));
+
+      const res = await callTool(baseUrl, sessionId, bearer('good-token'), 'sombra_public_key');
+
+      expect(res.text).toContain('self-hosts Sombra');
+      expect(res.text).toContain('npx @transcend-io/mcp');
+      expect(backend.state.sombraCalls).toBe(0);
+    });
+
+    it('still refuses a multi-tenant organization that disabled MCP × Sombra', async () => {
+      issueToken('good-token');
+      setOrganization(
+        'good-token',
+        { hostedMethod: 'MULTI_TENANT' },
+        { isAiEnabled: true, isMcpSombraEnabled: false },
+      );
+      const { baseUrl } = await start(PUBLIC_URL);
+      const sessionId = await openSession(baseUrl, bearer('good-token'));
+
+      const res = await callTool(baseUrl, sessionId, bearer('good-token'), 'sombra_public_key');
+
+      expect(res.text).toContain('MCP × Sombra is disabled');
+      expect(backend.state.sombraCalls).toBe(0);
+    });
+  });
+
+  describe('without a public URL', () => {
+    it('is unchanged: no metadata, no challenge, env key still works', async () => {
+      process.env.TRANSCEND_API_KEY = 'env-key';
+      const { baseUrl, authSeen } = await start(undefined);
+
+      const meta = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
+      expect(meta.status).toBe(404);
+
+      const withEnvKey = await initialize(baseUrl);
+      expect(withEnvKey.status).toBe(200);
+      expect(withEnvKey.headers.get('www-authenticate')).toBeNull();
+      expect(authSeen).toEqual([{ type: 'apiKey', apiKey: 'env-key' }]);
+
+      // Sidecar case: no credentials anywhere still initializes (auth-free handshake).
+      delete process.env.TRANSCEND_API_KEY;
+      const sidecar = await initialize(baseUrl);
+      expect(sidecar.status).toBe(200);
+      expect(authSeen[1]).toBeNull();
+    });
+
+    it('accepts an API key and never asks the authorization server', async () => {
+      const { baseUrl, authSeen } = await start(undefined);
+
+      const res = await initialize(baseUrl, { [TRANSCEND_API_KEY_HEADER]: TEST_API_KEY });
+
+      expect(res.status).toBe(200);
+      expect(authSeen).toEqual([{ type: 'apiKey', apiKey: TEST_API_KEY }]);
+      expect(backend.state.introspectedTokens).toEqual([]);
+    });
+
+    it('runs a Sombra tool for an organization that self-hosts Sombra', async () => {
+      setOrganization(TEST_API_KEY, { hostedMethod: 'ON_PREMISE' });
+      const { baseUrl } = await start(undefined);
+      const headers = { [TRANSCEND_API_KEY_HEADER]: TEST_API_KEY };
+      const sessionId = await openSession(baseUrl, headers);
+
+      const res = await callTool(baseUrl, sessionId, headers, 'sombra_public_key');
+
+      expect(res.text).toContain('sombra-public-key');
+      expect(backend.state.sombraCalls).toBe(1);
+    });
   });
 });

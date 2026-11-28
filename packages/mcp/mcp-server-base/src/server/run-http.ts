@@ -19,7 +19,9 @@ import {
 } from '../http-header-names.js';
 import { extractMcpCallerFromHeaders, requestMcpCallerContext } from '../mcp-caller-context.js';
 import { InMemoryEventStore } from './event-store.js';
+import { createIntrospectionTokenVerifier } from './introspection-token-verifier.js';
 import type { TransportConfig } from './parse-args.js';
+import { getVerifiedRequest, requireVerifiedBearerToken } from './require-verified-bearer-token.js';
 import { tryResolveAuth } from './resolve-auth.js';
 
 export interface McpHttpServerOptions {
@@ -46,6 +48,10 @@ export interface McpHttpServerOptions {
   authorizationServerUrl?: string;
   /** OAuth scopes advertised as `scopes_supported` in the protected resource metadata. */
   scopesSupported?: readonly string[];
+  /** Clock (Unix ms) that expires cached token verifications. Defaults to `Date.now`. */
+  now?: () => number;
+  /** `fetch` used to reach the authorization server. Defaults to the global `fetch`. */
+  fetch?: typeof fetch;
 }
 
 export interface McpHttpServer {
@@ -61,9 +67,8 @@ const PROTECTED_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource'
 export async function runWithInboundHttpContext<T>(
   headers: Record<string, string | string[] | undefined>,
   fn: () => Promise<T>,
-  authOptions?: Parameters<typeof tryResolveAuth>[1],
+  auth: AuthCredentials | null = tryResolveAuth(headers),
 ): Promise<T> {
-  const auth = tryResolveAuth(headers, authOptions);
   const mcpCaller = extractMcpCallerFromHeaders(headers);
 
   let contextWrappedFn: () => Promise<T> = fn;
@@ -86,6 +91,8 @@ interface SessionEntry {
   server: Server;
   /** Timestamp of last activity */
   lastActivityAt: number;
+  /** Identity that opened the session. Set only in public mode, where it gates every later request. */
+  owner?: string;
 }
 
 /**
@@ -110,19 +117,15 @@ export async function runMcpHttp(
 
   // Public hosted mode is opt-in. When unset, none of the code paths below change.
   const publicUrl = config.publicUrl?.replace(/\/+$/, '') || undefined;
-  const authOptions = publicUrl ? { ignoreEnvApiKey: true } : undefined;
-  const protectedResourceMetadataUrl = publicUrl
-    ? `${publicUrl}${PROTECTED_RESOURCE_METADATA_PATH}${config.mcpPath}`
-    : undefined;
-  let authorizationServerOrigin: string | undefined;
-  if (publicUrl) {
-    if (!options.authorizationServerUrl) {
-      throw new Error(
-        'runMcpHttp: `authorizationServerUrl` is required when a public URL is configured.',
-      );
-    }
-    authorizationServerOrigin = new URL(options.authorizationServerUrl).origin;
-  }
+  const resolveRequestAuth = (req: Request, res: Response): AuthCredentials | null =>
+    publicUrl
+      ? getVerifiedRequest(res).auth
+      : tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
+  const findSession = (sessionId: string | undefined, res: Response): SessionEntry | undefined => {
+    const session = sessionId ? sessions.get(sessionId) : undefined;
+    const owner = publicUrl ? getVerifiedRequest(res).sessionOwner : undefined;
+    return session?.owner === owner ? session : undefined;
+  };
 
   if (config.corsOrigins.length > 0) {
     app.use(
@@ -154,11 +157,24 @@ export async function runMcpHttp(
     });
   });
 
-  if (publicUrl && protectedResourceMetadataUrl && authorizationServerOrigin) {
+  if (publicUrl) {
+    if (!options.authorizationServerUrl) {
+      throw new Error(
+        'runMcpHttp: `authorizationServerUrl` is required when a public URL is configured.',
+      );
+    }
+    if (!config.introspectionClient) {
+      throw new Error(
+        'runMcpHttp: `introspectionClient` is required when a public URL is configured.',
+      );
+    }
+    const authorizationServerOrigin = new URL(options.authorizationServerUrl).origin;
+    const resource = `${publicUrl}${config.mcpPath}`;
+
     // RFC 9728 OAuth Protected Resource Metadata. Served at the bare well-known path and
     // at the path-suffixed form that clients derive from the resource URL.
     const metadata = {
-      resource: `${publicUrl}${config.mcpPath}`,
+      resource,
       authorization_servers: [authorizationServerOrigin],
       bearer_methods_supported: ['header'],
       ...(options.scopesSupported &&
@@ -170,31 +186,24 @@ export async function runMcpHttp(
     app.get(PROTECTED_RESOURCE_METADATA_PATH, serveMetadata);
     app.get(`${PROTECTED_RESOURCE_METADATA_PATH}${config.mcpPath}`, serveMetadata);
 
-    // Challenge unauthenticated MCP calls so clients can discover the authorization server.
-    // Registered after /health and the metadata routes, which stay public.
-    const requireAuthChallenge = (req: Request, res: Response, next: () => void) => {
-      if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
-        next();
-        return;
-      }
-      const auth = tryResolveAuth(
-        req.headers as Record<string, string | string[] | undefined>,
-        authOptions,
-      );
-      if (auth) {
-        next();
-        return;
-      }
-      res
-        .status(401)
-        .set('WWW-Authenticate', `Bearer resource_metadata="${protectedResourceMetadataUrl}"`)
-        .json({
-          jsonrpc: '2.0',
-          error: { code: -32001, message: 'Unauthorized: authentication required' },
-          id: null,
-        });
-    };
-    app.use(config.mcpPath, requireAuthChallenge);
+    // Admit only verified OAuth access tokens, and challenge everything else so clients can
+    // discover the authorization server. Registered after /health and the metadata routes,
+    // which stay public.
+    app.use(
+      config.mcpPath,
+      requireVerifiedBearerToken({
+        verifyAccessToken: createIntrospectionTokenVerifier({
+          authorizationServerUrl: authorizationServerOrigin,
+          clientId: config.introspectionClient.clientId,
+          clientSecret: config.introspectionClient.clientSecret,
+          resource,
+          logger,
+          now: options.now,
+          fetch: options.fetch,
+        }),
+        resourceMetadataUrl: `${publicUrl}${PROTECTED_RESOURCE_METADATA_PATH}${config.mcpPath}`,
+      }),
+    );
   }
 
   // POST /mcp — main JSON-RPC endpoint
@@ -203,25 +212,23 @@ export async function runMcpHttp(
 
     try {
       // Existing session — resolve per-request auth into AsyncLocalStorage
-      if (sessionId && sessions.has(sessionId)) {
-        const session = sessions.get(sessionId)!;
+      const session = findSession(sessionId, res);
+      if (session) {
         session.lastActivityAt = Date.now();
 
         const handleReq = () => session.transport.handleRequest(req, res, req.body);
         await runWithInboundHttpContext(
           req.headers as Record<string, string | string[] | undefined>,
           handleReq,
-          authOptions,
+          resolveRequestAuth(req, res),
         );
         return;
       }
 
-      // New initialization request — auth is optional (MCPClient handshake)
+      // New initialization request. Auth is optional outside public mode (MCPClient handshake).
       if (!sessionId && isInitializeRequest(req.body)) {
-        const auth = tryResolveAuth(
-          req.headers as Record<string, string | string[] | undefined>,
-          authOptions,
-        );
+        const auth = resolveRequestAuth(req, res);
+        const verifiedRequest = publicUrl ? getVerifiedRequest(res) : undefined;
         const server = await options.createServer(auth);
 
         const eventStore = new InMemoryEventStore();
@@ -233,8 +240,15 @@ export async function runMcpHttp(
               transport,
               server,
               lastActivityAt: Date.now(),
+              owner: verifiedRequest?.sessionOwner,
             });
-            logger.info(`Session initialized: ${sid}`);
+            logger.info(
+              `Session initialized: ${sid}`,
+              verifiedRequest && {
+                oauthClientId: verifiedRequest.token.clientId,
+                scope: verifiedRequest.token.scope,
+              },
+            );
           },
         });
 
@@ -251,7 +265,7 @@ export async function runMcpHttp(
         await runWithInboundHttpContext(
           req.headers as Record<string, string | string[] | undefined>,
           handleReq,
-          authOptions,
+          auth,
         );
         return;
       }
@@ -276,7 +290,8 @@ export async function runMcpHttp(
   // GET /mcp — SSE stream for server-to-client notifications
   app.get(config.mcpPath, async (req: Request, res: Response) => {
     const sessionId = req.headers[MCP_SESSION_ID_HEADER] as string | undefined;
-    if (!sessionId || !sessions.has(sessionId)) {
+    const session = findSession(sessionId, res);
+    if (!sessionId || !session) {
       res.status(400).json({
         jsonrpc: '2.0',
         error: { code: -32000, message: 'Invalid or missing session ID' },
@@ -285,7 +300,6 @@ export async function runMcpHttp(
       return;
     }
 
-    const session = sessions.get(sessionId)!;
     session.lastActivityAt = Date.now();
     await session.transport.handleRequest(req, res);
   });
@@ -293,7 +307,8 @@ export async function runMcpHttp(
   // DELETE /mcp — session termination
   app.delete(config.mcpPath, async (req: Request, res: Response) => {
     const sessionId = req.headers[MCP_SESSION_ID_HEADER] as string | undefined;
-    if (!sessionId || !sessions.has(sessionId)) {
+    const session = findSession(sessionId, res);
+    if (!sessionId || !session) {
       res.status(400).json({
         jsonrpc: '2.0',
         error: { code: -32000, message: 'Invalid or missing session ID' },
@@ -302,7 +317,6 @@ export async function runMcpHttp(
       return;
     }
 
-    const session = sessions.get(sessionId)!;
     await session.transport.close();
     sessions.delete(sessionId);
     logger.info(`Session terminated via DELETE: ${sessionId}`);

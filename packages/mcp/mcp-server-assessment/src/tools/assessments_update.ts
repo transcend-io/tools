@@ -27,7 +27,12 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
       'Surface the returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: UpdateAssessmentSchema,
     handler: async ({ assessmentId, title, description, reviewerIds, dueDate, status }) => {
       const result = await graphql.updateAssessment({
