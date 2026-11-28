@@ -28,7 +28,12 @@ export function createDiscoveryWriteResultsTool(clients: ToolClients) {
       'ignore status). Same as inventory push for that section. Does not create new scan results.',
     category: 'Discovery',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: writeDiscoveryResultsSchema,
     handler: async ({ results }) => {
       const decoded = decodeYmlItems<SiloDiscoveryResultSettings>(

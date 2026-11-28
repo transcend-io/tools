@@ -62,7 +62,12 @@ export function createDocsIntegrationLookupTool(clients: ToolClients) {
     category: 'Documentation',
     readOnly: true,
     requireAuth: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     zodSchema: DocsIntegrationLookupSchema,
     handler: async ({ integration }) => {
       let catalog;

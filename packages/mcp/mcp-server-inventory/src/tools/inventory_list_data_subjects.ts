@@ -15,7 +15,12 @@ export function createInventoryListDataSubjectsTool(clients: ToolClients) {
       'from the data system — inverse of an allowlist). Returns the full set (not paginated).',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListDataSubjectsSchema,
     handler: async () => {
       const result = await graphql.listDataSubjects();

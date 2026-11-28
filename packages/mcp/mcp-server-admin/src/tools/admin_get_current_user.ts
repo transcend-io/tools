@@ -14,7 +14,12 @@ export function createAdminGetCurrentUserTool(clients: ToolClients) {
     description: 'Get information about the currently authenticated user (the API key owner)',
     category: 'Admin',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: EmptySchema,
     handler: async (_args) => {
       const result = await graphql.getCurrentUser();

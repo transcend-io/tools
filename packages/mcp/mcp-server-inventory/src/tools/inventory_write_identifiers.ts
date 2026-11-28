@@ -24,7 +24,12 @@ export function createInventoryWriteIdentifiersTool(clients: ToolClients) {
       'success, count, and per-item errors. Use inventory_list_identifiers to read them.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteIdentifiersSchema,
     handler: async ({ identifiers }) => {
       const decoded = decodeYmlItems<Identifier>(IdentifierInput, identifiers, 'identifiers', {

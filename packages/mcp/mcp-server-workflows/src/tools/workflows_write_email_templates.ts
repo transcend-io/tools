@@ -24,7 +24,12 @@ export function createWorkflowsWriteEmailTemplatesTool(clients: ToolClients) {
       'Returns success and per-template errors.',
     category: 'Workflows',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteEmailTemplatesSchema,
     handler: async ({ templates }) => {
       const items = decodeYmlItems<TemplateInput>(TemplateInput, templates, 'templates', {

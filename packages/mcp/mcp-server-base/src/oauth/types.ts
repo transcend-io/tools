@@ -8,6 +8,8 @@ export interface AuthorizationServerMetadata {
   tokenEndpoint: string;
   /** Supported PKCE code challenge methods */
   codeChallengeMethodsSupported: string[];
+  /** Token introspection endpoint URL (RFC 7662), when the server offers one */
+  introspectionEndpoint?: string;
 }
 
 /** Authorization code received at the local callback server. */

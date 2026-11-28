@@ -43,7 +43,12 @@ export function createConsentGetAnalyticsDataTool(clients: ToolClients) {
       'or sessions by regime. Requires ViewConsentManager API key scope.',
     category: 'Consent Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: GetAnalyticsDataSchema,
     handler: async ({ data_source, start, end, days, bin }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);

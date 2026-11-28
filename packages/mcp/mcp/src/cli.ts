@@ -59,6 +59,7 @@ function createToolRegistry(
   auth: AuthCredentials | null,
   sombraUrl: string | undefined,
   sombraCustomerKey: string | undefined,
+  requireMultiTenantSombra: boolean,
   graphqlUrl: string,
   dashboardUrl: string,
   allowlist: McpServerAllowlist,
@@ -67,6 +68,7 @@ function createToolRegistry(
   const restClient = createTranscendRestClient(auth, graphqlClient, {
     sombraUrl,
     sombraCustomerKey,
+    requireMultiTenantSombra,
   });
   return new ToolRegistry(
     {
@@ -125,6 +127,7 @@ async function main(): Promise<void> {
             auth,
             sombraUrl,
             sombraCustomerKey,
+            Boolean(config.publicUrl),
             graphqlUrl,
             dashboardUrl,
             allowlist,
@@ -158,6 +161,7 @@ async function main(): Promise<void> {
     auth,
     sombraUrl,
     sombraCustomerKey,
+    false,
     graphqlUrl,
     dashboardUrl,
     allowlist,

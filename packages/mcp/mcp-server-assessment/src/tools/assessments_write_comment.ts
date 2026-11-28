@@ -71,7 +71,12 @@ export function createAssessmentsWriteCommentTool(clients: ToolClients) {
       'comment id, level, and target id from existing reviewer feedback on the assessment.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: WriteAssessmentCommentSchema,
     handler: async ({
       assessmentId,

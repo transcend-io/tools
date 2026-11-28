@@ -9,6 +9,13 @@ import { CredentialStoreKind, type CredentialStore, type Keyring } from './types
 export const KEYRING_SERVICE = 'transcend-mcp';
 
 /**
+ * Windows Credential Manager caps each blob at 2,560 bytes. Verify real Transcend
+ * token JSON on Windows before wiring this store; oversize entries need a split
+ * design or fall back to the file on every save.
+ */
+export const WINDOWS_CREDENTIAL_BLOB_MAX_BYTES = 2_560;
+
+/**
  * Pins Linux entries to Secret Service. Without this the library silently falls
  * back to the kernel keyring for reads and writes, while listing still needs
  * Secret Service, so `logout` could not see a saved login. Pinned, an

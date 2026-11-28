@@ -101,7 +101,12 @@ export function createCustomFunctionsTestRunTool(clients: ToolClients) {
         'arguments. Stored runs use dashboard Environment Variables; unsaved trials have no ' +
         'secrets. Check id or code, type, and payload before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     zodSchema: CustomFunctionsTestRunSchema,
     handler: async ({
       id,

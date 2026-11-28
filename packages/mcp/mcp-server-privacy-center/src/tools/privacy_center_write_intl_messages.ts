@@ -26,7 +26,12 @@ export function createPrivacyCenterWriteIntlMessagesTool(clients: ToolClients) {
       'call. Returns success, a count, and errors.',
     category: 'Privacy Center',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteIntlMessagesSchema,
     handler: async ({ messages }) => {
       const inputs = decodeYmlItems<IntlMessageInput>(IntlMessageInput, messages, 'messages', {

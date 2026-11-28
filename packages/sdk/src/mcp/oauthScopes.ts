@@ -1,28 +1,11 @@
-import { ScopeName } from '@transcend-io/privacy-types';
+import { ScopeName, TranscendMcpServer } from '@transcend-io/privacy-types';
+
+export { TranscendMcpServer };
 
 import {
   TR_PULL_RESOURCE_SCOPE_MAP,
   TR_PUSH_RESOURCE_SCOPE_MAP,
 } from '../transcend-yml/constants.js';
-
-/**
- * Canonical domain MCP server identifiers (excludes docs, which uses no API scopes).
- * Single source of truth for {@link MCP_SERVER_OAUTH_SCOPES} and {@link TRANSCEND_MCP_SERVER_NPM_PACKAGES}.
- */
-export enum TranscendMcpServer {
-  Admin = 'admin',
-  Assessment = 'assessment',
-  Config = 'config',
-  Consent = 'consent',
-  CustomFunctions = 'customFunctions',
-  Discovery = 'discovery',
-  Dsr = 'dsr',
-  Inventory = 'inventory',
-  Policy = 'policy',
-  Preferences = 'preferences',
-  PrivacyCenter = 'privacyCenter',
-  Workflows = 'workflows',
-}
 
 const CONFIG_OAUTH_SCOPES: ScopeName[] = [
   ...new Set([

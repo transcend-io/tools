@@ -14,7 +14,12 @@ export function createPreferencesListWorkflowConfigsTool(clients: ToolClients) {
       'or action-type, and flags. Pass the items to preferences_write_workflow_configs to copy them.',
     category: 'Preference Management',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListWorkflowConfigsSchema,
     handler: async () =>
       listAllYmlSection(clients, TranscendPullResource.PreferenceWorkflowConfigs),

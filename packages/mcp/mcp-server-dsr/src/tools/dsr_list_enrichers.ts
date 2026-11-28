@@ -15,7 +15,12 @@ export function createDsrListEnrichersTool(clients: ToolClients) {
       'in transcend.yml shape. Same data as `transcend inventory pull --resources=enrichers`.',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: listEnrichersSchema,
     handler: async ({ title }) =>
       listAllYmlSection(

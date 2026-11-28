@@ -31,7 +31,12 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
         'recorded against a removed identifier can no longer be looked up by it. Check the ' +
         'identifiers in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: DeleteIdentifiersSchema,
     handler: async ({ partition, records }) => {

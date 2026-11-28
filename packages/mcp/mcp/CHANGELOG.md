@@ -1,5 +1,33 @@
 # @transcend-io/mcp
 
+## 2.3.0
+
+### Minor Changes
+
+- d9e212f: Add opt-in public hosted mode to the MCP HTTP transport. Set `TRANSCEND_MCP_PUBLIC_URL` (or `--public-url`) to serve OAuth Protected Resource Metadata (RFC 9728) at `/.well-known/oauth-protected-resource`, answer unauthenticated MCP requests with `401` plus a `WWW-Authenticate` challenge, and ignore the `TRANSCEND_API_KEY` environment fallback. Behavior is unchanged when unset.
+- 94c3666: Add the MCP `openWorldHint` tool annotation. `defineTool` defaults it to `false`, and every tool now sets it explicitly (`true` for tools that email data subjects or assignees, trigger downstream integrations, run user code, or read external documentation).
+
+### Patch Changes
+
+- Updated dependencies [adf2a3e]
+- Updated dependencies [281045c]
+- Updated dependencies [d9e212f]
+- Updated dependencies [94c3666]
+  - @transcend-io/mcp-server-base@3.4.0
+  - @transcend-io/mcp-server-admin@2.2.0
+  - @transcend-io/mcp-server-assessment@2.2.0
+  - @transcend-io/mcp-server-config@0.4.0
+  - @transcend-io/mcp-server-consent@1.7.0
+  - @transcend-io/mcp-server-custom-functions@0.4.0
+  - @transcend-io/mcp-server-discovery@1.2.0
+  - @transcend-io/mcp-server-docs@0.7.0
+  - @transcend-io/mcp-server-dsr@2.3.0
+  - @transcend-io/mcp-server-inventory@1.3.0
+  - @transcend-io/mcp-server-policy@0.3.0
+  - @transcend-io/mcp-server-preferences@0.10.0
+  - @transcend-io/mcp-server-privacy-center@0.3.0
+  - @transcend-io/mcp-server-workflows@1.3.0
+
 ## 2.2.0
 
 ### Minor Changes

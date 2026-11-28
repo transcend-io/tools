@@ -18,7 +18,12 @@ export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
     description: 'List all email templates used in workflows and communications.',
     category: 'Workflows',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListEmailTemplatesSchema,
     handler: async ({ limit, offset }) => {
       const result = await graphql.listEmailTemplates({

@@ -15,7 +15,12 @@ export function createPrivacyCenterGetTool(clients: ToolClients) {
       'footer links. Same as the privacy-center section of `transcend inventory pull`.',
     category: 'Privacy Center',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: EmptySchema,
     handler: async () => {
       const rows = await pullYmlSectionRaw(clients, TranscendPullResource.PrivacyCenters);

@@ -23,7 +23,12 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
       'never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     zodSchema: SubmitResponseSchema,
     handler: async ({ assessmentId, assessmentSectionIds }) => {
       const result = await graphql.submitAssessmentForReview({

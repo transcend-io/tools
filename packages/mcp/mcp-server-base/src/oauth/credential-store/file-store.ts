@@ -7,7 +7,7 @@ import { z } from 'zod';
 import type { Logger } from '../../clients/graphql/base.js';
 import type { StoredOAuthTokens } from '../types.js';
 import { ensurePrivateDirectory, isErrnoException } from './config-directory.js';
-import { refreshLockPath, withLockFile } from './refresh-lock.js';
+import { type AssertLockHeld, refreshLockPath, withLockFile } from './refresh-lock.js';
 import { parseStoredOAuthTokens, toStoredOAuthTokensEntry } from './stored-tokens.js';
 import { CredentialStoreKind, type CredentialStore } from './types.js';
 
@@ -92,7 +92,10 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
     return raw === null ? {} : parseCredentialsFile(raw);
   };
 
-  const writeEntries = async (entries: Record<string, unknown>): Promise<void> => {
+  const writeEntries = async (
+    entries: Record<string, unknown>,
+    assertHeld: AssertLockHeld,
+  ): Promise<void> => {
     await ensurePrivateDirectory(directory);
     const temporaryPath = `${filePath}.${randomUUID()}${TEMPORARY_FILE_SUFFIX}`;
     try {
@@ -103,6 +106,7 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
       } finally {
         await handle.close();
       }
+      await assertHeld();
       await rename(temporaryPath, filePath);
     } catch (error) {
       await rm(temporaryPath, { force: true });
@@ -132,11 +136,11 @@ export function createFileCredentialStore(options: FileCredentialStoreOptions): 
 
   /** Serializes read-modify-write cycles, so two processes cannot drop each other's entry. */
   const updateEntries = (change: (entries: Record<string, unknown>) => void): Promise<void> =>
-    withLockFile(writeLockPath, async () => {
+    withLockFile(writeLockPath, async (assertHeld) => {
       await removeAbandonedTemporaryFiles();
       const entries = await readEntries();
       change(entries);
-      await writeEntries(entries);
+      await writeEntries(entries, assertHeld);
     });
 
   const fileExists = async (): Promise<boolean> => {

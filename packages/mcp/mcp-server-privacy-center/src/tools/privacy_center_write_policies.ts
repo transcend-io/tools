@@ -25,7 +25,12 @@ export function createPrivacyCenterWritePoliciesTool(clients: ToolClients) {
       'policy engine: use policy_publish for that. Titles must be unique in the call.',
     category: 'Privacy Center',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WritePoliciesSchema,
     handler: async ({ policies }) => {
       const inputs = decodeYmlItems<PolicyInput>(PolicyInput, policies, 'policies', {

@@ -39,7 +39,12 @@ export function createInventoryWriteProcessingPurposeTool(clients: ToolClients) 
       'The unique key is name + purpose (e.g. "Other:ESSENTIAL").',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteProcessingPurposeSchema,
     handler: async (input) => {
       const { processingPurpose, created } = await graphql.writeProcessingPurpose({

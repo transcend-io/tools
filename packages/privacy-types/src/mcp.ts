@@ -34,3 +34,24 @@ export const McpFeatureRequestCategory = {
 
 export type McpFeatureRequestCategory =
   (typeof McpFeatureRequestCategory)[keyof typeof McpFeatureRequestCategory];
+
+/**
+ * Domain MCP server identifiers (excludes docs, which uses no API scopes).
+ * Wire values match {@link https://github.com/transcend-io/tools/pull/790 | SDK OAuth scope centralization}.
+ */
+export const TranscendMcpServer = {
+  Admin: 'admin',
+  Assessment: 'assessment',
+  Config: 'config',
+  Consent: 'consent',
+  CustomFunctions: 'customFunctions',
+  Discovery: 'discovery',
+  Dsr: 'dsr',
+  Inventory: 'inventory',
+  Policy: 'policy',
+  Preferences: 'preferences',
+  PrivacyCenter: 'privacyCenter',
+  Workflows: 'workflows',
+} as const;
+
+export type TranscendMcpServer = (typeof TranscendMcpServer)[keyof typeof TranscendMcpServer];
