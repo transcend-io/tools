@@ -38,7 +38,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 2. Copy the **client ID** and **client secret**.
 3. Choose an available localhost port number, then register `http://127.0.0.1:{port}/callback` on the OAuth client (`{port}` is the number you chose). Use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the same port number.
 
-At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
+At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. The login is saved and reused after a restart; see [Saved login](../README.md#saved-login).
 
 **OAuth scopes:** `ViewAssessments`, `ViewAssignedAssessments`, `ManageAssessments`, `ManageAssignedAssessments`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 

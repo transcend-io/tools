@@ -1,5 +1,7 @@
 import type { AddressInfo } from 'node:net';
 
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { ClientCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -240,10 +242,32 @@ describe('buildMcpServer per-tool requireAuth', () => {
     expect(ensureLazyOAuthAuthSpy).not.toHaveBeenCalled();
   });
 
-  it('runs lazy OAuth for tools that require auth', async () => {
+  it('never signs in or loads a saved login over HTTP', async () => {
     const sessionId = await initSession(baseUrl);
     await callTool(baseUrl, sessionId, 'protected_echo', 3);
-    expect(ensureLazyOAuthAuthSpy).toHaveBeenCalledTimes(1);
+    expect(ensureLazyOAuthAuthSpy).not.toHaveBeenCalled();
+  });
+
+  it('runs lazy OAuth over stdio for tools that require auth', async () => {
+    const server = buildMcpServer({
+      name: 'build-server-test',
+      version: '0.0.1',
+      tools: [publicTool, protectedTool],
+      transport: McpTransport.Stdio,
+    });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: 'build-server-test-client', version: '0.1.0' });
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+    try {
+      await client.callTool({ name: 'public_echo', arguments: {} });
+      expect(ensureLazyOAuthAuthSpy).not.toHaveBeenCalled();
+
+      await client.callTool({ name: 'protected_echo', arguments: {} });
+      expect(ensureLazyOAuthAuthSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      await client.close();
+      await server.close();
+    }
   });
 });
 

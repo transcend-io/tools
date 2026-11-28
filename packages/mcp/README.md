@@ -11,7 +11,7 @@
 3. **Configure your MCP client** — paste the JSON example below into Cursor (`.cursor/mcp.json`), Claude Desktop, or VS Code with your credentials.
 4. **Restart the MCP client** — the server verifies your OAuth client at startup; connection errors usually mean a redirect URI or secret mismatch.
 5. **Invoke any tool** — on the first tool call the server opens a browser for login. Complete consent and return to your agent.
-6. **Use tools normally** — tokens stay in memory for this session. Restarting the MCP process requires signing in again.
+6. **Use tools normally** — the server saves the login, so a restart does not ask you to sign in again. See [Saved login](#saved-login).
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ For example, if you choose port `4567` and set `TRANSCEND_OAUTH_REDIRECT_PORT=45
 
 **Startup vs browser login:** at startup the server verifies client ID, secret, and redirect URI via Transcend's API. If verification fails, the MCP server will not connect — fix credentials first. After startup succeeds, the **browser** opens on the first tool call to complete user consent.
 
-On first tool call, the server opens a browser for login. Tokens are session-only (in-memory); restarting the MCP process requires signing in again.
+On first tool call, the server opens a browser for login. The login is saved and reused after a restart; see [Saved login](#saved-login).
 
 ### OAuth scopes
 
@@ -74,7 +74,7 @@ Canonical scope lists live in each package's `src/scopes.ts`.
 | `EADDRINUSE` / port in use                       | Two servers share a redirect port          | Assign a unique `TRANSCEND_OAUTH_REDIRECT_PORT` per server and register each URI                                                                                                       |
 | Browser opened but tool still fails              | Consent denied, timed out, or closed early | Complete consent in the browser; if timed out, restart the MCP client and try again (do not retry automatically)                                                                       |
 | Login works but a tool returns permission errors | User lacks required OAuth scopes           | Sign in as a user with the scopes listed above, or use a domain server with narrower scope requirements                                                                                |
-| Must re-login after every restart                | Expected behavior                          | OAuth tokens are session-only (in-memory); restart MCP to sign in again                                                                                                                |
+| Must re-login after every restart                | The login is not being saved               | Run `npx -y @transcend-io/mcp status` to see where the login is saved. Check the server log for a keychain warning, or set `TRANSCEND_MCP_CREDENTIAL_STORE=file`                       |
 
 ## Choosing a server
 
@@ -219,7 +219,44 @@ For external consumers (Claude Enterprise, Cursor, etc.) using stdio transport, 
 - `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host for the OAuth callback (`127.0.0.1` default, or `::1` for IPv6 format)
 - `TRANSCEND_OAUTH_ISSUER` — optional; **auto-detected in production** by probing regional backends (`api.transcend.io`, `api.us.transcend.io`). Only needed in test environments.
 
-OAuth mode activates when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. At startup the server verifies credentials and redirect URI; on first tool call it opens a browser for user consent. Tokens are kept in process memory only; restarting the MCP client requires signing in again.
+OAuth mode activates when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. At startup the server verifies credentials and redirect URI; on first tool call it opens a browser for user consent. The login is then saved and reused after a restart.
+
+#### Saved login
+
+The server saves the login after you sign in. Restarting the MCP client, or the server, does not ask you to sign in again. Transcend still asks for a new sign-in when the saved login expires.
+
+`TRANSCEND_MCP_CREDENTIAL_STORE` picks where the login is saved:
+
+| Value            | Where the login is saved                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto` (default) | The OS keychain: macOS Keychain, Windows Credential Manager, or the Linux Secret Service. When no keychain is available, the `file` store          |
+| `keyring`        | The OS keychain only. Tool calls fail with an error when no keychain is available                                                                  |
+| `file`           | `~/.transcend/mcp/credentials.json`, readable only by your user (mode `0600`) on macOS and Linux. `TRANSCEND_MCP_CONFIG_DIR` changes the directory |
+| `memory`         | Nowhere. Every restart asks you to sign in again                                                                                                   |
+
+Only a server run over stdio uses the saved login. A server run over HTTP never signs in for itself, so each caller brings their own credentials.
+
+One login is saved per OAuth issuer, client ID, and set of requested scopes. Two servers that share an OAuth client but request different scopes each sign in once.
+
+What to know about the keychain:
+
+- macOS can show a one-time dialog that asks whether `node` may use your keychain.
+- Any script run by the same `node` binary can read the saved login without a prompt. An AI agent with shell access can run `security` (macOS) or `secret-tool` (Linux) to read it too.
+- Set `TRANSCEND_MCP_CREDENTIAL_STORE=file` to keep the login out of the keychain, or `memory` to save nothing.
+- On Windows the `file` store relies on your user profile folder permissions, not on a `0600` mode.
+- In `auto` mode, a login that an earlier run saved to the file moves into the keychain at the next start. `status` and `logout` also check the file.
+
+Check or remove the saved login from a terminal. The commands read the same environment variables as the server:
+
+```bash
+npx -y @transcend-io/mcp status        # where the login is saved and when the access token expires
+npx -y @transcend-io/mcp logout        # revoke the login at Transcend and remove it
+npx -y @transcend-io/mcp logout --all  # remove every saved login without revoking it; needs no OAuth variables
+```
+
+A running server keeps its login in memory. Restart it after `logout` so it asks you to sign in again.
+
+Every domain server accepts the same subcommands, for example `npx -y @transcend-io/mcp-server-consent status`.
 
 ### API key (stdio alternative)
 
@@ -547,24 +584,26 @@ That is a limit of the Inspector rather than a gap in coverage. Variant selectio
 
 All servers share the same environment variables:
 
-| Variable                        | Required (stdio OAuth) | Default                    | Description                                                                                                                                                                        |
-| ------------------------------- | ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set                                             |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                          | Client secret from the same OAuth clients page                                                                                                                                     |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI**                                  |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                                                     |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected              | OAuth issuer URL; production auto-detects region. Test-only override                                                                                                               |
-| `TRANSCEND_API_KEY`             | No                     | —                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                                                         |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io` | GraphQL backend API URL (org lookup, non-create tools)                                                                                                                             |
-| `SOMBRA_URL`                    | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create, Custom Function unwrap, and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`                   |
-| `SOMBRA_CUSTOMER_KEY`           | No                     | —                          | Customer-ingress key sent as `X-Sombra-Authorization: Bearer …`. Required for Custom Function unwrap/sign; otherwise optional (not needed on multi-tenant Transcend-hosted Sombra) |
-| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io` | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                                                  |
-| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                     | HTTP listen port                                                                                                                                                                   |
-| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                | HTTP listen host                                                                                                                                                                   |
-| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                          | Comma-separated allowed CORS origins                                                                                                                                               |
-| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                                                          |
-| `MCP_SKIP_CONFIRMATION`         | No                     | —                          | When `1`, bypasses server confirmation gates for consequential tools. **Never set in production** — removes human approval before mutations run                                    |
-| `TRANSCEND_MCP_EXPERIMENTAL`    | No                     | —                          | When `1`, registers tools marked `experimental: true`. Unset or any other value omits them from the catalog                                                                        |
+| Variable                         | Required (stdio OAuth) | Default                    | Description                                                                                                                                                                        |
+| -------------------------------- | ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`      | Yes                    | —                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set                                             |
+| `TRANSCEND_OAUTH_CLIENT_SECRET`  | Yes                    | —                          | Client secret from the same OAuth clients page                                                                                                                                     |
+| `TRANSCEND_OAUTH_REDIRECT_PORT`  | Yes                    | —                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI**                                  |
+| `TRANSCEND_OAUTH_REDIRECT_HOST`  | No                     | `127.0.0.1`                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                                                     |
+| `TRANSCEND_OAUTH_ISSUER`         | No                     | auto-detected              | OAuth issuer URL; production auto-detects region. Test-only override                                                                                                               |
+| `TRANSCEND_MCP_CREDENTIAL_STORE` | No                     | `auto`                     | Where the OAuth login is saved: `auto`, `keyring`, `file`, or `memory`. See [Saved login](#saved-login)                                                                            |
+| `TRANSCEND_MCP_CONFIG_DIR`       | No                     | `~/.transcend/mcp`         | Directory for the saved login file and its lock files                                                                                                                              |
+| `TRANSCEND_API_KEY`              | No                     | —                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                                                         |
+| `TRANSCEND_API_URL`              | No                     | `https://api.transcend.io` | GraphQL backend API URL (org lookup, non-create tools)                                                                                                                             |
+| `SOMBRA_URL`                     | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create, Custom Function unwrap, and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`                   |
+| `SOMBRA_CUSTOMER_KEY`            | No                     | —                          | Customer-ingress key sent as `X-Sombra-Authorization: Bearer …`. Required for Custom Function unwrap/sign; otherwise optional (not needed on multi-tenant Transcend-hosted Sombra) |
+| `TRANSCEND_DASHBOARD_URL`        | No                     | `https://app.transcend.io` | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                                                  |
+| `TRANSCEND_HTTP_PORT`            | No                     | `3000`                     | HTTP listen port                                                                                                                                                                   |
+| `TRANSCEND_HTTP_HOST`            | No                     | `127.0.0.1`                | HTTP listen host                                                                                                                                                                   |
+| `TRANSCEND_MCP_CORS_ORIGINS`     | No                     | —                          | Comma-separated allowed CORS origins                                                                                                                                               |
+| `TRANSCEND_MCP_SESSION_TTL_MS`   | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                                                          |
+| `MCP_SKIP_CONFIRMATION`          | No                     | —                          | When `1`, bypasses server confirmation gates for consequential tools. **Never set in production** — removes human approval before mutations run                                    |
+| `TRANSCEND_MCP_EXPERIMENTAL`     | No                     | —                          | When `1`, registers tools marked `experimental: true`. Unset or any other value omits them from the catalog                                                                        |
 
 Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
 

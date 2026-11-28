@@ -13,6 +13,7 @@ import {
   resolveMcpGraphqlUrl,
   readSombraEnvConfig,
   runMcpHttp,
+  runOAuthLoginCommand,
   SimpleLogger,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
@@ -93,6 +94,12 @@ function resolveStartupAllowlist(): McpServerAllowlist {
 }
 
 async function main(): Promise<void> {
+  const loginCommandExitCode = await runOAuthLoginCommand();
+  if (loginCommandExitCode !== undefined) {
+    process.exitCode = loginCommandExitCode;
+    return;
+  }
+
   const allowlist = resolveStartupAllowlist();
   const serverOptions = buildServerOptions(allowlist);
   const config = parseTransportArgs();
