@@ -214,6 +214,7 @@ export {
   isLazyOAuthSessionReady,
   resetLazyOAuthState,
 } from './oauth/lazy-auth.js';
+export { runOAuthLoginCommand } from './oauth/login-command.js';
 export { verifyOAuthClientCredentials } from './oauth/client-verify.js';
 export {
   getOAuthClientId,

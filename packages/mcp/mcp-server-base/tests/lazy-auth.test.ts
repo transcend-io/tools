@@ -10,7 +10,9 @@ import {
   OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
   formatOAuthLoginPendingNudgeMessage,
 } from '../src/oauth/constants.js';
+import { createMemoryCredentialStore } from '../src/oauth/credential-store/memory-store.js';
 import {
+  createLazyOAuth,
   ensureLazyOAuthAuth,
   getLazyOAuthCredentials,
   getStoredAuthorizationGrant,
@@ -20,11 +22,13 @@ import {
 import * as metadata from '../src/oauth/metadata.js';
 import * as oauthFlow from '../src/oauth/oauth-flow.js';
 import * as openBrowserModule from '../src/oauth/open-browser.js';
+import { configureOAuthScopes, resetConfiguredOAuthScopes } from '../src/oauth/scopes.js';
 import * as tokenExchange from '../src/oauth/token-exchange.js';
 import * as tokenManager from '../src/oauth/token-manager.js';
 import * as tokenRefresh from '../src/oauth/token-refresh.js';
 import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 import type { PendingOAuthSession } from '../src/oauth/types.js';
+import { createFakeAuthorizationServer } from './helpers/fake-authorization-server.js';
 
 describe('ensureLazyOAuthAuth', () => {
   const logger = new SimpleLogger();
@@ -43,6 +47,7 @@ describe('ensureLazyOAuthAuth', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
     setResolvedOAuthIssuer('https://yo.com:4001');
     setResolvedTranscendApiUrl('https://yo.com:4001');
+    configureOAuthScopes(['ViewRequests']);
   }
 
   function mockAuthorizationMetadataAndExchange(): void {
@@ -56,7 +61,7 @@ describe('ensureLazyOAuthAuth', () => {
       storedTokensFromTokenResponse({
         response: { access_token: 'access', expires_in: 3600 },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
       }),
     );
   }
@@ -77,7 +82,7 @@ describe('ensureLazyOAuthAuth', () => {
       session: {
         authorizationUrl: TEST_AUTHORIZATION_URL,
         redirectUri: 'http://127.0.0.1:1/callback',
-        clientId: 'client',
+        clientId: 'client-abc',
         codeVerifier: 'verifier',
         waitForCallback,
         close,
@@ -100,6 +105,7 @@ describe('ensureLazyOAuthAuth', () => {
   afterEach(() => {
     resetLazyOAuthState();
     resetOAuthClientState();
+    resetConfiguredOAuthScopes();
     if (originalApiKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = originalApiKey;
 
@@ -132,7 +138,7 @@ describe('ensureLazyOAuthAuth', () => {
         expires_in: 60,
       },
       issuer: 'https://yo.com:4001',
-      clientId: 'client',
+      clientId: 'client-abc',
       nowMs: now,
     });
     tokenManager.setActiveStoredOAuthTokens(expired);
@@ -151,7 +157,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
         nowMs: expired.expiresAt + 1,
       }),
     );
@@ -178,7 +184,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
         nowMs: now,
       }),
     );
@@ -203,7 +209,7 @@ describe('ensureLazyOAuthAuth', () => {
     const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
       authorizationUrl: TEST_AUTHORIZATION_URL,
       redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: 'client',
+      clientId: 'client-abc',
       codeVerifier: 'verifier',
       waitForCallback,
       close,
@@ -222,7 +228,7 @@ describe('ensureLazyOAuthAuth', () => {
           expires_in: 3600,
         },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
       }),
     );
 
@@ -234,7 +240,7 @@ describe('ensureLazyOAuthAuth', () => {
       state: 'xyz',
       codeVerifier: 'verifier',
       redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: 'client',
+      clientId: 'client-abc',
     });
     expect(getLazyOAuthCredentials()).toMatchObject({
       type: 'oauthToken',
@@ -309,7 +315,7 @@ describe('ensureLazyOAuthAuth', () => {
     const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
       authorizationUrl: TEST_AUTHORIZATION_URL,
       redirectUri: 'http://127.0.0.1:1/callback',
-      clientId: 'client',
+      clientId: 'client-abc',
       codeVerifier: 'verifier',
       waitForCallback,
       close,
@@ -324,7 +330,7 @@ describe('ensureLazyOAuthAuth', () => {
       storedTokensFromTokenResponse({
         response: { access_token: 'access', expires_in: 3600 },
         issuer: 'https://yo.com:4001',
-        clientId: 'client',
+        clientId: 'client-abc',
       }),
     );
 
@@ -449,5 +455,89 @@ describe('ensureLazyOAuthAuth', () => {
       resolveCallback();
       await Promise.all([first, second, third]);
     });
+  });
+});
+
+describe('createLazyOAuth', () => {
+  const logger = new SimpleLogger();
+  const client: tokenManager.OAuthClientCredentials = {
+    issuer: 'https://issuer.example',
+    clientId: 'client-abc',
+    clientSecret: 'secret',
+    scopes: ['ViewRequests', 'offline_access'],
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('saves the login after sign-in, so a restarted process needs no browser', async () => {
+    const server = createFakeAuthorizationServer(client);
+    const store = createMemoryCredentialStore();
+    const startProcess = (): ReturnType<typeof createLazyOAuth> =>
+      createLazyOAuth({
+        tokenManager: tokenManager.createOAuthTokenManager({ store, fetch: server.fetch }),
+        resolveClient: () => client,
+      });
+    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin').mockResolvedValue({
+      authorizationUrl: `${client.issuer}/oauth/authorize`,
+      redirectUri: 'http://127.0.0.1:1/callback',
+      clientId: client.clientId,
+      codeVerifier: 'verifier',
+      waitForCallback: async () => ({ code: 'abc', state: 'xyz' }),
+      close: async () => undefined,
+    });
+    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
+      issuer: client.issuer,
+      authorizationEndpoint: `${client.issuer}/oauth/authorize`,
+      tokenEndpoint: `${client.issuer}/oauth/token`,
+      codeChallengeMethodsSupported: ['S256'],
+    });
+    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
+      server.signIn(Date.now()),
+    );
+
+    await startProcess().ensureAuth(logger);
+    expect(startSpy).toHaveBeenCalledTimes(1);
+
+    const restarted = startProcess();
+    await restarted.ensureAuth(logger);
+
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(restarted.isSessionReady()).toBe(true);
+    expect(restarted.getCredentials()).toMatchObject({ accessToken: 'access-1' });
+  });
+
+  it('does not start a sign-in when a refresh fails for a passing reason', async () => {
+    const server = createFakeAuthorizationServer(client);
+    const store = createMemoryCredentialStore();
+    let nowMs = Date.now();
+    const manager = tokenManager.createOAuthTokenManager({
+      store,
+      now: () => nowMs,
+      fetch: server.fetch,
+    });
+    await manager.saveTokens(client, server.signIn(nowMs), logger);
+    nowMs += 3_600_000;
+    server.failNextRefresh(() => new Response('', { status: 503 }));
+    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin');
+
+    const lazyOAuth = createLazyOAuth({ tokenManager: manager, resolveClient: () => client });
+
+    await expect(lazyOAuth.ensureAuth(logger)).rejects.toMatchObject({
+      code: McpToolErrorCode.ApiError,
+      retryable: true,
+    } satisfies Partial<ToolError>);
+    expect(startSpy).not.toHaveBeenCalled();
+
+    await lazyOAuth.ensureAuth(logger);
+    expect(lazyOAuth.getCredentials()).toMatchObject({ accessToken: 'access-2' });
+    expect(startSpy).not.toHaveBeenCalled();
   });
 });
