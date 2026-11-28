@@ -10,6 +10,7 @@ import {
   symlink,
   writeFile,
 } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { homedir, hostname, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,6 +66,8 @@ const CLIENT_ID = 'client-abc';
 const SCOPES = ['ViewRequests', 'offline_access'];
 const KEY = credentialStoreKey({ issuer: ISSUER, clientId: CLIENT_ID, scopes: SCOPES });
 const HOLD_LOCK_HELPER = fileURLToPath(new URL('./helpers/hold-lock.ts', import.meta.url));
+/** ESM loader for the lock-helper child process (workspace devDependency, not per-package). */
+const TSX_IMPORT = createRequire(import.meta.url).resolve('tsx/esm');
 
 /** POSIX permission bits and symlink rules mean nothing on Windows. */
 const itOnPosix = process.platform === 'win32' ? it.skip : it;
@@ -249,7 +252,7 @@ describe('credential store hardening', () => {
             new Promise<number | null>((resolve, reject) => {
               const child = spawn(
                 process.execPath,
-                ['--import', 'tsx', HOLD_LOCK_HELPER, lockPath, logPath, label, '150'],
+                ['--import', TSX_IMPORT, HOLD_LOCK_HELPER, lockPath, logPath, label, '150'],
                 { stdio: 'inherit' },
               );
               child.on('error', reject);
