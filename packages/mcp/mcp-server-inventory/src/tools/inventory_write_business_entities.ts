@@ -24,7 +24,12 @@ export function createInventoryWriteBusinessEntitiesTool(clients: ToolClients) {
       'per-item errors. Use inventory_list_business_entities to read them.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteBusinessEntitiesSchema,
     handler: async ({ businessEntities }) => {
       const decoded = decodeYmlItems<BusinessEntity>(

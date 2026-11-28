@@ -13,7 +13,12 @@ export function createDsrPollStatusTool(clients: ToolClients) {
     description: 'Poll the current status of a Data Subject Request',
     category: 'DSR Automation',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: pollStatusSchema,
     handler: async ({ requestId }) => {

@@ -14,10 +14,21 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.PrivacyCenter),
   getTools: getPrivacyCenterTools,
-  createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
+  createClients: ({
+    auth,
+    sombraUrl,
+    sombraCustomerKey,
+    requireMultiTenantSombra,
+    graphqlUrl,
+    dashboardUrl,
+  }) => {
     const graphql = new TranscendGraphQLBase(auth, graphqlUrl);
     return {
-      rest: createTranscendRestClient(auth, graphql, { sombraUrl, sombraCustomerKey }),
+      rest: createTranscendRestClient(auth, graphql, {
+        sombraUrl,
+        sombraCustomerKey,
+        requireMultiTenantSombra,
+      }),
       graphql,
       dashboardUrl,
     };

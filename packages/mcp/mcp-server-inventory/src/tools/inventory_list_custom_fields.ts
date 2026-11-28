@@ -14,7 +14,12 @@ export function createInventoryListCustomFieldsTool(clients: ToolClients) {
       'back to inventory_write_custom_fields.',
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListCustomFieldsSchema,
     handler: async () => listAllYmlSection(clients, TranscendPullResource.Attributes),
   });

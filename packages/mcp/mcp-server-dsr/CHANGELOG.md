@@ -1,5 +1,22 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.3.0
+
+### Minor Changes
+
+- 94c3666: Add the MCP `openWorldHint` tool annotation. `defineTool` defaults it to `false`, and every tool now sets it explicitly (`true` for tools that email data subjects or assignees, trigger downstream integrations, run user code, or read external documentation).
+
+### Patch Changes
+
+- Updated dependencies [adf2a3e]
+- Updated dependencies [281045c]
+- Updated dependencies [d9e212f]
+- Updated dependencies [94c3666]
+- Updated dependencies [792e187]
+  - @transcend-io/mcp-server-base@3.4.0
+  - @transcend-io/privacy-types@7.5.0
+  - @transcend-io/sdk@3.8.2
+
 ## 2.2.2
 
 ### Patch Changes

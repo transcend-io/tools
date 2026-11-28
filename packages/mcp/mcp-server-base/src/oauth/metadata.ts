@@ -49,5 +49,8 @@ export async function fetchAuthorizationServerMetadata(
     revocationEndpoint:
       typeof body.revocation_endpoint === 'string' ? body.revocation_endpoint : undefined,
     codeChallengeMethodsSupported,
+    ...(typeof body.introspection_endpoint === 'string' && {
+      introspectionEndpoint: body.introspection_endpoint,
+    }),
   };
 }

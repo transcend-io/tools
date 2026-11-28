@@ -30,7 +30,12 @@ export function createAdminWriteTeamsTool(clients: ToolClients) {
         'grants. This changes who can access what in the organization. Check the team names, ' +
         'users and scopes before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteTeamsSchema,
     handler: async ({ teams }) => {
       const decoded = decodeYmlItems<TeamInput>(TeamInput, teams, 'teams', {

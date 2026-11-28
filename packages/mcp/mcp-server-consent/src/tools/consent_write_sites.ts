@@ -24,7 +24,12 @@ export function createConsentWriteSitesTool(clients: ToolClients) {
       'attributes per host. Hosts not in the list are not deleted.',
     category: 'Consent Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: WriteSitesSchema,
     handler: async ({ sites }) => {
       const decoded = decodeYmlItems<ConsentSite>(ConsentSiteInput, sites, 'consent-sites', {

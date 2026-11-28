@@ -17,7 +17,12 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients) {
       'The output can be used as input for assessments_create_template to recreate the template elsewhere.',
     category: 'Assessments',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ExportTemplateSchema,
     handler: async ({ templateId }) => {
       const template = await graphql.getAssessmentFormTemplate(templateId);

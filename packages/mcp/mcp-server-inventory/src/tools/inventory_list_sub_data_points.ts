@@ -24,7 +24,12 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients) {
       `normalized to "${DefaultPurposeSubCategoryType.Other}".`,
     category: 'Data Inventory',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ListSubDataPointsSchema,
     handler: async ({ dataPointId, limit, offset }) => {
       const result = await graphql.listSubDataPoints(dataPointId, {

@@ -33,41 +33,74 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### Environment variables
 
-| Variable                       | Default                    | Description                                                                                                                                                                                                                                                                              |
-| ------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | —                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID.                                                                                                                                                                          |
-| `TRANSCEND_API_URL`            | `https://api.transcend.io` | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                                                                                                                                                         |
-| `SOMBRA_URL`                   | _(lazy GraphQL resolve)_   | Sticky **customer ingress** host override (DSR create and other Sombra REST). When unset, resolves `organization.sombra.customerUrl` once; AiSettings are re-checked on every Sombra call. Local customer ingress is often port **5046**—do not point this at transcend/external ingress |
-| `SOMBRA_CUSTOMER_KEY`          | —                          | Optional self-hosted customer-ingress key (STS). Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra. Never commit tenant secrets                                                                                                             |
-| `TRANSCEND_HTTP_PORT`          | `3000`                     | HTTP listen port (overridden by `--port`)                                                                                                                                                                                                                                                |
-| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                | HTTP listen host (overridden by `--host`)                                                                                                                                                                                                                                                |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | —                          | Comma-separated allowed CORS origins                                                                                                                                                                                                                                                     |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)         | Idle session timeout in milliseconds                                                                                                                                                                                                                                                     |
-| `TRANSCEND_MCP_PUBLIC_URL`     | —                          | Public base URL (e.g. `https://mcp.transcend.io`). Enables OAuth protected resource metadata, `401` challenges, and ignores `TRANSCEND_API_KEY` (overridden by `--public-url`)                                                                                                           |
+| Variable                                    | Default                    | Description                                                                                                                                                                                                                                                                              |
+| ------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`                         | —                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID.                                                                                                                                                                          |
+| `TRANSCEND_API_URL`                         | `https://api.transcend.io` | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                                                                                                                                                         |
+| `SOMBRA_URL`                                | _(lazy GraphQL resolve)_   | Sticky **customer ingress** host override (DSR create and other Sombra REST). When unset, resolves `organization.sombra.customerUrl` once; AiSettings are re-checked on every Sombra call. Local customer ingress is often port **5046**—do not point this at transcend/external ingress |
+| `SOMBRA_CUSTOMER_KEY`                       | —                          | Optional self-hosted customer-ingress key (STS). Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra. Never commit tenant secrets                                                                                                             |
+| `TRANSCEND_HTTP_PORT`                       | `3000`                     | HTTP listen port (overridden by `--port`)                                                                                                                                                                                                                                                |
+| `TRANSCEND_HTTP_HOST`                       | `127.0.0.1`                | HTTP listen host (overridden by `--host`)                                                                                                                                                                                                                                                |
+| `TRANSCEND_MCP_CORS_ORIGINS`                | —                          | Comma-separated allowed CORS origins                                                                                                                                                                                                                                                     |
+| `TRANSCEND_MCP_SESSION_TTL_MS`              | `1800000` (30 min)         | Idle session timeout in milliseconds                                                                                                                                                                                                                                                     |
+| `TRANSCEND_MCP_PUBLIC_URL`                  | —                          | Public base URL (e.g. `https://mcp.transcend.io`). Enables [public hosted mode](#public-hosted-mode-chatgpt--remote-mcp-clients) (overridden by `--public-url`)                                                                                                                          |
+| `TRANSCEND_MCP_INTROSPECTION_CLIENT_ID`     | —                          | OAuth client ID the server uses to verify access tokens. Required in public hosted mode                                                                                                                                                                                                  |
+| `TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET` | —                          | Secret for that OAuth client. Required in public hosted mode                                                                                                                                                                                                                             |
 
 ## Public hosted mode (ChatGPT / remote MCP clients)
 
-Remote MCP clients such as ChatGPT discover how to sign in from the server itself, using OAuth 2.0 Protected Resource Metadata ([RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)). Turn this on by telling the server the public URL it is served at:
+Remote MCP clients such as ChatGPT discover how to sign in from the server itself, using OAuth 2.0 Protected Resource Metadata ([RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)). Turn this on by telling the server the public URL it is served at, and give it an OAuth client so it can verify access tokens:
 
 ```bash
-TRANSCEND_MCP_PUBLIC_URL=https://mcp.transcend.io npx @transcend-io/mcp --transport http
+TRANSCEND_MCP_PUBLIC_URL=https://mcp.transcend.io \
+TRANSCEND_MCP_INTROSPECTION_CLIENT_ID=your-client-id \
+TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET=your-client-secret \
+  npx @transcend-io/mcp --transport http
 # or: npx @transcend-io/mcp --transport http --public-url https://mcp.transcend.io
 ```
 
 This mode is **opt-in**. When `TRANSCEND_MCP_PUBLIC_URL` / `--public-url` is unset, nothing below applies and the server behaves exactly as before (including auth-free session initialization for the sidecar pattern).
 
-When set:
+Terminate TLS in front of the server (see [Reverse proxy](#reverse-proxy-nginx)) so the public URL is `https`.
+
+### Discovery
 
 - `GET /.well-known/oauth-protected-resource` and `GET /.well-known/oauth-protected-resource<mcpPath>` return metadata with `resource` (`<public url><mcpPath>`), `authorization_servers` (the origin of the resolved `TRANSCEND_API_URL`, e.g. `https://api.transcend.io`, which serves `/.well-known/oauth-authorization-server`), `bearer_methods_supported: ["header"]`, and `scopes_supported` (the umbrella server's OAuth scopes).
-- `POST`, `GET` and `DELETE` on the MCP path answer `401` with `WWW-Authenticate: Bearer resource_metadata="<public url>/.well-known/oauth-protected-resource<mcpPath>"` and a JSON-RPC error body when the request carries no credentials. `/health` and the metadata routes stay public.
+- `/health` and the metadata routes stay public.
 - `WWW-Authenticate` is added to the CORS exposed headers.
-- The `TRANSCEND_API_KEY` environment fallback is **ignored**, so a server-side key can never silently authenticate anonymous callers. Callers must send credentials per request.
 
-The server does not validate tokens. Any `Authorization: Bearer <token>` (a Transcend OAuth access token from the authorization server, or an API key) is forwarded to the Transcend API, which accepts or rejects it. Terminate TLS in front of the server (see [Reverse proxy](#reverse-proxy-nginx)) so the public URL is `https`.
+### OAuth access tokens only
+
+The only accepted credential is `Authorization: Bearer <access token>`, where the token is an OAuth access token that the authorization server issued for this server. API keys (in any header), session cookies, and the `TRANSCEND_API_KEY` environment fallback are not accepted. A request that also carries an API key or a cookie is authenticated by its Bearer token alone.
+
+The server verifies every token by OAuth 2.0 Token Introspection ([RFC 7662](https://datatracker.ietf.org/doc/html/rfc7662)):
+
+- It reads `introspection_endpoint` from `<authorization server>/.well-known/oauth-authorization-server`.
+- It authenticates to that endpoint with `client_secret_basic`, using `TRANSCEND_MCP_INTROSPECTION_CLIENT_ID` and `TRANSCEND_MCP_INTROSPECTION_CLIENT_SECRET`. Startup fails when a public URL is set and either variable is missing.
+- A token passes only when the response has `active: true`, an `exp` in the future, and an `aud` (string or list) that includes the resource URL `<public url><mcpPath>` exactly.
+- A passing result is cached in memory until the token expires, for at most 60 seconds. A revoked token therefore stops working within 60 seconds. Refusals are never cached.
+
+Requests to the MCP path answer as follows:
+
+| Request                                                                | Status | `WWW-Authenticate`                                                                           |
+| ---------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| No Bearer token (including API key or cookie only)                     | `401`  | `Bearer resource_metadata="<public url>/.well-known/oauth-protected-resource<mcpPath>"`      |
+| Token inactive, expired, without `exp`, or issued for another resource | `401`  | `Bearer error="invalid_token", error_description="<reason>", resource_metadata="<same URL>"` |
+| Authorization server unreachable or returned an error                  | `503`  | none                                                                                         |
+
+An introspection outage never lets a request through. Every error response has a JSON-RPC error body.
+
+Each MCP session belongs to the user (`sub`) and OAuth client (`client_id`) that opened it. The same user can keep using the session after a token refresh. Any other caller that sends its session ID gets `400`. When the introspection response has no `sub`, the session belongs to the exact token that opened it.
+
+The verified token is forwarded to the Transcend API, which enforces the scopes and permissions of the user.
+
+### Sombra tools
+
+Tools that go through Sombra (for example submitting a data subject request or querying preferences) run only for organizations on the Sombra that Transcend hosts for many organizations. For an organization that self-hosts Sombra, these tools return an error, because a server that Transcend hosts must not read data that a self-hosted Sombra keeps end-to-end encrypted. Those organizations run the server locally instead: `npx @transcend-io/mcp`. The organization's **MCP × Sombra** AI setting still applies.
 
 ## Authentication
 
-HTTP mode supports two authentication methods. The server resolves credentials from each incoming initialization request in this priority order:
+Outside [public hosted mode](#public-hosted-mode-chatgpt--remote-mcp-clients), which accepts OAuth access tokens only, HTTP mode supports two authentication methods. The server resolves credentials from each incoming initialization request in this priority order:
 
 ### 1. Session cookie (in-app dashboard)
 
@@ -91,7 +124,7 @@ For programmatic access (Claude Enterprise, Cursor, custom agents), send an API 
 
 ### 3. Environment variable fallback
 
-If no auth headers are present in HTTP mode, the server falls back to the `TRANSCEND_API_KEY` environment variable (not in [public hosted mode](#public-hosted-mode-chatgpt--remote-mcp-clients), where the fallback is ignored). For stdio transport, use OAuth (recommended — see package READMEs) or `TRANSCEND_API_KEY` as an alternative.
+If no auth headers are present in HTTP mode, the server falls back to the `TRANSCEND_API_KEY` environment variable. For stdio transport, use OAuth (recommended — see package READMEs) or `TRANSCEND_API_KEY` as an alternative.
 
 ### Multi-tenant deployments
 

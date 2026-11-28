@@ -38,7 +38,11 @@ export interface ResolvedCredentialStores {
    * `status` and `logout` cover a login that the file still holds.
    */
   all: CredentialStore[];
-  /** Why `auto` mode did not use the keychain; unset when it did or was not asked to */
+  /**
+   * Why `auto` mode did not use the keychain; unset when it did or was not asked to.
+   * A `logout` caller must fail or revoke tokens server-side while this is set,
+   * because `all` may not include the keychain and a refresh token can remain there.
+   */
   keychainUnavailable?: string;
 }
 

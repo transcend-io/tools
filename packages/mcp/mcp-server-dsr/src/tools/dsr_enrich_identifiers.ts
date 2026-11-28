@@ -54,7 +54,12 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
         "extra identifier on an erasure can delete the wrong person's records. Check the " +
         'identifiers in the call arguments before agreeing.',
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     requireSombra: true,
     zodSchema: enrichIdentifiersSchema,
     handler: async ({ nonce, requestId, enricherId, identifiers }) => {

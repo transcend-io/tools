@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { createFallbackCredentialStore } from '../src/oauth/credential-store/fallback-store.js';
@@ -9,7 +9,11 @@ import {
 } from '../src/oauth/credential-store/stored-tokens.js';
 import type { CredentialStore } from '../src/oauth/credential-store/types.js';
 
-const logger = new SimpleLogger();
+let logger: SimpleLogger;
+
+beforeEach(() => {
+  logger = new SimpleLogger();
+});
 
 const key = credentialStoreKey({
   issuer: 'https://api.transcend.io/',
@@ -58,6 +62,24 @@ describe('createFallbackCredentialStore', () => {
     const store = createFallbackCredentialStore({ primary, fallback, logger });
 
     await expect(store.load(key)).rejects.toThrow(/keychain locked/);
+  });
+
+  it('warns when the file login is newer than the keychain copy', async () => {
+    const warn = vi.spyOn(logger, 'warn');
+    const primary = createMemoryCredentialStore();
+    const fallback = createMemoryCredentialStore();
+    const keychainTokens = { ...sampleTokens, expiresAt: Date.now() + 60_000 };
+    const fileTokens = { ...sampleTokens, expiresAt: Date.now() + 120_000 };
+    await primary.save(key, keychainTokens);
+    await fallback.save(key, fileTokens);
+    const store = createFallbackCredentialStore({ primary, fallback, logger });
+
+    const loaded = await store.load(key);
+    expect(loaded).toEqual(fileTokens);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('owner-only file'),
+      expect.objectContaining({ credentialStoreKey: key }),
+    );
   });
 
   it('returns the file login when the keychain read fails and the file has an entry', async () => {

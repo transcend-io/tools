@@ -20,7 +20,12 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients) {
       "Classify text content using Transcend's LLM classifier to identify data categories. Requires at least one category label.",
     category: 'Data Discovery',
     readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     requireSombra: true,
     zodSchema: ClassifyTextSchema,
     handler: async ({ texts, categories, model }) => {

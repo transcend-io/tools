@@ -20,11 +20,15 @@ const SOMBRA_NETWORKING_DOCS_URL =
 const AI_SETTINGS_DOCS_HINT =
   'Enable AI and MCP × Sombra under Administration → AI Settings in the Transcend Admin Dashboard.';
 
+/** `organization.sombra.hostedMethod` value for the Sombra that Transcend hosts for many organizations. */
+const MULTI_TENANT_SOMBRA_HOSTED_METHOD = 'MULTI_TENANT';
+
 const ORGANIZATION_SOMBRA_CONTEXT_QUERY = `
   query McpOrganizationSombraContext {
     organization {
       sombra {
         customerUrl
+        hostedMethod
       }
       aiSetting {
         isAiEnabled
@@ -44,6 +48,8 @@ export interface OrganizationAiSetting {
 export interface OrganizationSombraContext {
   /** Customer ingress URL from `organization.sombra.customerUrl` */
   customerUrl: string | null | undefined;
+  /** Who hosts the Sombra, from `organization.sombra.hostedMethod` (e.g. `MULTI_TENANT`) */
+  hostedMethod: string | null | undefined;
   /** Org AI / MCP × Sombra settings */
   aiSetting: OrganizationAiSetting;
 }
@@ -70,6 +76,21 @@ export function assertMcpSombraAiSettings(
   }
   if (!aiSetting.isMcpSombraEnabled) {
     throw new Error('MCP × Sombra is disabled for this organization. ' + AI_SETTINGS_DOCS_HINT);
+  }
+}
+
+/**
+ * Refuses a Sombra call unless Transcend hosts the organization's Sombra.
+ *
+ * A server that Transcend hosts must not read data that a self-hosted Sombra keeps
+ * end-to-end encrypted. Fail-closed when the hosting type is missing or unknown.
+ */
+export function assertMultiTenantSombra(hostedMethod: string | null | undefined): void {
+  if (hostedMethod !== MULTI_TENANT_SOMBRA_HOSTED_METHOD) {
+    throw new Error(
+      'Your organization self-hosts Sombra, so the hosted Transcend MCP server cannot run this tool. ' +
+        'Use the locally installed server instead: `npx @transcend-io/mcp`.',
+    );
   }
 }
 
@@ -118,6 +139,8 @@ export async function fetchOrganizationSombraContext(
       sombra: {
         /** Customer ingress URL */
         customerUrl: string;
+        /** Who hosts the Sombra */
+        hostedMethod: string;
       };
       /** AI feature settings */
       aiSetting: OrganizationAiSetting | null;
@@ -127,6 +150,7 @@ export async function fetchOrganizationSombraContext(
   const organization = data.organization;
   return {
     customerUrl: organization?.sombra?.customerUrl,
+    hostedMethod: organization?.sombra?.hostedMethod,
     aiSetting: {
       isAiEnabled: organization?.aiSetting?.isAiEnabled === true,
       isMcpSombraEnabled: organization?.aiSetting?.isMcpSombraEnabled === true,
@@ -178,11 +202,19 @@ export async function resolveSombraHostUrl(
 
 /**
  * Fetches and enforces org AiSettings for MCP × Sombra (fail-closed).
+ * With `requireMultiTenantSombra`, also refuses organizations that self-host Sombra.
  */
 export async function assertOrganizationMcpSombraEnabled(
   graphql: TranscendGraphQLBase,
+  options: {
+    /** Refuse unless Transcend hosts the organization's Sombra */
+    requireMultiTenantSombra?: boolean;
+  } = {},
 ): Promise<void> {
   const context = await fetchOrganizationSombraContext(graphql);
+  if (options.requireMultiTenantSombra) {
+    assertMultiTenantSombra(context.hostedMethod);
+  }
   assertMcpSombraAiSettings(context.aiSetting);
 }
 
@@ -203,7 +235,8 @@ export function readSombraEnvConfig(): {
 /**
  * Builds a Sombra REST client that lazy-resolves the customer host via GraphQL
  * (sticky), re-checks org AiSettings on every Sombra call, and optionally sends
- * `X-Sombra-Authorization`.
+ * `X-Sombra-Authorization`. With `requireMultiTenantSombra`, every call is also
+ * refused for organizations that self-host Sombra.
  *
  * AiSettings GraphQL runs on each REST call even when `SOMBRA_URL` is set as a
  * sticky host override. The host itself is resolved once.
@@ -216,6 +249,11 @@ export function createTranscendRestClient(
     sombraUrl?: string;
     /** Customer key from `SOMBRA_CUSTOMER_KEY` */
     sombraCustomerKey?: string;
+    /**
+     * Refuse every call unless Transcend hosts the organization's Sombra.
+     * Set it when Transcend hosts this server.
+     */
+    requireMultiTenantSombra?: boolean;
     /** Logger instance */
     logger?: Logger;
   } = {},
@@ -224,7 +262,10 @@ export function createTranscendRestClient(
   return new TranscendRestClient(auth, {
     sombraCustomerKey: options.sombraCustomerKey?.trim() || undefined,
     resolveBaseUrl: () => resolveSombraHostUrl(graphql, { sombraUrlOverride: override }),
-    assertReady: () => assertOrganizationMcpSombraEnabled(graphql),
+    assertReady: () =>
+      assertOrganizationMcpSombraEnabled(graphql, {
+        requireMultiTenantSombra: options.requireMultiTenantSombra,
+      }),
     logger: options.logger,
   });
 }

@@ -150,7 +150,12 @@ export function ${factory}(_clients?: ToolClients) {
     category: 'TODO',
     readOnly: true,
     requireAuth: false,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     zodSchema: ${schema},
     // Hosts here cannot be asked anything, so use what the agent supplied rather
     // than inventing values it never chose.
