@@ -12,10 +12,21 @@ createMCPServer({
   // docs_integration_lookup reads the catalog, which needs sign-in but no scope.
   oauthScopes: [],
   getTools: getDocsTools,
-  createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
+  createClients: ({
+    auth,
+    sombraUrl,
+    sombraCustomerKey,
+    requireMultiTenantSombra,
+    graphqlUrl,
+    dashboardUrl,
+  }) => {
     const graphql = new DocsCatalogMixin(auth, graphqlUrl);
     return {
-      rest: createTranscendRestClient(auth, graphql, { sombraUrl, sombraCustomerKey }),
+      rest: createTranscendRestClient(auth, graphql, {
+        sombraUrl,
+        sombraCustomerKey,
+        requireMultiTenantSombra,
+      }),
       graphql,
       dashboardUrl,
     };
