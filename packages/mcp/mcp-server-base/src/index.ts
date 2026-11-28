@@ -33,12 +33,14 @@ export {
 export type { AssumedCapabilities } from './capabilities/assume.js';
 export { HOST_QUIRKS, quirksFor, whatIsTheClient } from './capabilities/client-detection.js';
 export type { HostQuirks } from './capabilities/client-detection.js';
+export { HUMAN_RESPONSE_FLOOR_MS } from './capabilities/cursor-decline-quirk.js';
 
 export {
   getMcpSession,
   hasCapability,
   mcpSessionContext,
   requestElicitation,
+  requestUrlElicitation,
 } from './mcp-session-context.js';
 export type { McpSession } from './mcp-session-context.js';
 
@@ -117,7 +119,6 @@ export {
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
-  HUMAN_RESPONSE_FLOOR_MS,
   renderConfirmationPrompt,
   withConfirmation,
 } from './tools/confirmation/index.js';

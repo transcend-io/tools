@@ -7,11 +7,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { McpClientCapability } from '../src/capabilities/types.js';
 import { MCP_SESSION_ID_HEADER } from '../src/http-header-names.js';
+import { getMcpSession, type McpSession } from '../src/mcp-session-context.js';
 import * as lazyAuth from '../src/oauth/lazy-auth.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
 import { McpTransport } from '../src/server/transport.js';
+import { toolCallContext } from '../src/tool-call-context.js';
 import { defineToolWithCapabilities } from '../src/tools/define-tool-with-capabilities.js';
 import { defineTool, type ToolDefinition } from '../src/tools/types.js';
 import {
@@ -248,7 +250,11 @@ describe('buildMcpServer per-tool requireAuth', () => {
     expect(ensureLazyOAuthAuthSpy).not.toHaveBeenCalled();
   });
 
-  it('runs lazy OAuth over stdio for tools that require auth', async () => {
+  /** A stdio-mode server and a client linked to it in memory. */
+  async function connectStdioServer(): Promise<{
+    client: Client;
+    close: () => Promise<void>;
+  }> {
     const server = buildMcpServer({
       name: 'build-server-test',
       version: '0.0.1',
@@ -258,6 +264,17 @@ describe('buildMcpServer per-tool requireAuth', () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: 'build-server-test-client', version: '0.1.0' });
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+    return {
+      client,
+      close: async () => {
+        await client.close();
+        await server.close();
+      },
+    };
+  }
+
+  it('runs lazy OAuth over stdio for tools that require auth', async () => {
+    const { client, close } = await connectStdioServer();
     try {
       await client.callTool({ name: 'public_echo', arguments: {} });
       expect(ensureLazyOAuthAuthSpy).not.toHaveBeenCalled();
@@ -265,9 +282,28 @@ describe('buildMcpServer per-tool requireAuth', () => {
       await client.callTool({ name: 'protected_echo', arguments: {} });
       expect(ensureLazyOAuthAuthSpy).toHaveBeenCalledTimes(1);
     } finally {
-      await client.close();
-      await server.close();
+      await close();
     }
+  });
+
+  it('runs lazy OAuth inside the call, so a sign-in prompt reaches the caller', async () => {
+    let session: McpSession | undefined;
+    let toolName: string | undefined;
+    ensureLazyOAuthAuthSpy.mockImplementation(async () => {
+      session = getMcpSession();
+      toolName = toolCallContext.getStore()?.toolName;
+    });
+
+    const { client, close } = await connectStdioServer();
+    try {
+      await client.callTool({ name: 'protected_echo', arguments: {} });
+    } finally {
+      await close();
+    }
+
+    expect(session?.request?.id).toBeDefined();
+    expect(session?.request?.signal).toBeInstanceOf(AbortSignal);
+    expect(toolName).toBe('protected_echo');
   });
 });
 

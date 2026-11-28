@@ -74,7 +74,7 @@ export const UnaskedReason = {
    * TODO: https://linear.app/transcend/issue/ZEL-8311 - remove when Cursor's
    * multi-window elicitation support is ready.
    *
-   * Only reachable through the workaround in `cursor-decline-quirk.ts`, so this
+   * Only reachable through the workaround in `capabilities/cursor-decline-quirk.ts`, so this
    * member goes when that file does.
    */
   Undelivered: 'UNDELIVERED',

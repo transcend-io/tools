@@ -73,6 +73,23 @@ export function hasCapability(
 }
 
 /**
+ * No fields: the decision is the host's own accept and decline buttons, read off
+ * `ElicitResult.action`.
+ *
+ * Asking for a field on top of them cost us twice. As a titled select, Cursor
+ * answered with a value matching neither option's `const`; as a checkbox, a host
+ * that answers `true` as a string would fare no better, because the SDK validates
+ * the answer against the schema it sent and a rejected answer reaches the caller as
+ * "nobody was asked" — a rendered, approved form reported as a refusal. Requesting
+ * nothing leaves no shape to get wrong, and spares the user a second gesture after
+ * the button they already pressed.
+ */
+export const NO_ELICITATION_FIELDS: ElicitRequestFormParams['requestedSchema'] = {
+  type: 'object',
+  properties: {},
+};
+
+/**
  * Asks the host to collect input from the user via a form.
  *
  * Returns `undefined` when the host cannot show one, so callers must handle that
@@ -113,4 +130,36 @@ export async function requestElicitation(
     : options;
 
   return await session.server.elicitInput({ mode: 'form', message, requestedSchema }, sendOptions);
+}
+
+/**
+ * Asks the host to send the user to `url`, through URL-mode elicitation.
+ *
+ * The host shows the user where the link goes and opens it only on their accept,
+ * so the link never passes through the model. Returns `undefined` when the host
+ * did not declare URL-mode support. Like {@link requestElicitation}, it can reject
+ * when the host errors or never answers within the timeout.
+ */
+export async function requestUrlElicitation(
+  /** Prompt explaining to the user why the link is being opened */
+  message: string,
+  /** Link the host opens for the user */
+  url: string,
+  /** Overrides for the outbound request; set `timeout` when a person has to answer */
+  options?: RequestOptions,
+): Promise<ElicitResult | undefined> {
+  const session = getMcpSession();
+  if (!session || !session.client.capabilities.has(McpClientCapability.ElicitationUrl)) {
+    return undefined;
+  }
+
+  const { request } = session;
+  const sendOptions: RequestOptions | undefined = request
+    ? { relatedRequestId: request.id, signal: request.signal, ...options }
+    : options;
+
+  return await session.server.elicitInput(
+    { mode: 'url', message, url, elicitationId: crypto.randomUUID() },
+    sendOptions,
+  );
 }

@@ -12,6 +12,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ElicitRequestSchema, type ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import { describe, expect, it, vi } from 'vitest';
 
+import { HUMAN_RESPONSE_FLOOR_MS } from '../src/capabilities/cursor-decline-quirk.js';
 import {
   McpClientCapability,
   McpHostClient,
@@ -28,7 +29,6 @@ import {
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
-  HUMAN_RESPONSE_FLOOR_MS,
   withConfirmation,
   type ConfirmationGate,
 } from '../src/tools/confirmation/index.js';

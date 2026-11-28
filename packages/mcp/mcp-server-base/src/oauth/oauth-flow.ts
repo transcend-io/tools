@@ -2,7 +2,6 @@ import type { Logger } from '../clients/graphql/base.js';
 import { startCallbackServer } from './callback-server.js';
 import { getOAuthClientId } from './client-registry.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
-import { openBrowser } from './open-browser.js';
 import { generateOAuthState, generatePkcePair } from './pkce.js';
 import { getOAuthScopes } from './scopes.js';
 import type { OAuthAuthorizationGrant, PendingOAuthSession } from './types.js';
@@ -12,8 +11,6 @@ export interface StartOAuthLoginOptions {
   issuer: string;
   /** Logger for progress (must write to stderr in stdio mode) */
   logger: Logger;
-  /** Opens the consent URL; defaults to the system browser */
-  openBrowser?: typeof openBrowser;
 }
 
 /**
@@ -43,9 +40,11 @@ export function buildAuthorizationUrl(params: {
 }
 
 /**
- * Phase 1 OAuth login: fixed redirect callback, browser consent.
+ * Phase 1 OAuth login: starts the fixed redirect callback and builds the consent URL.
  *
- * Returns a session handle; token exchange (phase 3) consumes {@link PendingOAuthSession.waitForCallback}.
+ * Opens no browser. The caller decides how the user reaches
+ * {@link PendingOAuthSession.authorizationUrl}; token exchange (phase 3) consumes
+ * {@link PendingOAuthSession.waitForCallback}.
  */
 export async function startOAuthLogin(
   options: StartOAuthLoginOptions,
@@ -78,9 +77,6 @@ export async function startOAuthLogin(
       state,
       scopes,
     });
-
-    logger.info('Opening browser for OAuth consent', { authorizationUrl });
-    await (options.openBrowser ?? openBrowser)(authorizationUrl, logger);
 
     return {
       authorizationUrl,
