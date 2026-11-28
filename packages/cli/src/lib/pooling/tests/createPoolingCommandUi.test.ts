@@ -104,6 +104,32 @@ describe('createPoolingCommandUi', () => {
     });
   });
 
+  it('forwards export and custom key options to the extra key handler', () => {
+    const context = buildContextForTest();
+    const exportMgr = {
+      exportsDir: '/tmp/exports',
+      exportCombinedLogs: vi.fn(() => '/tmp/exports/all.log'),
+    };
+    const exportStatus = {};
+    const custom = { F: vi.fn() };
+    const ui = createPoolingCommandUi(context, plugin, false, { exportMgr, exportStatus, custom });
+
+    const logsBySlot = new Map<number, WorkerLogPaths | undefined>();
+    const repaint = vi.fn();
+    const setPaused = vi.fn();
+    ui.extraKeyHandler?.({ logsBySlot, repaint, setPaused });
+
+    expect(mocks.createExtraKeyHandler).toHaveBeenLastCalledWith({
+      logsBySlot,
+      repaint,
+      setPaused,
+      stdout: context.process.stdout,
+      exportMgr,
+      exportStatus,
+      custom,
+    });
+  });
+
   it('omits the interactive switcher in viewer mode', () => {
     const context = buildContextForTest();
 
