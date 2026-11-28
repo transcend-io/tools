@@ -48,6 +48,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions check`](#transcend-custom-functions-check)
   - [`transcend custom-functions run`](#transcend-custom-functions-run)
   - [`transcend custom-functions push`](#transcend-custom-functions-push)
+  - [`transcend custom-functions pull`](#transcend-custom-functions-pull)
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
@@ -3025,6 +3026,65 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --sombraAuth="$SOMBR
 
 ```sh
 transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend custom-functions pull`
+
+```txt
+USAGE
+  transcend custom-functions pull (--auth value) [--transcendUrl value] [--manifest value] [--force] [--includeIds] [--json] [<directory>]
+  transcend custom-functions pull --help
+
+Fetch custom functions from the organization and merge them into transcend-functions.yml, writing source to functions/*.ts. Source comes from the pending draft when there is one, else the active version. By default the output is ready to push into another organization: IDs are left out and env values become <<parameters.NAME>> placeholders.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--manifest]      Path to transcend-functions.yml; defaults inside the target directory
+     [--force]         Overwrite source files and settings of functions already in the manifest. Local IDs, env values, and test payloads are kept.                                                                       [default = false]
+     [--includeIds]    Keep the function, data silo, and Sombra IDs of this organization in new entries. Use for same-org backups; leave off when pushing into another organization.                                      [default = false]
+     [--json]          Emit stable JSON output and disable prompts                                                                                                                                                        [default = false]
+  -h  --help           Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Copying functions into another organization
+
+`pull` is the reverse of `push`. Pull from the source organization, then push with an API key for the target organization:
+
+```sh
+transcend custom-functions pull --auth=$SOURCE_API_KEY
+transcend custom-functions push --auth=$TARGET_API_KEY --variables=CRM_API_KEY:value
+```
+
+By default, pulled entries leave out `id`, `data-silo-id`, and `sombra-id`, so `push` matches by name in the target organization. New DSR functions get their DSR integration created on push. Pass `--includeIds` only when you push back into the same organization.
+
+Env values are encrypted by Sombra and cannot be pulled. Each env key is written as a `<<parameters.NAME>>` placeholder, so `push` fails until you pass the value with `--variables`.
+
+#### Merging into an existing project
+
+`pull` merges into an existing manifest, such as one created by `init`. Functions not yet in the manifest are appended. Functions already in the manifest, matched by `id` and then by name, are left alone unless you pass `--force`. With `--force`, their source file, description, type, allowed hosts, timeout, and third-party import setting are refreshed. Their IDs, env values, and test payloads are kept.
+
+#### Examples
+
+**Pull all custom functions into transcend/custom-functions/transcend-functions.yml**
+
+```sh
+transcend custom-functions pull --auth="$TRANSCEND_API_KEY"
+```
+
+**Refresh functions already in the manifest with the latest code from the org**
+
+```sh
+transcend custom-functions pull --auth="$TRANSCEND_API_KEY" --force
+```
+
+**Back up an organization, keeping its IDs so push updates the same functions**
+
+```sh
+transcend custom-functions pull --auth="$TRANSCEND_API_KEY" --includeIds
 ```
 
 ### `transcend custom-functions list`

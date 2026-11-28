@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { decodeJwtPayload, diffCustomFunctionCode } from '../codeSigning.js';
+import {
+  decodeCustomFunctionContextFromJwt,
+  decodeCustomFunctionSourceFromJwt,
+  decodeJwtPayload,
+  diffCustomFunctionCode,
+} from '../codeSigning.js';
 
 /**
  * Build an unsigned JWT with the given payload (signature is not verified by
@@ -118,5 +123,25 @@ describe('diffCustomFunctionCode', () => {
       existingJwts({ userDefinedEncryptedEnv: { API_KEY: { ciphertext: 'xyz' } } }),
     );
     expect(diff.changed).toBe(false);
+  });
+
+  it('decodes source from signed code JWT', () => {
+    const jwt = fakeJwt({ base64Code: Buffer.from(CODE, 'utf-8').toString('base64') });
+    expect(decodeCustomFunctionSourceFromJwt(jwt)).toBe(CODE);
+  });
+
+  it('decodes context metadata and env key names', () => {
+    const jwt = fakeJwt({
+      allowedHosts: ['b.example', 'a.example'],
+      allowThirdPartyImports: true,
+      timeoutMs: 5000,
+      userDefinedEncryptedEnv: { API_KEY: { ciphertext: 'x' } },
+    });
+    expect(decodeCustomFunctionContextFromJwt(jwt)).toEqual({
+      allowedHosts: ['a.example', 'b.example'],
+      allowThirdPartyImports: true,
+      timeoutMs: 5000,
+      envKeys: ['API_KEY'],
+    });
   });
 });
