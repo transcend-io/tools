@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OAuthGrantType } from '../src/oauth/constants.js';
 import { refreshOAuthTokens } from '../src/oauth/token-refresh.js';
+import { OAuthTokenRequestError } from '../src/oauth/token-request.js';
 import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 
 describe('refreshOAuthTokens', () => {
@@ -57,6 +58,7 @@ describe('refreshOAuthTokens', () => {
         client_id: 'client-xyz',
         client_secret: 'client-secret',
       }),
+      signal: expect.any(AbortSignal),
     });
 
     expect(refreshed.accessToken).toBe('new-access-token');
@@ -79,4 +81,59 @@ describe('refreshOAuthTokens', () => {
       }),
     ).rejects.toThrow(/requires a refresh token/i);
   });
+
+  it('keeps a long error body to one short line in the message', async () => {
+    const stored = storedTokensFromTokenResponse({
+      response: { access_token: 'access', refresh_token: 'refresh-token', expires_in: 60 },
+      issuer: 'https://yo.com:4001',
+      clientId: 'client-xyz',
+    });
+    const body = `<html>\n${'proxy error '.repeat(200)}\n</html>`;
+
+    const error = await refreshOAuthTokens({
+      tokenEndpoint: 'https://yo.com:4001/oauth/token',
+      stored,
+      clientSecret: 'client-secret',
+      fetch: async () => new Response(body, { status: 502 }),
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(OAuthTokenRequestError);
+    const { message } = error as OAuthTokenRequestError;
+    expect(message).not.toContain('\n');
+    expect(message.length).toBeLessThan(300);
+    expect(message).toMatch(/^OAuth token refresh failed: HTTP 502 — <html> proxy error .*\.\.\.$/);
+  });
+
+  it.each([
+    {
+      answer: 'an OAuth error body',
+      status: 400,
+      body: JSON.stringify({ error: 'invalid_grant', error_description: 'grant is revoked' }),
+      oauthError: 'invalid_grant',
+    },
+    { answer: 'a body that is not JSON', status: 502, body: 'Bad Gateway', oauthError: undefined },
+  ])(
+    'raises a typed error with the status and OAuth error code for $answer',
+    async ({ status, body, oauthError }) => {
+      const stored = storedTokensFromTokenResponse({
+        response: { access_token: 'access', refresh_token: 'refresh-token', expires_in: 60 },
+        issuer: 'https://yo.com:4001',
+        clientId: 'client-xyz',
+      });
+
+      const error: unknown = await refreshOAuthTokens({
+        tokenEndpoint: 'https://yo.com:4001/oauth/token',
+        stored,
+        clientSecret: 'client-secret',
+        fetch: async () => new Response(body, { status }),
+      }).catch((caught: unknown) => caught);
+
+      expect(error).toBeInstanceOf(OAuthTokenRequestError);
+      expect(error).toMatchObject({
+        status,
+        oauthError,
+        message: `OAuth token refresh failed: HTTP ${status} — ${body}`,
+      });
+    },
+  );
 });

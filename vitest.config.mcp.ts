@@ -44,4 +44,10 @@ function mcpAppViewLoader(): Plugin {
  */
 export default mergeConfig(sharedConfig as ViteUserConfig, {
   plugins: [mcpAppViewLoader()],
+  test: {
+    // Keeps the suite out of the developer's keychain and home directory.
+    env: {
+      TRANSCEND_MCP_CREDENTIAL_STORE: 'memory',
+    },
+  },
 });

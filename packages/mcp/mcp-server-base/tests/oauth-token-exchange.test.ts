@@ -56,6 +56,7 @@ describe('exchangeAuthorizationCode', () => {
         client_secret: 'client-secret',
         code_verifier: 'verifier-abc',
       }),
+      signal: expect.any(AbortSignal),
     });
 
     expect(tokens).toMatchObject({

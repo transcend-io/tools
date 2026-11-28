@@ -233,6 +233,7 @@ export {
 export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
 export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';
+export { OAuthTokenRequestError } from './oauth/token-request.js';
 export {
   getActiveOAuthCredentials,
   getActiveStoredOAuthTokens,
