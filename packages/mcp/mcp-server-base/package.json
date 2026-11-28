@@ -108,6 +108,9 @@
       "optional": true
     }
   },
+  "optionalDependencies": {
+    "@napi-rs/keyring": "2.1.2"
+  },
   "engines": {
     "node": ">=22.12.0"
   }
