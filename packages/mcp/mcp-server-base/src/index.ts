@@ -281,7 +281,7 @@ export type {
 } from './server/resolve-sombra-url.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
-export type { TransportConfig } from './server/parse-args.js';
+export type { IntrospectionClientCredentials, TransportConfig } from './server/parse-args.js';
 export { McpTransport } from './server/transport.js';
 
 export { runMcpHttp } from './server/run-http.js';

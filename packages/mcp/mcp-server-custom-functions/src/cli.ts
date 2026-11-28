@@ -11,10 +11,21 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: getMcpServerOAuthScopes(TranscendMcpServer.CustomFunctions),
   getTools: getCustomFunctionsTools,
-  createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
+  createClients: ({
+    auth,
+    sombraUrl,
+    sombraCustomerKey,
+    requireMultiTenantSombra,
+    graphqlUrl,
+    dashboardUrl,
+  }) => {
     const graphql = new CustomFunctionsMixin(auth, graphqlUrl);
     return {
-      rest: createTranscendRestClient(auth, graphql, { sombraUrl, sombraCustomerKey }),
+      rest: createTranscendRestClient(auth, graphql, {
+        sombraUrl,
+        sombraCustomerKey,
+        requireMultiTenantSombra,
+      }),
       graphql,
       dashboardUrl,
     };

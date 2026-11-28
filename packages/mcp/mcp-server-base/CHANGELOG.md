@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-base
 
+## 3.5.0
+
+### Minor Changes
+
+- 856700c: Add credential store interfaces, token persistence helpers, and an in-memory backend for MCP OAuth credential storage.
+- 9aea9f3: Add MCP config directory helpers, cross-process refresh locks, and credential-store hardening (key binding, lock ownership checks) for the file credential store.
+
 ## 3.4.0
 
 ### Minor Changes
