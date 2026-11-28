@@ -1,11 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { createFileCredentialStore } from '../src/oauth/credential-store/file-store.js';
+import { LockLostError, withLockFile } from '../src/oauth/credential-store/refresh-lock.js';
 import {
   credentialStoreKey,
   toStoredOAuthTokensEntry,
@@ -43,6 +45,10 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
 });
+
+function liveLockRecord(ownerId = randomUUID()): string {
+  return JSON.stringify({ pid: process.pid, hostname: hostname(), ownerId });
+}
 
 describe('createFileCredentialStore', () => {
   it('round-trips save, load, keys, and clear', async () => {
@@ -122,5 +128,28 @@ describe('createFileCredentialStore', () => {
     await store.save(key, makeTokens());
     const value = await store.withRefreshLock(key, async () => 'locked');
     expect(value).toBe('locked');
+  });
+
+  it('does not replace credentials.json when the write lock is lost before rename', async () => {
+    const store = createFileCredentialStore({ directory, logger });
+    await store.save(key, makeTokens());
+
+    const filePath = join(directory, 'credentials.json');
+    const writeLockPath = `${filePath}.lock`;
+    const staleEntry = toStoredOAuthTokensEntry({ ...makeTokens(), accessToken: 'stale' }, key);
+
+    await expect(
+      withLockFile(writeLockPath, async (assertHeld) => {
+        const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
+        await writeFile(temporaryPath, JSON.stringify({ [key]: staleEntry }, null, 2), {
+          mode: 0o600,
+        });
+        await rm(writeLockPath, { force: true });
+        await writeFile(writeLockPath, liveLockRecord());
+        await assertHeld();
+      }),
+    ).rejects.toBeInstanceOf(LockLostError);
+
+    expect((await store.load(key))?.accessToken).toBe('access');
   });
 });

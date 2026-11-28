@@ -4,6 +4,7 @@ import { createMemoryCredentialStore } from '../src/oauth/credential-store/memor
 import {
   credentialStoreKey,
   isCredentialStoreKeyFor,
+  MAX_ACCESS_TOKEN_EXPIRES_AHEAD_MS,
   parseStoredOAuthTokens,
   parseSerializedOAuthTokens,
   toStoredOAuthTokensEntry,
@@ -82,6 +83,15 @@ describe('parseStoredOAuthTokens', () => {
   it.each([-1, 1.5, 9e15, Number.NaN, '1'])('returns null for expiresAt %j', (expiresAt) => {
     const entry = { ...toStoredOAuthTokensEntry(makeTokens(), key), expiresAt };
     expect(parseStoredOAuthTokens(entry, key)).toBeNull();
+  });
+
+  it('returns null when expiresAt is implausibly far in the future', () => {
+    const nowMs = 1_700_000_000_000;
+    const entry = toStoredOAuthTokensEntry(
+      makeTokens({ expiresAt: nowMs + MAX_ACCESS_TOKEN_EXPIRES_AHEAD_MS + 1 }),
+      key,
+    );
+    expect(parseStoredOAuthTokens(entry, key, nowMs)).toBeNull();
   });
 
   it('treats malformed JSON as no entry', () => {
