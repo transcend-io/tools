@@ -596,6 +596,17 @@ const ReservedMetadataCodec = t.partial({
   tcmp: t.partial({
     tcf: TCFReservedMetadata,
   }),
+  /**
+   * Banner context describing which consent UI was shown when consent was collected.
+   *
+   * - The record of consent (ROC) stores this value exactly as received.
+   * - It is validated with the `BannerContext` codec at resolution time.
+   * - It is stripped before the consent record is stored in DynamoDB.
+   *
+   * Never replace `t.unknown` with the strict `BannerContext` codec here. A strict codec on
+   * metadata would reject the whole preference store record write when the value is malformed.
+   */
+  bannerContext: t.unknown,
 });
 
 /** Tracking purpose */

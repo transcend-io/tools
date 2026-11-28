@@ -2,8 +2,9 @@ import type {
   ConsentManagerSupportedTranslationValue,
   LocaleValue,
 } from '@transcend-io/internationalization';
+import { LoadOptions } from '@transcend-io/privacy-types';
 // main
-import { applyEnum, type ObjByString, valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, getProps, type ObjByString, valuesOf } from '@transcend-io/type-utils';
 // external
 import * as t from 'io-ts';
 
@@ -291,6 +292,137 @@ export const TCFConfigInput = t.partial(TCFConfig.props);
 
 /** Type override */
 export type TCFConfigInput = t.TypeOf<typeof TCFConfigInput>;
+
+/**
+ * There is a 1,000 KiB Firehose record limit. This marker is used to indicate that the overrides were dropped due to the limit.
+ * Accepted by `StoredBannerContext` for the ROC query and hydration API. `BannerContext` never accepts it from clients.
+ */
+export const BannerContextOverridesDropped = t.type({
+  dropped: t.literal(true),
+  bytes: t.number,
+});
+
+/** Type override */
+export type BannerContextOverridesDropped = t.TypeOf<typeof BannerContextOverridesDropped>;
+
+const BannerContextOverridesExact = t.exact(
+  t.partial({
+    ...(getProps(LoadOptions) as {
+      [K in keyof LoadOptions]-?: t.Type<LoadOptions[K]>;
+    }),
+    /** Consent UI variables set by the host page. */
+    uiVariables: t.record(t.string, t.string),
+  }),
+);
+
+/**
+ * Partial `LoadOptions` plus `uiVariables` active for this banner. Unknown keys are stripped.
+ * Backend markers (`{ dropped: true }`, `{ truncated: true }`) are rejected, because stripping
+ * would otherwise turn them into `{}`.
+ */
+export const BannerContextOverrides = new t.Type<
+  t.TypeOf<typeof BannerContextOverridesExact>,
+  t.OutputOf<typeof BannerContextOverridesExact>,
+  unknown
+>(
+  'BannerContextOverrides',
+  BannerContextOverridesExact.is,
+  (input, context) =>
+    typeof input === 'object' && input !== null && ('dropped' in input || 'truncated' in input)
+      ? t.failure(input, context, 'Overrides markers are not valid BannerContext overrides')
+      : BannerContextOverridesExact.validate(input, context),
+  BannerContextOverridesExact.encode,
+);
+
+/** Type override */
+export type BannerContextOverrides = t.TypeOf<typeof BannerContextOverrides>;
+
+const BannerContextRequired = t.type({
+  /** Schema version. Any number decodes, so the shape can be incremented. */
+  version: t.number,
+  /** Client surface that collected consent. */
+  property: t.union([t.literal('web'), t.literal('mobile')]),
+  /** Consent UI deployment id. */
+  deploymentId: t.string,
+  /** Experience slug or name shown to the user. */
+  experience: t.string,
+  /** Variant slug or name shown to the user. */
+  variant: t.string,
+  /** Theme slug or name shown to the user. */
+  theme: t.string,
+  /** Locale used when the banner was shown. */
+  locale: t.string,
+});
+
+const BannerContextOptional = t.partial({
+  /** UI layers the user saw before consenting. */
+  layersSeen: t.array(t.union([t.literal('banner'), t.literal('modal')])),
+  /** Privacy signals present when consent was collected. */
+  signals: t.array(t.union([t.literal('GPC'), t.literal('DNT')])),
+  /** Load-option overrides active for this banner. */
+  overrides: BannerContextOverrides,
+});
+
+/**
+ * Context describing which consent banner was shown when consent was collected.
+ * Unknown top-level keys are stripped (not rejected) so newer clients still validate on older backends.
+ * Validated with BannerContext.decode when a record of consent is built; keep free of side effects.
+ */
+export const BannerContext = t.exact(
+  t.intersection([BannerContextRequired, BannerContextOptional]),
+);
+
+/** Type override */
+export type BannerContext = t.TypeOf<typeof BannerContext>;
+
+/**
+ * Read-side `BannerContext` for stored records of consent. Same shape as `BannerContext`, but
+ * `overrides` may also be the `BannerContextOverridesDropped` marker. Clients send `BannerContext`;
+ * the ROC query and hydration API decode with `StoredBannerContext`.
+ */
+export const StoredBannerContext = t.exact(
+  t.intersection([
+    BannerContextRequired,
+    t.partial({
+      ...BannerContextOptional.props,
+      /** Load-option overrides active for this banner, or the marker left when they were dropped. */
+      overrides: t.union([BannerContextOverrides, BannerContextOverridesDropped]),
+    }),
+  ]),
+);
+
+/** Type override */
+export type StoredBannerContext = t.TypeOf<typeof StoredBannerContext>;
+
+/** Valid `BannerContext` sent by the web consent UI. */
+export const bannerContextWebFixture: BannerContext = {
+  version: 1,
+  property: 'web',
+  deploymentId: 'b90bbba4-cf11-40d4-9203-1f6424098694',
+  experience: 'eu-gdpr',
+  variant: 'default',
+  theme: 'light',
+  locale: 'en',
+  layersSeen: ['banner', 'modal'],
+  signals: ['GPC'],
+  overrides: {
+    forceTheme: 'light',
+    uiVariables: { brandName: 'Acme' },
+  },
+};
+
+/** Valid `BannerContext` sent by the mobile consent UI. */
+export const bannerContextMobileFixture: BannerContext = {
+  version: 1,
+  property: 'mobile',
+  deploymentId: '676e2789-6da2-4641-8224-48be5ff029de',
+  experience: 'us-cpra',
+  variant: 'compact',
+  theme: 'dark',
+  locale: 'en-US',
+  layersSeen: ['banner'],
+  signals: [],
+};
 
 /**
  * Properties exposed on `self` by the Transcend Smart Quarantine
